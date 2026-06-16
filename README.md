@@ -43,8 +43,12 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
 .claude/
   agents/                  11 agents — read by Claude Code AND VS Code/Copilot
   skills/                  30 skills (SKILL.md open standard) — read by both tools
+                           some bundle scripts/ (pcf-ops, slo-error-budget) and references/ fill-ins
+runbooks/                  ready-made on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 scripts/
   sync-copilot.ps1 / .sh   generate .github/agents + .github/skills for Copilot-native tooling
+  validate-fleet.ps1       validate all skills/agents against the Agent Skills spec (CI-friendly)
+  readonly-guard.py        PreToolUse hook: blocks state-changing shell commands for read-only agents
 .github/
   agents/  skills/         GENERATED (gitignored) — do not hand-edit; edit .claude/ and re-run sync
 ```
@@ -80,7 +84,14 @@ protection / environment reviewers, or Claude Code hooks.
 Agents and skills are plain Markdown. Add a skill: create `.claude/skills/<name>/SKILL.md` (lowercase-
 hyphen `name` ≤64 chars matching the dir, `description` ≤1024 chars saying *what + when*). Add an agent:
 `.claude/agents/<name>.md` with `name`, `description`, `tools`, `model`. Re-run the sync script for
-Copilot. Validate skills with [`skills-ref`](https://github.com/agentskills/agentskills) if you want.
+Copilot, then `pwsh scripts/validate-fleet.ps1` to check it (or the upstream
+[`skills-ref`](https://github.com/agentskills/agentskills) validator).
+
+**Read-only enforcement:** agents that keep `Bash` but must not change state wire
+[scripts/readonly-guard.py](scripts/readonly-guard.py) as a `PreToolUse` hook in their frontmatter; the
+generator strips these Claude-only hooks from the Copilot output. Verify the hook fires in your Claude
+Code environment (the one piece that can't be unit-tested offline); on systems where the interpreter is
+`python3`, adjust the hook command in the agent frontmatter.
 
 ## Built from (current as of mid-2026)
 

@@ -14,6 +14,9 @@ metadata:
 Find the signal fast, then read it over time and correlate. Always scope `index`, `source`/`sourcetype`,
 and a tight time window first — broad searches are slow and noisy.
 
+> **Fill in** our indexes, sourcetypes, correlation-id field, and saved searches in
+> [references/indexes.md](references/indexes.md) so these queries use real names.
+
 ## Start narrow
 ```spl
 index=<app_index> host=<...> sourcetype=<...> earliest=-1h latest=now

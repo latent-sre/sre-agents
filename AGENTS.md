@@ -45,7 +45,10 @@ to its lane on demand.
 | [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | — |
 
 **Read-only agents** (no Edit/Write): `coordinator`, `code-reviewer`, `security-reviewer`,
-`sre-engineer`, `incident-commander`, `researcher`. They report, recommend, and hand off.
+`sre-engineer`, `incident-commander`, `researcher`. They report, recommend, and hand off. The four that
+keep `Bash` for observation (`code-reviewer`, `security-reviewer`, `sre-engineer`, `incident-commander`)
+are further constrained by a `PreToolUse` guard ([scripts/readonly-guard.py](scripts/readonly-guard.py))
+that **blocks state-changing shell commands** — so "read-only" is enforced, not just promised.
 
 > **Seniority/experience is carried by skills, not separate agents.** There is *one* `sde-engineer`
 > and *one* `sre-engineer`. They scale altitude by loading a **ladder skill** — pick the tier that
@@ -138,6 +141,16 @@ bash scripts/sync-copilot.sh       # macOS / Linux
 The only non-portable seam is the agent `tools:` field (Claude uses `Read, Grep`; Copilot uses arrays
 like `['edit','search/codebase']`). Behavioral guardrails are written in each agent body (honored by
 both); the generator translates `tools` for Copilot.
+
+## Validate & operate
+
+- **Validate the fleet:** `pwsh scripts/validate-fleet.ps1` checks every skill/agent against the
+  Agent Skills spec (names, descriptions, referenced files). Run it before committing or in CI.
+- **Ready-made runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency
+  timeout), authored with the `runbook-template` skill.
+- **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` (read-only triage),
+  `slo-error-budget/scripts/error_budget.py` (budget/burn calculator), and `references/` fill-in files
+  (`pcf-ops`, `splunk-triage`, `wavefront-queries`) for your concrete index/metric/foundation values.
 
 ## Using it
 

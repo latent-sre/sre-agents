@@ -17,6 +17,10 @@ Our apps run on PCF (VMware Tanzu Application Service). cf CLI v8 talks to CAPI 
 you observe only** — every command below is read-only. State-changing commands are listed last and
 belong to `release-engineer` with human sign-off.
 
+> **Helpers:** `scripts/triage.sh <app>` runs a one-shot read-only summary (target → app → events →
+> recent logs). Record our foundations, orgs/spaces, and app inventory in
+> [references/foundations.md](references/foundations.md).
+
 ## Orient
 ```bash
 cf target                      # current api / org / space — confirm you're looking at prod

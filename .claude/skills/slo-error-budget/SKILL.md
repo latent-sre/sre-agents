@@ -14,6 +14,9 @@ metadata:
 Start with **one SLO per critical user journey**, not a metric zoo. An SLO you can compute and act on
 beats a perfect one you can't.
 
+> **Helper:** `scripts/error_budget.py --slo 99.9 --window-days 28 --bad-minutes <m> --sli <pct>`
+> prints budget remaining and burn-rate severity (page/ticket) — see the burn-rate table below.
+
 ## SLI — the measurement
 An SLI is a ratio of **good events / valid events**, from the user's perspective:
 ```

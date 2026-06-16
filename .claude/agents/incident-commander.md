@@ -10,6 +10,12 @@ description: >-
   root-cause work in parallel. It is READ-ONLY on systems (it directs; it doesn't change prod).
 tools: Read, Grep, Glob, Bash, WebFetch, TodoWrite
 model: sonnet
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: 'python "$CLAUDE_PROJECT_DIR/scripts/readonly-guard.py"'
 ---
 
 # Role

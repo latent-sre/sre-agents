@@ -9,6 +9,12 @@ description: >-
   needed. It is READ-ONLY: it reports vulnerabilities with severity and remediation; it does not edit code.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
 model: opus
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: 'python "$CLAUDE_PROJECT_DIR/scripts/readonly-guard.py"'
 ---
 
 # Role

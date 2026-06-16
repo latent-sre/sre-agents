@@ -15,6 +15,9 @@ metadata:
 Our metrics platform is **VMware Aria Operations for Applications** (formerly Tanzu Observability by
 Wavefront). The query language is WQL; the core function is `ts()`.
 
+> **Fill in** our real metric names, point tags, and dashboards in
+> [references/metrics.md](references/metrics.md) so these snippets match what we emit.
+
 ## The building block
 ```
 ts(<metric.name>, <source/tag filters>)

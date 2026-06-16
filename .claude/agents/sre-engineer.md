@@ -13,6 +13,12 @@ description: >-
   `incident-commander`.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
 model: opus
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: 'python "$CLAUDE_PROJECT_DIR/scripts/readonly-guard.py"'
 ---
 
 # Role

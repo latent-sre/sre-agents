@@ -31,10 +31,10 @@ $ghSkills     = Join-Path $root '.github/skills'
 function Convert-ToolsLine([string]$line) {
     # Map Claude tool names -> Copilot tool/toolset names, preserving read-only vs. write intent.
     $tools = [System.Collections.Generic.List[string]]::new()
-    $tools.Add('search'); $tools.Add('usages')                                   # read/understand: always
+    $tools.Add('search')                                                          # read/search codebase (toolset)
     if ($line -match '\bWrite\b' -or $line -match '\bEdit\b') { $tools.Add('edit') }        # file writes
     if ($line -match '\bBash\b')                              { $tools.Add('runCommands') } # terminal
-    if ($line -match '\bWebFetch\b' -or $line -match '\bWebSearch\b') { $tools.Add('fetch') } # web
+    if ($line -match '\bWebFetch\b' -or $line -match '\bWebSearch\b') { $tools.Add('web/fetch') } # web
     $items = ($tools | Select-Object -Unique | ForEach-Object { "'$_'" }) -join ', '
     return "tools: [$items]"
 }
@@ -58,10 +58,16 @@ Get-ChildItem -Path $claudeAgents -Filter '*.md' -File | ForEach-Object {
     $fmEnd = $dashes[1]
 
     $out = [System.Collections.Generic.List[string]]::new()
+    $skipHooks = $false
     for ($i = 0; $i -le $fmEnd; $i++) {
         $l = $lines[$i]
+        if ($skipHooks) {                              # inside a Claude-only hooks: block
+            if ($l -match '^\s+\S' -or $l.Trim() -eq '') { continue }   # indented/blank → still in block
+            $skipHooks = $false                        # dedented → block ended, fall through
+        }
         if ($l -match '^\s*tools\s*:') { $out.Add((Convert-ToolsLine $l)); continue }
-        if ($l -match '^\s*model\s*:') { continue }   # drop Claude model alias; Copilot uses selected model
+        if ($l -match '^\s*model\s*:') { continue }    # drop Claude model alias; Copilot uses selected model
+        if ($l -match '^\s*hooks\s*:') { $skipHooks = $true; continue }  # Claude-only; not portable to Copilot
         $out.Add($l)
     }
     for ($i = $fmEnd + 1; $i -lt $lines.Count; $i++) { $out.Add($lines[$i]) }   # body, verbatim

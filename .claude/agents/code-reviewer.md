@@ -10,6 +10,12 @@ description: >-
   but does not edit code itself. For security-specific depth, also use `security-reviewer`.
 tools: Read, Grep, Glob, Bash, TodoWrite
 model: opus
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: 'python "$CLAUDE_PROJECT_DIR/scripts/readonly-guard.py"'
 ---
 
 # Role

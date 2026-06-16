@@ -22,10 +22,10 @@ gh_skills="$root/.github/skills"
 # Map Claude tool names -> Copilot tool/toolset names, preserving read-only vs. write intent.
 translate_tools() {
     local line="$1"
-    local out="'search', 'usages'"                                   # read/understand: always
+    local out="'search'"                                             # read/search codebase (toolset)
     if [[ "$line" =~ (Write|Edit) ]];        then out+=", 'edit'"; fi         # file writes
     if [[ "$line" =~ Bash ]];                then out+=", 'runCommands'"; fi  # terminal
-    if [[ "$line" =~ (WebFetch|WebSearch) ]];then out+=", 'fetch'"; fi        # web
+    if [[ "$line" =~ (WebFetch|WebSearch) ]];then out+=", 'web/fetch'"; fi    # web
     printf 'tools: [%s]\n' "$out"
 }
 
@@ -37,14 +37,18 @@ for f in "$claude_agents"/*.md; do
     name="$(basename "$f" .md)"
     dest="$gh_agents/$name.agent.md"
     : > "$dest"
-    fm_seen=0
+    fm_seen=0; skip_hooks=0
     while IFS= read -r line || [[ -n "$line" ]]; do
         if [[ "$line" == '---' && $fm_seen -lt 2 ]]; then
-            fm_seen=$((fm_seen + 1)); printf '%s\n' "$line" >> "$dest"; continue
+            fm_seen=$((fm_seen + 1)); skip_hooks=0; printf '%s\n' "$line" >> "$dest"; continue
         fi
         if [[ $fm_seen -eq 1 ]]; then                                # inside frontmatter
+            if [[ $skip_hooks -eq 1 ]]; then                         # inside a Claude-only hooks: block
+                if [[ "$line" =~ ^[[:space:]]+[^[:space:]] || -z "${line// }" ]]; then continue; else skip_hooks=0; fi
+            fi
             if [[ "$line" =~ ^[[:space:]]*tools[[:space:]]*: ]]; then translate_tools "$line" >> "$dest"; continue; fi
             if [[ "$line" =~ ^[[:space:]]*model[[:space:]]*: ]]; then continue; fi   # drop model alias
+            if [[ "$line" =~ ^[[:space:]]*hooks[[:space:]]*: ]]; then skip_hooks=1; continue; fi  # Claude-only
         fi
         printf '%s\n' "$line" >> "$dest"
     done < "$f"
