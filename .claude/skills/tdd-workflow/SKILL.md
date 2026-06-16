@@ -1,0 +1,40 @@
+---
+name: tdd-workflow
+description: >-
+  Test-driven and regression-first workflow — write the failing test before the code, then make it
+  pass. Use when implementing a feature test-first, and ALWAYS after a bug fix (add the test that fails
+  without the fix). Covers red-green-refactor, what to test (behavior not internals), and the per-
+  language frameworks this team uses (pytest, Pester, bats).
+metadata:
+  domain: practice
+---
+
+# Test-driven & regression-first workflow
+
+A test that can't fail is worthless. Every test here must be able to go **red** for a real reason.
+
+## Red → green → refactor
+1. **Red.** Write a test that states the desired behavior and **run it — confirm it fails** (and fails
+   for the right reason, not a typo/import error).
+2. **Green.** Write the minimum code to make it pass. Run the suite.
+3. **Refactor.** Clean up with the test as your safety net; keep it green. See `safe-refactor`.
+
+## Regression-first for bug fixes (non-negotiable)
+Before fixing a bug, write the test that **reproduces it** and **fails on the current (broken) code**.
+Then fix the code and watch it go green. This proves the bug is real and guards against its return.
+
+## What to test
+- **Behavior and contracts**, not implementation details — so tests survive refactors.
+- Happy path, **edge cases** (empty/null/zero/negative, boundaries, large/unicode, concurrency), and
+  **error/failure paths**.
+- Inject or freeze nondeterminism (clock, randomness, network) — no flakiness, no order-dependence.
+- Prefer many fast unit tests; integration where components meet; a few e2e for critical journeys.
+
+## Frameworks (this team)
+- **Python** → `pytest` (`parametrize`, fixtures, `tmp_path`, `monkeypatch`, `freezegun`). See `python-craft`.
+- **PowerShell** → `Pester` (`Describe/Context/It`, `Mock`, `Should`). See `powershell-craft`.
+- **Bash** → `bats` or an assert harness; assert exit codes + stdout/stderr. See `bash-craft`.
+
+## Done
+- New behavior is covered; the bug-fix test fails without the fix.
+- Suite is green and fast; you state coverage delta and any gaps you left on purpose (and why).
