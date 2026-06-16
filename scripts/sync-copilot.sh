@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+#
+# Generate VS Code / GitHub Copilot native artifacts from the canonical .claude/ definitions.
+#
+# Both Claude Code and VS Code/Copilot read `.claude/agents` and `.claude/skills` directly, so the fleet
+# already works in Copilot with no build step. Run this only when you want Copilot-NATIVE files:
+#   * .github/agents/<name>.agent.md  — from .claude/agents/<name>.md, with `tools:` translated to
+#     Copilot's vocabulary and the Claude-only `model:` alias dropped. Body copied verbatim.
+#   * .github/skills/                 — a mirror of .claude/skills/ (identical SKILL.md open standard).
+#
+# The tool translation is approximate; authoritative guardrails live in each agent body (both tools
+# honor them). Idempotent. From repo root: bash scripts/sync-copilot.sh
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+root="$(cd "$here/.." && pwd)"
+claude_agents="$root/.claude/agents"
+claude_skills="$root/.claude/skills"
+gh_agents="$root/.github/agents"
+gh_skills="$root/.github/skills"
+
+# Map Claude tool names -> Copilot tool/toolset names, preserving read-only vs. write intent.
+translate_tools() {
+    local line="$1"
+    local out="'search'"                                             # read/search codebase (toolset)
+    if [[ "$line" =~ (Write|Edit) ]];        then out+=", 'edit'"; fi         # file writes
+    if [[ "$line" =~ Bash ]];                then out+=", 'runCommands'"; fi  # terminal
+    if [[ "$line" =~ (WebFetch|WebSearch) ]];then out+=", 'web/fetch'"; fi    # web
+    printf 'tools: [%s]\n' "$out"
+}
+
+mkdir -p "$gh_agents"
+agent_count=0
+
+shopt -s nullglob
+for f in "$claude_agents"/*.md; do
+    name="$(basename "$f" .md)"
+    dest="$gh_agents/$name.agent.md"
+    : > "$dest"
+    fm_seen=0; skip_hooks=0
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$line" == '---' && $fm_seen -lt 2 ]]; then
+            fm_seen=$((fm_seen + 1)); skip_hooks=0; printf '%s\n' "$line" >> "$dest"; continue
+        fi
+        if [[ $fm_seen -eq 1 ]]; then                                # inside frontmatter
+            if [[ $skip_hooks -eq 1 ]]; then                         # inside a Claude-only hooks: block
+                if [[ "$line" =~ ^[[:space:]]+[^[:space:]] || -z "${line// }" ]]; then continue; else skip_hooks=0; fi
+            fi
+            if [[ "$line" =~ ^[[:space:]]*tools[[:space:]]*: ]]; then translate_tools "$line" >> "$dest"; continue; fi
+            if [[ "$line" =~ ^[[:space:]]*model[[:space:]]*: ]]; then continue; fi   # drop model alias
+            if [[ "$line" =~ ^[[:space:]]*hooks[[:space:]]*: ]]; then skip_hooks=1; continue; fi  # Claude-only
+        fi
+        printf '%s\n' "$line" >> "$dest"
+    done < "$f"
+    agent_count=$((agent_count + 1))
+done
+
+# Mirror skills (clean first to drop anything deleted upstream).
+rm -rf "$gh_skills"
+mkdir -p "$gh_skills"
+cp -R "$claude_skills/." "$gh_skills/"
+skill_count="$(find "$gh_skills" -name SKILL.md -type f | wc -l | tr -d ' ')"
+
+echo "Generated $agent_count Copilot agents -> .github/agents/"
+echo "Mirrored  $skill_count skills         -> .github/skills/"
+echo "Done. (Both tools also read .claude/ directly, so this is optional polish.)"
