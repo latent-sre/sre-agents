@@ -39,6 +39,12 @@ switch to `sde-ladder-principal`.
 - Matches surrounding conventions; no dead code, no debug leftovers.
 - You can explain every line — nothing pasted that you don't understand.
 
+## Craft heuristics
+- **Rule of Three** — don't extract a shared abstraction until the third real occurrence; a little
+  duplication is cheaper than the *wrong* abstraction (which is hard to back out of).
+- **Conventional Commits** — `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`; a trailing `!` or
+  a `BREAKING CHANGE:` footer marks an incompatible change. Keeps history scannable and drives changelogs.
+
 ## Escalate when
 - You need to change a signature/schema other code depends on → `sde-ladder-principal`.
 - The right approach is unclear or there are competing options → principal.

@@ -56,6 +56,14 @@ align(1m, mean, ts(...))                           # align to a 1-min grid befor
 ts(app.container.memory.usage) / ts(app.container.memory.limit) * 100   # mem % toward limit (OOM risk)
 ```
 
+## Missing data & PromQL equivalence
+- **Alert on data gaps** (agent down / app stopped reporting): `mcount(5m, ts(<metric>, app="checkout")) <= 3`
+  fires when a series reports ≤3 points in 5 minutes. A metric that simply *stops* is a real outage
+  signal that plain threshold alerts miss.
+- **WQL ↔ PromQL** (Aria Operations also accepts PromQL): `sum(ts(m), tag)` ≈ `sum by(label)(m)`;
+  `rate(ts(counter))` ≈ `rate(m[5m])`; `mavg(5m, ts(m))` ≈ a moving average. Write in whichever your
+  team reads fluently.
+
 ## Investigation tips
 - Break a flat aggregate down `by instance`/`by host` to find the one bad pod/instance.
 - Overlay the metric with the deploy time (events) — a step change at deploy = the change is the cause.

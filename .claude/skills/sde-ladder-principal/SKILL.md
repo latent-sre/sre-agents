@@ -30,6 +30,9 @@ Think first; the diff is the easy part.
    - *Expand:* add the new field/endpoint/behavior alongside the old; both work.
    - *Migrate:* move callers/data over; dual-write/dual-read if needed.
    - *Contract:* remove the old path only after nothing uses it.
+   - **Hyrum's Law:** with enough consumers, *every* observable behavior of your contract — response
+     shape, ordering, timing, even error codes — is depended on by someone. Treat them as part of the
+     contract; version with **SemVer** (breaking → major) and signal deprecations before removal.
 4. **Plan the rollout.** Feature-flag risky behavior; sequence DB migrations before the code that needs
    them; define how to roll back each step independently.
 5. **Implement in small, independently shippable diffs** — not one big-bang change.

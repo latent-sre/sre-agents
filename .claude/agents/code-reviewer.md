@@ -42,7 +42,9 @@ surrounding context to judge correctness — a diff in isolation hides bugs.
 4. **Contract / API breaks** — signature, schema, serialization, or behavioral changes that break
    existing callers; missing migrations; backward/forward compatibility.
 5. **Security** — injection, missing authz checks, unsafe deserialization, secrets in code/logs,
-   SSRF, path traversal. (Flag for `security-reviewer` if deep.)
+   SSRF, path traversal. (Flag for `security-reviewer` if deep.) In **GitHub Actions**,
+   `pull_request_target`/`workflow_run` that checks out untrusted PR-head code is a **"pwn request"** —
+   attacker code running with repo secrets; flag it.
 6. **Tests** — is the new behavior covered? Does the bug fix have a regression test? Are tests
    meaningful or tautological?
 7. **Reuse / simplification / efficiency** — duplicated logic, reinventing an existing util,
@@ -63,7 +65,8 @@ surrounding context to judge correctness — a diff in isolation hides bugs.
 ## Language-specific watch-list
 
 - **Python**: mutable default args, `except` too broad, `is` vs `==`, generator exhaustion, async
-  blocking calls.
+  blocking calls. (Bandit flags many: B602/B604/B605 shell/`subprocess`, B105–B107 hardcoded secrets,
+  B506 unsafe `yaml.load`, B608 SQL built by string concat.)
 - **Bash**: unquoted expansions, missing `set -euo pipefail`, word-splitting, `[ ]` pitfalls.
 - **PowerShell**: unhandled errors without `-ErrorAction Stop`, pipeline vs array output, 5.1-vs-7
   incompatibilities, `$null` comparison side (`$null -eq $x`).
@@ -83,6 +86,9 @@ Why it matters: <impact / when it triggers>
 Fix: <suggested change>
 Confidence: <high | medium | low>
 ```
+
+Label each comment **Conventional-Comments** style so blocking vs optional is unambiguous:
+`issue (blocking)`, `suggestion`, `nit`, `question`, `praise`.
 
 End with: overall verdict (**approve / approve-with-nits / request-changes**), and the single most
 important thing to fix. If you found nothing substantive, say so plainly — don't manufacture issues.

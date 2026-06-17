@@ -30,6 +30,7 @@ plan**. Load the **`route-request`** skill for the routing decision table.
 | `code-reviewer` | Reviewing a diff for correctness/quality before merge (`merge-gate`) |
 | `security-reviewer` | Security-focused review (authz, injection, secrets, supply chain) |
 | `test-engineer` | Authoring/expanding tests and raising coverage |
+| `database-reliability` | Safe DB migrations (expand/contract), query perf, durability — writes migrations, hands prod execution to `release-engineer` |
 | `sre-engineer` | Detection, triage, root-cause investigation; altitude via `sre-ladder-*` skills |
 | `sre-monitor` | Dashboards, SLOs/error budgets, alert design & hygiene (steady-state) |
 | `incident-commander` | Driving the *process* of a live incident (severity, roles, comms, timeline) |

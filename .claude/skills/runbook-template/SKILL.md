@@ -23,6 +23,9 @@ stressed, low-context, and in a hurry.
 - **Trigger-anchored** — starts from a concrete trigger (this alert/symptom/task), ends at "resolved or
   escalate to <whom>."
 - **Current or deleted** — date it, own it, prune what's wrong. A wrong runbook is worse than none.
+- **Machine-linkable frontmatter** — give each runbook YAML frontmatter (`alert_names`, `owner`,
+  `severity`, `last_verified`, `version`) so alerts can auto-link to it and a linter can flag any not
+  verified in ~90 days.
 - **Verify commands before publishing** — run read-only ones to confirm syntax; never run destructive
   steps to "test" them; mark anything unverified.
 
@@ -47,3 +50,5 @@ Owner · Last reviewed · Severity
 ## Tip
 Link every paging alert to its runbook (`sre-monitor`). The best runbook step is sometimes "run this
 script" — if a step is fully mechanical, recommend automating it (`sde-engineer`/`release-engineer`).
+Data-drive the alert→runbook link in Splunk with a lookup: `... | lookup instructions_lookup alert_type
+OUTPUT runbook_url` so saved searches surface the right runbook automatically.

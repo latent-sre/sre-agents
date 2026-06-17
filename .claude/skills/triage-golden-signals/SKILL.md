@@ -25,6 +25,17 @@ Before hypotheses, characterize the symptom with a standard signal set. Pull the
 - **RED** (per request-driven service): **R**ate, **E**rrors, **D**uration. Best for app endpoints.
 - **USE** (per resource): **U**tilization, **S**aturation, **E**rrors. Best for memory/CPU/pools/queues.
 
+## Ask "what changed?" first
+Most incidents follow a change. Before deep hypotheses, line up **what changed** against **when it broke**:
+- recent **deploy / release** (`cf events`, the release pipeline, `git log`)
+- **config or feature-flag** flip
+- **PCF platform event** (cell evacuation, quota, cert rotation — `cf events`)
+- **traffic shift** (spike, new client, retry/batch job)
+- **dependency** incident or vendor status-page event
+- **cert / credential / secret expiry** (failures starting at a round timestamp)
+- **DB migration** or data change
+A change whose timestamp matches the impact-start is your prime suspect → hand to `sre-ladder-investigator`.
+
 ## How to read them
 1. **Errors + latency up together** → app or a downstream dependency is failing/slow.
 2. **Saturation up, then latency, then errors** → resource exhaustion (memory/threads/pool/queue) —

@@ -1,6 +1,12 @@
-# Runbook: <concise title / the alert this answers>
+---
+alert_names: [<exact alert name(s) that link here>]
+owner: <team/role>
+severity: <SEV-n / page | ticket>
+last_verified: <YYYY-MM-DD>
+version: 1
+---
 
-> **Owner:** <team/role>  ·  **Last reviewed:** <YYYY-MM-DD>  ·  **Severity:** <SEV-n / page|ticket>
+# Runbook: <concise title / the alert this answers>
 
 ## Purpose & scope
 What this runbook handles: <…>
@@ -39,8 +45,12 @@ How to undo each change above (reverse order): <exact steps>
 Safe-abort: <how to stop mid-procedure without making it worse>
 
 ## Escalation
-- Escalate to <role/team> if <condition / time elapsed>.
-- Hand over (handoff-protocol): symptom, what you tried, current state, what you did NOT touch.
+| When (condition / time elapsed) | Escalate to | How to reach |
+|---|---|---|
+| <e.g. not resolved in 15 min, or blast radius growing> | <role/team> | <pager / channel> |
+| <platform-side signal: many apps / failing cells> | platform team | <…> |
+
+Hand over (handoff-protocol): symptom, what you tried, current state, what you did NOT touch.
 
 ## References
 - Related runbooks: <…>
