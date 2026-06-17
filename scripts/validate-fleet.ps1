@@ -99,6 +99,13 @@ foreach ($a in $agentFiles) {
     if (-not ($fm | Where-Object { $_ -match '^\s*description\s*:' })) {
         $issues.Add("agent '$($a.Name)': missing description")
     }
+    $tools = Get-Field $fm 'tools'
+    if ($tools -and $tools -match '\bBash\b' -and $tools -notmatch '\b(Write|Edit)\b') {
+        $body = Get-Content -LiteralPath $a.FullName -Encoding UTF8 -Raw
+        if ($body -notmatch 'readonly-guard\.py') {
+            $issues.Add("agent '$($a.Name)': read-only Bash agent is missing readonly-guard.py hook")
+        }
+    }
 }
 
 Write-Host "Validated $skillCount skills and $($agentFiles.Count) agents."

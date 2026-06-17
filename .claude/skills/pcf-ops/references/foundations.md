@@ -25,7 +25,8 @@ Concrete values for the `pcf-ops` and `pcf-deploy` skills. The agent loads this 
 ## Handy read-only one-liners (fill in real names)
 ```bash
 cf target                                  # confirm foundation/org/space first
-.claude/skills/pcf-ops/scripts/triage.sh <app>   # one-shot read-only triage
+.claude/skills/pcf-ops/scripts/triage.sh <app>             # Bash one-shot read-only triage
+pwsh .claude/skills/pcf-ops/scripts/triage.ps1 -App <app>  # PowerShell one-shot read-only triage
 cf apps                                     # everything in the current space
 cf events <app> | head -n 25                # what changed
 ```

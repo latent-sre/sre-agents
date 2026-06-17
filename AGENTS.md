@@ -97,7 +97,8 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 
 Gates are portable Markdown checklists by default. In Claude Code they can be **hardened with hooks**
 (e.g. block the `pcf-deploy` skill unless `release-gate` passed) — see
-[`scripts/`](scripts/) and CLAUDE.md. Copilot enforcement is via the agent body + tool scoping.
+[`scripts/`](scripts/) and CLAUDE.md. Copilot enforcement is via the agent body + generated tool scoping
+(read-only generated agents do not receive terminal access).
 
 ### Typical flows
 - **Ship a feature:** `sde-engineer` → `code-reviewer` (+`security-reviewer` if sensitive) →
@@ -142,15 +143,16 @@ bash scripts/sync-copilot.sh       # macOS / Linux
 
 The only non-portable seam is the agent `tools:` field (Claude uses `Read, Grep`; Copilot uses arrays
 like `['edit','search/codebase']`). Behavioral guardrails are written in each agent body (honored by
-both); the generator translates `tools` for Copilot.
+both); the generator translates `tools` for Copilot and removes terminal access from read-only agents
+because Claude hooks are not portable.
 
 ## Validate & operate
 
 - **Validate the fleet:** `pwsh scripts/validate-fleet.ps1` checks every skill/agent against the
   Agent Skills spec (names, descriptions, referenced files). Run it before committing or in CI.
-- **Ready-made runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency
-  timeout), authored with the `runbook-template` skill.
-- **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` (read-only triage),
+- **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency
+  timeout), authored with the `runbook-template` skill; fill placeholders before treating them as live.
+- **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),
   `slo-error-budget/scripts/error_budget.py` (budget/burn calculator), and `references/` fill-in files
   (`pcf-ops`, `splunk-triage`, `wavefront-queries`) for your concrete index/metric/foundation values.
 

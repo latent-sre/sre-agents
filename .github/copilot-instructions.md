@@ -13,6 +13,8 @@ design rationale in [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md).
 
 ## Using the fleet
 - Pick a custom agent from the Chat agents dropdown; skills load automatically or via `/`.
+- For stricter read-only tool scoping, generate and use `.github/agents/*.agent.md`; generated read-only
+  agents do not receive terminal access because Claude hooks are not portable to Copilot.
 - Seniority/experience is carried by **ladder skills** (`sde-ladder-*`, `sre-ladder-*`), not separate agents.
 - Gates: clear `merge-gate` before merge; `release-gate` + `production-change-gate` before any prod change.
 

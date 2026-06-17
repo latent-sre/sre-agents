@@ -16,7 +16,8 @@ shows instances cycling. Dashboard: `<grafana/wavefront link>`.
 - Access to Wavefront and Splunk for `<APP>`.
 
 ## Triage / first checks (read-only)
-1. One-shot summary: `.claude/skills/pcf-ops/scripts/triage.sh <APP>`
+1. One-shot summary: `.claude/skills/pcf-ops/scripts/triage.sh <APP>` or
+   `pwsh .claude/skills/pcf-ops/scripts/triage.ps1 -App <APP>`
 2. Confirm OOM specifically:
    ```bash
    cf events <APP> | head -n 25      # look for: crashed ... reason: "OOMKilled" / exit status

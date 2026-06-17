@@ -8,8 +8,9 @@
 #     Copilot's vocabulary and the Claude-only `model:` alias dropped. Body copied verbatim.
 #   * .github/skills/                 — a mirror of .claude/skills/ (identical SKILL.md open standard).
 #
-# The tool translation is approximate; authoritative guardrails live in each agent body (both tools
-# honor them). Idempotent. From repo root: bash scripts/sync-copilot.sh
+# The tool translation is conservative. Claude-only hooks are not portable to Copilot, so generated
+# read-only agents do not receive runCommands; writer agents keep terminal access. Idempotent.
+# From repo root: bash scripts/sync-copilot.sh
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,8 +24,10 @@ gh_skills="$root/.github/skills"
 translate_tools() {
     local line="$1"
     local out="'search'"                                             # read/search codebase (toolset)
-    if [[ "$line" =~ (Write|Edit) ]];        then out+=", 'edit'"; fi         # file writes
-    if [[ "$line" =~ Bash ]];                then out+=", 'runCommands'"; fi  # terminal
+    local can_write=0
+    if [[ "$line" =~ (Write|Edit) ]];        then out+=", 'edit'"; can_write=1; fi  # file writes
+    # Claude-only hooks are stripped from Copilot output, so read-only agents do not get terminal access.
+    if [[ $can_write -eq 1 && "$line" =~ Bash ]]; then out+=", 'runCommands'"; fi   # terminal
     if [[ "$line" =~ (WebFetch|WebSearch) ]];then out+=", 'web/fetch'"; fi    # web
     printf 'tools: [%s]\n' "$out"
 }

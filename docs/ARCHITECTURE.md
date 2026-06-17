@@ -11,9 +11,10 @@ doc explains *why* it's shaped this way.
    sprawl and no need to guess the level before routing.
 3. **Graded autonomy (propose → execute).** Read-only agents *recommend*; writer agents produce diffs;
    **production-facing execution always needs a human + the `production-change-gate`.**
-4. **Least privilege, enforced.** Read-only agents have no Edit/Write; the ones that keep Bash for
+4. **Least privilege, enforced.** Read-only agents have no Edit/Write; in Claude Code, the ones that keep Bash for
    observation run a `PreToolUse` guard ([../scripts/readonly-guard.py](../scripts/readonly-guard.py))
-   that blocks state-changing shell commands. "Read-only" is enforced, not just promised.
+   that blocks state-changing shell commands. Generated Copilot agents omit terminal access for read-only
+   roles because Claude hooks are not portable.
 5. **Portable by construction.** One source under `.claude/`, read by Claude Code *and* VS Code/Copilot;
    `AGENTS.md` for other tools; a generator emits Copilot-native `.github/` files.
 6. **Stack-fit over generic.** Everything targets on-prem + PCF/TAS (no k8s), Python/Bash/PowerShell, and
