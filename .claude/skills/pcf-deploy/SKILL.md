@@ -51,10 +51,11 @@ Rollback = re-map the prod route to `checkout-blue` and unmap green (see `rollba
 ## Built-in strategies (simpler, for lower-risk changes)
 ```bash
 cf push checkout -f manifest.yml --strategy rolling   # rolling: replaces instances incrementally
-cf push checkout -f manifest.yml --strategy canary    # canary: small % first, then `cf continue-deployment`
+cf push checkout -f manifest.yml --strategy canary    # canary (cf CLI v8.8.0+/CAPI V3.173.0+): small % first, then `cf continue-deployment`
 cf cancel-deployment checkout                         # abort an in-flight rolling/canary deploy
 ```
-With app revisions enabled, `cf rollback checkout --version <n>` reverts to a prior droplet+config.
+With app revisions enabled, `cf rollback checkout --version <n>` reverts to a prior droplet+config
+(revisions/rollback are GA in cf CLI v8.10.0+; older v8.x marks them experimental).
 
 ## Config changes & scaling
 ```bash

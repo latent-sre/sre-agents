@@ -6,7 +6,14 @@ Wired into the read-only agents that still need Bash for observation
 `hooks: PreToolUse` frontmatter. Claude Code pipes the pending tool call as JSON on
 stdin; this denies Bash commands that CHANGE STATE (prod or repo) so "read-only" is
 enforced, not merely promised. Read-only triage commands (cf logs/app/events, git
-log/diff/status, grep, curl GET, etc.) pass through untouched.
+log/diff/status, grep, curl GET, redirect to /dev/null, etc.) pass through untouched.
+
+Scope: this is a guardrail for a COOPERATIVE agent, not a sandbox. It blocks the common
+state-changing commands — cf writes, git writes, file/process/service mutations, package
+installs, HTTP writes, output redirection to a file, tee, cp, and in-place sed/perl. It
+cannot stop a determined bypass through an arbitrary interpreter (python -c, bash -c,
+eval, xargs sh, …); pair it with OS-level least-privilege credentials for defense in depth.
+Covered by scripts/test_readonly_guard.py (pure-stdlib, runs offline).
 
 Decision is returned as a permissionDecision JSON on stdout with exit 0 (the documented
 non-error path). See https://code.claude.com/docs/en/hooks
@@ -27,11 +34,18 @@ _DENY_PATTERNS = [
     r"rollback|create-app|delete-app|copy-source|set-health-check|bind-route-service|"
     r"unbind-route-service)\b",
     r"\bcf\s+curl\b.*-X\s*(POST|PUT|DELETE|PATCH)",
-    # git writes: history, remote, or worktree mutations
-    r"\bgit\s+(push|commit|reset|rebase|merge|cherry-pick|revert|clean|am|apply|restore|"
-    r"checkout\s+--|branch\s+-[dD]|tag\s+-d|stash\s+(drop|clear|pop))\b",
+    # git writes: history, remote, index, or worktree mutations
+    r"\bgit\s+(add|mv|rm|push|commit|reset|rebase|merge|cherry-pick|revert|clean|am|apply|"
+    r"restore|checkout|switch|pull|stash|gc|prune|init|branch\s+-[dDmM]|tag\s+-d|"
+    r"remote\s+(add|rm|remove|set-url))\b",
     # filesystem / process / service mutations
-    r"\b(rm|rmdir|mv|dd|truncate|shred|chmod|chown|ln|mkfs)\b",
+    r"\b(rm|rmdir|mv|cp|rsync|dd|truncate|shred|chmod|chown|chgrp|ln|mkfs)\b",
+    # in-place file editors
+    r"\bsed\s+(-[^\s]*i|--in-place)",
+    r"\bperl\s+-[^\s]*i",
+    # shell output redirection to a file (allow >/dev/null and fd-dup like 2>&1), and tee
+    r">>?\s*(?!&|/dev/null)[~./$A-Za-z0-9_-]",
+    r"\btee\b",
     r"\b(kill|pkill|killall)\b",
     r"\b(systemctl|service)\s+(start|stop|restart|reload|enable|disable)\b",
     r"\b(shutdown|reboot|halt|poweroff)\b",

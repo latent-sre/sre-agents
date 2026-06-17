@@ -41,8 +41,8 @@ bash scripts/sync-copilot.sh      # macOS / Linux
 AGENTS.md                  cross-tool source of truth (roster, conventions, routing, portability)
 CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude specifics)
 .claude/
-  agents/                  11 agents — read by Claude Code AND VS Code/Copilot
-  skills/                  30 skills (SKILL.md open standard) — read by both tools
+  agents/                  12 agents — read by Claude Code AND VS Code/Copilot
+  skills/                  32 skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops, slo-error-budget) and references/ fill-ins
 runbooks/                  ready-made on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 scripts/
@@ -57,20 +57,21 @@ scripts/
 
 **Agents (who):** `coordinator` · `sde-engineer` · `code-reviewer` · `security-reviewer` ·
 `test-engineer` · `sre-engineer` · `sre-monitor` · `incident-commander` · `release-engineer` ·
-`runbook-author` · `researcher`.
+`runbook-author` · `database-reliability` · `researcher`.
 
 **Seniority/experience is carried by skills, not separate agents** — one `sde-engineer` and one
 `sre-engineer` scale altitude by loading a ladder skill:
 - SDE: `sde-ladder-senior` → `sde-ladder-principal` → `sde-ladder-distinguished`
 - SRE: `sre-ladder-responder` (new hire) → `sre-ladder-investigator` (experienced) → `sre-ladder-elite`
 
-**Skills (how) — 30 total:**
+**Skills (how) — 32 total:**
 - *Ladders* (6) · *Craft* (`python-craft`, `bash-craft`, `powershell-craft`, `tdd-workflow`, `safe-refactor`)
 - *Observe/investigate (your stack)*: `triage-golden-signals`, `pcf-ops`, `splunk-triage`,
-  `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`, `thousandeyes-network`, `slo-error-budget`
+  `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`, `thousandeyes-network`, `slo-error-budget`,
+  `instrument-service`
 - *Ship (your stack)*: `github-actions-ci`, `bamboo-to-actions-migration`, `pcf-deploy`, `rollback-mitigation`
 - *Selectors & gates*: `route-request`, `merge-gate`, `release-gate`, `production-change-gate`
-- *Docs & conventions*: `runbook-template`, `blameless-postmortem`, `handoff-protocol`
+- *Docs & conventions*: `runbook-template`, `blameless-postmortem`, `handoff-protocol`, `adr-template`
 
 ## Routing & gates
 

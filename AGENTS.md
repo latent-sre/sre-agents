@@ -37,6 +37,7 @@ to its lane on demand.
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | — |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
+| [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `safe-refactor`, `production-change-gate` |
 | [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder-*`, `triage-golden-signals`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
 | [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `blameless-postmortem` |
@@ -73,13 +74,14 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 **Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `tdd-workflow` · `safe-refactor`
 
 **Observe & investigate (your stack):** `triage-golden-signals` · `pcf-ops` · `splunk-triage` ·
-`wavefront-queries` · `grafana-dashboards` · `moogsoft-correlation` · `thousandeyes-network` · `slo-error-budget`
+`wavefront-queries` · `grafana-dashboards` · `moogsoft-correlation` · `thousandeyes-network` ·
+`slo-error-budget` · `instrument-service` *(emit telemetry: RED/USE, OTel, cardinality)*
 
 **Ship (your stack):** `github-actions-ci` · `bamboo-to-actions-migration` · `pcf-deploy` · `rollback-mitigation`
 
 **Selectors & gates:** `route-request` · `merge-gate` · `release-gate` · `production-change-gate`
 
-**Docs & conventions:** `runbook-template` · `blameless-postmortem` · `handoff-protocol`
+**Docs & conventions:** `runbook-template` · `blameless-postmortem` · `handoff-protocol` · `adr-template` *(ADR/RFC decision capture)*
 
 ## Routing & gates (selectors that control the workflow)
 

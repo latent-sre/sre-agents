@@ -24,13 +24,15 @@ ts(<metric.name>, <source/tag filters>)
 ts(app.http.requests.latency, app="checkout" and env="prod")
 ```
 - Filter by point tags: `and`, `or`, `not`; wildcard with `*` (`app="checkout-*"`).
-- Aggregate across series: `sum(...)`, `avg(...)`, `max(...)`, `count(...)`, optionally `by` a tag:
-  `sum(ts(app.http.requests.count), app)`.
+- Aggregate across series: `sum(...)`, `avg(...)`, `max(...)`, `count(...)`, optionally grouping by a
+  tag as a parameter: `sum(ts(app.http.requests.count), app)` (equivalently `sum(ts(...) by (app))`).
+  Grouping is a parameter **inside** the function — a trailing `... by instance` after the closing
+  paren is not valid WQL.
 
 ## Percentile latency
 ```
-percentile(95, ts(app.http.requests.latency, app="checkout"))     # p95 across instances
-percentile(99, ts(...)) and group by instance to find one bad instance
+percentile(95, ts(app.http.requests.latency, app="checkout"))                 # p95 across instances
+percentile(99, ts(app.http.requests.latency, app="checkout"), instance)       # per-instance p99 (find the bad one)
 ```
 
 ## Error ratio (the SLI you usually want)
@@ -55,6 +57,14 @@ align(1m, mean, ts(...))                           # align to a 1-min grid befor
 ```
 ts(app.container.memory.usage) / ts(app.container.memory.limit) * 100   # mem % toward limit (OOM risk)
 ```
+
+## Missing data & PromQL equivalence
+- **Alert on data gaps** (agent down / app stopped reporting): `mcount(5m, ts(<metric>, app="checkout")) <= 3`
+  fires when a series reports ≤3 points in 5 minutes. A metric that simply *stops* is a real outage
+  signal that plain threshold alerts miss.
+- **WQL ↔ PromQL** (Aria Operations also accepts PromQL): `sum(ts(m), tag)` ≈ `sum by(label)(m)`;
+  `rate(ts(counter))` ≈ `rate(m[5m])`; `mavg(5m, ts(m))` ≈ a moving average. Write in whichever your
+  team reads fluently.
 
 ## Investigation tips
 - Break a flat aggregate down `by instance`/`by host` to find the one bad pod/instance.

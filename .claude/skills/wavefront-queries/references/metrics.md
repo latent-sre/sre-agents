@@ -25,6 +25,6 @@ Concrete metric names, point tags, and dashboards for the `wavefront-queries` sk
 ```
 # error % over time
 100 * sum(ts(<app.http.requests.errors>, app="<app>")) / sum(ts(<app.http.requests.count>, app="<app>"))
-# p95 latency, by instance (find the bad one)
-percentile(95, ts(<app.http.requests.latency>, app="<app>")) by instance
+# p95 latency, per instance (find the bad one) — grouping tag is a parameter, not a trailing `by`
+percentile(95, ts(<app.http.requests.latency>, app="<app>"), instance)
 ```

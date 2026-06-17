@@ -40,8 +40,8 @@ jobs:
 ## Security (do this every time)
 - **Least-privilege token:** set `permissions:` explicitly; default to `contents: read` and grant only
   what's needed. Avoid the broad default token.
-- **OIDC over long-lived secrets:** `permissions: { id-token: write }` to mint short-lived cloud/CredHub
-  creds at run time instead of storing static tokens.
+- **OIDC over long-lived secrets:** `permissions: { id-token: write }` to mint short-lived cloud creds
+  at run time instead of storing static tokens (`id-token: write` only grants requesting the OIDC token).
 - **Pin third-party actions by full commit SHA** (not a moving tag) — supply-chain safety.
 - Secrets via `secrets:` / environment secrets — never echo them; mask anything sensitive.
 
@@ -74,7 +74,7 @@ deploy-prod:
       with: { name: app-build }
     - name: Install cf CLI v8
       run: |
-        curl -fsSL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=8&source=github" -o cf8.tgz
+        curl -fsSL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github" -o cf8.tgz
         tar -xzf cf8.tgz && sudo mv cf8 /usr/local/bin/cf && cf version
     - name: Deploy
       env:                              # from environment secrets — not echoed, not in ps
@@ -89,8 +89,9 @@ deploy-prod:
         cf target -o "$CF_ORG" -s "$CF_SPACE"
         cf push -f manifest.yml --strategy rolling   # or blue-green via route remap — see pcf-deploy
 ```
-Prefer a CI **service account** + `cf auth` from environment secrets; better still, OIDC→CredHub if your
-foundation supports it. Always clear `release-gate` + `production-change-gate` first.
+Prefer a CI **service account** + `cf auth` from environment secrets. For cloud targets, OIDC to your
+cloud IdP avoids long-lived tokens (note: GitHub-OIDC→CredHub is **not** a turnkey integration — CredHub
+authenticates via UAA, not GitHub OIDC JWTs). Always clear `release-gate` + `production-change-gate` first.
 
 ## Tips
 - Validate locally where possible (`act`, or `gh workflow run` + `gh run watch`).
