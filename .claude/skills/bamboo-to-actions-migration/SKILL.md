@@ -45,6 +45,33 @@ is trusted, then retire the Bamboo plan.
 6. **Run in parallel.** Trigger both pipelines on the same commits; diff outputs/artifacts until Actions
    matches Bamboo. Then flip the source of truth and disable the Bamboo trigger.
 
+## Use the GitHub Actions Importer (don't hand-port blindly)
+The `gh actions-importer` extension converts Bamboo automatically — treat its output as a **draft**, not
+a finished workflow.
+```bash
+gh extension install github/gh-actions-importer
+gh actions-importer audit    bamboo --output-dir tmp/audit       # inventory + % auto-convertible
+gh actions-importer forecast bamboo --output-dir tmp/forecast    # runner-minute capacity planning
+gh actions-importer dry-run  bamboo build --plan-slug PROJ-PLAN --output-dir tmp/dry-run
+gh actions-importer migrate  bamboo build --plan-slug PROJ-PLAN --target-url <repo-url> --output-dir tmp/migrate
+# deployment projects migrate SEPARATELY and LAST:
+gh actions-importer dry-run  bamboo deployment --deployment-project-id <id> --output-dir tmp/dry-run
+```
+Prereqs: **Bamboo 7.1.1+**, a Bamboo **PAT** with Build-Plan + Deployment-Project view rights, and a
+GitHub PAT. Migrate **build plans first, deployment projects last**.
+
+**Default variable mappings the importer applies:**
+| Bamboo | GitHub Actions |
+|---|---|
+| `bamboo.buildNumber` | `github.run_id` |
+| `bamboo.planKey` | `github.workflow` |
+| `bamboo.repository.revision.number` | `github.sha` |
+| `bamboo.repository.pr.key` | `github.event.pull_request.number` |
+
+**Importer does NOT migrate (rebuild by hand):** branch plans, plan/deployment permissions,
+notifications, release naming, and trigger *conditions* (they become comments); **secrets** must be
+re-entered as GitHub secrets. Write **custom transformers** for unknown/unsupported steps.
+
 ## Common gotchas
 - **Default-on triggers:** Bamboo polling ≠ Actions `on:` — be explicit, or you'll over/under-trigger.
 - **Working directory & checkout:** Actions starts clean each run; nothing persists between jobs unless

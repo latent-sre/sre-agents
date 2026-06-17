@@ -59,6 +59,39 @@ PCF foundations and on-prem services are usually not reachable from GitHub-hoste
 that run `cf` against a foundation. Keep them patched and least-privileged; restrict which workflows
 can use them.
 
+## Deploy to PCF from Actions (paste-ready)
+Install the cf CLI v8, auth from **environment** secrets (never as CLI args — they leak to `ps`/logs),
+target, and push. The deploy job is prod-facing → it belongs to `release-engineer` and gates on the
+`production` environment (`release-gate`).
+```yaml
+deploy-prod:
+  runs-on: [self-hosted, pcf]          # runner group with foundation network access
+  environment: production               # required reviewers approve before this runs
+  concurrency: { group: deploy-prod, cancel-in-progress: false }   # never cancel a deploy
+  steps:
+    - uses: actions/checkout@<pin-to-sha>
+    - uses: actions/download-artifact@<pin-to-sha>   # promote the SAME artifact built earlier
+      with: { name: app-build }
+    - name: Install cf CLI v8
+      run: |
+        curl -fsSL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=8&source=github" -o cf8.tgz
+        tar -xzf cf8.tgz && sudo mv cf8 /usr/local/bin/cf && cf version
+    - name: Deploy
+      env:                              # from environment secrets — not echoed, not in ps
+        CF_API: ${{ secrets.CF_API }}
+        CF_USERNAME: ${{ secrets.CF_USERNAME }}
+        CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+        CF_ORG: ${{ vars.CF_ORG }}
+        CF_SPACE: ${{ vars.CF_SPACE }}
+      run: |
+        cf api "$CF_API"
+        cf auth "$CF_USERNAME" "$CF_PASSWORD"   # creds via env, never as `cf auth user pass` args
+        cf target -o "$CF_ORG" -s "$CF_SPACE"
+        cf push -f manifest.yml --strategy rolling   # or blue-green via route remap — see pcf-deploy
+```
+Prefer a CI **service account** + `cf auth` from environment secrets; better still, OIDC→CredHub if your
+foundation supports it. Always clear `release-gate` + `production-change-gate` first.
+
 ## Tips
 - Validate locally where possible (`act`, or `gh workflow run` + `gh run watch`).
 - Reproduce a failing run from logs before editing blindly; most failures are env/permission/secret,

@@ -23,12 +23,20 @@ IFS=$'\n\t'
 ```
 - `-e` exit on error, `-u` error on unset var, `-o pipefail` catch failures mid-pipe.
 - Trap cleanup: `tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT`.
+- **`set -e` is leakier than it looks** — it's suppressed inside `if`/`while`/`&&`/`||` conditions and
+  command substitutions `$(...)`. Add `shopt -s inherit_errexit` so `-e` reaches `$(...)`, and use
+  `set -Eeuo pipefail` (the `-E`) so an `ERR` trap also fires inside functions/subshells.
+- `((i++))` **returns non-zero when the result is 0**, which under `-e` exits the script — use
+  `((i++)) || true` or `i=$((i+1))`.
 
 ## Quoting & tests (the #1 source of bugs)
 - **Quote every expansion:** `"$var"`, `"${arr[@]}"`, `"$(cmd)"`. Unquoted = word-splitting + globbing bugs.
 - Use `[[ ... ]]` not `[ ... ]`; `[[ -z "$x" ]]`, `[[ "$a" == "$b" ]]`, `[[ "$s" =~ regex ]]`.
 - Arithmetic in `(( ... ))`; integer compare with `-eq`/`-lt` inside `[[ ]]`.
 - **Never parse `ls`**; use globs or `find -print0 | while IFS= read -r -d ''`.
+- Guard destructive paths: `rm -rf "${dir:?}"/...` — the `:?` aborts if `$dir` is empty/unset (stops an
+  accidental `rm -rf /`; shellcheck SC2115).
+- Capture command output into an array with `mapfile -t arr < <(cmd)`, not `arr=($(cmd))` (SC2207).
 
 ## Structure
 - Functions + a `main "$@"`; `local` for function vars. Put `main` call at the bottom.

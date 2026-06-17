@@ -40,6 +40,24 @@ index=<app_index> error
 | sort -count                                  # which error dominates
 ```
 
+## Spot a spike vs the baseline (anomaly detection)
+`eventstats` adds an aggregate to **every** row (unlike `stats`, which collapses rows) — use it to flag
+buckets above the period's mean:
+```spl
+index=<app_index> (error OR status>=500) earliest=-24h
+| bin _time span=5m | stats count by _time
+| eventstats avg(count) as avg, stdev(count) as sd
+| where count > avg + 2*sd                      # 5-min buckets > 2σ above the day's mean
+```
+`streamstats` computes a **trailing** baseline (per row, over a moving window) — answers "is *now* worse
+than the last N points?":
+```spl
+index=<app_index> (error OR status>=500)
+| bin _time span=1m | stats count by _time
+| streamstats window=30 avg(count) as base
+| eval ratio=count/base | where ratio > 3       # current minute 3x the trailing 30-min average
+```
+
 ## Correlate one request across services (trace/correlation id)
 ```spl
 index=* (request_id="<id>" OR trace_id="<id>")
