@@ -42,7 +42,7 @@ AGENTS.md                  cross-tool source of truth (roster, conventions, rout
 CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude specifics)
 .claude/
   agents/                  11 agents — read by Claude Code AND VS Code/Copilot
-  skills/                  30 skills (SKILL.md open standard) — read by both tools
+  skills/                  34 skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops, slo-error-budget) and references/ fill-ins
 runbooks/                  ready-made on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 scripts/
@@ -64,8 +64,9 @@ scripts/
 - SDE: `sde-ladder-senior` → `sde-ladder-principal` → `sde-ladder-distinguished`
 - SRE: `sre-ladder-responder` (new hire) → `sre-ladder-investigator` (experienced) → `sre-ladder-elite`
 
-**Skills (how) — 30 total:**
-- *Ladders* (6) · *Craft* (`python-craft`, `bash-craft`, `powershell-craft`, `tdd-workflow`, `safe-refactor`)
+**Skills (how) — 34 total:**
+- *Ladders* (6) · *Craft* (`python-craft`, `bash-craft`, `powershell-craft`, `go-craft`,
+  `typescript-craft`, `react-craft`, `tdd-workflow`, `safe-refactor`) · *Data* (`database-reliability`)
 - *Observe/investigate (your stack)*: `triage-golden-signals`, `pcf-ops`, `splunk-triage`,
   `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`, `thousandeyes-network`, `slo-error-budget`
 - *Ship (your stack)*: `github-actions-ci`, `bamboo-to-actions-migration`, `pcf-deploy`, `rollback-mitigation`

@@ -43,7 +43,8 @@ guess when you can measure.
 Always load **`triage-golden-signals`** to frame the signals. For our stack, load the relevant tool
 skill: **`pcf-ops`** (cf CLI read-only triage), **`splunk-triage`** (SPL), **`wavefront-queries`**
 (WQL/`ts()`), **`grafana-dashboards`**, **`moogsoft-correlation`** (alert→incident), and
-**`thousandeyes-network`** (path/BGP/synthetics).
+**`thousandeyes-network`** (path/BGP/synthetics). For a database-driven incident (slow queries,
+connection-pool exhaustion, locks, replication lag), load **`database-reliability`**.
 
 ## Operating principles
 
