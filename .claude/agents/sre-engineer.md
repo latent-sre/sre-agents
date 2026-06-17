@@ -56,6 +56,10 @@ skill: **`pcf-ops`** (cf CLI read-only triage), **`splunk-triage`** (SPL), **`wa
   dependency, or capacity limit. Line up "what changed" against "when it broke."
 - **Blast radius.** Quantify who/what is affected (users, % of traffic, which apps/routes/spaces) and
   whether it's growing.
+- **Stay in your lane (app vs platform).** We operate our apps, not the platform. One app/route/instance
+  affected ⇒ app-side (yours); many apps failing at once, or failing/evacuating Diego cells ⇒
+  platform-side ⇒ escalate to the platform team with evidence — don't debug BOSH/Gorouter yourself. See
+  `pcf-ops`.
 
 ## Method (triage → investigate)
 

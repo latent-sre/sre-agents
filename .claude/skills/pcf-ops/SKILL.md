@@ -21,6 +21,14 @@ belong to `release-engineer` with human sign-off.
 > recent logs). Record our foundations, orgs/spaces, and app inventory in
 > [references/foundations.md](references/foundations.md).
 
+## App-side vs platform-side (know your lane)
+We operate **our apps**; the **platform** (BOSH, Ops Manager, Diego cells, Gorouter, NTP/certs,
+foundation capacity) is the platform team's. Fix app-side problems; **recognize and escalate**
+platform-side ones — don't try to debug BOSH.
+- **One app / route / instance affected ⇒ likely app-side** (yours).
+- **Many apps failing at once, or failing/evacuating cells ⇒ platform-side** — escalate to the platform
+  team with evidence (timeline + blast radius); don't keep digging.
+
 ## Orient
 ```bash
 cf target                      # current api / org / space — confirm you're looking at prod
@@ -43,11 +51,39 @@ cf logs <app>                  # live tail (RTR = router access logs, APP = app 
 RTR lines give status code + response time per request; APP lines give app logs. For history beyond the
 buffer, go to Splunk (`splunk-triage`).
 
+## Reading failures (exit codes, 502/503, health checks)
+
+**App crashes — exit codes (`cf events` / `cf app`):**
+- `Exited with status 137` = **OOM** — the container exceeded its memory quota and was killed. Mitigate
+  with `cf scale -m` or tune the app/JVM heap (can also happen during cell evacuation).
+- The app must listen on the platform-assigned **`$PORT`** (never a hardcoded port), or health checks
+  fail and it crash-loops. A "1 starting / 1 down / 1 failing" pattern right after a push is usually
+  memory or a `$PORT` mistake.
+
+**Gorouter 502 vs 503 — app-side or platform-side?**
+- **502 Bad Gateway** — Gorouter reached a backend but the response/connection failed: app crashed
+  mid-request, exceeded the router timeout, or the **keep-alive race** — if the app's keep-alive idle
+  timeout is **< 90s**, it can close a connection just as Gorouter reuses it → 502. Fix: set the app
+  server's keep-alive idle timeout **> 90s** (Gorouter closes idle conns at 90s). Usually app-side.
+- **503 Service Unavailable** — Gorouter has **no backend to route to**: all instances down/crashed, or
+  the route isn't registered yet (registration lag right after a push). App-down or routing.
+- **One route/app 502/503 while others are fine ⇒ app-side; foundation-wide ⇒ platform-side** (escalate).
+
+**Health checks (`cf set-health-check` / manifest):**
+- Types: **`port`** (TCP on `$PORT`), **`http`** (GET an endpoint, must return `200` — preferred for
+  web), **`process`** (process alive only — for workers / `--no-route`).
+- **Liveness** (default type `port`): on failure CF considers the instance crashed → **stops & restarts** it.
+- **Readiness** (default type `process`): on failure CF **removes the instance from the route pool** (no
+  traffic) but does **not** restart it.
+- Slow `/health` timing out? raise the invocation timeout:
+  `cf set-health-check <app> http --endpoint /healthz --invocation-timeout 10`.
+
 ## Drill in (read-only)
 ```bash
 cf app <app> --guid            # app guid for CAPI queries
 cf curl /v3/apps/<guid>/processes        # process/instance detail (read-only CAPI)
 cf ssh <app> -i 0              # inspect ONE instance read-only: top, ps aux, ls, cat logs — change nothing
+cf ssh <app> -i 0 -L 8080:localhost:8080  # read-only port-forward to poke a port on that instance
 cf env <app>                   # env + bound-service creds — CAUTION: contains secrets; don't paste them
 cf routes                      # routing: which routes map to which apps (blast radius)
 cf services / cf service <name># bound backing services + last operation status
@@ -62,3 +98,5 @@ cf services / cf service <name># bound backing services + last operation status
 - `CF_TRACE=true cf <cmd>` shows the raw CAPI request/response when a command behaves oddly.
 - App instances are ephemeral and numbered (`-i <n>`); a "fix" that only restarts an instance hides a
   recurring cause — capture logs/events first.
+- Can't `cf ssh` (the connection to port `2222` times out)? That's the SSH proxy / network path, not
+  your app — a network/platform signal, not an app bug.
