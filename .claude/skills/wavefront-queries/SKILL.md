@@ -24,13 +24,15 @@ ts(<metric.name>, <source/tag filters>)
 ts(app.http.requests.latency, app="checkout" and env="prod")
 ```
 - Filter by point tags: `and`, `or`, `not`; wildcard with `*` (`app="checkout-*"`).
-- Aggregate across series: `sum(...)`, `avg(...)`, `max(...)`, `count(...)`, optionally `by` a tag:
-  `sum(ts(app.http.requests.count), app)`.
+- Aggregate across series: `sum(...)`, `avg(...)`, `max(...)`, `count(...)`, optionally grouping by a
+  tag as a parameter: `sum(ts(app.http.requests.count), app)` (equivalently `sum(ts(...) by (app))`).
+  Grouping is a parameter **inside** the function — a trailing `... by instance` after the closing
+  paren is not valid WQL.
 
 ## Percentile latency
 ```
-percentile(95, ts(app.http.requests.latency, app="checkout"))     # p95 across instances
-percentile(99, ts(...)) and group by instance to find one bad instance
+percentile(95, ts(app.http.requests.latency, app="checkout"))                 # p95 across instances
+percentile(99, ts(app.http.requests.latency, app="checkout"), instance)       # per-instance p99 (find the bad one)
 ```
 
 ## Error ratio (the SLI you usually want)

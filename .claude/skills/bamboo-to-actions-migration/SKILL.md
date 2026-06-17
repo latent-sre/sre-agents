@@ -65,12 +65,13 @@ GitHub PAT. Migrate **build plans first, deployment projects last**.
 |---|---|
 | `bamboo.buildNumber` | `github.run_id` |
 | `bamboo.planKey` | `github.workflow` |
-| `bamboo.repository.revision.number` | `github.sha` |
+| `bamboo.planRepository.<position>.revision` | `github.sha` |
 | `bamboo.repository.pr.key` | `github.event.pull_request.number` |
 
 **Importer does NOT migrate (rebuild by hand):** branch plans, plan/deployment permissions,
-notifications, release naming, and trigger *conditions* (they become comments); **secrets** must be
-re-entered as GitHub secrets. Write **custom transformers** for unknown/unsupported steps.
+notifications, release naming, **masked variables**, **artifact-expiry settings**, and trigger
+*conditions* (they become comments); **secrets** must be re-entered as GitHub secrets. Write
+**custom transformers** for unknown/unsupported steps.
 
 ## Common gotchas
 - **Default-on triggers:** Bamboo polling ≠ Actions `on:` — be explicit, or you'll over/under-trigger.

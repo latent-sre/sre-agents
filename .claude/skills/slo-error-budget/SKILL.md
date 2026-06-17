@@ -39,9 +39,14 @@ Alert when you're **burning budget too fast**, using multi-window/multi-burn to 
 low-noise:
 | Severity | Burn rate | Windows (alert if both fire) | Budget consumed |
 |---|---|---|---|
-| Page (fast) | ~14× | 1h **and** 5m | ~2% in 1h |
-| Page (slower) | ~6× | 6h **and** 30m | ~5% in 6h |
-| Ticket | ~1–3× | 24h–3d | slow leak |
+| Page (fast) | 14.4× | 1h **and** 5m | ~2% in 1h |
+| Page (slower) | 6× | 6h **and** 30m | ~5% in 6h |
+| Ticket | 1× (–3×) | 3d + 6h (or 24h) | slow leak |
+
+*Burn-rate multipliers (14.4 / 6 / 1) are window-independent; the **budget-consumed** percentages assume a
+30-day period (the SRE Workbook example) and shift slightly on a 28-day window. The canonical Workbook
+ticket row is 1× over a 3-day long window + 6h short window.*
+
 Two windows (long + short) means it fires fast on a real burn but resolves quickly when it stops —
 far less flapping than a static threshold.
 
