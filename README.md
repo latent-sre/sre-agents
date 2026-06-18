@@ -43,8 +43,8 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
 .claude/
   agents/                  12 agents — read by Claude Code AND VS Code/Copilot
   skills/                  32 skills (SKILL.md open standard) — read by both tools
-                           some bundle scripts/ (pcf-ops, slo-error-budget) and references/ fill-ins
-runbooks/                  ready-made on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
+                           some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
+runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 scripts/
   sync-copilot.ps1 / .sh   generate .github/agents + .github/skills for Copilot-native tooling
   validate-fleet.ps1       validate all skills/agents against the Agent Skills spec (CI-friendly)
@@ -88,11 +88,12 @@ hyphen `name` ≤64 chars matching the dir, `description` ≤1024 chars saying *
 Copilot, then `pwsh scripts/validate-fleet.ps1` to check it (or the upstream
 [`skills-ref`](https://github.com/agentskills/agentskills) validator).
 
-**Read-only enforcement:** agents that keep `Bash` but must not change state wire
-[scripts/readonly-guard.py](scripts/readonly-guard.py) as a `PreToolUse` hook in their frontmatter; the
-generator strips these Claude-only hooks from the Copilot output. Verify the hook fires in your Claude
-Code environment (the one piece that can't be unit-tested offline); on systems where the interpreter is
-`python3`, adjust the hook command in the agent frontmatter.
+**Read-only enforcement:** Claude agents that keep `Bash` but must not change state wire
+[scripts/readonly-guard.py](scripts/readonly-guard.py) as a `PreToolUse` hook in their frontmatter.
+The Copilot generator strips Claude-only hooks and withholds `runCommands` from generated read-only
+agents, so use `.github/agents/*.agent.md` when you want hard Copilot tool scoping. Verify the hook fires
+in your Claude Code environment (the one piece that can't be unit-tested offline); on systems where the
+interpreter is `python3`, adjust the hook command in the agent frontmatter.
 
 ## Built from (current as of mid-2026)
 

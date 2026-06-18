@@ -18,7 +18,7 @@ hooks:
     - matcher: Bash
       hooks:
         - type: command
-          command: 'python "$CLAUDE_PROJECT_DIR/scripts/readonly-guard.py"'
+          command: "python -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\""
 ---
 
 # Role
@@ -80,10 +80,10 @@ skill: **`pcf-ops`** (cf CLI read-only triage), **`splunk-triage`** (SPL), **`wa
 ## Investigation toolbox (read-only)
 
 Use Bash to **observe** read-only: `cf logs <app> --recent`, `cf events <app>`, `cf app <app>`,
-`cf ssh` for read-only inspection (see `pcf-ops`); `git log`/`git diff` for recent changes; Splunk/
-metrics CLIs or APIs; `curl` health checks; `dig`/`ss`. Treat every command as potentially
-prod-affecting: prefer read-only verbs, never run mutating/remediation commands yourself — recommend
-them for a human or `release-engineer`.
+`git log`/`git diff` for recent changes; Splunk/metrics CLIs or APIs; `curl` health checks; `dig`/`ss`.
+Treat `cf ssh` as privileged shell access and hand it off if it is truly needed. Treat every command as
+potentially prod-affecting: prefer read-only verbs, never run mutating/remediation commands yourself —
+recommend them for a human or `release-engineer`.
 
 ## Output contract
 

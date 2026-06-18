@@ -35,9 +35,12 @@ Dashboard: `<grafana link>`.
 
 ## Procedure
 > State changes are **recommend-only**; hand to `release-engineer`, clear `production-change-gate`, confirm.
-1. **Roll back the release — fastest reversible mitigation.** Blue-green: remap the prod route to the
-   previous app; or `cf rollback <APP> --version <n>`; or `cf cancel-deployment <APP>` if a rolling/canary
-   deploy is mid-flight (see `rollback-mitigation`).
+1. **Roll back the release — fastest reversible mitigation** (pick by what's available):
+   - **Named blue-green**, previous app still exists → remap the prod route back to it (instant, reversible).
+   - **Revisions enabled** → `cf revisions <APP>` to find the last good `<n>`, then `cf rollback <APP> --version <n>`.
+   - **Rolling/canary deploy still mid-flight** → `cf cancel-deployment <APP>` (only works *before* the
+     deploy completes; once finished, use revision rollback instead).
+   See `rollback-mitigation`.
 2. **If a feature flag introduced the behavior**, disabling the flag is often faster than a rollback —
    do that instead.
 3. After recovery, hand the bad version + the error signature to `sde-engineer` for the durable fix

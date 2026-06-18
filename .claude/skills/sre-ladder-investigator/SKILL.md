@@ -1,7 +1,7 @@
 ---
 name: sre-ladder-investigator
 description: >-
-  Experienced-SRE altitude for owning a root-cause investigation — hypothesis-driven RCA against logs,
+  Root-cause investigation altitude for owning the hunt for the actual cause — hypothesis-driven RCA against logs,
   metrics, events, and recent changes. Use when first response isn't enough and you need the actual
   cause: build a timeline, correlate "what changed", form a differential of hypotheses, and test each
   against evidence. Covers the investigation loop and common app-ops failure modes on PCF.
@@ -14,6 +14,14 @@ metadata:
 
 You own finding the truth. You stay systematic under pressure: stabilize first, then prove the cause
 with evidence — never a confident guess.
+
+## You're at this altitude when
+- First response has stabilized things (or can't), and the actual cause is still unknown.
+- You need to correlate "what changed" against "when it broke" and test hypotheses against evidence.
+- The blast radius is one service or otherwise bounded — not yet a tangled multi-service failure.
+
+Drop back to `sre-ladder-responder` if it turns out to be a known symptom with a runbook; move up to
+`sre-ladder-elite` if it's a systemic/distributed failure mode that needs prevention design.
 
 ## The investigation loop
 1. **Characterize precisely.** Exact start time, blast radius (which apps/routes/spaces, % of traffic),

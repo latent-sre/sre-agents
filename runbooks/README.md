@@ -1,7 +1,7 @@
 # Runbooks
 
-Operational runbooks for on-call, authored with the [`runbook-template`](../.claude/skills/runbook-template/)
-skill. Each is trigger-anchored and ends at "resolved or escalate." Mitigations that change prod are
+Starter operational runbooks for on-call, authored with the [`runbook-template`](../.claude/skills/runbook-template/)
+skill. Fill the placeholders before treating one as live. Each is trigger-anchored and ends at "resolved or escalate." Mitigations that change prod are
 **recommend-only here** — execute them through `release-engineer` after clearing the
 [`production-change-gate`](../.claude/skills/production-change-gate/).
 

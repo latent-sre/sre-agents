@@ -12,8 +12,8 @@
     * .github/skills/                 — a mirror of .claude/skills/ (the SKILL.md open standard is
       identical for both tools; this is just the .github-native location).
 
-  The tool translation is approximate. The authoritative behavioral guardrails (read-only, etc.) live
-  in each agent's body, which both tools honor.
+  The tool translation is conservative. Claude-only hooks are not portable to Copilot, so generated
+  read-only agents do not receive runCommands; writer agents keep terminal access.
 
 .NOTES
   Idempotent. Re-run after editing anything under .claude/. From repo root: pwsh scripts/sync-copilot.ps1
@@ -30,10 +30,13 @@ $ghSkills     = Join-Path $root '.github/skills'
 
 function Convert-ToolsLine([string]$line) {
     # Map Claude tool names -> Copilot tool/toolset names, preserving read-only vs. write intent.
+    # Claude-only PreToolUse hooks are stripped below, so generated read-only agents do not get
+    # Copilot terminal access. Writer agents keep runCommands for tests/builds/deploy work.
     $tools = [System.Collections.Generic.List[string]]::new()
     $tools.Add('search')                                                          # read/search codebase (toolset)
-    if ($line -match '\bWrite\b' -or $line -match '\bEdit\b') { $tools.Add('edit') }        # file writes
-    if ($line -match '\bBash\b')                              { $tools.Add('runCommands') } # terminal
+    $canWrite = ($line -match '\bWrite\b' -or $line -match '\bEdit\b')
+    if ($canWrite) { $tools.Add('edit') }                                        # file writes
+    if ($canWrite -and $line -match '\bBash\b') { $tools.Add('runCommands') }    # terminal
     if ($line -match '\bWebFetch\b' -or $line -match '\bWebSearch\b') { $tools.Add('web/fetch') } # web
     $items = ($tools | Select-Object -Unique | ForEach-Object { "'$_'" }) -join ', '
     return "tools: [$items]"
@@ -42,6 +45,18 @@ function Convert-ToolsLine([string]$line) {
 function Write-Utf8NoBom([string]$path, [string[]]$lines) {
     $text = ($lines -join "`n") + "`n"
     [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+}
+
+function Reset-Directory([string]$path) {
+    if (Test-Path -LiteralPath $path) {
+        try {
+            [System.IO.Directory]::Delete($path, $true)
+        }
+        catch {
+            Write-Warning "Could not fully clean '$path' ($($_.Exception.Message)); mirroring in place. Stale generated files may remain."
+        }
+    }
+    New-Item -ItemType Directory -Force -Path $path | Out-Null
 }
 
 New-Item -ItemType Directory -Force -Path $ghAgents | Out-Null
@@ -78,8 +93,7 @@ Get-ChildItem -Path $claudeAgents -Filter '*.md' -File | ForEach-Object {
 }
 
 # Mirror skills (clean first to drop anything deleted upstream).
-if (Test-Path $ghSkills) { Remove-Item -Recurse -Force $ghSkills }
-New-Item -ItemType Directory -Force -Path $ghSkills | Out-Null
+Reset-Directory $ghSkills
 Copy-Item -Path (Join-Path $claudeSkills '*') -Destination $ghSkills -Recurse -Force
 $skillCount = (Get-ChildItem -Path $ghSkills -Recurse -Filter 'SKILL.md' -File).Count
 

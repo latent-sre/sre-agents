@@ -14,7 +14,7 @@ hooks:
     - matcher: Bash
       hooks:
         - type: command
-          command: 'python "$CLAUDE_PROJECT_DIR/scripts/readonly-guard.py"'
+          command: "python -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\""
 ---
 
 # Role

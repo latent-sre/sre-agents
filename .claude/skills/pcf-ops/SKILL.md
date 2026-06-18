@@ -17,8 +17,9 @@ Our apps run on PCF (VMware Tanzu Application Service). cf CLI v8 talks to CAPI 
 you observe only** — every command below is read-only. State-changing commands are listed last and
 belong to `release-engineer` with human sign-off.
 
-> **Helpers:** `scripts/triage.sh <app>` runs a one-shot read-only summary (target → app → events →
-> recent logs). Record our foundations, orgs/spaces, and app inventory in
+> **Helpers:** `scripts/triage.sh <app>` (Bash) and `scripts/triage.ps1 -App <app>` (PowerShell)
+> run a one-shot read-only summary (target → app → events → recent logs). Record our foundations,
+> orgs/spaces, and app inventory in
 > [references/foundations.md](references/foundations.md).
 
 ## App-side vs platform-side (know your lane)
@@ -82,17 +83,20 @@ buffer, go to Splunk (`splunk-triage`).
 ```bash
 cf app <app> --guid            # app guid for CAPI queries
 cf curl /v3/apps/<guid>/processes        # process/instance detail (read-only CAPI)
-cf ssh <app> -i 0              # inspect ONE instance read-only: top, ps aux, ls, cat logs — change nothing
-cf ssh <app> -i 0 -L 8080:localhost:8080  # read-only port-forward to poke a port on that instance
 cf env <app>                   # env + bound-service creds — CAUTION: contains secrets; don't paste them
 cf routes                      # routing: which routes map to which apps (blast radius)
 cf services / cf service <name># bound backing services + last operation status
 ```
 
+Treat `cf ssh` as privileged shell access, not normal read-only triage. Even a harmless-looking remote
+shell can mutate an app instance, so read-only agents should not use it; ask for explicit human approval
+and hand off if instance-shell inspection is truly needed.
+
 ## State-changing — NOT for sre-engineer (hand to release-engineer + human sign-off)
 `cf restart` / `cf restage` / `cf scale` / `cf push` / `cf map-route` / `cf unmap-route` /
-`cf set-env` / `cf stop` / `cf delete`. These are mitigations/deploys — see `rollback-mitigation` and
-`pcf-deploy`. Recommend them; let release-engineer execute.
+`cf set-env` / `cf stop` / `cf delete` / `cf cancel-deployment` / `cf continue-deployment` / `cf ssh`.
+These are mitigations/deploys or privileged shell access — see `rollback-mitigation` and `pcf-deploy`.
+Recommend them; let release-engineer execute.
 
 ## Tips
 - `CF_TRACE=true cf <cmd>` shows the raw CAPI request/response when a command behaves oddly.

@@ -60,8 +60,10 @@ that run `cf` against a foundation. Keep them patched and least-privileged; rest
 can use them.
 
 ## Deploy to PCF from Actions (paste-ready)
-Install the cf CLI v8, auth from **environment** secrets (never as CLI args — they leak to `ps`/logs),
-target, and push. The deploy job is prod-facing → it belongs to `release-engineer` and gates on the
+Use a self-hosted runner with a pinned cf CLI v8 already installed (or install from an internal,
+checksum-verified package). Authenticate from **environment** secrets, keep shell tracing off, and
+understand the residual risk: `cf auth` takes the password as an argument, so run it only on a locked-down
+or ephemeral runner. The deploy job is prod-facing → it belongs to `release-engineer` and gates on the
 `production` environment (`release-gate`).
 ```yaml
 deploy-prod:
@@ -72,26 +74,26 @@ deploy-prod:
     - uses: actions/checkout@<pin-to-sha>
     - uses: actions/download-artifact@<pin-to-sha>   # promote the SAME artifact built earlier
       with: { name: app-build }
-    - name: Install cf CLI v8
+    - name: Verify cf CLI v8
       run: |
-        curl -fsSL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github" -o cf8.tgz
-        tar -xzf cf8.tgz && sudo mv cf8 /usr/local/bin/cf && cf version
+        cf version
     - name: Deploy
       env:                              # from environment secrets — not echoed, not in ps
         CF_API: ${{ secrets.CF_API }}
         CF_USERNAME: ${{ secrets.CF_USERNAME }}
-        CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+        CF_PASSWORD: ${{ secrets.CF_PASSWORD }}   # residual argv exposure during cf auth; use locked-down runners
         CF_ORG: ${{ vars.CF_ORG }}
         CF_SPACE: ${{ vars.CF_SPACE }}
       run: |
         cf api "$CF_API"
-        cf auth "$CF_USERNAME" "$CF_PASSWORD"   # creds via env, never as `cf auth user pass` args
+        cf auth "$CF_USERNAME" "$CF_PASSWORD"
         cf target -o "$CF_ORG" -s "$CF_SPACE"
         cf push -f manifest.yml --strategy rolling   # or blue-green via route remap — see pcf-deploy
 ```
-Prefer a CI **service account** + `cf auth` from environment secrets. For cloud targets, OIDC to your
-cloud IdP avoids long-lived tokens (note: GitHub-OIDC→CredHub is **not** a turnkey integration — CredHub
-authenticates via UAA, not GitHub OIDC JWTs). Always clear `release-gate` + `production-change-gate` first.
+Prefer a CI **service account** with the minimum org/space roles and short-lived or frequently rotated
+credentials. For cloud targets, OIDC to your cloud IdP avoids long-lived tokens (note:
+GitHub-OIDC→CredHub is **not** a turnkey integration — CredHub authenticates via UAA, not GitHub OIDC
+JWTs). Always clear `release-gate` + `production-change-gate` first.
 
 ## Tips
 - Validate locally where possible (`act`, or `gh workflow run` + `gh run watch`).

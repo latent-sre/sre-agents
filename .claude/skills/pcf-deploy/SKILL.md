@@ -44,7 +44,7 @@ cf map-route checkout-green apps.example.com --hostname checkout-green
 # 3. cut over: add prod route to green, then remove it from blue
 cf map-route   checkout-green apps.example.com --hostname checkout
 cf unmap-route checkout-blue  apps.example.com --hostname checkout
-# 4. keep blue stopped-but-present for fast rollback; delete only after a soak period
+# 4. keep blue running, healthy, and route-unmapped for fast rollback; delete only after a soak period
 ```
 Rollback = re-map the prod route to `checkout-blue` and unmap green (see `rollback-mitigation`).
 

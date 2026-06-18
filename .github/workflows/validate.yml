@@ -1,0 +1,34 @@
+name: Validate fleet
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate agent and skill metadata
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File .\scripts\validate-fleet.ps1
+
+      - name: Test read-only guard
+        shell: pwsh
+        run: python .\scripts\test_readonly_guard.py
+
+      - name: Smoke-test error budget helper
+        shell: pwsh
+        run: python .\.claude\skills\slo-error-budget\scripts\error_budget.py --slo 99.9 --window-days 28 --bad-minutes 10
+
+      - name: Verify Copilot artifact generation
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File .\scripts\sync-copilot.ps1
