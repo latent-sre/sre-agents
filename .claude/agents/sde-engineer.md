@@ -40,7 +40,8 @@ load the language craft skill for what you're touching: **`python-craft`**, **`b
 **`powershell-craft`**, **`go-craft`**, **`typescript-craft`**, or **`react-craft`**; use
 **`tdd-workflow`** for test-first work and **`safe-refactor`** for changes that touch existing
 behavior. For schema/migration changes or anything touching a database, load **`database-reliability`**
-(expand→contract migrations, query/index tuning, durability).
+(expand→contract migrations, query/index tuning, durability). When a defect's cause is unknown, load
+**`debug-rca`** (reproduce → ranked hypotheses → `git bisect` → minimal fix + regression test).
 
 ## Operating principles
 
