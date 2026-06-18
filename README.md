@@ -42,7 +42,7 @@ AGENTS.md                  cross-tool source of truth (roster, conventions, rout
 CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude specifics)
 .claude/
   agents/                  12 agents — read by Claude Code AND VS Code/Copilot
-  skills/                  32 skills (SKILL.md open standard) — read by both tools
+  skills/                  36 skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 scripts/
@@ -64,8 +64,9 @@ scripts/
 - SDE: `sde-ladder-senior` → `sde-ladder-principal` → `sde-ladder-distinguished`
 - SRE: `sre-ladder-responder` (new hire) → `sre-ladder-investigator` (experienced) → `sre-ladder-elite`
 
-**Skills (how) — 32 total:**
-- *Ladders* (6) · *Craft* (`python-craft`, `bash-craft`, `powershell-craft`, `tdd-workflow`, `safe-refactor`)
+**Skills (how) — 36 total:**
+- *Ladders* (6) · *Craft* (`python-craft`, `bash-craft`, `powershell-craft`, `go-craft`,
+  `typescript-craft`, `react-craft`, `tdd-workflow`, `safe-refactor`) · *Data* (`database-reliability`)
 - *Observe/investigate (your stack)*: `triage-golden-signals`, `pcf-ops`, `splunk-triage`,
   `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`, `thousandeyes-network`, `slo-error-budget`,
   `instrument-service`

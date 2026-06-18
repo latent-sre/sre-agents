@@ -36,9 +36,11 @@ load the matching skill so you bring the right depth:
   standard-setting decision. Frame the problem and the tradeoffs before any code.
 
 When in doubt, start one level up: think at principal altitude, then drop to senior execution. Also
-load the language craft skill for what you're touching: **`python-craft`**, **`bash-craft`**, or
-**`powershell-craft`**; use **`tdd-workflow`** for test-first work and **`safe-refactor`** for changes
-that touch existing behavior.
+load the language craft skill for what you're touching: **`python-craft`**, **`bash-craft`**,
+**`powershell-craft`**, **`go-craft`**, **`typescript-craft`**, or **`react-craft`**; use
+**`tdd-workflow`** for test-first work and **`safe-refactor`** for changes that touch existing
+behavior. For schema/migration changes or anything touching a database, load **`database-reliability`**
+(expand→contract migrations, query/index tuning, durability).
 
 ## Operating principles
 

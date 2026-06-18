@@ -33,12 +33,12 @@ to its lane on demand.
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
 | [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request` |
-| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS) | code | `sde-ladder-*`, `*-craft`, `tdd-workflow`, `safe-refactor` |
+| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS) | code | `sde-ladder-*`, `*-craft`, `database-reliability`, `tdd-workflow`, `safe-refactor` |
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | — |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
-| [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `safe-refactor`, `production-change-gate` |
-| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder-*`, `triage-golden-signals`, stack skills |
+| [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `database-reliability`, `safe-refactor`, `production-change-gate` |
+| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder-*`, `triage-golden-signals`, `database-reliability`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
 | [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `blameless-postmortem` |
 | [`release-engineer`](.claude/agents/release-engineer.md) | CI/CD, deploys, rollbacks (Actions + PCF) | infra/CI | `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`, `rollback-mitigation`, `release-gate` |
@@ -71,7 +71,11 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 - `sre-ladder-investigator` *(experienced)* — hypothesis-driven RCA, "what changed" correlation, test hypotheses against evidence.
 - `sre-ladder-elite` — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
 
-**Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `tdd-workflow` · `safe-refactor`
+**Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `go-craft` · `typescript-craft` ·
+`react-craft` · `tdd-workflow` · `safe-refactor`
+
+**Data:** `database-reliability` — safe (online/reversible, expand→contract) schema migrations, query/
+index tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO).
 
 **Observe & investigate (your stack):** `triage-golden-signals` · `pcf-ops` · `splunk-triage` ·
 `wavefront-queries` · `grafana-dashboards` · `moogsoft-correlation` · `thousandeyes-network` ·
