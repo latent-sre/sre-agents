@@ -43,7 +43,8 @@ so tests survive refactors and fail only when something real breaks. Load `tdd-w
 ## Per-language testing
 
 For language conventions and tooling beyond the test surface, load the matching craft skill:
-`python-craft`, `bash-craft`, `powershell-craft`, `go-craft`, `typescript-craft`, `react-craft`.
+`python-craft`, `bash-craft`, `powershell-craft`, `go-craft`, `typescript-craft`, `react-craft`. When a
+test fails for an unknown reason or is flaky, load `debug-rca` to find the cause before changing it.
 
 - **Python** — `pytest`: fixtures, `parametrize` for cases, `monkeypatch`/`unittest.mock`, `freezegun`
   for time, `tmp_path` for files; `pytest --cov`.
