@@ -66,6 +66,9 @@ _DENY_PATTERNS = [
     # filesystem / process / service mutations
     r"\b(rm|rmdir|mv|cp|rsync|dd|truncate|shred|chmod|chown|chgrp|ln|mkfs|mkdir|touch)\b",
     r"\bfind\b.*\s-delete\b",
+    # GNU install copies/creates files; anchored to command position because 'install'
+    # is also a common path component (e.g. `ls /opt/install`) and a package subcommand.
+    r"(?:^|[|;&]\s*)install\b",
     # interactive editors and awk are file writers (in command position to avoid grep'd-text false positives)
     r"(?:^|[|;&]\s*)(vim|vi|nvim|nano|emacs|ex|pico)\b",
     r"\b[gmn]?awk\b.*system\s*\(",
@@ -79,7 +82,7 @@ _DENY_PATTERNS = [
     # shell output redirection to a file (allow >/dev/null and fd-dup like 2>&1), and tee.
     # Target charset includes quotes so `awk '{print > "f"}'` is caught; tee is anchored to
     # command position so `ps aux | grep tee` (tee as search text) is not a false positive.
-    r">>?\s*(?!&|/dev/null\b)[\"'~./$A-Za-z0-9_-]",
+    r">>?\s*\|?\s*(?!&|/dev/null\b)[\"'~./$A-Za-z0-9_-]",
     r"(?:^|[|;&]\s*)tee\b",
     r"\b(kill|pkill|killall)\b",
     r"\b(systemctl|service)\s+(start|stop|restart|reload|enable|disable)\b",
@@ -95,7 +98,13 @@ _DENY_PATTERNS = [
     r"\bwget\b(?!.*(-O\s*-|-qO-|--output-document[= ]-))",  # wget writes a file unless piped to stdout
     r"\bscp\b",
     # Nested shells/interpreters are too easy to use as mutation bypasses.
-    r"\b(python|python3|py|perl|ruby|node|bash|sh|zsh|pwsh|powershell|cmd)\b.*\s(-c|/c|-Command)\b",
+    # Shell interpreters: -c / /c / -Command run an inline command string.
+    r"\b(bash|sh|zsh|pwsh|powershell|cmd)\b.*\s(-c|/c|-Command)\b",
+    # Code interpreters: -c/-e/-E/-p/--eval/--print eval inline code — perl/ruby/node -e
+    # are exact peers of python -c. A bare trailing `-` or a heredoc feeds a script on stdin.
+    r"\b(python|python3|py|perl|ruby|node)\b.*\s(-c|-e|-E|-p|--eval|--print)\b",
+    r"\b(python|python3|py|perl|ruby|node|bash|sh|zsh|pwsh|powershell)\s+-(\s|$)",
+    r"\b(python|python3|py|perl|ruby|node|bash|sh|zsh|pwsh|powershell)\b[^|;&]*<<-?\s*[\"']?\w",
 ]
 _DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE)
 

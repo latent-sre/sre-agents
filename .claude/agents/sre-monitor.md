@@ -71,6 +71,8 @@ SLOs live in version control, reviewed like any change. Load **`slo-error-budget
   into deploys.
 - → `researcher`: for vendor metric semantics, WQL/SPL specifics, or best-practice thresholds.
 - ← from `sre-engineer`: post-incident, to add the alert/SLI that would have caught it sooner.
+- ← from `database-reliability`: define DB SLIs/alerts (query latency, saturation, replication lag).
+- ← from `release-engineer`: confirm post-deploy health and wire deploy/SLO gates.
 
 ## Guardrails
 

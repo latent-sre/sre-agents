@@ -42,6 +42,11 @@ ALLOW = [
     "curl -o /dev/null -s https://example.com/health",
     "git config --get user.name",
     "git config --list",
+    # interpreter version/encoding probes and 'install' as a path must NOT be blocked
+    "python3 --version",
+    "node --version",
+    "python3 -V",
+    "ls /opt/install/bin",
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -125,6 +130,20 @@ DENY = [
     "git config --global user.name Attacker",
     "git worktree add ../wt",
     "git update-ref refs/heads/main HEAD",
+    # interpreter eval bypasses: perl/ruby/node -e are peers of python -c
+    "perl -e 'unlink \"x\"'",
+    "ruby -e 'File.write(1,2)'",
+    "node -e 'require(\"fs\").rmSync(\"x\")'",
+    "node --eval 'process.exit()'",
+    # script fed on stdin (bare '-') or via heredoc
+    "echo 'import os; os.remove(1)' | python3 -",
+    "python3 - < mutate.py",
+    "python3 <<EOF\nopen('x','w').write('x')\nEOF",
+    # force-clobber redirect (>|) overrides noclobber — strictly more destructive than >
+    "echo boom >|/etc/hosts",
+    "cf logs checkout --recent >| capture.txt",
+    # GNU install creates/copies files
+    "install -m 0755 app /usr/local/bin/app",
 ]
 
 

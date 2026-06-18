@@ -70,6 +70,7 @@ escalation.**
 - ← from `sre-engineer`: turn a diagnosis + mitigation into a reusable runbook.
 - ← from `release-engineer`: capture deploy/rollback/infra procedures.
 - ← from `sre-monitor`: every paging alert needs a linked runbook — author the missing one.
+- ← from `sde-engineer`: when a change introduces new operational steps worth documenting.
 - → `sde-engineer` / `release-engineer`: if a step *should* be automated rather than documented,
   recommend it (the best runbook step is sometimes "run this script").
 - → `researcher`: to confirm a command's flags or a vendor procedure before documenting it.
