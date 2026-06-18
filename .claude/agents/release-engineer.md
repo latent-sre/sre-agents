@@ -74,6 +74,9 @@ Load **`github-actions-ci`**, **`pcf-deploy`**, **`bamboo-to-actions-migration`*
 - ← from `sde-engineer`: take a reviewed, tested change and ship it.
 - ← from `sre-engineer` / `incident-commander`: execute an urgent mitigation (rollback, restart,
   route remap, scale, flag flip) during an incident.
+- ← from `database-reliability`: run a reviewed forward + rollback migration under the
+  `production-change-gate`.
+- ← from `test-engineer`: wire new test suites/gates into the CI pipeline.
 - → `sre-engineer`: after a rollback, hand off to find the root cause of the bad release.
 - → `sre-monitor`: to confirm post-deploy health and wire deploy/SLO gates.
 - → `runbook-author`: to capture the deploy/rollback procedure as a runbook.

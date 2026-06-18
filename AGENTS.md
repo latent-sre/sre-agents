@@ -33,14 +33,14 @@ to its lane on demand.
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
 | [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request` |
-| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS) | code | `sde-ladder-*`, `*-craft`, `tdd-workflow`, `safe-refactor` |
+| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS) | code | `sde-ladder-*`, `*-craft`, `database-reliability`, `tdd-workflow`, `safe-refactor` |
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | — |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
-| [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `safe-refactor`, `production-change-gate` |
-| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder-*`, `triage-golden-signals`, stack skills |
+| [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `database-reliability`, `safe-refactor`, `production-change-gate` |
+| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder-*`, `triage-golden-signals`, `database-reliability`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
-| [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `blameless-postmortem` |
+| [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `incident-severity`, `blameless-postmortem` |
 | [`release-engineer`](.claude/agents/release-engineer.md) | CI/CD, deploys, rollbacks (Actions + PCF) | infra/CI | `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`, `rollback-mitigation`, `release-gate` |
 | [`runbook-author`](.claude/agents/runbook-author.md) | Create/update operational runbooks | docs | `runbook-template`, `blameless-postmortem` |
 | [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | — |
@@ -71,7 +71,11 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 - `sre-ladder-investigator` *(experienced)* — hypothesis-driven RCA, "what changed" correlation, test hypotheses against evidence.
 - `sre-ladder-elite` — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
 
-**Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `tdd-workflow` · `safe-refactor`
+**Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `go-craft` · `typescript-craft` ·
+`react-craft` · `tdd-workflow` · `safe-refactor`
+
+**Data:** `database-reliability` — safe (online/reversible, expand→contract) schema migrations, query/
+index tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO).
 
 **Observe & investigate (your stack):** `triage-golden-signals` · `pcf-ops` · `splunk-triage` ·
 `wavefront-queries` · `grafana-dashboards` · `moogsoft-correlation` · `thousandeyes-network` ·
@@ -80,6 +84,8 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 **Ship (your stack):** `github-actions-ci` · `bamboo-to-actions-migration` · `pcf-deploy` · `rollback-mitigation`
 
 **Selectors & gates:** `route-request` · `merge-gate` · `release-gate` · `production-change-gate`
+
+**Incident process:** `incident-severity` *(SEV1–4 rubric + comms cadence)* · `blameless-postmortem`
 
 **Docs & conventions:** `runbook-template` · `blameless-postmortem` · `handoff-protocol` · `adr-template` *(ADR/RFC decision capture)*
 
@@ -117,6 +123,13 @@ Gates are portable Markdown checklists by default. In Claude Code they can be **
   they need to start cold (intent, what's done, what you found). See `handoff-protocol`.
 - **Evidence over assertion.** Cite `file:line` or a command's output for load-bearing claims; label
   anything unverified. Never fabricate test results, citations, query output, or system state.
+- **Report your verification, uniformly.** When you produce a result, state *what you actually ran or
+  checked*, the outcome, and *what you could not verify* — don't make the reader infer it. Label
+  load-bearing claims `[verified]` (you ran/observed it — show the command/output), `[sourced]`
+  (a citation: `file:line`, URL, query), or `[unverified]` (assumption/couldn't check — never upgrade
+  these to fact). "Couldn't verify" is a required, explicit part of every result, even if it's "nothing
+  material." `researcher`'s output contract is the model; the gates and `handoff-protocol` carry this
+  evidence forward so it doesn't evaporate between agents.
 - **Safety first.** Destructive or prod-facing actions (deploys, deletes, traffic cuts, `cf` writes)
   require explicit human confirmation; show the plan + rollback before acting.
 - **Lead with the conclusion**, then evidence, then next steps / recommended hand-offs.

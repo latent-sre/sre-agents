@@ -34,9 +34,10 @@ it broke.
 5. **Safe, read-only checks only** (load `pcf-ops`): `cf app <app>`, `cf events <app>`,
    `cf logs <app> --recent`; check recent deploys (`git log`, the release pipeline). Do **not** restart,
    scale, or change anything yet.
-6. **Decide severity & escalate.** If it's user-impacting, growing, or you're unsure → move up to
-   `sre-ladder-investigator` (hypothesis-driven RCA) and, if major, pull in `incident-commander`.
-   Escalating early is good judgment, not failure.
+6. **Decide severity & escalate.** Set a provisional severity with the `incident-severity` rubric
+   (over-classify, then downgrade). If it's user-impacting, growing, you can't bound the blast radius, or
+   you're not stabilized in ~15 min → move up to `sre-ladder-investigator` (hypothesis-driven RCA) and,
+   if major, pull in `incident-commander`. Escalating early is good judgment, not failure.
 
 ## What you hand over (load `handoff-protocol`)
 - What fired, when, and the current blast radius.

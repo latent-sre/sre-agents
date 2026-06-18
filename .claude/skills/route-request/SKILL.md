@@ -21,11 +21,11 @@ something on fire?).
 ## 2. Route (decision table)
 | Signal in the request | Primary agent | Then (typical chain) |
 |---|---|---|
-| "implement / build / refactor / fix code" | `sde-engineer` (pick `sde-ladder-*` by scope) | → `code-reviewer` (+`security-reviewer` if sensitive, `test-engineer` if thin) → **`merge-gate`** |
+| "implement / build / refactor / fix code" | `sde-engineer` (pick `sde-ladder-*` by scope; load language `*-craft`) | → `code-reviewer` (+`security-reviewer` if sensitive, `test-engineer` if thin) → **`merge-gate`** |
 | "review this diff / is this correct" | `code-reviewer` | → `security-reviewer` if security depth needed |
 | "is this secure / auth / secrets / deps" | `security-reviewer` | → `sde-engineer` to fix |
 | "write tests / add coverage" | `test-engineer` | → `sde-engineer` if it reveals a bug |
-| "DB schema/migration / slow query / DB incident" | `database-reliability` | → `release-engineer` runs the migration (`production-change-gate`) |
+| "DB schema/migration / slow query / DB incident" | `database-reliability` (loads the **`database-reliability`** skill; pairs with `sde-engineer` on query/ORM code) | → `code-reviewer` → **`merge-gate`**; prod migration → `release-engineer` runs it under **`production-change-gate`** |
 | "X is broken / slow / erroring / alerting" | `sre-engineer` (`sre-ladder-*` by depth) | → `incident-commander` if major; → `release-engineer` to mitigate |
 | "run the incident / comms / who's doing what" | `incident-commander` | ⇄ `sre-engineer` (technical) in parallel |
 | "set up monitoring / noisy alert / define SLO" | `sre-monitor` | → `runbook-author` for alert runbooks |

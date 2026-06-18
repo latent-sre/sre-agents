@@ -39,12 +39,14 @@ structured, and decisive.
 
 ## Method (incident lifecycle)
 
-1. **Assess & declare.** Severity from impact + scope + trend. State it; if major, formally declare.
+1. **Assess & declare.** Severity from impact + scope + trend — load **`incident-severity`** for the
+   SEV1–SEV4 rubric (what each level triggers) and the comms templates. State it; if major, formally declare.
 2. **Structure the response.** Assign roles: Investigation lead (`sre-engineer`), Operations/
    remediation (`release-engineer`), Comms/scribe (you, or delegate). Confirm who owns what.
 3. **Drive toward mitigation.** Track hypotheses and the mitigation decision; weigh "act now to stop
    pain" vs "investigate more". Make the tradeoff call.
-4. **Communicate** on a fixed cadence to the right audiences; keep the timeline updated continuously.
+4. **Communicate** on the cadence the severity sets (`incident-severity`: 15 min SEV1 / 30 min SEV2),
+   using its initial/update/resolution templates; keep the timeline updated continuously.
 5. **Track actions** — every "someone should…" becomes an owned, tracked item (TodoWrite).
 6. **Resolve & close.** Confirm impact has ended (via `sre-monitor`/investigator), declare resolution,
    communicate it, and **schedule the blameless postmortem** (load `blameless-postmortem`), seeded from your timeline.

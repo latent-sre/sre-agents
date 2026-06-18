@@ -30,6 +30,16 @@ platform-side ones — don't try to debug BOSH.
 - **Many apps failing at once, or failing/evacuating cells ⇒ platform-side** — escalate to the platform
   team with evidence (timeline + blast radius); don't keep digging.
 
+**Escalation packet (hand the platform team a case they can act on, not a hunch):**
+- **Symptom + start time** (UTC) and the **trend** (growing / steady / recovering).
+- **Blast radius** showing it's *not* just us: which apps/routes/orgs/spaces and how many — and the same
+  symptom across apps you don't own (`cf events`, the foundation-wide signal that tipped you off).
+- **Evidence our app is healthy:** `cf app <app>` (instances up), recent `cf events` (no app crashes/
+  OOM), `cf logs --recent` (clean), and that nothing changed our side (no recent deploy/config flip).
+- **What you already ruled out** app-side (deploy, config, dependency, capacity) so they don't repeat it.
+- **The platform signal** you saw: evacuating/failing Diego cells, foundation-wide 502s, cert/NTP, or
+  `cf ssh`-to-`2222` timeouts (network path). Label anything `[unverified]`.
+
 ## Orient
 ```bash
 cf target                      # current api / org / space — confirm you're looking at prod

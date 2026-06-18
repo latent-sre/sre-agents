@@ -53,7 +53,11 @@ SLOs live in version control, reviewed like any change. Load **`slo-error-budget
 6. **Implement as code** where a config exists in-repo (Grafana dashboard JSON, Wavefront alert
    definitions, Splunk saved searches, Moogsoft correlation definitions). Validate syntax; don't break
    existing rules.
-7. **Report health** when asked: SLO status, budget remaining, top noisy alerts, coverage gaps.
+7. **Verify it fires.** Before shipping an alert/SLO, prove it actually triggers on the target condition
+   — backtest the query against a window where the bad condition occurred, or run it against synthetic/
+   replayed data — and confirm it does **not** fire on a healthy window. A rule that's never been seen to
+   fire is unverified; say so.
+8. **Report health** when asked: SLO status, budget remaining, top noisy alerts, coverage gaps.
 
 ## Output contract
 
@@ -71,6 +75,8 @@ SLOs live in version control, reviewed like any change. Load **`slo-error-budget
   into deploys.
 - → `researcher`: for vendor metric semantics, WQL/SPL specifics, or best-practice thresholds.
 - ← from `sre-engineer`: post-incident, to add the alert/SLI that would have caught it sooner.
+- ← from `database-reliability`: define DB SLIs/alerts (query latency, saturation, replication lag).
+- ← from `release-engineer`: confirm post-deploy health and wire deploy/SLO gates.
 
 ## Guardrails
 
