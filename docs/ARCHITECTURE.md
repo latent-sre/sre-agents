@@ -24,10 +24,8 @@ outputs are **generated, not hand-edited**. `AGENTS.md` stays canonical; `CLAUDE
 
 ## 2. Agents vs. skills — who vs. how
 
-- **Agent** = a *specialist with its own isolated context*, system prompt, tool allowlist, and model.
-  It owns one **lane** and returns a distilled summary. (11 agents.)
 - **Skill** = a *reusable procedure / reference / template* that loads on demand via progressive
-  disclosure (only its `description` is resident until a task matches). (34 skills.)
+  disclosure (only its `description` is resident until a task matches). (36 skills.)
 
 Agents reference skills by name, so methodology stays DRY across the fleet.
 
