@@ -28,9 +28,11 @@ perspectives. Two shapes: *[sourced: Anthropic, "Building Effective Agents"]*
   *[sourced: Anthropic multi-agent research system]*
 - **Keep sequential** tightly-coupled work — especially **coding**, where each step depends on the last.
   Fan-out there causes conflicting edits and rework. *[sourced: Anthropic — multi-agent is weak for coding]*
-- **Mind the cost.** Multi-agent fan-out can run ~15× the tokens of a single agent. Spend it only when
-  the outcome's value clears that bar; **most tasks capture the reliability gains inside one agent**
-  (sectioned tool calls, a couple of review lenses) without the 15× cost. *[sourced: Anthropic]*
+- **Mind the cost.** Multi-agent fan-out can run **~15× the tokens of a normal chat** (single agents
+  already run ~4× chat) — so it's a few times a single agent's cost, paid on top of coordination
+  overhead. Spend it only when the outcome's value clears that bar; **most tasks capture the reliability
+  gains inside one agent** (sectioned tool calls, a couple of review lenses) without the multi-agent
+  premium. *[sourced: Anthropic multi-agent research system]*
 
 ## Right-sizing the fan-out
 - 1 agent for a simple lookup; 2–4 for a comparison or multi-lens review; more only for genuinely
@@ -43,8 +45,8 @@ perspectives. Two shapes: *[sourced: Anthropic, "Building Effective Agents"]*
 `coordinator` and `incident-commander` produce an **ordered plan**; the main session executes its
 parallel strands (classic subagents don't dispatch each other). During an incident, technical RCA
 (`sre-engineer`) runs *in parallel* with process/comms (`incident-commander`), and `researcher` fans out
-alongside. `handoff-protocol` carries the "parallelize independent work, keep coupled work sequential"
-rule — this skill is the *why* and *how much*.
+alongside. The fleet handoff map ([`docs/HANDOFFS.md`](../../../docs/HANDOFFS.md)) carries the
+"parallelize independent work, keep coupled work sequential" rule — this skill is the *why* and *how much*.
 
 ## Handoffs
 - → `coordinator` to turn a parallelizable request into an ordered delegation plan.

@@ -20,8 +20,9 @@ Reads existing code first, matches conventions, writes tests, ships clean review
 altitude by loading a ladder skill** — `sde-ladder-senior` (scoped work), `sde-ladder-principal`
 (cross-cutting design & migrations), `sde-ladder-distinguished` (org-wide/high-ambiguity architecture).
 Loads the language `*-craft` skill for what it touches, `database-reliability` for schema/DB work,
-`tdd-workflow` for test-first, `safe-refactor` and `debug-rca` as needed. Hands off to `code-reviewer`
-before "done."
+`tdd-workflow` for test-first, `safe-refactor` and `debug-rca` as needed, `self-improve-loop` to
+iterate against measurable criteria, and `tool-design` when building a tool/MCP integration. Hands off
+to `code-reviewer` before "done."
 
 ### code-reviewer · `opus` · read-only (guarded)
 Rigorous correctness/quality review of a diff before merge. Hunts real bugs, edge cases, contract
@@ -31,7 +32,9 @@ code**. Backs the `merge-gate`. Hands security-deep concerns to `security-review
 ### security-reviewer · `opus` · read-only (guarded)
 Security-focused review: authn/authz, injection (SQLi/XSS/command/path/SSRF), secrets, crypto,
 deserialization, dependency/supply-chain risk, PII exposure. Reports vulnerabilities with severity and
-remediation; **read-only**. The hand-off target from `code-reviewer` when depth is needed.
+remediation; **read-only**. Loads `agent-security` when the change is an agent definition, a tool/MCP
+integration, or a flow that ingests untrusted content (prompt injection, the lethal trifecta). The
+hand-off target from `code-reviewer` when depth is needed.
 
 ### test-engineer · `sonnet` · writes tests
 Designs and writes tests that actually catch bugs, raising meaningful coverage across Python, Bash,
@@ -99,12 +102,14 @@ Consumes findings from `sre-engineer` and `release-engineer`. Skills: `runbook-t
 ### coordinator · `sonnet` · read-only (plan only, no Bash)
 The router. For non-trivial/multi-step requests it triages intent, decomposes the work, and returns an
 explicit **delegation plan** (which agent, what context, success criteria, sequencing, gates) that the
-main session executes. Skip it for a single obvious task. Skill: `route-request`.
+main session executes. Skip it for a single obvious task. Skills: `route-request`, `parallelization`
+(what to fan out vs. keep sequential, and when the cost pays).
 
 ### researcher · `sonnet` · read-only (no Bash)
 Evidence-first fact-finding: official docs, specs/RFCs, vendor APIs, library behavior, version
 differences, error-code meanings, and "how does X work / where is it" in-repo questions. Returns
 concise **cited** answers, labels uncertainty, and **hands back** — it never edits code or systems.
+Loads `context-engineering` — it's the fleet's context-offload, returning a brief instead of a transcript.
 
 ---
 
