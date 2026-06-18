@@ -1,5 +1,7 @@
 # Runbook: error-rate / SLO-burn spike shortly after a release
 
+> ⚠️ **TEMPLATE — not yet live.** Replace `<APP>`, `<team>`, `<YYYY-MM-DD>`, `<grafana link>`, and `<INDEX>` with your real values before using in a real incident.
+
 > **Owner:** `<team>`  ·  **Last reviewed:** `<YYYY-MM-DD>`  ·  **Severity:** page (user-impacting)
 
 ## Purpose & scope

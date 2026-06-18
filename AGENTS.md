@@ -144,6 +144,7 @@ Authored once under `.claude/`, consumed by both tools:
 | Agents | `.claude/agents/*.md` | `.claude/agents/` **and** `.github/agents/*.agent.md` |
 | Skills | `.claude/skills/*/SKILL.md` | `.claude/skills/`, `.github/skills/`, `.agents/skills/` |
 | Project guide | `CLAUDE.md` (imports this file) | `AGENTS.md` |
+| Copilot conventions | (see AGENTS.md) | [`.github/copilot-instructions.md`](.github/copilot-instructions.md) |
 
 Both tools read `.claude/` directly, so the fleet works in Copilot with **zero extra steps**. For
 Copilot-native tool scoping (`.agent.md` arrays, `handoffs`, `target`) run the generator:

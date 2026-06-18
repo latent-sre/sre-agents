@@ -1,5 +1,7 @@
 # Runbook: PCF app instances crashing / restarting (OOM)
 
+> ⚠️ **TEMPLATE — not yet live.** Replace `<APP>`, `<team>`, `<YYYY-MM-DD>`, `<grafana/wavefront link>`, `<links>`, `<i>`, and `<larger>` with your real values before using in a real incident.
+
 > **Owner:** `<team>`  ·  **Last reviewed:** `<YYYY-MM-DD>`  ·  **Severity:** page if user-impacting
 
 ## Purpose & scope
