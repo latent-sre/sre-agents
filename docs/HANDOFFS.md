@@ -50,6 +50,40 @@ lists its own handoff targets; this is the fleet-wide picture. Package context w
   `production-change-gate`) and needs explicit human sign-off.
 - **→ runbook-author:** when a change introduces new operational steps.
 
+### Worked example — "ship feature X with tests and a runbook" (where to parallelize)
+
+The flow above is a **sequential spine** with **one parallel burst**. The `coordinator` loads
+[`parallelization`](../.claude/skills/parallelization/SKILL.md) to decide what runs at once:
+
+```
+ research (unknown API?) ─┐
+                          ▼
+              build feature X  (sde-engineer)            ── SEQUENTIAL (coupled; never fan out coding)
+                          │  produces a diff
+                          ▼
+   ┌──────────── on the finished diff (sectioning) ───────────┐
+   │  code-reviewer  ∥  security-reviewer  ∥  test-engineer    │ ── PARALLEL (independent lenses)
+   └───────────────────────────┬──────────────────────────────┘
+                               ▼  coordinator merges findings → one fix list
+                       sde-engineer applies fixes  → re-verify   (evaluator-optimizer loop)
+                               ▼
+                          [merge-gate] ─▶ release-engineer ([release-gate] → [production-change-gate] → pcf-deploy)
+                               ▼
+                         runbook-author    (after final behavior + deploy steps are known)
+```
+
+- **Sequential** because it's coupled: the build (each edit depends on the last — *don't* fan out
+  coding), and the gates (pass/fail checkpoints, prod needs human sign-off).
+- **Parallel** because they're independent: 3 review lenses on the *same* diff (+ `researcher` up front
+  if an API/spec is unknown). That's 3–4 strands — the right-sized band, run as fan-out **inside the
+  main session**, not a costly multi-agent swarm.
+- **Each strand** gets an isolated context + a bounded mandate and returns a **short summary**
+  ([`context-engineering`](../.claude/skills/context-engineering/SKILL.md)); the `coordinator` does a
+  **merge pass** (dedupe/reconcile) before routing one consolidated fix list back — the
+  [`self-improve-loop`](../.claude/skills/self-improve-loop/SKILL.md) generate→evaluate→revise cycle.
+- **runbook-author is downstream-gated**, not parallel with the build — it documents the *final*
+  shipped behavior and real ops steps (it may draft once the design is frozen).
+
 ---
 
 ## Operate → mitigate → learn
