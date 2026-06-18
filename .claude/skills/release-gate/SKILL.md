@@ -29,6 +29,8 @@ clear **`production-change-gate`**.
 - [ ] **Monitoring in place** — alerts/SLOs cover the new behavior; new paging alerts link a runbook
       (`sre-monitor`).
 - [ ] **Comms ready** — stakeholders/on-call know the deploy window; status updates planned.
+- [ ] **(Prod only) Production change approved** — `production-change-gate` cleared with explicit human
+      sign-off (GitHub environment + required reviewers); no prod deploy passes on this checklist alone.
 
 ## Verdict
 ```

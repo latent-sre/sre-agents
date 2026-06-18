@@ -25,7 +25,7 @@ ts(app.http.requests.latency, app="checkout" and env="prod")
 ```
 - Filter by point tags: `and`, `or`, `not`; wildcard with `*` (`app="checkout-*"`).
 - Aggregate across series: `sum(...)`, `avg(...)`, `max(...)`, `count(...)`, optionally grouping by a
-  tag as a parameter: `sum(ts(app.http.requests.count), app)` (equivalently `sum(ts(...) by (app))`).
+  tag as a parameter: `sum(ts(app.http.requests.count), app)`.
   Grouping is a parameter **inside** the function — a trailing `... by instance` after the closing
   paren is not valid WQL.
 

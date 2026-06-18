@@ -51,7 +51,7 @@ a tight, cited answer the requester can act on without re-checking. You research
 ```
 Question: <restated, with version/scope>
 Answer: <direct, structured — lead with the conclusion>
-Evidence (label each load-bearing claim [sourced] / [inferred] / [unverified]):
+Evidence (label each load-bearing claim [verified] / [sourced] / [unverified]):
   - [sourced] <claim> — <URL or file:line> (source date/version)
   - …
 Could not verify: <claims you couldn't source — say so plainly; never upgrade these to fact>
