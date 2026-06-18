@@ -25,6 +25,12 @@ both Claude Code and VS Code / GitHub Copilot** (see [Portability](#portability)
 Do **not** suggest Kubernetes, cloud-managed services, or infra-layer fixes. Stay in the app/ops lane;
 hand platform-internal problems to the platform team.
 
+**Know the boundary.** We own our apps up to the platform edge; we do **not** operate the platform
+itself — **BOSH, Ops Manager, Diego cells, Gorouter, CredHub/UAA, and foundation upgrades** belong to the
+platform/infrastructure team. When a problem is platform-side (e.g. many apps failing at once, failing
+cells, Gorouter-wide 5xx), our job is to **recognize it and escalate with evidence** — timestamps, blast
+radius, and `cf` output showing our app is healthy — not to operate BOSH ourselves.
+
 ## The roster (agents)
 
 Agents are **who** does the work; [skills](#skills) are **how**. Each agent loads the skills relevant

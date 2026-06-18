@@ -14,6 +14,15 @@ metadata:
 A good runbook is **specific, sequential, verifiable, and reversible** — not an essay. Write for someone
 stressed, low-context, and in a hurry.
 
+## Runbook vs playbook vs SOP
+- **Runbook** — the steps to handle *one* alert/task/failure mode (this template).
+- **Playbook** — a broader response *strategy* that orchestrates multiple runbooks (e.g. a major-incident
+  playbook). Lives closer to `incident-severity` / `incident-commander`.
+- **SOP** — a fixed procedure for routine, normal operations (not incident-driven).
+
+Keep them current the only way that works: **rehearse them.** Run game days / drills under realistic
+conditions — *ten minutes of rehearsal prevents ten hours of confusion* — and bump `last_verified` after each.
+
 ## Authoring rules
 - **Numbered, imperative steps.** Copy-pasteable commands with real values or clearly templated
   `<PLACEHOLDER>`s. No "obviously" or "just".

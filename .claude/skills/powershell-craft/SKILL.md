@@ -51,9 +51,25 @@ function Get-Thing {
 - Need a Windows-PowerShell-only module from PS 7? `Import-Module <name> -UseWindowsPowerShell` proxies
   it via a 5.1 session — but objects come back **deserialized** (properties only, no live methods).
 
+## Cross-platform (PS 7 on Linux/PCF too)
+- Don't hardcode separators: use `Join-Path` and `[IO.Path]::DirectorySeparatorChar` for paths,
+  `[IO.Path]::PathSeparator` for PATH-style lists.
+- Branch OS-specific work on the automatic vars `$IsWindows` / `$IsLinux` / `$IsMacOS`.
+- Linux is **case-sensitive** for both file paths *and* environment-variable names (`$env:Path` ≠
+  `$env:PATH`) — match exact case.
+
+## Secrets & signing
+- Pull automation secrets from a vault at run time via **SecretManagement + SecretStore** (or Azure Key
+  Vault / HashiCorp Vault) — `Get-Secret` — never bake them into scripts, params, or transcripts.
+- Sign production scripts with **`Set-AuthenticodeSignature`** so they run under `AllSigned` execution
+  policy / Constrained Language Mode on locked-down hosts.
+
 ## Quality gate & tests
-- **Pass `PSScriptAnalyzer`**. Test with **`Pester`**: `Describe/Context/It`, `Mock`, `Should`;
-  test param validation and error paths. **Pester 5** runs Discovery then Run — put setup in
-  `BeforeAll`/`BeforeEach` (not bare code in `Describe`), share state via `$script:` scope, and assert
-  mocks with `Should -Invoke`. See `tdd-workflow`.
+- **Pass `PSScriptAnalyzer`** (fail CI on `Error` severity). High-value rules to enforce:
+  `PSUseApprovedVerbs`, `PSAvoidUsingCmdletAliases`, `PSUseShouldProcessForStateChangingFunctions`,
+  `PSAvoidUsingInvokeExpression`, `PSAvoidUsingPlainTextForPassword`,
+  `PSAvoidUsingConvertToSecureStringWithPlainText`.
+- Test with **`Pester`**: `Describe/Context/It`, `Mock`, `Should`; test param validation and error paths.
+  **Pester 5** runs Discovery then Run — put setup in `BeforeAll`/`BeforeEach` (not bare code in
+  `Describe`), share state via `$script:` scope, and assert mocks with `Should -Invoke`. See `tdd-workflow`.
 - Keep secrets out of logs/transcripts; use `SecureString`/credential objects, never plaintext.
