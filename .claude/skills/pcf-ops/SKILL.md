@@ -77,7 +77,10 @@ buffer, go to Splunk (`splunk-triage`).
   timeout is **< 90s**, it can close a connection just as Gorouter reuses it → 502. Fix: set the app
   server's keep-alive idle timeout **> 90s** (Gorouter closes idle conns at 90s). Usually app-side.
 - **503 Service Unavailable** — Gorouter has **no backend to route to**: all instances down/crashed, or
-  the route isn't registered yet (registration lag right after a push). App-down or routing.
+  the route isn't registered yet (registration lag right after a push). App-down or routing. Also seen
+  platform-side: **clock skew** between Gorouter and a Diego cell breaks the TLS handshake
+  (`x509: certificate ... is not yet valid`) → 503; that's an NTP/time-sync problem for the platform team
+  to fix — escalate, don't chase it app-side.
 - **One route/app 502/503 while others are fine ⇒ app-side; foundation-wide ⇒ platform-side** (escalate).
 
 **Health checks (`cf set-health-check` / manifest):**
