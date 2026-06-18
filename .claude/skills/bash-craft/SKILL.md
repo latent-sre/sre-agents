@@ -19,9 +19,11 @@ Shell is for glue and orchestration. If a script grows real logic/data structure
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-IFS=$'\n\t'
 ```
 - `-e` exit on error, `-u` error on unset var, `-o pipefail` catch failures mid-pipe.
+- **Set `IFS` locally where you split, not globally.** A global `IFS=$'\n\t'` changes *every* unquoted
+  expansion and surprises more than it helps; scope it to the read that needs it
+  (`while IFS=',' read -r a b; do …`). Quoting every expansion is the real fix.
 - Trap cleanup: `tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT`.
 - **`set -e` is leakier than it looks** — it's suppressed inside `if`/`while`/`&&`/`||` conditions and
   command substitutions `$(...)`. Add `shopt -s inherit_errexit` so `-e` reaches `$(...)`, and use

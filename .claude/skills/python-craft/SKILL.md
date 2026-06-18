@@ -28,7 +28,9 @@ defaults below apply when none is set.
 
 ## Correctness traps to avoid
 - Mutable default args (`def f(x=[])`) — use `None` + assign inside.
-- Bare `except:` / `except Exception` that swallows — catch specific types; let unexpected ones surface.
+- **Swallowing** exceptions — bare `except:` or `except Exception: pass` hides bugs. Catch specific
+  types; a top-level boundary may catch broadly but must **log and re-raise** (or convert), never
+  silently continue.
 - `==` vs `is` (use `is` only for `None`/singletons); truthiness bugs on `0`/`""`/empty collections.
 - Generator exhaustion; modifying a list while iterating; floating-point equality.
 - Blocking calls inside `async` code.
