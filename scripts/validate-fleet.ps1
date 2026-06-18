@@ -10,6 +10,9 @@
               no leading/trailing/consecutive hyphen, matches the parent directory; `description`
               present, non-empty, <= 1024 chars; referenced files (references/ assets/ scripts/) exist.
     Agents  - frontmatter present; `name` valid charset and matches the filename; `description` present.
+    Scope   - no agent/skill *promotes* off-charter tooling (Kubernetes/IaC/Prometheus); our runtime is
+              on-prem + PCF and observability is Wavefront/Splunk/Grafana. Charter disclaimers and
+              portability/equivalence notes are allowlisted in the script.
 
   This covers the documented hard rules. For the upstream reference validator, see
   https://github.com/agentskills/agentskills (skills-ref).
@@ -108,7 +111,40 @@ foreach ($a in $agentFiles) {
     }
 }
 
-Write-Host "Validated $skillCount skills and $($agentFiles.Count) agents."
+# ---- Scope guard ----
+# Charter (AGENTS.md): application operations on on-prem + PCF. NO Kubernetes, IaC, or cloud-managed
+# infra; observability is Wavefront/Splunk/Grafana, not Prometheus. Fail any agent/skill that
+# *promotes* off-charter tooling, so the charter is enforced in CI rather than living only in prose.
+# Legitimate mentions (charter disclaimers; portability/equivalence notes) are allowlisted by exact
+# fragment below -- add a line here WITH a reason if a new legitimate use appears.
+$scopeTokens = 'kubernetes','kubectl','k8s','terraform','prometheus','promql'
+$scopeRe     = '(?i)\b(' + ($scopeTokens -join '|') + ')\b'
+$scopeAllow  = @(
+    'do NOT propose Kubernetes',  # release-engineer.md  -- charter disclaimer
+    'cloud or Kubernetes',        # sde-engineer.md       -- charter disclaimer (line-wrapped)
+    'or Terraform/grafana',       # grafana-dashboards    -- dashboards-as-code provisioning aside
+    'Prometheus style',           # instrument-service    -- OTel metric-naming portability note
+    'PromQL equivalence',         # wavefront-queries     -- section heading
+    'accepts PromQL'              # wavefront-queries     -- WQL/PromQL equivalence note
+)
+$scopeTargets = @($agentFiles.FullName)
+$scopeTargets += Get-ChildItem (Join-Path $root '.claude/skills') -Directory |
+    ForEach-Object { Join-Path $_.FullName 'SKILL.md' } | Where-Object { Test-Path $_ }
+foreach ($path in $scopeTargets) {
+    $rel = $path.Substring($root.Length).TrimStart('\/')
+    $n = 0
+    foreach ($ln in (Get-Content -LiteralPath $path -Encoding UTF8)) {
+        $n++
+        $m = [regex]::Match($ln, $scopeRe)
+        if (-not $m.Success) { continue }
+        $skip = $false
+        foreach ($p in $scopeAllow) { if ($ln -like "*$p*") { $skip = $true; break } }
+        if ($skip) { continue }
+        $issues.Add("scope '$rel' line ${n}: off-charter tooling '$($m.Groups[1].Value)' - repo is PCF / no-K8s (Wavefront/Splunk/Grafana). Rewrite for our stack, or allowlist the line in validate-fleet.ps1 if it is a deliberate disclaimer/portability note.")
+    }
+}
+
+Write-Host "Validated $skillCount skills and $($agentFiles.Count) agents (+ scope guard)."
 if ($issues.Count -eq 0) {
     Write-Host "VALIDATION: PASS" -ForegroundColor Green
     exit 0
