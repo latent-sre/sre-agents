@@ -34,7 +34,9 @@ radius, and `cf` output showing our app is healthy — not to operate BOSH ourse
 ## The roster (agents)
 
 Agents are **who** does the work; [skills](#skills) are **how**. Each agent loads the skills relevant
-to its lane on demand.
+to its lane on demand. For a paragraph on each agent (lane · `model:` · writes? · skills · handoffs)
+see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom see
+[`docs/HANDOFFS.md`](docs/HANDOFFS.md).
 
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|

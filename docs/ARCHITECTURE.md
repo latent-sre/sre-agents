@@ -1,7 +1,8 @@
 # Architecture
 
 Design rationale + maps for the fleet. The cross-tool usage guide is [AGENTS.md](../AGENTS.md); this
-doc explains *why* it's shaped this way.
+doc explains *why* it's shaped this way. Companion docs: [AGENT-CATALOG.md](AGENT-CATALOG.md) (a
+paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map).
 
 ## Design principles
 1. **Agents are *who*, skills are *how*.** Thin, single-lane agents; reusable `SKILL.md` skills carry the

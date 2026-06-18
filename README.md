@@ -45,6 +45,7 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
   skills/                  38 skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
+docs/                       ARCHITECTURE (why) · AGENT-CATALOG (per-agent roster) · HANDOFFS (collab map) · BRANCH-REVIEW
 scripts/
   sync-copilot.ps1 / .sh   generate .github/agents + .github/skills for Copilot-native tooling
   validate-fleet.ps1       validate all skills/agents against the Agent Skills spec (CI-friendly)

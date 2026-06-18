@@ -1,0 +1,130 @@
+# Agent catalog
+
+Narrative descriptions of the 12 subagents in [`.claude/agents/`](../.claude/agents/) and the skills
+each leans on. The terse roster table is in [`AGENTS.md`](../AGENTS.md); the collaboration map is in
+[`HANDOFFS.md`](HANDOFFS.md); the *why* is in [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
+> **Read-only agents** (no Edit/Write): `coordinator`, `code-reviewer`, `security-reviewer`,
+> `sre-engineer`, `incident-commander`, `researcher`. The four that keep `Bash` for observation are
+> further constrained by `scripts/readonly-guard.py`, which blocks state-changing shell. The writers
+> (`sde-engineer`, `test-engineer`, `database-reliability`, `sre-monitor`, `release-engineer`,
+> `runbook-author`) edit files; prod-facing execution still needs human sign-off via the gates.
+
+---
+
+## SDE lane
+
+### sde-engineer · `opus` · writes code
+The team's software engineer (Python/Bash/PowerShell, and Go/TypeScript/React when a repo uses them).
+Reads existing code first, matches conventions, writes tests, ships clean reviewable diffs. **Scales
+altitude by loading a ladder skill** — `sde-ladder-senior` (scoped work), `sde-ladder-principal`
+(cross-cutting design & migrations), `sde-ladder-distinguished` (org-wide/high-ambiguity architecture).
+Loads the language `*-craft` skill for what it touches, `database-reliability` for schema/DB work,
+`tdd-workflow` for test-first, `safe-refactor` and `debug-rca` as needed. Hands off to `code-reviewer`
+before "done."
+
+### code-reviewer · `opus` · read-only (guarded)
+Rigorous correctness/quality review of a diff before merge. Hunts real bugs, edge cases, contract
+breaks, and missing tests; ranks findings by severity and confidence; suggests fixes but **does not edit
+code**. Backs the `merge-gate`. Hands security-deep concerns to `security-reviewer`.
+
+### security-reviewer · `opus` · read-only (guarded)
+Security-focused review: authn/authz, injection (SQLi/XSS/command/path/SSRF), secrets, crypto,
+deserialization, dependency/supply-chain risk, PII exposure. Reports vulnerabilities with severity and
+remediation; **read-only**. The hand-off target from `code-reviewer` when depth is needed.
+
+### test-engineer · `sonnet` · writes tests
+Designs and writes tests that actually catch bugs, raising meaningful coverage across Python, Bash,
+PowerShell, TypeScript/React, and Go. Tests behavior and contracts, not internals. Loads `tdd-workflow`
+and the language `*-craft` skills. Edits **test code only** — hands real fixes to `sde-engineer`.
+
+### database-reliability · `opus` · writes migrations (prod gated)
+The DBRE for our **on-prem databases**. Designs safe, reversible schema migrations and tunes query
+performance; **writes** migration files and analysis but does **not** execute changes against a
+production database — it hands the forward + rollback scripts to `release-engineer` to run under the
+`production-change-gate`. Owns expand→contract migrations (loads `safe-refactor`), `EXPLAIN`/index/N+1
+tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO). Loads the
+`database-reliability` skill for the engine-specific playbook; records engine/version specifics in
+[`databases.md`](databases.md). Pairs with `sde-engineer` on query/ORM usage and `sre-engineer` on
+DB-driven incidents.
+
+---
+
+## SRE lane
+
+### sre-engineer · `opus` · read-only (guarded)
+Detection-signal interpretation, triage/severity, and structured root-cause investigation when
+something is wrong in prod/staging. Forms and tests hypotheses against Splunk, Wavefront/Grafana,
+events, ThousandEyes, and recent changes. **Scales by ladder skill** — `sre-ladder-responder` (first
+response), `sre-ladder-investigator` (hypothesis-driven RCA), `sre-ladder-elite` (systemic/distributed
+failure). Loads `triage-golden-signals`, the stack skills (`pcf-ops`, `splunk-triage`,
+`wavefront-queries`, `moogsoft-correlation`, `thousandeyes-network`), and `database-reliability` for
+DB-driven incidents. **Recommends mitigation; does not change prod.**
+
+### sre-monitor · `sonnet` · writes obs-as-code
+Steady-state observability: Grafana dashboards, Wavefront/Splunk alert tuning, SLIs/SLOs and error
+budgets, Moogsoft correlation to cut noise, ThousandEyes synthetics. Owns alert rules, dashboard JSON,
+and SLO configs. Skills: `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`,
+`moogsoft-correlation`. The agent that **closes detection gaps** after an incident.
+
+### incident-commander · `sonnet` · read-only (guarded)
+Runs the *process* of a live major incident (not the debugging): declares severity, structures the
+response, keeps the timeline, drives stakeholder comms, tracks action items, calls resolution and
+schedules the postmortem. Coordinates; `sre-engineer` does the technical RCA in parallel. Skills:
+`incident-severity` (SEV1–4 rubric + comms cadence), `blameless-postmortem`. Emits a delegation plan
+rather than dispatching directly (see [CLAUDE.md](../CLAUDE.md) → *Subagent dispatch*).
+
+---
+
+## Ship & docs lane
+
+### release-engineer · `sonnet` · writes CI/infra (prod gated)
+CI/CD, builds, deploys, rollbacks on our stack: GitHub Actions pipelines, Bamboo→Actions migration,
+versioning/changelogs, PCF deploys via `cf` CLI (blue-green/rolling/canary), feature flags, and
+rollbacks. **Executes** deploy/release actions — anything irreversible or prod-facing needs explicit
+human confirmation (`release-gate` → `production-change-gate`). The hand-off target for fast incident
+mitigation. Skills: `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`,
+`rollback-mitigation`, `release-gate`.
+
+### runbook-author · `sonnet` · writes docs
+Creates/updates operational runbooks — the step-by-step procedures on-call follows for an alert or
+failure mode. Produces precise, copy-pasteable, verified procedures and keeps existing runbooks current.
+Consumes findings from `sre-engineer` and `release-engineer`. Skills: `runbook-template`,
+`blameless-postmortem`.
+
+---
+
+## Selectors & support
+
+### coordinator · `sonnet` · read-only (plan only, no Bash)
+The router. For non-trivial/multi-step requests it triages intent, decomposes the work, and returns an
+explicit **delegation plan** (which agent, what context, success criteria, sequencing, gates) that the
+main session executes. Skip it for a single obvious task. Skill: `route-request`.
+
+### researcher · `sonnet` · read-only (no Bash)
+Evidence-first fact-finding: official docs, specs/RFCs, vendor APIs, library behavior, version
+differences, error-code meanings, and "how does X work / where is it" in-repo questions. Returns
+concise **cited** answers, labels uncertainty, and **hands back** — it never edits code or systems.
+
+---
+
+## Recommended future agents (not yet built)
+
+Tailored to a pragmatic, on-prem/PCF, ops-heavy team — listed by value. Add one only when a recurring,
+*separable* responsibility justifies the context isolation.
+
+1. **On-call / alert front-end** — first-pass noise suppression and cross-source correlation
+   (Splunk/Grafana/Wavefront/Moogsoft/ThousandEyes), enriching pages with context before a human reads
+   them. Detection is where most incidents are won or lost; today this is split across `sre-monitor` +
+   the `moogsoft-correlation` skill.
+2. **Performance / capacity engineer** — reads Wavefront/Grafana history to forecast saturation and
+   right-size PCF foundations/cells and self-hosted runners (no elastic autoscaling to lean on).
+   Currently the tail end of `sre-monitor`'s lane.
+3. **Documentation / knowledge agent** — keeps `AGENTS.md`, `CLAUDE.md`, runbooks, and these docs
+   current; the natural consumer of every other agent's output. Today this is `runbook-author` plus
+   manual upkeep.
+
+> **Deliberately *not* separate agents:** seniority tiers — they're `*-ladder-*` skills loaded by the
+> single `sde-engineer`/`sre-engineer`, not cloned junior/senior/principal agents (see [ARCHITECTURE.md](ARCHITECTURE.md) → *Design principles* #2).
+> *(Database depth, by contrast, earned its own agent — `database-reliability` — because DBRE work is a
+> recurring, separable responsibility, not just an altitude.)*
