@@ -114,3 +114,7 @@ Recommend them; let release-engineer execute.
   recurring cause — capture logs/events first.
 - Can't `cf ssh` (the connection to port `2222` times out)? That's the SSH proxy / network path, not
   your app — a network/platform signal, not an app bug.
+- Diagnose a bound backing service without leaving your machine by **port-forwarding through the app
+  container**: `cf ssh APP -L 63306:db.host:3306` then connect a local client to `localhost:63306`. This
+  is read-only triage (a tunnel, not a change) — but reaching the DB through it still respects the
+  database's own access controls; don't run state-changing queries without the `production-change-gate`.

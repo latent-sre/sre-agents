@@ -14,6 +14,15 @@ metadata:
 A good runbook is **specific, sequential, verifiable, and reversible** — not an essay. Write for someone
 stressed, low-context, and in a hurry.
 
+## Runbook vs playbook vs SOP
+- **Runbook** — the steps to handle *one* alert/task/failure mode (this template).
+- **Playbook** — a broader response *strategy* that orchestrates multiple runbooks (e.g. a major-incident
+  playbook). Lives closer to `incident-severity` / `incident-commander`.
+- **SOP** — a fixed procedure for routine, normal operations (not incident-driven).
+
+Keep them current the only way that works: **rehearse them.** Run game days / drills under realistic
+conditions — *ten minutes of rehearsal prevents ten hours of confusion* — and bump `last_verified` after each.
+
 ## Authoring rules
 - **Numbered, imperative steps.** Copy-pasteable commands with real values or clearly templated
   `<PLACEHOLDER>`s. No "obviously" or "just".
@@ -44,11 +53,15 @@ Owner · Last reviewed · Severity
 ## Verification        — how to confirm the issue is resolved
 ## Rollback / cleanup  — how to undo each change; safe-abort
 ## Escalation          — when to escalate and to whom (+ what to hand over)
+## Communication       — who to notify + cadence while this is active (link `incident-severity`)
+## Post-Incident       — close-out checklist: bump `last_verified`, file automation candidates
 ## References          — dashboards, related runbooks, postmortems
 ```
 
 ## Tip
 Link every paging alert to its runbook (`sre-monitor`). The best runbook step is sometimes "run this
-script" — if a step is fully mechanical, recommend automating it (`sde-engineer`/`release-engineer`).
+script" — if a step is fully mechanical, recommend automating it (`sde-engineer`/`release-engineer`)
+along the **Crawl → Walk → Run** path: first document the manual steps (crawl), then wrap them in a
+checked script the on-call runs by hand (walk), then trigger it automatically once it's proven (run).
 Data-drive the alert→runbook link in Splunk with a lookup: `... | lookup instructions_lookup alert_type
 OUTPUT runbook_url` so saved searches surface the right runbook automatically.

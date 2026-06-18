@@ -38,6 +38,11 @@ Think first; the diff is the easy part.
 5. **Implement in small, independently shippable diffs** — not one big-bang change.
 6. **Verify across the boundary:** tests for old + new during the expand phase; check the consumers.
 
+## Judgment
+- **Technical debt is a tool, not a sin.** Deliberate, prudent debt taken to hit a real deadline is fine
+  *if you record it* (a tracking ticket + the trigger to pay it back). What's not fine is unacknowledged
+  debt or debt taken out of carelessness — name it in the PR so the team chooses it with eyes open.
+
 ## Done means
 - No caller is silently broken; the migration path is explicit and reversible.
 - Risky behavior is flag-gated; the rollback for each step is written down.

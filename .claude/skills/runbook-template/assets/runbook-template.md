@@ -52,6 +52,15 @@ Safe-abort: <how to stop mid-procedure without making it worse>
 
 Hand over (handoff-protocol): symptom, what you tried, current state, what you did NOT touch.
 
+## Communication
+- Notify: <channel / stakeholders> · Cadence while active: <e.g. every 30 min per `incident-severity`>
+- Initial / update / resolved message owner: <role>
+
+## Post-Incident
+- [ ] **Update this runbook** with anything learned, and bump `last_verified`.
+- [ ] File follow-up **automation candidates** (Crawl→Walk→Run) as tickets.
+- [ ] If this was an incident, link the postmortem here and feed action items back in.
+
 ## References
 - Related runbooks: <…>
 - Postmortems: <…>
