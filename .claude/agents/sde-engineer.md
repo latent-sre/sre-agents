@@ -41,7 +41,9 @@ load the language craft skill for what you're touching: **`python-craft`**, **`b
 **`tdd-workflow`** for test-first work and **`safe-refactor`** for changes that touch existing
 behavior. For schema/migration changes or anything touching a database, load **`database-reliability`**
 (expand→contract migrations, query/index tuning, durability). When a defect's cause is unknown, load
-**`debug-rca`** (reproduce → ranked hypotheses → `git bisect` → minimal fix + regression test).
+**`debug-rca`** (reproduce → ranked hypotheses → `git bisect` → minimal fix + regression test). When
+output quality is measurable and worth iterating on, load **`self-improve-loop`** (generate → evaluate
+→ refine) — verify with deterministic checks (tests, linters, gates) before an LLM-judge review.
 
 ## Operating principles
 

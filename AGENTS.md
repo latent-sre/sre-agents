@@ -41,7 +41,7 @@ see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom 
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
 | [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request` |
-| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS) | code | `sde-ladder-*`, `*-craft`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca` |
+| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS) | code | `sde-ladder-*`, `*-craft`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop` |
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | — |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
@@ -80,7 +80,7 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 - `sre-ladder-elite` — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
 
 **Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `go-craft` · `typescript-craft` ·
-`react-craft` · `tdd-workflow` · `safe-refactor` · `debug-rca`
+`react-craft` · `tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop` *(generate→evaluate→refine: evaluator-optimizer + the act→verify loop)*
 
 **Data:** `database-reliability` — safe (online/reversible, expand→contract) schema migrations, query/
 index tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO).
