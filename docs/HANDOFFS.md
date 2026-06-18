@@ -11,6 +11,9 @@ lists its own handoff targets; this is the fleet-wide picture. Package context w
   need to start cold: intent, what's done, what you found, current state, success criteria.
 - **Parallelize independent work** (research ∥ a second review lens ∥ investigation); keep tightly-
   coupled coding **sequential** in one agent.
+- **Right-size the fan-out:** 1 agent for a simple lookup, 2–4 for a comparison or multi-lens review,
+  more only for genuinely complex, decomposable work. Extra agents cost coordination and tokens — add
+  them when parallelism pays, not by default.
 - **Gates are checkpoints, not agents** — insert `merge-gate` / `release-gate` / `production-change-gate`
   on the path, don't "hand off" to them.
 
@@ -24,12 +27,13 @@ lists its own handoff targets; this is the fleet-wide picture. Package context w
       │  (single obvious task: route directly)              │
       ▼                                                     ▼
   sde-engineer ──(load sde-ladder-* by altitude)──▶ code-reviewer ──▶ [merge-gate] ──▶ release-engineer
-   │   │   ▲                                            │                                  │
-   │   │   └────────── fix findings ───────────────────┘                          [release-gate]
-   │   │                                                                                   │
-   │   └─▶ security-reviewer  (auth / secrets / input / crypto / deps)            [production-change-gate]
-   │   └─▶ test-engineer      (coverage thin / dedicated test focus)                       │
-   │                                                                                       ▼
+   │   │   │   ▲                                        │                                  │
+   │   │   │   └────────── fix findings ───────────────┘                          [release-gate]
+   │   │   │                                                                               │
+   │   │   └─▶ security-reviewer (auth / secrets / input / crypto / deps)         [production-change-gate]
+   │   ├─▶ test-engineer        (coverage thin / dedicated test focus)                     │
+   │   └─▶ database-reliability (schema/migration; writes fwd+rollback scripts)            ▼
+   │            └─▶ release-engineer runs the migration under [production-change-gate]
    └─▶ researcher (unknown API/spec/lib)                                    pcf-deploy ──▶ runbook-author
                                                                                        (if new ops steps)
 ```
@@ -38,6 +42,9 @@ lists its own handoff targets; this is the fleet-wide picture. Package context w
 - **sde-engineer → code-reviewer:** every non-trivial change before merge (this *is* the `merge-gate`).
 - **sde-engineer → security-reviewer:** auth, crypto, input handling, deserialization, dependency changes.
 - **sde-engineer ⇄ test-engineer:** hand off when coverage is thin; test-engineer hands a *real bug* back.
+- **sde-engineer → database-reliability:** for schema changes / migrations / slow queries. DBRE designs
+  and **writes** the expand→contract migration + rollback, then hands those scripts to `release-engineer`
+  to **execute under `production-change-gate`** — DBRE does not touch a prod database itself.
 - **code-reviewer → sde-engineer:** apply fixes. **→ security-reviewer:** when depth is needed.
 - **release-engineer:** owns CI/Actions + PCF deploy; **prod is gated** (`release-gate` →
   `production-change-gate`) and needs explicit human sign-off.
@@ -65,9 +72,12 @@ lists its own handoff targets; this is the fleet-wide picture. Package context w
   `triage-golden-signals` to frame the signals; it **investigates and recommends**, it does **not**
   change prod.
 - **sre-engineer ⇄ incident-commander:** declare/run a major incident; technical RCA and process/comms
-  run *in parallel*.
+  run *in parallel*. The commander sizes severity with `incident-severity` (SEV1–4 + comms cadence).
 - **sre-engineer → release-engineer:** to execute a mitigation (`rollback-mitigation`) — **with human
   confirmation**.
+- **sre-engineer → database-reliability:** when the incident is DB-driven (slow queries, lock/connection-
+  pool saturation, replication lag) — DBRE diagnoses and recommends; prod changes still go via
+  `release-engineer` under `production-change-gate`.
 - **sre-engineer → sde-engineer:** to implement the confirmed root-cause fix.
 - **incident → runbook-author:** capture the procedure the incident exposed (with `blameless-postmortem`).
 - **→ sre-monitor:** close the detection gap so the failure class can't recur silently.

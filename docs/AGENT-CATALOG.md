@@ -1,12 +1,14 @@
 # Agent catalog
 
-Narrative descriptions of the 11 subagents in [`.claude/agents/`](../.claude/agents/) and the skills
+Narrative descriptions of the 12 subagents in [`.claude/agents/`](../.claude/agents/) and the skills
 each leans on. The terse roster table is in [`AGENTS.md`](../AGENTS.md); the collaboration map is in
 [`HANDOFFS.md`](HANDOFFS.md); the *why* is in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 > **Read-only agents** (no Edit/Write): `coordinator`, `code-reviewer`, `security-reviewer`,
 > `sre-engineer`, `incident-commander`, `researcher`. The four that keep `Bash` for observation are
-> further constrained by `scripts/readonly-guard.py`, which blocks state-changing shell.
+> further constrained by `scripts/readonly-guard.py`, which blocks state-changing shell. The writers
+> (`sde-engineer`, `test-engineer`, `database-reliability`, `sre-monitor`, `release-engineer`,
+> `runbook-author`) edit files; prod-facing execution still needs human sign-off via the gates.
 
 ---
 
@@ -36,6 +38,16 @@ Designs and writes tests that actually catch bugs, raising meaningful coverage a
 PowerShell, TypeScript/React, and Go. Tests behavior and contracts, not internals. Loads `tdd-workflow`
 and the language `*-craft` skills. Edits **test code only** — hands real fixes to `sde-engineer`.
 
+### database-reliability · `opus` · writes migrations (prod gated)
+The DBRE for our **on-prem databases**. Designs safe, reversible schema migrations and tunes query
+performance; **writes** migration files and analysis but does **not** execute changes against a
+production database — it hands the forward + rollback scripts to `release-engineer` to run under the
+`production-change-gate`. Owns expand→contract migrations (loads `safe-refactor`), `EXPLAIN`/index/N+1
+tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO). Loads the
+`database-reliability` skill for the engine-specific playbook; records engine/version specifics in
+[`databases.md`](databases.md). Pairs with `sde-engineer` on query/ORM usage and `sre-engineer` on
+DB-driven incidents.
+
 ---
 
 ## SRE lane
@@ -58,8 +70,9 @@ and SLO configs. Skills: `slo-error-budget`, `wavefront-queries`, `grafana-dashb
 ### incident-commander · `sonnet` · read-only (guarded)
 Runs the *process* of a live major incident (not the debugging): declares severity, structures the
 response, keeps the timeline, drives stakeholder comms, tracks action items, calls resolution and
-schedules the postmortem. Coordinates; `sre-engineer` does the technical RCA in parallel. Skill:
-`blameless-postmortem`. Emits a delegation plan rather than dispatching directly (see ARCHITECTURE §4).
+schedules the postmortem. Coordinates; `sre-engineer` does the technical RCA in parallel. Skills:
+`incident-severity` (SEV1–4 rubric + comms cadence), `blameless-postmortem`. Emits a delegation plan
+rather than dispatching directly (see ARCHITECTURE §4).
 
 ---
 
@@ -105,12 +118,13 @@ Tailored to a pragmatic, on-prem/PCF, ops-heavy team — listed by value. Add on
    them. Detection is where most incidents are won or lost; today this is split across `sre-monitor` +
    the `moogsoft-correlation` skill.
 2. **Performance / capacity engineer** — reads Wavefront/Grafana history to forecast saturation and
-   right-size PCF foundations/cells and self-hosted runners (no elastic Kubernetes autoscaling to lean
-   on). Currently the tail end of `sre-monitor`'s lane.
+   right-size PCF foundations/cells and self-hosted runners (no elastic autoscaling to lean on).
+   Currently the tail end of `sre-monitor`'s lane.
 3. **Documentation / knowledge agent** — keeps `AGENTS.md`, `CLAUDE.md`, runbooks, and these docs
    current; the natural consumer of every other agent's output. Today this is `runbook-author` plus
    manual upkeep.
 
-> **Deliberately *not* separate agents:** seniority tiers (they're `*-ladder-*` skills) and database
-> migration depth (now the `database-reliability` skill, loaded by `sde-engineer`/`sre-engineer`) —
-> see ARCHITECTURE §3.
+> **Deliberately *not* separate agents:** seniority tiers — they're `*-ladder-*` skills loaded by the
+> single `sde-engineer`/`sre-engineer`, not cloned junior/senior/principal agents (see ARCHITECTURE §3).
+> *(Database depth, by contrast, earned its own agent — `database-reliability` — because DBRE work is a
+> recurring, separable responsibility, not just an altitude.)*
