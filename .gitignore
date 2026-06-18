@@ -3,3 +3,6 @@
 # time with the sync script; don't hand-edit. Remove these lines if you prefer to commit them.
 /.github/agents/
 /.github/skills/
+
+# Temporary git worktrees used for cross-branch review/comparison (scratch; never committed).
+/.worktrees/
