@@ -33,7 +33,7 @@ to its lane on demand.
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
 | [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request` |
-| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS) | code | `sde-ladder-*`, `*-craft`, `database-reliability`, `tdd-workflow`, `safe-refactor` |
+| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS) | code | `sde-ladder-*`, `*-craft`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `adr-template` |
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | — |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
@@ -71,7 +71,7 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 - `sre-ladder-elite` — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
 
 **Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `go-craft` · `typescript-craft` ·
-`react-craft` · `tdd-workflow` · `safe-refactor`
+`react-craft` · `tdd-workflow` · `safe-refactor` · `debug-rca`
 
 **Data:** `database-reliability` — safe (online/reversible, expand→contract) schema migrations, query/
 index tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO).
@@ -83,7 +83,7 @@ index tuning, connection-pool/lock/replication-lag triage, and tested backups (R
 
 **Selectors & gates:** `route-request` · `merge-gate` · `release-gate` · `production-change-gate`
 
-**Docs & conventions:** `runbook-template` · `blameless-postmortem` · `handoff-protocol`
+**Docs & conventions:** `runbook-template` · `blameless-postmortem` · `handoff-protocol` · `adr-template`
 
 ## Routing & gates (selectors that control the workflow)
 
@@ -148,6 +148,10 @@ both); the generator translates `tools` for Copilot.
 
 ## Validate & operate
 
+- **Design docs** live in [`docs/`](docs/): [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) (*why* the fleet
+  is shaped this way), [`HANDOFFS.md`](docs/HANDOFFS.md) (the collaboration map),
+  [`AGENT-CATALOG.md`](docs/AGENT-CATALOG.md) (narrative roster + roadmap), and
+  [`BRANCH-REVIEW.md`](docs/BRANCH-REVIEW.md) (comparative review of alternative designs).
 - **Validate the fleet:** `pwsh scripts/validate-fleet.ps1` checks every skill/agent against the
   Agent Skills spec (names, descriptions, referenced files). Run it before committing or in CI.
 - **Ready-made runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency

@@ -26,6 +26,7 @@ something on fire?).
 | "review this diff / is this correct" | `code-reviewer` | → `security-reviewer` if security depth needed |
 | "is this secure / auth / secrets / deps" | `security-reviewer` | → `sde-engineer` to fix |
 | "write tests / add coverage" | `test-engineer` | → `sde-engineer` if it reveals a bug |
+| "failing test / flaky build / bug, cause unknown" | `sde-engineer` (or `test-engineer`) + **`debug-rca`** skill | → `sde-engineer` for the fix; → `sre-engineer` if it's actually a prod incident |
 | "X is broken / slow / erroring / alerting" | `sre-engineer` (`sre-ladder-*` by depth) | → `incident-commander` if major; → `release-engineer` to mitigate |
 | "run the incident / comms / who's doing what" | `incident-commander` | ⇄ `sre-engineer` (technical) in parallel |
 | "set up monitoring / noisy alert / define SLO" | `sre-monitor` | → `runbook-author` for alert runbooks |
