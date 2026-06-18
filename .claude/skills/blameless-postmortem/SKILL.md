@@ -33,16 +33,30 @@ Status: <draft|final>   Authors: <…>   Date: <…>
 ## Detection          — how we found out, and how fast. Could it have paged sooner? (→ sre-monitor)
 ## Response           — what went well, what was slow/hard (diagnosis, mitigation, comms, tooling).
 ## Five whys          — chain from symptom to systemic cause.
-## Action items       — each: owner + due date + tracking link; concrete and verifiable.
-## Lessons            — what we now know; what we'd tell our past selves.
+## Action items       — table: action | type (mitigative/preventative) | owner | due | tracking link.
+## Lessons            — what went well / what went wrong / where we got lucky.
 ```
 
 ## Action items that actually prevent recurrence
 - Prefer **systemic** fixes (a gate, an alert, a guardrail, an automated check) over "be more careful."
+- **Tag every item mitigative vs preventative** — *mitigative* fixes this specific gap; *preventative*
+  eliminates the whole class of failure. A postmortem with no preventative item rarely stops a recurrence.
+  Track them in a table so none is lost:
+  ```
+  | # | Action | Type (mitigative/preventative) | Owner | Due | Tracking link |
+  |---|--------|--------------------------------|-------|-----|---------------|
+  | 1 | <specific, verifiable action>  | preventative | <name> | <date> | <ticket> |
+  ```
 - Each item is **owned, dated, tracked** — an un-owned action item is a wish. Route them:
   resilience/code → `sde-engineer`; detection/SLO → `sre-monitor`; deploy/rollback safety →
   `release-engineer`; runbook → `runbook-author`.
 - Be honest about what you don't know; mark unconfirmed causes as hypotheses with how you'd confirm.
+
+## Lessons — include "where we got lucky"
+Capture three things, not just what broke: **what went well** (keep doing it), **what went wrong** (the
+gaps), and **where we got lucky** — the latent risks this incident *revealed* that didn't bite us this
+time (a backup we never tested that happened to work, an alert that fired by coincidence, a key person who
+happened to be online). Luck is a preventative action item waiting to be written.
 
 ## Tip
 Seed this from the `incident-commander` timeline and the `sre-engineer` root-cause writeup so it's

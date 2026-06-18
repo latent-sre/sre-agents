@@ -40,6 +40,8 @@ switch to `sde-ladder-principal`.
 - You can explain every line — nothing pasted that you don't understand.
 
 ## Craft heuristics
+- **Make it work, make it right, make it fast — in that order.** Get correct behavior under test first,
+  clean it up second; optimize only what you've *measured* to be slow. Don't micro-optimize on a guess.
 - **Rule of Three** — don't extract a shared abstraction until the third real occurrence; a little
   duplication is cheaper than the *wrong* abstraction (which is hard to back out of).
 - **Conventional Commits** — `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`; a trailing `!` or

@@ -26,6 +26,9 @@ recorded waiver from a human owner.
 - [ ] **Backward compatible** — no silent contract break; migrations ordered; expand→contract followed
       where a contract changed (`safe-refactor`).
 - [ ] **Scoped & clean** — smallest correct change; no dead code, debug leftovers, or unrelated churn.
+      Size matters: ~200–400 LOC is the effective review chunk; defect detection drops past ~400 LOC and
+      above ~500 LOC/hr, so cap continuous review at 60–90 min. A reviewer may request a split **solely**
+      for size — an oversized change is a blocking finding, not a nit.
 - [ ] **Docs/ops updated** — if behavior or operations changed, docs and any affected runbook are
       updated (`runbook-author`), or explicitly noted as not needed.
 
