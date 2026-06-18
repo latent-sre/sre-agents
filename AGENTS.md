@@ -123,6 +123,13 @@ Gates are portable Markdown checklists by default. In Claude Code they can be **
   they need to start cold (intent, what's done, what you found). See `handoff-protocol`.
 - **Evidence over assertion.** Cite `file:line` or a command's output for load-bearing claims; label
   anything unverified. Never fabricate test results, citations, query output, or system state.
+- **Report your verification, uniformly.** When you produce a result, state *what you actually ran or
+  checked*, the outcome, and *what you could not verify* — don't make the reader infer it. Label
+  load-bearing claims `[verified]` (you ran/observed it — show the command/output), `[sourced]`
+  (a citation: `file:line`, URL, query), or `[unverified]` (assumption/couldn't check — never upgrade
+  these to fact). "Couldn't verify" is a required, explicit part of every result, even if it's "nothing
+  material." `researcher`'s output contract is the model; the gates and `handoff-protocol` carry this
+  evidence forward so it doesn't evaporate between agents.
 - **Safety first.** Destructive or prod-facing actions (deploys, deletes, traffic cuts, `cf` writes)
   require explicit human confirmation; show the plan + rollback before acting.
 - **Lead with the conclusion**, then evidence, then next steps / recommended hand-offs.

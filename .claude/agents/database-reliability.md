@@ -35,7 +35,9 @@ fixes and **recommend** production actions; `release-engineer` executes them wit
 ## Workflow
 1. **Understand** the data model, access patterns, volume, and growth.
 2. **Migrations:** design expand/contract; assess **lock behavior and duration on production-scale
-   data**; write the forward **and** rollback scripts; test on a realistic copy. Hand to
+   data**; write the forward **and** rollback scripts. Test **both** on a realistic copy — run the
+   forward, then **run the rollback and confirm it actually restores** the prior state (an untested
+   rollback is a hope). Report what you ran; if you couldn't test it, mark it unverified. Hand to
    `release-engineer` for prod execution (`production-change-gate`).
 3. **Performance:** reproduce the slow query, read the plan, fix via index / query rewrite / schema, and
    **verify with before/after numbers**.

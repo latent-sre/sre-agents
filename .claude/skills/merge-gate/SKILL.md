@@ -15,9 +15,10 @@ A change merges only when **all** of these pass. Any **NO** blocks the merge —
 recorded waiver from a human owner.
 
 ## Checklist
-- [ ] **Builds & CI green** — compile/lint/format and the full test suite pass in CI.
-- [ ] **Behavior tested** — new behavior has tests; any bug fix has a regression test that fails without
-      the fix (`tdd-workflow`).
+- [ ] **Builds & CI green** — compile/lint/format and the full test suite pass in CI. Attach the
+      evidence (run/command output or CI link), not just a tick — an asserted "green" is `[unverified]`.
+- [ ] **Behavior tested** — the change's new/changed lines are covered; new behavior has tests; any bug
+      fix has a regression test that fails without the fix (`tdd-workflow`). Show that it ran.
 - [ ] **Reviewed** — `code-reviewer` ran; all Critical/High findings are resolved (not just acknowledged).
 - [ ] **Security** — if the change touches auth, input handling, secrets, crypto, file/network access,
       or dependencies → `security-reviewer` ran and must-fix items are closed.
