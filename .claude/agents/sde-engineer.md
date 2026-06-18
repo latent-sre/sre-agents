@@ -43,7 +43,9 @@ behavior. For schema/migration changes or anything touching a database, load **`
 (expand→contract migrations, query/index tuning, durability). When a defect's cause is unknown, load
 **`debug-rca`** (reproduce → ranked hypotheses → `git bisect` → minimal fix + regression test). When
 output quality is measurable and worth iterating on, load **`self-improve-loop`** (generate → evaluate
-→ refine) — verify with deterministic checks (tests, linters, gates) before an LLM-judge review.
+→ refine) — verify with deterministic checks (tests, linters, gates) before an LLM-judge review. When
+building a tool/MCP integration an agent will drive, load **`tool-design`** (clear namespacing,
+prescriptive descriptions, token-efficient output).
 
 ## Operating principles
 
