@@ -40,7 +40,7 @@ to its lane on demand.
 | [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `database-reliability`, `safe-refactor`, `production-change-gate` |
 | [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder-*`, `triage-golden-signals`, `database-reliability`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
-| [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `blameless-postmortem` |
+| [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `incident-severity`, `blameless-postmortem` |
 | [`release-engineer`](.claude/agents/release-engineer.md) | CI/CD, deploys, rollbacks (Actions + PCF) | infra/CI | `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`, `rollback-mitigation`, `release-gate` |
 | [`runbook-author`](.claude/agents/runbook-author.md) | Create/update operational runbooks | docs | `runbook-template`, `blameless-postmortem` |
 | [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | — |
@@ -84,6 +84,8 @@ index tuning, connection-pool/lock/replication-lag triage, and tested backups (R
 **Ship (your stack):** `github-actions-ci` · `bamboo-to-actions-migration` · `pcf-deploy` · `rollback-mitigation`
 
 **Selectors & gates:** `route-request` · `merge-gate` · `release-gate` · `production-change-gate`
+
+**Incident process:** `incident-severity` *(SEV1–4 rubric + comms cadence)* · `blameless-postmortem`
 
 **Docs & conventions:** `runbook-template` · `blameless-postmortem` · `handoff-protocol` · `adr-template` *(ADR/RFC decision capture)*
 
