@@ -1,0 +1,12 @@
+# Line-ending policy. The Copilot generators (scripts/sync-copilot.sh / .ps1) must read identical
+# source bytes on every OS — CRLF in the .claude/ sources breaks the Bash frontmatter parser (it keeps
+# the trailing \r, so the `--- ` fence never matches and frontmatter is copied untranslated). Force LF
+# for the text the fleet is authored in so both generators produce equivalent output. The Bash script
+# also strips \r defensively for already-CRLF working copies.
+*.md   text eol=lf
+*.py   text eol=lf
+*.sh   text eol=lf
+*.ps1  text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf

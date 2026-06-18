@@ -25,10 +25,13 @@ translate_tools() {
     local line="$1"
     local out="'search'"                                             # read/search codebase (toolset)
     local can_write=0
-    if [[ "$line" =~ (Write|Edit) ]];        then out+=", 'edit'"; can_write=1; fi  # file writes
+    # Whole-word matches (POSIX classes, portable to macOS bash 3.2) so 'TodoWrite' is NOT read as write
+    # access — parity with the .ps1 '\bWrite\b'. Without this, every read-only agent (all carry TodoWrite)
+    # would wrongly receive 'edit'/'runCommands' in the Copilot output.
+    if [[ "$line" =~ (^|[^[:alnum:]])(Write|Edit)([^[:alnum:]]|$) ]]; then out+=", 'edit'"; can_write=1; fi  # file writes
     # Claude-only hooks are stripped from Copilot output, so read-only agents do not get terminal access.
-    if [[ $can_write -eq 1 && "$line" =~ Bash ]]; then out+=", 'runCommands'"; fi   # terminal
-    if [[ "$line" =~ (WebFetch|WebSearch) ]];then out+=", 'web/fetch'"; fi    # web
+    if [[ $can_write -eq 1 && "$line" =~ (^|[^[:alnum:]])Bash([^[:alnum:]]|$) ]]; then out+=", 'runCommands'"; fi  # terminal
+    if [[ "$line" =~ (^|[^[:alnum:]])(WebFetch|WebSearch)([^[:alnum:]]|$) ]]; then out+=", 'web/fetch'"; fi  # web
     printf 'tools: [%s]\n' "$out"
 }
 
@@ -42,6 +45,7 @@ for f in "$claude_agents"/*.md; do
     : > "$dest"
     fm_seen=0; skip_hooks=0
     while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%$'\r'}"                                     # tolerate CRLF sources (Windows checkouts)
         if [[ "$line" == '---' && $fm_seen -lt 2 ]]; then
             fm_seen=$((fm_seen + 1)); skip_hooks=0; printf '%s\n' "$line" >> "$dest"; continue
         fi

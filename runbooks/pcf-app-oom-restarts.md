@@ -18,10 +18,13 @@ shows instances cycling. Dashboard: `<grafana/wavefront link>`.
 ## Triage / first checks (read-only)
 1. One-shot summary: `.claude/skills/pcf-ops/scripts/triage.sh <APP>` or
    `pwsh .claude/skills/pcf-ops/scripts/triage.ps1 -App <APP>`
-2. Confirm OOM specifically:
+2. Confirm OOM specifically. PCF/CF reports OOM as **`Exited with status 137`** (128 + SIGKILL) —
+   there is **no `OOMKilled` string** (that's Kubernetes). The crash reason lives in `cf app`/`cf logs`,
+   not `cf events`:
    ```bash
-   cf events <APP> | head -n 25      # look for: crashed ... reason: "OOMKilled" / exit status
-   cf app <APP>                      # memory column near 100% of limit on the cycling instances?
+   cf app <APP>                      # primary: instance state + memory column near 100% of limit on cycling instances
+   cf logs <APP> --recent            # look for: "Exited with status 137" on the crashing instance
+   cf events <APP> | head -n 25      # correlation only: recent deploy/restage/scale + who (audit.app.*) — not crash reason
    ```
 3. Memory trend (is it a leak — steady climb — or a spike?):
    ```
@@ -35,9 +38,12 @@ shows instances cycling. Dashboard: `<grafana/wavefront link>`.
 ## Procedure
 > All state changes below are **recommend-only**; hand to `release-engineer`, clear
 > `production-change-gate`, and confirm before executing.
-1. **If a recent deploy caused it — roll back** (fastest, reversible). Blue-green route remap to the
-   previous app, or `cf rollback <APP> --version <n>` if revisions are enabled
-   (see `rollback-mitigation`). This stops the bleeding; root-cause after.
+1. **If a recent deploy caused it — roll back** (fastest, reversible). Pick by what's available:
+   - **Named blue-green** and the previous app still exists → remap the prod route back to it (instant,
+     reversible). Not available for `--strategy rolling` / same-name deploys — use revision rollback.
+   - **Revisions enabled** → `cf revisions <APP>` to find the last good `<n>`, then
+     `cf rollback <APP> --version <n>`.
+   See `rollback-mitigation`. This stops the bleeding; root-cause after.
 2. **If no recent change — stabilize.** Either bump memory to restore service while you investigate:
    `cf scale <APP> -m <larger>` (restarts instances), or `cf restart-app-instance <APP> <i>` to recover
    a single wedged instance. **A restart that "fixes" a leak only resets the clock — keep investigating.**

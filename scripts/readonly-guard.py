@@ -36,7 +36,13 @@ _DENY_PATTERNS = [
     r"continue-deployment|cancel-deployment|create-app|delete-app|copy-source|set-droplet|"
     r"set-health-check|bind-route-service|unbind-route-service|share-service|unshare-service|"
     r"create-org|delete-org|create-space|delete-space|set-org-role|unset-org-role|"
-    r"set-space-role|unset-space-role|create-buildpack|update-buildpack|delete-buildpack)\b",
+    r"set-space-role|unset-space-role|create-buildpack|update-buildpack|delete-buildpack|"
+    r"enable-feature-flag|disable-feature-flag|create-quota|update-quota|set-quota|"
+    r"create-space-quota|update-space-quota|set-space-quota|bind-security-group|"
+    r"unbind-security-group|bind-staging-security-group|unbind-staging-security-group|"
+    r"create-security-group|update-security-group|add-network-policy|remove-network-policy|"
+    r"enable-org-isolation|create-isolation-segment|install-plugin|uninstall-plugin|"
+    r"set-running-environment-variable-group|set-staging-environment-variable-group)\b",
     r"\bcf\s+curl\b.*-X\s*(POST|PUT|DELETE|PATCH)",
     r"\bcf\s+curl\b.*--request[=\s]+(POST|PUT|DELETE|PATCH)",
     r"\bcf\s+curl\b.*(--data|--data-raw|--data-binary|\s-d\s)",
@@ -50,11 +56,19 @@ _DENY_PATTERNS = [
     r"\bgh\s+api\b.*(-X\s*(POST|PUT|DELETE|PATCH)|--method[=\s]+(POST|PUT|DELETE|PATCH))",
     # git writes: history, remote, index, or worktree mutations
     r"\bgit\s+(add|mv|rm|push|commit|reset|rebase|merge|cherry-pick|revert|clean|am|apply|"
-    r"restore|checkout|switch|pull|stash|gc|prune|init|branch\s+-[dDmM]|tag\s+-d|"
+    r"restore|checkout|switch|pull|stash|gc|prune|init|worktree|update-ref|update-index|"
+    r"symbolic-ref|filter-branch|branch\s+-[dDmM]|tag\s+-d|"
     r"remote\s+(add|rm|remove|set-url))\b",
+    # git config WRITE: a dotted key followed by a value, or an explicit write flag.
+    # Reads (`--get`/`--list`) lack the trailing value, so they pass through.
+    r"\bgit\s+config\s+(?:--\S+\s+)*\S+\.\S+\s+\S",
+    r"\bgit\s+config\s+(--unset|--unset-all|--replace-all|--add|--rename-section|--remove-section)\b",
     # filesystem / process / service mutations
     r"\b(rm|rmdir|mv|cp|rsync|dd|truncate|shred|chmod|chown|chgrp|ln|mkfs|mkdir|touch)\b",
     r"\bfind\b.*\s-delete\b",
+    # interactive editors and awk are file writers (in command position to avoid grep'd-text false positives)
+    r"(?:^|[|;&]\s*)(vim|vi|nvim|nano|emacs|ex|pico)\b",
+    r"\b[gmn]?awk\b.*system\s*\(",
     # PowerShell mutations, for Windows shells behind the Bash tool name
     r"\b(Remove-Item|Move-Item|Copy-Item|New-Item|Set-Content|Add-Content|Out-File|"
     r"Set-Item|Clear-Item|Rename-Item|Set-ItemProperty|New-ItemProperty|Remove-ItemProperty|"
@@ -62,19 +76,24 @@ _DENY_PATTERNS = [
     # in-place file editors
     r"\bsed\s+(-[^\s]*i|--in-place)",
     r"\bperl\s+-[^\s]*i",
-    # shell output redirection to a file (allow >/dev/null and fd-dup like 2>&1), and tee
-    r">>?\s*(?!&|/dev/null)[~./$A-Za-z0-9_-]",
-    r"\btee\b",
+    # shell output redirection to a file (allow >/dev/null and fd-dup like 2>&1), and tee.
+    # Target charset includes quotes so `awk '{print > "f"}'` is caught; tee is anchored to
+    # command position so `ps aux | grep tee` (tee as search text) is not a false positive.
+    r">>?\s*(?!&|/dev/null\b)[\"'~./$A-Za-z0-9_-]",
+    r"(?:^|[|;&]\s*)tee\b",
     r"\b(kill|pkill|killall)\b",
     r"\b(systemctl|service)\s+(start|stop|restart|reload|enable|disable)\b",
     r"\b(shutdown|reboot|halt|poweroff)\b",
     # package / dependency installs (state change, out of scope for read-only triage)
     r"\b(apt|apt-get|yum|dnf|zypper|pip|pip3|npm|pnpm|yarn|gem|brew|choco)\s+"
     r"(install|remove|uninstall|update|upgrade|add)\b",
-    # HTTP writes
+    # HTTP writes, file downloads/uploads (these mutate the local FS or a remote)
     r"\bcurl\b.*(-X\s*(POST|PUT|DELETE|PATCH)|--request\s+(POST|PUT|DELETE|PATCH))",
     r"\bcurl\b.*(--data|--data-raw|--data-binary|--form|\s-d\s|\s-F\s)",
-    r"\bwget\b.*--(post|method=)",
+    # curl flags are case-sensitive (-O/-o/-T differ), so scope these out of the IGNORECASE compile
+    r"\bcurl\b.*(\s(?-i:-O)\b|\s--remote-name\b|\s(?-i:-o)\s+(?!/dev/null|-)|\s(?-i:-T)\s|\s--upload-file\b)",
+    r"\bwget\b(?!.*(-O\s*-|-qO-|--output-document[= ]-))",  # wget writes a file unless piped to stdout
+    r"\bscp\b",
     # Nested shells/interpreters are too easy to use as mutation bypasses.
     r"\b(python|python3|py|perl|ruby|node|bash|sh|zsh|pwsh|powershell|cmd)\b.*\s(-c|/c|-Command)\b",
 ]
