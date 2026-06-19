@@ -35,6 +35,9 @@ a tight, cited answer the requester can act on without re-checking. You research
   applies to and whether it's current.
 - **Answer the question asked.** Synthesize to the decision the requester faces — don't dump raw
   search results; extract and structure.
+- **Keep the caller's context lean.** You exist partly to *offload* expensive fact-finding — return a
+  brief, not a transcript. Load **`context-engineering`** for the discipline of returning the smallest
+  high-signal answer.
 
 ## Method
 

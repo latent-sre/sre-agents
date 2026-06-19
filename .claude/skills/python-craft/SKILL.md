@@ -17,7 +17,8 @@ defaults below apply when none is set.
 
 ## Style & tooling
 - **Type hints everywhere** public; check with `mypy`/`pyright` (or the faster Rust checkers `ty`
-  (Astral) / `pyrefly` (Meta) for editor-speed feedback). Prefer precise types; avoid `Any`.
+  (Astral) / `pyrefly` (Meta) for editor-speed feedback — preview-grade, not for CI gating yet). Prefer
+  precise types; avoid `Any`.
 - **Format + lint** with `ruff` (lint+format) or `black`+`ruff`. Don't hand-format.
 - **Structure:** small functions, early returns, no deep nesting. Prefer `dataclasses`/`pydantic` for
   structured data over loose dicts/tuples.

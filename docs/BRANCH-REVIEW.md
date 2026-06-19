@@ -4,6 +4,14 @@
 **Method:** 3 independent deep scans (inventory → content deep-read → gap analysis), one per branch, each
 claim verified against our working tree.
 
+> **📌 Status (updated 2026-06-19):** This is a **historical** review artifact — preserved for the
+> rationale, not the live state. Its counts and recommendations describe a pre-adoption snapshot. Since
+> then: **Recs 1–6 have all shipped** (CI/CD supply-chain hardening, `debug-rca`, `HANDOFFS.md`,
+> `AGENT-CATALOG.md`, the review-standard note, PowerShell depth), the fleet now has **12 agents / 43
+> skills** (not the 37 cited below), and the agent-system skills (`self-improve-loop`,
+> `context-engineering`, `parallelization`, `tool-design`, `agent-security`) were added afterward. Read
+> the recommendation table as "what we decided," already done.
+
 ---
 
 ## 🧭 TL;DR

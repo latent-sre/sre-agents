@@ -23,7 +23,8 @@ clear **`production-change-gate`**.
       before the code that needs them (expand→contract); each is independently reversible.
 - [ ] **Feature flags ready** — risky behavior is flag-gated and defaults safe; flag flip is tested.
 - [ ] **Rollback written & reversible** — the exact rollback command/steps are documented and known to
-      work (`rollback-mitigation`); for PCF, blue-green route remap or `cf rollback` is available.
+      work (`rollback-mitigation`); for PCF, blue-green route remap (or `cf rollback`, if app revisions
+      are enabled) is available.
 - [ ] **Health gates & abort criteria** — success/failure signals defined up front (golden signals in
       Wavefront/Grafana); you know what trips an abort.
 - [ ] **Monitoring in place** — alerts/SLOs cover the new behavior; new paging alerts link a runbook

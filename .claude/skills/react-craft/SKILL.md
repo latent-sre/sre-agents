@@ -38,7 +38,7 @@ existing patterns first; the defaults below apply when none is set.
   (parent form status — must be inside a `<form>`), **`useOptimistic`** (optimistic UI), and **`use()`**
   (read a Promise/context; may be called conditionally; integrates with Suspense).
 
-## React Compiler v1.0 (stable, Oct 2025)
+## React Compiler (v1.x, stable — confirm the current release)
 - Build-time auto-memoization — usually removes the need for manual `useMemo`/`useCallback`/`memo`. Keep
   manual memoization only as an escape hatch (e.g. to stabilize an Effect dependency).
 

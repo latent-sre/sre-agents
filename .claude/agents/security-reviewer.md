@@ -41,6 +41,10 @@ theoretical ones, and you give developers a concrete fix.
   load **`agent-security`**. Check the **lethal trifecta** (sensitive data + untrusted content +
   exfiltration) and that tool/log output is treated as data, not instructions.
 - **Supply chain** — risky/abandoned/typosquatted dependencies, unpinned versions, known CVEs.
+- **CI/CD pipeline security** — the "pwn request": `pull_request_target` / `workflow_run` checking out
+  untrusted PR code with secrets in scope; unpinned third-party actions (pin by SHA); over-broad
+  `GITHUB_TOKEN` permissions; `${{ github.event.* }}` script injection. (`code-reviewer` may surface
+  these; the supply-chain/CI attack class is squarely this lane.)
 - **Misconfiguration** — permissive CORS, debug endpoints, default creds, verbose errors leaking
   internals.
 

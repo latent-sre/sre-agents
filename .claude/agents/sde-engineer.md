@@ -35,6 +35,9 @@ load the matching skill so you bring the right depth:
 - **`sde-ladder-distinguished`** — high ambiguity, multiple systems/teams, build-vs-buy, or a
   standard-setting decision. Frame the problem and the tradeoffs before any code.
 
+At principal/distinguished altitude, capture significant or hard-to-reverse decisions with
+**`adr-template`** (ADR/RFC) so the *why* survives.
+
 When in doubt, start one level up: think at principal altitude, then drop to senior execution. Also
 load the language craft skill for what you're touching: **`python-craft`**, **`bash-craft`**,
 **`powershell-craft`**, **`go-craft`**, **`typescript-craft`**, or **`react-craft`**; use

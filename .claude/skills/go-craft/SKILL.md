@@ -38,7 +38,8 @@ below apply when none is set.
   on cancel/timeout — never leak one waiting on an un-cancelled context.
 
 ## Correctness traps
-- Loop-variable capture in closures/goroutines; naked returns in long funcs; ignored errors.
+- Naked returns in long funcs; ignored errors. (Loop-variable capture in closures/goroutines was a
+  classic trap, but **Go 1.22+ gives each iteration its own variable** — only watch for it on Go <1.22.)
 - Nil-map writes; unbounded result sets; not closing `rows`/`Body`/files (`defer Close()`).
 
 ## Tests
@@ -48,7 +49,8 @@ below apply when none is set.
 
 ## Modules & versioning
 - **Semantic Import Versioning:** v2+ carries a `/v2` suffix in the module path and imports. Released
-  versions are immutable. Vendoring is automatic when `vendor/modules.txt` is consistent.
+  versions are immutable. Run `go mod vendor` to build `vendor/`; once it exists and is consistent, `go`
+  commands use it automatically (the `-mod=vendor` default).
 
 ## Definition of done
 `gofmt`/`goimports` clean · `go vet` + `golangci-lint` clean · `go test ./...` (with `-race` where
