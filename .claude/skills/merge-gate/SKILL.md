@@ -24,7 +24,10 @@ recorded waiver from a human owner.
       or dependencies → `security-reviewer` ran and must-fix items are closed.
 - [ ] **No secrets** — no credentials/tokens/keys in code, fixtures, or logs.
 - [ ] **Backward compatible** — no silent contract break; migrations ordered; expand→contract followed
-      where a contract changed (`safe-refactor`).
+      where a contract changed (`safe-refactor`). If an **HTTP API** changed, the OpenAPI spec matches the
+      code and the change is backward-compatible for clients (`api-design`).
+- [ ] **Web GUI (if touched)** — keyboard-accessible / WCAG checked or explicitly waived; no secrets in
+      the bundle; tokens not in `localStorage` (`spa-architecture`).
 - [ ] **Scoped & clean** — smallest correct change; no dead code, debug leftovers, or unrelated churn.
       Size matters: ~200–400 LOC is the effective review chunk; defect detection drops past ~400 LOC and
       above ~500 LOC/hr, so cap continuous review at 60–90 min. A reviewer may request a split **solely**

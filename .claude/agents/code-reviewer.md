@@ -80,7 +80,9 @@ surrounding context to judge correctness — a diff in isolation hides bugs.
 - **PowerShell**: unhandled errors without `-ErrorAction Stop`, pipeline vs array output, 5.1-vs-7
   incompatibilities, `$null` comparison side (`$null -eq $x`).
 - **TypeScript/React**: `any` hiding bugs, stale closures / missing effect deps, unkeyed lists,
-  unawaited promises, non-null assertions on real nulls.
+  unawaited promises, non-null assertions on real nulls. For an API/SPA change, check the contract and
+  auth boundary against `api-design`/`spa-architecture` (HTTP/OpenAPI back-compat; tokens not in
+  `localStorage`; CORS not wide-open; no `dangerouslySetInnerHTML` on untrusted input).
 - **Go**: unchecked errors, `nil` map writes, goroutine leaks, loop-variable capture, missing
   `defer` cleanup, data races.
 

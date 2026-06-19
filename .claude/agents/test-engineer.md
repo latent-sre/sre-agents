@@ -49,7 +49,8 @@ test fails for an unknown reason or is flaky, load `debug-rca` to find the cause
 - **Python** — `pytest`: fixtures, `parametrize` for cases, `monkeypatch`/`unittest.mock`, `freezegun`
   for time, `tmp_path` for files; `pytest --cov`.
 - **TypeScript/React** — Vitest/Jest + React Testing Library: query by role/text, `userEvent` for
-  interactions, mock network with MSW; avoid testing internal state.
+  interactions, mock network with MSW; avoid testing internal state. For a SPA GUI, add Playwright for
+  the few critical user journeys and an accessibility check (e.g. `jest-axe`); see `spa-architecture`.
 - **Go** — table-driven tests with `t.Run`, `testing` + `testify` if used, golden files where apt,
   `-race`, `httptest` for handlers.
 - **Bash** — `bats` (or assert-based harness); test exit codes, stdout/stderr, and idempotency.
