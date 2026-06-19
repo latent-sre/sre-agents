@@ -4,6 +4,14 @@
 **Method:** 3 independent deep scans (inventory → content deep-read → gap analysis), one per branch, each
 claim verified against our working tree.
 
+> **📌 Status (updated 2026-06-19):** This is a **historical** review artifact — preserved for the
+> rationale, not the live state. Its counts and recommendations describe a pre-adoption snapshot. Since
+> then: **Recs 1–6 have all shipped** (CI/CD supply-chain hardening, `debug-rca`, `HANDOFFS.md`,
+> `AGENT-CATALOG.md`, the review-standard note, PowerShell depth), the fleet now has **12 agents / 43
+> skills** (not the 37 cited below), and the agent-system skills (`self-improve-loop`,
+> `context-engineering`, `parallelization`, `tool-design`, `agent-security`) were added afterward. Read
+> the recommendation table as "what we decided," already done.
+
 ---
 
 ## 🧭 TL;DR
@@ -74,17 +82,17 @@ Legend: 🔴 High · 🟡 Med · ⚪ Low · ✅ = confirmed absent/partial in ou
   and the `route-request` table.
 - **Benefit:** Fills a real capability gap and pairs naturally with `tdd-workflow` + the SRE ladders.
 
-### 🟡 3 — Add `docs/HANDOFFS.md` (fleet handoff map)
+### ✅ 3 — Add `docs/HANDOFFS.md` (fleet handoff map) — **DONE** (adopted from `review-skills…ip9agh`, 2026-06-18)
 - **Source:** both `review-skills…` and `vscode…` ship one
-- **Target:** **new** `docs/HANDOFFS.md` · **Today (verified):** ✅ absent (we only have the mermaid map in `ARCHITECTURE.md`)
+- **Target:** **new** `docs/HANDOFFS.md` · **Today (verified):** ✅ added — adapted to our 12-agent roster (incl. `database-reliability`); §-refs repointed to our `ARCHITECTURE.md`/`CLAUDE.md`; linked from `README`, `AGENTS.md`, `ARCHITECTURE.md`
 - **Add:** edge-by-edge flow diagrams for Build→review→ship and Operate→mitigate→learn, **plus the
   app-vs-platform escalation boundary** — *BOSH / Ops Manager / Diego cells / Gorouter / foundation / certs
   → platform team, with evidence (timestamps, scope, `cf` output showing our app is healthy)*. Adapt to our
   roster (we have the extra `database-reliability` agent + `incident-severity`/`instrument-service` skills).
 - **Benefit:** Discoverable, one-picture handoff contract; sharpens our lane boundary.
 
-### 🟡 4 — Add `docs/AGENT-CATALOG.md` (one page, all 12 agents)
-- **Source:** both peer branches · **Target:** **new** `docs/AGENT-CATALOG.md` · **Today (verified):** ✅ absent (only the `AGENTS.md` table)
+### ✅ 4 — Add `docs/AGENT-CATALOG.md` (one page, all 12 agents) — **DONE** (adopted from `review-skills…ip9agh`, 2026-06-18)
+- **Source:** both peer branches · **Target:** **new** `docs/AGENT-CATALOG.md` · **Today (verified):** ✅ added — 12 agents incl. `database-reliability`; `model:` assignments cross-checked against `CLAUDE.md` policy; future-agents roadmap kept; linked from `AGENTS.md`/`README`/`ARCHITECTURE.md`. (Rejected the branch's moogsoft edit: it regresses on-prem "Situations" → cloud "incidents".)
 - **Add:** a paragraph per agent — lane · `model:` · writes? · skills it loads · handoff targets — and keep their
   ranked **"future agents" roadmap** (on-call/alert front-end, performance/capacity, knowledge agent). Include
   `database-reliability` (peer branches omit it).

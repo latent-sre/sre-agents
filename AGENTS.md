@@ -34,14 +34,16 @@ radius, and `cf` output showing our app is healthy — not to operate BOSH ourse
 ## The roster (agents)
 
 Agents are **who** does the work; [skills](#skills) are **how**. Each agent loads the skills relevant
-to its lane on demand.
+to its lane on demand. For a paragraph on each agent (lane · `model:` · writes? · skills · handoffs)
+see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom see
+[`docs/HANDOFFS.md`](docs/HANDOFFS.md).
 
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
-| [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request` |
-| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS) | code | `sde-ladder-*`, `*-craft`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca` |
+| [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request`, `parallelization` |
+| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS) | code | `sde-ladder-*`, `*-craft`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`, `tool-design`, `adr-template` |
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
-| [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | — |
+| [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | `agent-security` |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
 | [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `database-reliability`, `safe-refactor`, `production-change-gate` |
 | [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder-*`, `triage-golden-signals`, `database-reliability`, stack skills |
@@ -49,7 +51,7 @@ to its lane on demand.
 | [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `incident-severity`, `blameless-postmortem` |
 | [`release-engineer`](.claude/agents/release-engineer.md) | CI/CD, deploys, rollbacks (Actions + PCF) | infra/CI | `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`, `rollback-mitigation`, `release-gate` |
 | [`runbook-author`](.claude/agents/runbook-author.md) | Create/update operational runbooks | docs | `runbook-template`, `blameless-postmortem` |
-| [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | — |
+| [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | `context-engineering` |
 
 **Read-only agents** (no Edit/Write): `coordinator`, `code-reviewer`, `security-reviewer`,
 `sre-engineer`, `incident-commander`, `researcher`. They report, recommend, and hand off. The four that
@@ -78,7 +80,9 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 - `sre-ladder-elite` — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
 
 **Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `go-craft` · `typescript-craft` ·
-`react-craft` · `tdd-workflow` · `safe-refactor` · `debug-rca`
+`react-craft` · `tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop` *(generate→evaluate→refine: evaluator-optimizer + the act→verify loop)*
+
+**Agent-system methods (Anthropic agent patterns):** `context-engineering` *(curate the attention budget; JIT retrieval, compaction, sub-agent isolation)* · `parallelization` *(sectioning/voting & multi-agent fan-out — and when the ~15× cost pays)* · `tool-design` *(tools an agent uses well: namespacing, prescriptive descriptions, token efficiency)* · `agent-security` *(prompt injection & the lethal trifecta — treat tool/log/webhook output as data, not instructions)*. Pairs with `self-improve-loop`.
 
 **Data:** `database-reliability` — safe (online/reversible, expand→contract) schema migrations, query/
 index tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO).

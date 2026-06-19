@@ -19,7 +19,7 @@ sign-off; `incident-commander` owns the decision in a major incident.
 ## Choose the mitigation (fastest-safe-first)
 | Situation | Mitigation | Command (confirm first) |
 |---|---|---|
-| **Bad deploy** (errors start at deploy time), blue still exists | **Blue-green rollback** — remap prod route to previous app | `cf map-route <app>-blue <domain> --hostname <app>` then `cf unmap-route <app>-green …` |
+| **Bad deploy** (errors start at deploy time), previous app still exists | **Blue-green rollback** — remap prod route to the previously-live app | `cf map-route <previous-app> <domain> --hostname <app>` then `cf unmap-route <current-app> …` (blue/green are *roles*, not fixed names — colors alternate each deploy; confirm which is live with `cf apps` first) |
 | Bad deploy, revisions enabled | **Revision rollback** | `cf revisions <app>` (find last good `<n>`) → `cf rollback <app> --version <n>` |
 | Rolling/canary deploy in flight going wrong | **Abort the deploy** | `cf cancel-deployment <app>` — **in-progress only**; once the deploy completes it's a no-op, use revision rollback |
 | Instances hung / wedged / leaking, no recent change | **Restart** (buys time; doesn't fix cause) | `cf restart <app>` or `cf restart-app-instance <app> <i>` |

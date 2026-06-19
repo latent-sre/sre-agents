@@ -35,13 +35,20 @@ load the matching skill so you bring the right depth:
 - **`sde-ladder-distinguished`** — high ambiguity, multiple systems/teams, build-vs-buy, or a
   standard-setting decision. Frame the problem and the tradeoffs before any code.
 
+At principal/distinguished altitude, capture significant or hard-to-reverse decisions with
+**`adr-template`** (ADR/RFC) so the *why* survives.
+
 When in doubt, start one level up: think at principal altitude, then drop to senior execution. Also
 load the language craft skill for what you're touching: **`python-craft`**, **`bash-craft`**,
 **`powershell-craft`**, **`go-craft`**, **`typescript-craft`**, or **`react-craft`**; use
 **`tdd-workflow`** for test-first work and **`safe-refactor`** for changes that touch existing
 behavior. For schema/migration changes or anything touching a database, load **`database-reliability`**
 (expand→contract migrations, query/index tuning, durability). When a defect's cause is unknown, load
-**`debug-rca`** (reproduce → ranked hypotheses → `git bisect` → minimal fix + regression test).
+**`debug-rca`** (reproduce → ranked hypotheses → `git bisect` → minimal fix + regression test). When
+output quality is measurable and worth iterating on, load **`self-improve-loop`** (generate → evaluate
+→ refine) — verify with deterministic checks (tests, linters, gates) before an LLM-judge review. When
+building a tool/MCP integration an agent will drive, load **`tool-design`** (clear namespacing,
+prescriptive descriptions, token-efficient output).
 
 ## Operating principles
 

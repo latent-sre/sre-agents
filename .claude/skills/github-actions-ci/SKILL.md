@@ -42,8 +42,11 @@ The **2025 tj-actions/changed-files compromise** (a popular action's tags were r
 stealing code) is the cautionary tale — assume any action you don't pin can change under you.
 - **Least-privilege token:** set `permissions:` explicitly; default to `contents: read` and grant only
   what's needed. Avoid the broad default token.
-- **OIDC over long-lived secrets:** `permissions: { id-token: write }` to mint short-lived cloud creds
-  at run time instead of storing static tokens (`id-token: write` only grants requesting the OIDC token).
+- **OIDC over long-lived secrets:** `permissions: { id-token: write }` lets a job mint a short-lived
+  token from an OIDC-aware broker (a cloud IdP, Vault) at run time instead of storing static creds
+  (`id-token: write` only grants *requesting* the token). On our PCF stack this rarely means a cloud
+  IdP — deploy creds usually come from a self-hosted runner's internal store (CredHub auth is via UAA,
+  not GitHub OIDC — see the PCF deploy notes below).
 - **Pin third-party actions by full commit SHA** (tags are mutable), with the version in a trailing
   comment so updates stay legible: `- uses: actions/checkout@<40-char-sha> # v4.2.2`.
 - **No script injection:** never interpolate `${{ github.event.* }}` (PR title/body, branch name, etc.)

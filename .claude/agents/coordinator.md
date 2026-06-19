@@ -43,7 +43,9 @@ plan**. Load the **`route-request`** skill for the routing decision table.
 1. **Classify intent** in one line: *build*, *review*, *operate/incident*, *release*, *document*, or
    *research*? Note urgency (is something on fire?).
 2. **Decompose** into the smallest ordered set of steps, each owned by exactly one agent.
-3. **Detect dependencies** — what must finish before what (code → review → gate → release).
+3. **Detect dependencies** — what must finish before what (code → review → gate → release). Mark which
+   steps are **independent** so they can run in parallel; load **`parallelization`** to decide what to
+   fan out (independent strands) vs. keep sequential (tightly-coupled coding) and how much fan-out pays.
 4. **Insert gates.** Add `merge-gate` before merge, `release-gate` + `production-change-gate` before any
    prod-facing deploy. Gates are pass/fail checkpoints, not agents.
 5. **Choose the minimum agents.** Prefer one specialist over many. Only add review/test/security steps

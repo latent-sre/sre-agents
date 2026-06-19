@@ -49,5 +49,6 @@ switch to `sde-ladder-principal`.
 
 ## Escalate when
 - You need to change a signature/schema other code depends on → `sde-ladder-principal`.
-- The right approach is unclear or there are competing options → principal.
+- Competing options whose choice changes a shared contract or the cross-component design → principal
+  (a purely local choice between two reasonable approaches stays at senior altitude).
 - The surface is security-sensitive (auth, input, secrets, crypto) → flag `security-reviewer`.

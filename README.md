@@ -42,9 +42,10 @@ AGENTS.md                  cross-tool source of truth (roster, conventions, rout
 CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude specifics)
 .claude/
   agents/                  12 agents — read by Claude Code AND VS Code/Copilot
-  skills/                  38 skills (SKILL.md open standard) — read by both tools
+  skills/                  43 skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
+docs/                       ARCHITECTURE (why) · AGENT-CATALOG (per-agent roster) · HANDOFFS (collab map) · BRANCH-REVIEW
 scripts/
   sync-copilot.ps1 / .sh   generate .github/agents + .github/skills for Copilot-native tooling
   validate-fleet.ps1       validate all skills/agents against the Agent Skills spec (CI-friendly)
@@ -64,9 +65,10 @@ scripts/
 - SDE: `sde-ladder-senior` → `sde-ladder-principal` → `sde-ladder-distinguished`
 - SRE: `sre-ladder-responder` (new hire) → `sre-ladder-investigator` (experienced) → `sre-ladder-elite`
 
-**Skills (how) — 38 total:**
+**Skills (how) — 43 total:**
 - *Ladders* (6) · *Craft* (`python-craft`, `bash-craft`, `powershell-craft`, `go-craft`,
-  `typescript-craft`, `react-craft`, `tdd-workflow`, `safe-refactor`, `debug-rca`) · *Data* (`database-reliability`)
+  `typescript-craft`, `react-craft`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`) · *Data* (`database-reliability`)
+- *Agent-system methods (Anthropic patterns)*: `context-engineering`, `parallelization`, `tool-design`, `agent-security`
 - *Observe/investigate (your stack)*: `triage-golden-signals`, `pcf-ops`, `splunk-triage`,
   `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`, `thousandeyes-network`, `slo-error-budget`,
   `instrument-service`

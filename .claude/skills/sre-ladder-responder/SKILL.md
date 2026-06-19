@@ -53,4 +53,6 @@ it broke.
 ## Change altitude when
 - You need to prove *why* it broke — hypotheses, "what changed", RCA → load `sre-ladder-investigator`.
 - It's user-impacting and needs coordination/comms across people → bring in `incident-commander`.
-- It looks systemic or spans multiple services → `sre-ladder-elite`.
+- It looks systemic or spans multiple services → flag `sre-ladder-elite` — usually reached *via* the
+  investigator, who confirms the systemic scope before the altitude shifts. (Default escalation is to
+  the investigator first; elite is the further step once breadth is proven.)
