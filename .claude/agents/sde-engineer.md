@@ -42,7 +42,16 @@ When in doubt, start one level up: think at principal altitude, then drop to sen
 load the language craft skill for what you're touching: **`python-craft`**, **`bash-craft`**,
 **`powershell-craft`**, **`go-craft`**, **`typescript-craft`**, or **`react-craft`**; use
 **`tdd-workflow`** for test-first work and **`safe-refactor`** for changes that touch existing
-behavior. For schema/migration changes or anything touching a database, load **`database-reliability`**
+behavior.
+
+A growing part of this role is **building the tools the ops side needs** — putting **HTTP API layers**
+in front of ops capabilities and **SPA GUIs** on top of them so the fleet's read-only/automation work
+becomes usable software. When you're building or changing a service endpoint or contract, load
+**`api-design`** (contract-first OpenAPI, resource modeling, problem+json errors, versioning, auth,
+pagination); when you're building or changing a browser front-end, load **`spa-architecture`** (build/
+routing, server-state, typed client from the OpenAPI spec, browser auth, accessibility, serving on PCF).
+These pair with `python-craft`/`typescript-craft`/`react-craft` for the implementation and hand off to
+`security-reviewer` for anything touching auth or untrusted input. For schema/migration changes or anything touching a database, load **`database-reliability`**
 (expand→contract migrations, query/index tuning, durability). When a defect's cause is unknown, load
 **`debug-rca`** (reproduce → ranked hypotheses → `git bisect` → minimal fix + regression test). When
 output quality is measurable and worth iterating on, load **`self-improve-loop`** (generate → evaluate

@@ -41,7 +41,7 @@ see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom 
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
 | [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request`, `parallelization` |
-| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS) | code | `sde-ladder-*`, `*-craft`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`, `tool-design`, `adr-template` |
+| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS); build ops API layers & SPA GUIs | code | `sde-ladder-*`, `*-craft`, `api-design`, `spa-architecture`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`, `tool-design`, `adr-template` |
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | `agent-security` |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
@@ -81,6 +81,8 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 
 **Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `go-craft` · `typescript-craft` ·
 `react-craft` · `tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop` *(generate→evaluate→refine: evaluator-optimizer + the act→verify loop)*
+
+**Build for the ops side (APIs & GUIs):** `api-design` *(contract-first OpenAPI, resource modeling, problem+json errors, versioning, pagination, authN/Z — the HTTP layer that fronts ops tools)* · `spa-architecture` *(SPA GUI over that API: build/routing, server-state, typed client from the spec, browser auth, accessibility, serving the bundle on PCF)*. These turn the fleet's read-only/automation capabilities into usable software; pair with `python-craft`/`typescript-craft`/`react-craft`.
 
 **Agent-system methods (Anthropic agent patterns):** `context-engineering` *(curate the attention budget; JIT retrieval, compaction, sub-agent isolation)* · `parallelization` *(sectioning/voting & multi-agent fan-out — and when the ~15× cost pays)* · `tool-design` *(tools an agent uses well: namespacing, prescriptive descriptions, token efficiency)* · `agent-security` *(prompt injection & the lethal trifecta — treat tool/log/webhook output as data, not instructions)*. Pairs with `self-improve-loop`.
 
