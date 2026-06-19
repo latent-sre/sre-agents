@@ -4,6 +4,7 @@ description: >-
   Architecture for building a single-page-app GUI that puts a usable front-end on our ops tools — the
   browser client over an `api-design` backend. Use when standing up or extending a SPA: project/build
   setup, routing, server-state vs UI-state, a typed API client generated from OpenAPI, forms+validation,
+  a modern styling approach (utility CSS + accessible headless components, design tokens, dark mode),
   browser auth (OIDC + PKCE), web security (XSS/CORS/CSP/token storage), accessibility, big-table
   performance, testing, and building/serving the static bundle on PCF. Pairs with react-craft.
 metadata:
@@ -22,6 +23,23 @@ Component-level React patterns live in `react-craft`; this skill is the app arou
   file-type. Everything shipped to the browser is **public** — no secrets in the bundle or env.
 - **Routing:** a client router (React Router / TanStack Router); **lazy-load** routes/code-split so the
   initial bundle stays small.
+
+## Styling & look (modern, accessible by default)
+Ops GUIs should look clean and current, not bespoke — **don't hand-roll a design system or pixel
+values.** Defaults when the repo sets none:
+- **Styling:** utility-first **Tailwind CSS** (or CSS Modules) over runtime CSS-in-JS (`styled-
+  components`/Emotion add a runtime cost and fight Server Components). Drive everything from **design
+  tokens / CSS variables** (color, spacing, radius, type scale) so theming and **dark mode** are one
+  switch — most on-call work happens at night.
+- **Components:** build on an **accessible headless primitive library** — **shadcn/ui** (copy-in
+  components on **Radix UI**), Radix Themes, or Mantine — so dialogs, menus, and comboboxes get focus
+  management and ARIA for free (this *is* your a11y story below). Don't reinvent a modal.
+- **Look:** a consistent **spacing + type scale**, generous whitespace, one accent color, real
+  empty/loading/**skeleton**/error states, and **lucide** (or similar) icons. Stay restrained — ops
+  tools are read under stress; clarity and density beat decoration.
+- **Data-dense views:** ops tools are mostly tables — use a real table primitive (**TanStack Table**)
+  with sticky headers, sort/filter, status **badges**, and virtualization (see Performance). Desktop-
+  first, but don't break on a laptop.
 
 ## Data: server-state vs UI-state (the load-bearing decision)
 - Treat **server data as a cache, not app state.** Use **TanStack Query** (or RTK Query) for fetching:
@@ -65,7 +83,8 @@ for the few critical end-to-end paths. Test behavior as the user sees it (`react
 
 ## Definition of done
 Typed client generated from the live OpenAPI spec · server-state via a query cache (no fetch-in-Effect) ·
-tokens not in `localStorage` + CSP set · routes code-split, big lists virtualized · keyboard-accessible ·
+styled from tokens via headless accessible components (no bespoke modal), dark mode works · tokens not in
+`localStorage` + CSP set · routes code-split, big lists virtualized · keyboard-accessible ·
 SPA fallback works on refresh/deep-link on PCF · RTL/MSW green, critical e2e covered.
 
 ## Handoffs
