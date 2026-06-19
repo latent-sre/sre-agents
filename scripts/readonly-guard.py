@@ -25,6 +25,15 @@ import json
 import re
 import sys
 
+# Command-position anchor: start of string or just after a pipe/sep, tolerating a leading
+# wrapper such as `sudo`, `env FOO=1`, `xargs`, `nice -n 10`, `time`, `nohup`, etc. Without the
+# wrapper tolerance, `sudo install ...` / `sudo vim ...` would slip past the position-anchored
+# patterns below. Bounded to a single command via [^|;&] so it can't span a pipeline.
+_CMD = (
+    r"(?:^|[|;&]\s*)"
+    r"(?:(?:sudo|xargs|nice|env|time|command|nohup|setsid|stdbuf|ionice)\b[^|;&]*?\s)?"
+)
+
 # State-changing command patterns — denied for read-only agents. Case-insensitive.
 _DENY_PATTERNS = [
     # PCF / cf CLI writes: deploys, scaling, lifecycle, routes, services, env, ssh, tasks
@@ -68,9 +77,9 @@ _DENY_PATTERNS = [
     r"\bfind\b.*\s-delete\b",
     # GNU install copies/creates files; anchored to command position because 'install'
     # is also a common path component (e.g. `ls /opt/install`) and a package subcommand.
-    r"(?:^|[|;&]\s*)install\b",
+    _CMD + r"install\b",
     # interactive editors and awk are file writers (in command position to avoid grep'd-text false positives)
-    r"(?:^|[|;&]\s*)(vim|vi|nvim|nano|emacs|ex|pico)\b",
+    _CMD + r"(vim|vi|nvim|nano|emacs|ex|pico)\b",
     r"\b[gmn]?awk\b.*system\s*\(",
     # PowerShell mutations, for Windows shells behind the Bash tool name
     r"\b(Remove-Item|Move-Item|Copy-Item|New-Item|Set-Content|Add-Content|Out-File|"
@@ -82,7 +91,9 @@ _DENY_PATTERNS = [
     # shell output redirection to a file (allow >/dev/null and fd-dup like 2>&1), and tee.
     # Target charset includes quotes so `awk '{print > "f"}'` is caught; tee is anchored to
     # command position so `ps aux | grep tee` (tee as search text) is not a false positive.
-    r">>?\s*\|?\s*(?!&|/dev/null\b)[\"'~./$A-Za-z0-9_-]",
+    # The (?<![-=]) look-behind keeps arrows like `->`/`=>` (common in greps, jq, commit
+    # messages) from being misread as redirection — a real redirect is never preceded by - or =.
+    r"(?<![-=])>>?\s*\|?\s*(?!&|/dev/null\b)[\"'~./$A-Za-z0-9_-]",
     r"(?:^|[|;&]\s*)tee\b",
     r"\b(kill|pkill|killall)\b",
     r"\b(systemctl|service)\s+(start|stop|restart|reload|enable|disable)\b",
