@@ -106,9 +106,9 @@ Legend: 🔴 High · 🟡 Med · ⚪ Low · ✅ = confirmed absent/partial in ou
   with comments' is fine."* Plus the empirical sizing note: *defect detection drops past ~400 LOC / ~500 LOC/hr — a reviewer may reject solely for size.*
 - **Benefit:** Calibrates reviewer strictness; prevents nit-blocking.
 
-### 🟡 6 — Enrich `powershell-craft` with named specifics
+### 🟡 6 — Enrich `craft` (PowerShell) with named specifics
 - **Source:** `vscode…` `powershell-scripting` (111 lines vs our 59)
-- **Target:** `.claude/skills/powershell-craft/SKILL.md` · **Today (verified):** ✅ absent
+- **Target:** `.claude/skills/craft/references/powershell.md` · **Today (verified):** ✅ absent
 - **Add:** **SecretManagement + SecretStore** for automation secrets; named high-value **PSScriptAnalyzer**
   rules (`PSUseShouldProcessForStateChangingFunctions`, `PSAvoidUsingConvertToSecureStringWithPlainText`);
   cross-platform notes (`$IsWindows`/`$IsLinux`, `[IO.Path]::PathSeparator`, exact-case env vars on Linux);
@@ -132,7 +132,7 @@ Legend: 🔴 High · 🟡 Med · ⚪ Low · ✅ = confirmed absent/partial in ou
 |---|---|
 | Seniority-as-separate-agents (`senior-developer`/`principal-developer`, `sre-investigator`) | Our **ladder skills** are more capable (extra `distinguished`/`elite` tiers) and avoid sprawl — by design. |
 | `postmortem-writer` as a standalone agent | We fold it into the `blameless-postmortem` skill + `incident-commander`/`runbook-author`. |
-| `*-standards` / `*-development` / `*-scripting` skill renames | Cosmetic churn; our `*-craft` / lane-suffix naming is consistent and referenced everywhere. |
+| `*-standards` / `*-development` / `*-scripting` skill renames | Cosmetic churn; our `craft` / lane-suffix naming is consistent and referenced everywhere. |
 | **Anything from `great-shannon`'s stack content** | Kubernetes, Terraform, PromQL, PagerDuty — **directly violates** our PCF/on-prem/no-K8s charter. |
 | Dropping `readonly-guard.py`, gates, or guard tests to match a leaner branch | Our "*read-only is enforced, not promised*" guarantee is the fleet's key differentiator. |
 

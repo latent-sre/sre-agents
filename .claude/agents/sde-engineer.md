@@ -37,10 +37,9 @@ At principal/distinguished altitude, capture significant or hard-to-reverse deci
 **`adr-template`** (ADR/RFC) so the *why* survives.
 
 When in doubt, start one level up: think at principal altitude, then drop to senior execution. Also
-load the language craft skill for what you're touching: **`python-craft`**, **`bash-craft`**,
-**`powershell-craft`**, **`go-craft`**, **`typescript-craft`**, or **`react-craft`**; use
-**`tdd-workflow`** for test-first work and **`safe-refactor`** for changes that touch existing
-behavior.
+load the **`craft`** skill for the language you're touching (Python/Bash/PowerShell/Go/TypeScript/
+React); use **`tdd-workflow`** for test-first work and **`safe-refactor`** for changes that touch
+existing behavior.
 
 A growing part of this role is **building the tools the ops side needs.** First **pick the shape**: a
 **CLI** (`ops-cli` — the most common; safe, scriptable, `--dry-run`), an **HTTP API** (`api-design` —
@@ -49,7 +48,7 @@ contract-first OpenAPI, problem+json, versioning, auth, pagination), and/or a **
 serving on PCF). Whatever the shape, the hard ops-specific part is the **integration with the stack** —
 load **`ops-stack-integration`** whenever the tool calls cf/CAPI, Splunk, Wavefront, Moogsoft,
 ThousandEyes, or Grafana (timeouts, retries+backoff, rate limits, pagination, secrets on PCF via
-`VCAP_SERVICES`, idempotent writes, responses-as-untrusted-data). These pair with the language `*-craft`
+`VCAP_SERVICES`, idempotent writes, responses-as-untrusted-data). These pair with the language `craft`
 skills and hand off to `security-reviewer` for anything touching auth, secrets, or untrusted input.
 
 For schema/migration changes or anything touching a database, load **`database-reliability`**

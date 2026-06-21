@@ -19,7 +19,7 @@ The team's software engineer (Python/Bash/PowerShell, and Go/TypeScript/React wh
 Reads existing code first, matches conventions, writes tests, ships clean reviewable diffs. **Scales
 altitude by loading the `sde-ladder` skill at the matching tier** — senior (scoped work), principal
 (cross-cutting design & migrations), distinguished (org-wide/high-ambiguity architecture).
-Loads the language `*-craft` skill for what it touches, `database-reliability` for schema/DB work,
+Loads the language `craft` skill for what it touches, `database-reliability` for schema/DB work,
 `tdd-workflow` for test-first, `safe-refactor` and `debug-rca` as needed, `self-improve-loop` to
 iterate against measurable criteria, and `tool-design` when building a tool/MCP integration. For the
 growing mandate to **build the ops side's tooling as software**, picks the shape — `ops-cli` (CLI),
@@ -42,7 +42,7 @@ hand-off target from `code-reviewer` when depth is needed.
 ### test-engineer · `sonnet` · writes tests
 Designs and writes tests that actually catch bugs, raising meaningful coverage across Python, Bash,
 PowerShell, TypeScript/React, and Go. Tests behavior and contracts, not internals. Loads `tdd-workflow`
-and the language `*-craft` skills. Edits **test code only** — hands real fixes to `sde-engineer`.
+and the language `craft` skills. Edits **test code only** — hands real fixes to `sde-engineer`.
 
 ### database-reliability · `opus` · writes migrations (prod gated)
 The DBRE for our **on-prem databases**. Designs safe, reversible schema migrations and tunes query

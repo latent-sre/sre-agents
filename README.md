@@ -42,7 +42,7 @@ AGENTS.md                  cross-tool source of truth (roster, conventions, rout
 CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude specifics)
 .claude/
   agents/                  12 agents — read by Claude Code AND VS Code/Copilot
-  skills/                  43 skills (SKILL.md open standard) — read by both tools
+  skills/                  38 skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 evals/                     behavioral evals (scenarios + graders) — routing, gates, security; --validate runs in CI
@@ -66,9 +66,9 @@ scripts/
 - SDE — `sde-ladder`: senior → principal → distinguished
 - SRE — `sre-ladder`: responder (new hire) → investigator (experienced) → elite
 
-**Skills (how) — 43 total:**
-- *Ladders* (2) · *Craft* (`python-craft`, `bash-craft`, `powershell-craft`, `go-craft`,
-  `typescript-craft`, `react-craft`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`) · *Data* (`database-reliability`)
+**Skills (how) — 38 total:**
+- *Ladders* (2) · *Craft* (`craft` — one skill, six language files: Python/Bash/PowerShell/Go/TypeScript/React;
+  plus `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`) · *Data* (`database-reliability`)
 - *Build ops tooling*: `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`
 - *Agent-system methods (Anthropic patterns)*: `context-engineering`, `parallelization`, `tool-design`, `agent-security`
 - *Observe/investigate (your stack)*: `triage-golden-signals`, `pcf-ops`, `splunk-triage`,

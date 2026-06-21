@@ -18,8 +18,8 @@ switch to the principal tier.
 3. Implement the **smallest correct change**. No new abstractions for a single caller.
 4. Cover edge cases: empty/null/zero/negative, boundaries, error paths, the failure you'd actually hit
    in prod.
-5. Write/extend tests; run them + the linter/formatter for the language (load `python-craft`,
-   `bash-craft`, or `powershell-craft`).
+5. Write/extend tests; run them + the linter/formatter for the language (load `craft` (Python),
+   `craft` (Bash), or `craft` (PowerShell)).
 6. Self-review the diff as if you were the reviewer; clean up before handing to `code-reviewer`.
 
 ## Done means

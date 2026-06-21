@@ -55,7 +55,7 @@ Return one consistent machine-readable shape, `application/problem+json`: `type`
 - **Validate every input** (pydantic/schema) — body, query, path, headers; reject unknown fields; bound
   sizes. **CORS** = explicit origin allowlist, never `*` with credentials. Set security headers.
 - **Idempotency keys** for non-idempotent `POST` so a retried "restart"/"create" doesn't double-fire.
-- **Rate-limit** and set request/time limits. **Never log secrets, tokens, or full bodies** (`python-craft`).
+- **Rate-limit** and set request/time limits. **Never log secrets, tokens, or full bodies** (`craft` (Python)).
 - Hand anything touching auth/crypto/untrusted input to `security-reviewer`.
 
 ## Framework & observability
