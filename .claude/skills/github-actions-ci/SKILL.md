@@ -19,8 +19,6 @@ promote the same artifact; gate prod with environments.
 `permissions`, a version matrix, caching, concurrency, and SHA-pinned actions.
 
 ## Anatomy
-- **Workflow** (`.github/workflows/*.yml`) → triggered by `on:` → contains **jobs** → each job runs
-  **steps** on a **runner**.
 - **Reusable workflow** (`on: workflow_call`, with `inputs`/`secrets`) — factor shared CI/CD so every
   repo calls one maintained pipeline:
   ```yaml
@@ -87,8 +85,7 @@ can't persist and tamper with the next — and **never** attach self-hosted runn
 Use a self-hosted runner with a pinned cf CLI v8 already installed (or install from an internal,
 checksum-verified package). Authenticate from **environment** secrets, keep shell tracing off, and
 understand the residual risk: `cf auth` takes the password as an argument, so run it only on a locked-down
-or ephemeral runner. The deploy job is prod-facing → it belongs to `release-engineer` and gates on the
-`production` environment (`release-gate`).
+or ephemeral runner.
 ```yaml
 deploy-prod:
   runs-on: [self-hosted, pcf]          # runner group with foundation network access

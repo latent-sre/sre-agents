@@ -12,7 +12,7 @@ metadata:
 
 # Python craft
 
-Write Python a reviewer approves on the first pass. Match the repo's existing tooling first; the
+Match the repo's existing tooling first; the
 defaults below apply when none is set.
 
 ## Style & tooling
