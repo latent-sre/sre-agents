@@ -38,6 +38,18 @@ least privilege: include what the step needs, nothing it doesn't.
   it survives compaction — for us that's runbooks, postmortems, and the knowledge loop, not a giant
   scratchpad in-context.
 
+## Operating heuristics (sessions & runtime primitives)
+- **New task → new session.** Don't continue a finished task's window into the next one; stale context
+  distracts more than it helps. *[sourced: Thariq Shihipar, "session management and 1M context"]*
+- **Rewind beats correct.** After a failed attempt, rewind to *before* the error and re-prompt with what
+  you learned — correcting in place leaves the failure in context to mislead later turns. *[sourced: same]*
+- **Degradation is gradual, not a cliff.** Quality erodes well before the limit (often noticeable in the
+  hundreds-of-K range, task-dependent) — manage context proactively, don't wait to hit the wall.
+- **Three runtime primitives, lightest first:** *tool-result clearing* (drop old, re-fetchable
+  `tool_result` blocks — cheap, lossless) → *compaction* (summarize the transcript; in custom configs,
+  instruct it to preserve decisions/figures/state) → *memory* (persist across sessions). *[sourced:
+  Anthropic context-engineering cookbook]*
+
 ## In this fleet
 The architecture already embodies this: thin agents, skills loaded on demand, `researcher` as the
 context-offload, `handoff-protocol` packaging the *minimal* cold-start context, gates carrying forward
