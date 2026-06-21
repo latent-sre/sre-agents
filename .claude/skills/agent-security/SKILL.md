@@ -49,6 +49,11 @@ Break any one leg and the injection can't complete. *[sourced: Simon Willison, "
 - **Keep secrets out of the model's context** — inject at the boundary (e.g. a git/credential proxy),
   never paste tokens into prompts or messages where injected text could read them back.
 - **Sandbox/quarantine untrusted input** before it reaches a privileged step; sanitize, don't trust.
+- **No trust escalation between agents.** A sub-agent's or handoff's output is **not** more trustworthy
+  because it came "from us" — if it carries content derived from untrusted sources (a log line, a PR
+  body, a scraped page), it keeps that untrusted taint downstream. Label it in the `handoff-protocol`
+  packet so the receiver doesn't promote a quoted attacker string to an instruction. *[sourced: Anthropic
+  multi-agent research system — consistent skepticism across agents]*
 
 ## Output
 Name which trifecta legs the agent/flow holds, the injection surface (where untrusted content enters),

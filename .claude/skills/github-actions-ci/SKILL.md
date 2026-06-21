@@ -15,6 +15,9 @@ metadata:
 We deploy via GitHub Actions (migrating off Bamboo — see `bamboo-to-actions-migration`). Build once,
 promote the same artifact; gate prod with environments.
 
+**Starter:** copy `assets/ci.reusable.yml` — a `workflow_call` pipeline with least-privilege
+`permissions`, a version matrix, caching, concurrency, and SHA-pinned actions.
+
 ## Anatomy
 - **Workflow** (`.github/workflows/*.yml`) → triggered by `on:` → contains **jobs** → each job runs
   **steps** on a **runner**.

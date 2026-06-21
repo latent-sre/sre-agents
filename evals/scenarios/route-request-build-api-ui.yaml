@@ -1,0 +1,15 @@
+id: route-request-build-api-ui
+target: route-request
+# Task: a web-tool request must route to sde-engineer AND surface the build skills.
+prompt: |
+  We need to build a REST API and a React web UI for the on-call tool so the ops
+  team has a GUI over it. Who should do this and how should it be routed?
+success_criteria:
+  - Routes to sde-engineer
+  - Names api-design and spa-architecture as the skills to load
+  - Stays in the on-prem/PCF lane (does not propose Kubernetes/cloud-managed infra)
+graders:
+  - type: contains_all
+    of: ["sde-engineer", "api-design", "spa-architecture"]
+  - type: not_contains
+    of: ["kubernetes", "kubectl", "terraform"]

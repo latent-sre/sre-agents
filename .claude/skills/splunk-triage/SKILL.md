@@ -79,7 +79,13 @@ index=<app_index> error
     | stats p95(latency_ms), max(latency_ms) by uri
 ```
 
-## Tips
+## Tips & gotchas (Splunk-specific — where the default bites)
+- **Never leave the search unscoped.** `index=*` scans every index — slow, costly, and may silently
+  miss role-restricted data. Always scope to the app index from `references/` (fill in your real values).
+- **The time range is implicit and dangerous.** A bare search uses the picker's range (often last 24h);
+  in a saved search/API job it's whatever the job sets. Set `earliest`/`latest` explicitly during triage.
+- **Fields are case-sensitive and only exist after extraction.** `table status` shows nothing if the
+  field was never extracted; `rex` it first. `_time` is in the search TZ, not necessarily the event's.
 - `stats`/`timechart`/`tstats` aggregate; `transaction` groups events but is expensive — prefer
   `stats by <id>` for correlation.
 - Match the search window to the incident timeline from `sre-ladder-investigator`.

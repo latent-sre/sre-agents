@@ -1,0 +1,25 @@
+# Starter cf v8 manifest — copy and adapt. See pcf-deploy SKILL.md for the deploy strategies.
+# Keep secrets OUT of here: bind them via `cf bind-service` / a credential service, not env: blocks.
+applications:
+  - name: oncall-tool
+    instances: 3                     # >1 so a single bad instance can't take you down
+    memory: 512M
+    disk_quota: 1G
+    # Health: PCF restarts an instance that fails this. Expose a cheap, dependency-free endpoint.
+    health-check-type: http
+    health-check-http-endpoint: /healthz
+    health-check-invocation-timeout: 5
+    # Static SPA bundle? Use the staticfile/nginx buildpack and an SPA fallback (see spa-architecture).
+    buildpacks:
+      - python_buildpack
+    routes:
+      - route: oncall-tool.apps.example.internal
+    env:
+      # Non-secret config only. Twelve-factor: real config via service binding / platform env.
+      LOG_LEVEL: info
+      APP_ENV: production
+    services:
+      - oncall-db            # bound; credentials arrive via VCAP_SERVICES, never hardcoded
+      - oncall-secrets
+# Blue-green (zero-downtime): push as `oncall-tool-green`, map the prod route, verify /healthz,
+# then unmap the old app's route and delete it. Prod pushes require human confirmation (release-gate).

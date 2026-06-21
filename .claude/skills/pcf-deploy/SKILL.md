@@ -9,6 +9,10 @@ metadata:
   domain: deploy
   platform: pcf-tas
 compatibility: Requires the cf CLI v8 and authorized access to the target PCF foundation/space
+# Claude-specific: a deploy is deliberately human-initiated. The model won't auto-invoke this
+# playbook as an action; a human runs `/pcf-deploy` (or release-engineer applies it under human
+# direction). Safety-in-depth on top of the release-gate hook. Copilot ignores this key.
+disable-model-invocation: true
 ---
 
 # PCF / TAS deploy (cf CLI v8)
@@ -17,6 +21,9 @@ Deploy so that a bad release is **instantly reversible**. Default to **blue-gree
 built-in rolling/canary strategy for lower-risk changes. **Prod deploys are prod-facing → confirm with a
 human and clear `release-gate` + `production-change-gate` first.** Show the plan and the rollback before
 executing.
+
+**Starter:** copy `assets/manifest.yml` — a health-checked, multi-instance, service-bound manifest with
+blue-green notes baked in.
 
 ## Manifest (declarative, in version control)
 ```yaml

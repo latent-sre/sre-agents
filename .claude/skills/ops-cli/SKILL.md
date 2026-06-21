@@ -1,0 +1,62 @@
+---
+name: ops-cli
+description: >-
+  Design a command-line ops tool that's safe under stress and scriptable in CI — the most common shape of
+  ops tooling. Use when building or improving a CLI run by humans and pipelines: framework choice,
+  meaningful exit codes, human-vs-JSON output, stdout/stderr discipline, --dry-run and confirm-before-
+  destruct, config/secret precedence, idempotency, and testing. Pairs with python-craft/bash-craft/
+  powershell-craft and ops-stack-integration.
+metadata:
+  domain: method
+---
+
+# Ops CLI
+
+A lot of ops tooling is a **CLI a human runs at 3am and CI runs at scale**. Make it **obvious, safe, and
+pipeable**: clear defaults, loud failures, and nothing destructive without a guard. Use the language
+craft skill for the implementation; this is the tool's *shape*. **Starter:** copy
+`assets/cli_skeleton.py` — a Typer CLI with `--json`, a real `--dry-run`, exit codes, and
+stdout/stderr discipline already wired up.
+
+## Framework
+- **Python → Typer** (or Click; `argparse` for zero-dep) — `python-craft`. **Bash →** `bash-craft`
+  (strict mode, arg parsing). **PowerShell →** `powershell-craft` (advanced functions, approved verbs,
+  `CmdletBinding`). Match the repo.
+
+## Exit codes & streams (the scripting contract)
+- **Exit `0` on success, distinct non-zero codes for distinct failures** — document them; CI branches on
+  them. Fail loud to **stderr** with a message that says what failed and the next step.
+- **stdout is for the result; stderr is for logs, progress, and diagnostics** — so `| jq` and pipelines
+  stay clean. Don't `print` chatter to stdout (`python-craft`: use `logging` → stderr).
+- **Human-readable by default; `--json` for machines.** Keep the JSON shape stable (it's a contract —
+  `safe-refactor` before you change it). Detect a TTY and honor `NO_COLOR`.
+
+## Safety (state-changing CLIs)
+- **`--dry-run` for anything that changes state**, and make it real: **separate decision from effect** so
+  dry-run computes the plan and calls nothing — prove it in a test with a spy (`python-craft`).
+- **Confirm destructive actions** unless `--yes`/`--force`; print the plan + what will change first.
+- **Idempotent and re-runnable** — re-running converges, doesn't double-apply. State-changing
+  cf/platform actions stay gated (human sign-off via `release-engineer`).
+
+## Config & secrets
+- **Precedence: flag > env > config file > default.** **Secrets come from env / service binding, never a
+  flag** (flags leak in shell history and `ps`). Never echo a token. See `ops-stack-integration` for the
+  calls themselves (timeouts, retries, pagination).
+
+## UX
+`--help` on every command with examples; sane defaults; `--verbose/-q`; progress to stderr; stable flag
+names. Small, composable subcommands beat one mega-flag.
+
+## Testing
+Test **exit codes, stdout vs stderr, and the `--json` shape**; assert `--dry-run` performs **no** side
+effects (spy/mock the effect). Tools: `pytest` + Typer/Click runner, `bats`, or `Pester` (`tdd-workflow`).
+
+## Definition of done
+Distinct documented exit codes · result on stdout / logs on stderr · `--json` stable · `--dry-run` calls
+nothing and destructive actions confirm · secrets never in flags/logs · idempotent · `--help` is useful ·
+exit codes + dry-run covered by tests.
+
+## Handoffs
+- → `ops-stack-integration` for the cf/Splunk/Wavefront calls it makes · `api-design`/`spa-architecture`
+  if the same capability should also be an API/GUI.
+- → `security-reviewer` (secret handling) · `test-engineer` (coverage) · `release-engineer` to ship it.

@@ -47,6 +47,9 @@ theoretical ones, and you give developers a concrete fix.
   these; the supply-chain/CI attack class is squarely this lane.)
 - **Misconfiguration** — permissive CORS, debug endpoints, default creds, verbose errors leaking
   internals.
+- **API/SPA layer** — for an ops API or its web GUI (`api-design`/`spa-architecture`): per-object authz
+  enforced server-side (not just "logged in"), browser tokens not in `localStorage`, CORS not wide-open
+  with credentials, a CSP set, and the OpenAPI error contract not leaking internals.
 
 ## Method
 

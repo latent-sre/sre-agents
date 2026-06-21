@@ -21,7 +21,10 @@ altitude by loading a ladder skill** — `sde-ladder-senior` (scoped work), `sde
 (cross-cutting design & migrations), `sde-ladder-distinguished` (org-wide/high-ambiguity architecture).
 Loads the language `*-craft` skill for what it touches, `database-reliability` for schema/DB work,
 `tdd-workflow` for test-first, `safe-refactor` and `debug-rca` as needed, `self-improve-loop` to
-iterate against measurable criteria, and `tool-design` when building a tool/MCP integration. Hands off
+iterate against measurable criteria, and `tool-design` when building a tool/MCP integration. For the
+growing mandate to **build the ops side's tooling as software**, picks the shape — `ops-cli` (CLI),
+`api-design` (the contract-first HTTP layer), `spa-architecture` (the SPA GUI over it) — and loads
+`ops-stack-integration` for the hard part: calling cf/Splunk/Wavefront/Moogsoft safely. Hands off
 to `code-reviewer` before "done."
 
 ### code-reviewer · `opus` · read-only (guarded)

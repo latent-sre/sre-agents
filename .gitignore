@@ -6,3 +6,7 @@
 
 # Temporary git worktrees used for cross-branch review/comparison (scratch; never committed).
 /.worktrees/
+
+# Python bytecode
+__pycache__/
+*.pyc
