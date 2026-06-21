@@ -50,7 +50,7 @@ docs/                       ARCHITECTURE (why) · AGENT-CATALOG (per-agent roste
 scripts/
   sync-copilot.ps1 / .sh   generate .github/agents + .github/skills for Copilot-native tooling
   validate-fleet.ps1       validate all skills/agents against the Agent Skills spec (CI-friendly)
-  readonly-guard.py        PreToolUse hook: blocks state-changing shell commands for read-only agents
+  readonly-guard.py        PreToolUse hook: blocks state-changing + data-egress shell commands for read-only agents
 .github/
   agents/  skills/         GENERATED (gitignored) — do not hand-edit; edit .claude/ and re-run sync
 ```
