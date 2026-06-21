@@ -1,0 +1,35 @@
+# Starter reusable CI workflow — copy to .github/workflows/ and adapt. See github-actions-ci SKILL.md.
+# Reusable via workflow_call so app repos call it with one `uses:` line. Least-privilege by default;
+# third-party actions pinned by SHA (a tag is mutable — supply-chain risk, flagged by security-reviewer).
+name: ci
+
+on:
+  workflow_call:
+    inputs:
+      python-version: { type: string, default: "3.12" }
+
+permissions:
+  contents: read            # start at nothing-extra; add per-job only what a job needs.
+
+concurrency:                # cancel superseded runs on the same ref
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: { python-version: ["3.11", "3.12"] }   # test the versions you actually run
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683   # v4.2.2 (pin by SHA)
+      - uses: astral-sh/setup-uv@5  # uv: fast envs + lockfile; or actions/setup-python with cache
+        with: { python-version: "${{ matrix.python-version }}" }
+      - run: uv sync --frozen       # reproducible from the lockfile
+      - run: uv run ruff check .     # lint
+      - run: uv run ruff format --check .
+      - run: uv run mypy .           # types
+      - run: uv run pytest -q        # tests (fail loud, non-zero exit)
+
+  # Deploy lives in a SEPARATE job/workflow gated by a protected `environment:` (reviewer approval)
+  # so prod requires human sign-off (release-gate). Use OIDC or a self-hosted runner for PCF access;
+  # never store long-lived cf creds as plain repo secrets if you can avoid it.

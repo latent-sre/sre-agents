@@ -14,7 +14,9 @@ metadata:
 
 A lot of ops tooling is a **CLI a human runs at 3am and CI runs at scale**. Make it **obvious, safe, and
 pipeable**: clear defaults, loud failures, and nothing destructive without a guard. Use the language
-craft skill for the implementation; this is the tool's *shape*.
+craft skill for the implementation; this is the tool's *shape*. **Starter:** copy
+`assets/cli_skeleton.py` — a Typer CLI with `--json`, a real `--dry-run`, exit codes, and
+stdout/stderr discipline already wired up.
 
 ## Framework
 - **Python → Typer** (or Click; `argparse` for zero-dep) — `python-craft`. **Bash →** `bash-craft`

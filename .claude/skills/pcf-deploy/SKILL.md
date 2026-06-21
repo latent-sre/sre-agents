@@ -21,6 +21,9 @@ built-in rolling/canary strategy for lower-risk changes. **Prod deploys are prod
 human and clear `release-gate` + `production-change-gate` first.** Show the plan and the rollback before
 executing.
 
+**Starter:** copy `assets/manifest.yml` — a health-checked, multi-instance, service-bound manifest with
+blue-green notes baked in.
+
 ## Manifest (declarative, in version control)
 ```yaml
 # manifest.yml

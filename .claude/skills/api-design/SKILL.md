@@ -20,6 +20,8 @@ Match the repo's existing framework and conventions before applying the defaults
 ## Contract-first
 - Author/maintain an **OpenAPI 3.1** spec and treat it as the source of truth; generate server stubs and
   client types from it so server and consumers can't drift (the SPA consumes it via `spa-architecture`).
+  **Starter:** copy `assets/openapi.starter.yaml` — problem+json, cursor pagination, bearer auth, and an
+  idempotency-key header already wired up; lint it in CI.
 - Review the contract *before* writing the handler. A breaking change to a shipped contract is a
   principal-altitude change — load `sde-ladder-principal` and **expand→migrate→contract**.
 
