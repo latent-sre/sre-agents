@@ -183,8 +183,8 @@ because Claude hooks are not portable.
 - **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency
   timeout), authored with the `runbook-template` skill; fill placeholders before treating them as live.
 - **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),
-  `slo-error-budget/scripts/error_budget.py` (budget/burn calculator), starter templates under `assets/`
-  (`api-design`, `ops-cli`, `pcf-deploy`, `github-actions-ci`), and `references/` fill-in files
+  `slo-error-budget/scripts/error_budget.py` (budget/burn calculator), starter templates under each
+  skill's `assets/` (`api-design`, `ops-cli`, `pcf-deploy`, `github-actions-ci`), and `references/` fill-in files
   (`pcf-ops`, `splunk-triage`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`,
   `thousandeyes-network`) for your concrete index/metric/foundation/dashboard/test values.
 
