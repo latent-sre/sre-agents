@@ -49,6 +49,19 @@ and `test-engineer` load it when a defect's cause is unknown.
 **Symptom → Reproduction → Investigation** (hypotheses tested + evidence) **→ Root cause** (`file:line`
 + causal chain) **→ Fix** (minimal change) **→ Regression test**. Cite the evidence that pinpointed it.
 
+## Worked example (the hypothesis table is the method)
+*Symptom: `test_export` passes locally, fails in CI since ~Tue.* Rank by likelihood × cheapness-to-test:
+
+| # | Hypothesis | Likelihood | Test (cheap → dear) | Result |
+|---|---|---|---|---|
+| 1 | CI uses a different TZ → date assertion off by one | high | print `date` in CI; freeze the clock in the test | **confirmed** — CI is UTC, dev is ET |
+| 2 | Dependency bump changed CSV quoting | med | `git diff` the lockfile around Tue | ruled out (no change) |
+| 3 | Test order / shared temp file | low | `pytest -p no:randomly` vs shuffled | ruled out |
+
+Causal chain: *unpinned test clock → asserts a localized date → passes in ET, fails in UTC CI.* Minimal
+fix: inject/freeze the clock; **regression test** asserts the export under a fixed TZ (fails without the
+fix). Note the contributing factor — the env difference — not just the proximate assertion.
+
 ## Handoffs
 - → `sde-engineer` for the code fix · → `test-engineer` for the regression test if it deserves focus.
 - If the symptom is in **production** (alert, user impact, degraded PCF app), escalate to `sre-engineer`
