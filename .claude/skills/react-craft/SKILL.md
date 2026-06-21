@@ -13,7 +13,7 @@ metadata:
 
 # React craft
 
-Write React a reviewer approves on the first pass. Pairs with `typescript-craft`. Match the repo's
+Pairs with `typescript-craft`. Match the repo's
 existing patterns first; the defaults below apply when none is set.
 
 ## Hooks rules (enforce)

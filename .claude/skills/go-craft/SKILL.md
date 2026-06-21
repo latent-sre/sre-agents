@@ -12,7 +12,7 @@ metadata:
 
 # Go craft
 
-Write Go a reviewer approves on the first pass. Match the repo's existing tooling first; the defaults
+Match the repo's existing tooling first; the defaults
 below apply when none is set.
 
 ## Style & tooling
