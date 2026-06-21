@@ -1,0 +1,20 @@
+id: parallelization-fanout-decision
+target: parallelization
+# Task: decide what to fan out vs keep sequential, and acknowledge the cost — fan out
+# INDEPENDENT strands, keep TIGHTLY-COUPLED work serial, and note that fan-out isn't
+# free. Outcome graded: the response makes the independent/coupled split and names the
+# overhead/cost tradeoff.
+prompt: |
+  A request has three independent investigation strands and one tightly-coupled coding
+  change. How should the coordinator decide what to run in parallel versus sequentially,
+  and what is the catch?
+success_criteria:
+  - Fan out the independent strands; keep the coupled coding change sequential
+  - Names the cost/overhead of fan-out (token/coordination cost — it isn't free)
+graders:
+  - type: contains_any
+    of: ["parallel", "fan out", "fan-out", "concurrent", "in parallel"]
+  - type: contains_any
+    of: ["sequential", "coupled", "serial", "one at a time", "in order"]
+  - type: contains_any
+    of: ["cost", "token", "overhead", "15x", "expensive", "coordination", "pays"]
