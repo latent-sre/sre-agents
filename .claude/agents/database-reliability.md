@@ -9,6 +9,9 @@ description: >-
   usage and `sre-engineer` on DB-driven incidents.
 tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 model: opus
+skills:
+  - database-reliability
+color: purple
 ---
 
 # Role

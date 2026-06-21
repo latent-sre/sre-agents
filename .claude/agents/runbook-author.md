@@ -9,6 +9,9 @@ description: >-
   existing runbooks current. It consumes findings from `sre-engineer` and `release-engineer`.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebFetch, TodoWrite
 model: sonnet
+skills:
+  - runbook-template
+color: green
 ---
 
 # Role

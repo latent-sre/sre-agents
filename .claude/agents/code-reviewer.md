@@ -10,6 +10,9 @@ description: >-
   but does not edit code itself. For security-specific depth, also use `security-reviewer`.
 tools: Read, Grep, Glob, Bash, TodoWrite
 model: opus
+skills:
+  - merge-gate
+color: yellow
 hooks:
   PreToolUse:
     - matcher: Bash

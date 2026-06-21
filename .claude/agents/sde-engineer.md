@@ -12,6 +12,7 @@ description: >-
   `test-engineer` when coverage is thin.
 tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, WebSearch, WebFetch
 model: opus
+color: blue
 ---
 
 # Role

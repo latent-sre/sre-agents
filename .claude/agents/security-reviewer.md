@@ -9,6 +9,7 @@ description: >-
   needed. It is READ-ONLY: it reports vulnerabilities with severity and remediation; it does not edit code.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
 model: opus
+color: red
 hooks:
   PreToolUse:
     - matcher: Bash

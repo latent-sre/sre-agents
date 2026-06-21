@@ -46,6 +46,10 @@ events  →  dedup into ALERTS  →  cluster into SITUATIONS  →  notify / page
 - **Kill non-actionable pages** — if an alert can't be acted on now, it's a ticket or dashboard, not a
   page (`sre-monitor` philosophy). Measure: alerts/Situation ratio, % auto-clustered, page volume.
 
+## Concrete values
+Our feeds, dedup-key formulas, Sigaliser recipes, enrichment tags, and Situation routing live in
+`references/integrations.md` (fill in; loaded on demand, no credentials).
+
 ## Tip
 Correlation/UI specifics differ between on-prem versions and APEX AIOps cloud — confirm exact field
 names/screens against your foundation's docs (`researcher`) before scripting changes.

@@ -46,6 +46,10 @@ application-layer results. Use it to separate **network/path** problems from **a
   dependency**; alert on loss/latency/availability and link a runbook.
 - API v7 is available to script tests/alerts; hand automation to `release-engineer`/`sde-engineer`.
 
+## Concrete values
+Our enterprise agents, test inventory, critical-journey coverage, and BGP monitors live in
+`references/tests.md` (fill in; loaded on demand, no credentials).
+
 ## Tip
 It tells you **where** (network vs app vs DNS vs routing), rarely the code-level **why** — use it to
 route the investigation, then confirm cause on the indicated layer.
