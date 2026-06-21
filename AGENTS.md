@@ -176,6 +176,10 @@ because Claude hooks are not portable.
 
 - **Validate the fleet:** `pwsh scripts/validate-fleet.ps1` checks every skill/agent against the
   Agent Skills spec (names, descriptions, referenced files). Run it before committing or in CI.
+- **Behavioral evals:** [`evals/`](evals/) holds scenario + grader pairs that check the fleet *behaves*
+  (routing lands right, gates block, agents treat untrusted input as data). `python evals/run_evals.py
+  --validate` checks the suite in CI; `--run` grades it against a Claude-enabled runner. Add a scenario
+  when you add/change a skill (eval-before-docs); grade the outcome, not the path.
 - **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency
   timeout), authored with the `runbook-template` skill; fill placeholders before treating them as live.
 - **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),

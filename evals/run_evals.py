@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Run (or validate) behavioral evals for the agent + skill fleet.
+
+Implements Anthropic's eval shape — *task* (a scenario: prompt + success
+criteria), *trial* (one attempt), *grader* (scores the outcome) — and grades
+the OUTCOME (what the response decided), not the path taken. Run each scenario
+over several trials because model output varies.
+
+Modes:
+  --validate   Check every scenario file parses, has required fields, names a
+               real fleet target, and uses known graders. Needs no model — this
+               is what CI runs to keep the eval suite itself honest.
+  --list       Print the scenarios.
+  --run        Actually invoke the agent and grade. Requires a Claude-enabled
+               runner: set CLAUDE_BIN (default "claude"); each trial shells out
+               `"$CLAUDE_BIN" -p <prompt>` in a FRESH process (fresh session, so
+               authoring context can't mask gaps — per skills best practice).
+
+Exit non-zero if any scenario fails its threshold (CI-friendly).
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import graders
+
+try:
+    import yaml
+except ModuleNotFoundError:
+    sys.exit("evals: PyYAML required — `python -m pip install pyyaml`")
+
+ROOT = Path(__file__).resolve().parent.parent
+SCENARIOS_DIR = Path(__file__).resolve().parent / "scenarios"
+REQUIRED = ("id", "target", "prompt", "graders")
+
+
+def load_scenarios() -> list[dict]:
+    out = []
+    for f in sorted(SCENARIOS_DIR.glob("*.yaml")):
+        data = yaml.safe_load(f.read_text(encoding="utf-8"))
+        data["_file"] = f.name
+        out.append(data)
+    return out
+
+
+def target_exists(target: str) -> bool:
+    return (ROOT / ".claude/skills" / target / "SKILL.md").is_file() or (
+        ROOT / ".claude/agents" / f"{target}.md"
+    ).is_file()
+
+
+def validate(scenarios: list[dict]) -> list[str]:
+    problems: list[str] = []
+    seen: set[str] = set()
+    for s in scenarios:
+        where = s.get("_file", "?")
+        for key in REQUIRED:
+            if not s.get(key):
+                problems.append(f"{where}: missing '{key}'")
+        sid = s.get("id")
+        if sid in seen:
+            problems.append(f"{where}: duplicate id '{sid}'")
+        seen.add(sid)
+        if s.get("target") and not target_exists(s["target"]):
+            problems.append(f"{where}: target '{s['target']}' is not a known skill/agent")
+        for g in s.get("graders", []):
+            if g.get("type") not in graders.REGISTRY:
+                problems.append(f"{where}: unknown grader type '{g.get('type')}'")
+    return problems
+
+
+def run_agent(prompt: str, target: str) -> str:
+    """Invoke the fleet in a fresh session. Replace with the Agent SDK if preferred."""
+    claude = os.environ.get("CLAUDE_BIN", "claude")
+    hint = f"(Use the {target} skill/agent.)\n\n" if target else ""
+    proc = subprocess.run(
+        [claude, "-p", hint + prompt],
+        capture_output=True, text=True, timeout=300, check=False,
+    )
+    if proc.returncode != 0:
+        return f"[runner error rc={proc.returncode}] {proc.stderr.strip()}"
+    return proc.stdout
+
+
+def grade_trial(scenario: dict, response: str) -> tuple[bool, list[str]]:
+    details = []
+    ok_all = True
+    for g in scenario["graders"]:
+        passed, detail = graders.run_grader(g, response)
+        ok_all &= passed
+        details.append(f"    [{'PASS' if passed else 'FAIL'}] {g['type']}: {detail}")
+    return ok_all, details
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--validate", action="store_true", help="check the suite, no model")
+    g.add_argument("--list", action="store_true")
+    g.add_argument("--run", action="store_true", help="invoke the agent and grade")
+    ap.add_argument("--trials", type=int, default=3, help="trials per scenario (--run)")
+    ap.add_argument("--threshold", type=float, default=1.0, help="pass fraction of trials")
+    args = ap.parse_args()
+
+    scenarios = load_scenarios()
+    if not scenarios:
+        print("evals: no scenarios found in evals/scenarios/")
+        return 1
+
+    if args.validate:
+        problems = validate(scenarios)
+        if problems:
+            print("EVAL SUITE INVALID:")
+            print("\n".join("  - " + p for p in problems))
+            return 1
+        print(f"eval suite OK — {len(scenarios)} scenario(s), graders and targets resolve.")
+        return 0
+
+    if args.list:
+        for s in scenarios:
+            print(f"- {s['id']}  (target: {s['target']})\n    {s['prompt'].strip().splitlines()[0]}")
+        return 0
+
+    # --run
+    failures = 0
+    for s in scenarios:
+        passes = 0
+        print(f"\n== {s['id']} (target: {s['target']}) ==")
+        for t in range(args.trials):
+            response = run_agent(s["prompt"], s["target"])
+            ok, details = grade_trial(s, response)
+            passes += ok
+            print(f"  trial {t + 1}: {'PASS' if ok else 'FAIL'}")
+            if not ok:
+                print("\n".join(details))
+        frac = passes / args.trials
+        verdict = "PASS" if frac >= args.threshold else "FAIL"
+        print(f"  -> {verdict} ({passes}/{args.trials} trials, threshold {args.threshold})")
+        failures += verdict == "FAIL"
+
+    print(f"\n{len(scenarios) - failures}/{len(scenarios)} scenarios passed.")
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
