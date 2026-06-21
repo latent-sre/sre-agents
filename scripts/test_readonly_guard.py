@@ -47,6 +47,13 @@ ALLOW = [
     "node --version",
     "python3 -V",
     "ls /opt/install/bin",
+    # arrows are not redirection — these read-only forms must pass (regression for the
+    # (?<![-=]) look-behind on the redirect pattern)
+    'grep "->" file.txt',
+    'echo "a -> b"',
+    "cf logs checkout --recent | grep '=>'",
+    'git log --grep="foo->bar"',
+    "git log --oneline | grep 'HEAD ->'",
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -144,6 +151,13 @@ DENY = [
     "cf logs checkout --recent >| capture.txt",
     # GNU install creates/copies files
     "install -m 0755 app /usr/local/bin/app",
+    # command-position writers behind a wrapper must still be denied (regression for _CMD
+    # wrapper tolerance: sudo/env/xargs/nice + install/editors)
+    "sudo install -m 0755 a /usr/local/bin/a",
+    "sudo vim /etc/hosts",
+    "sudo nano /etc/hosts",
+    "nice -n 10 vim file",
+    "env EDITOR=vi install a /usr/local/bin/a",
 ]
 
 
