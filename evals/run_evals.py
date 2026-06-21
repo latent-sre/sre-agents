@@ -67,9 +67,10 @@ def validate(scenarios: list[dict]) -> list[str]:
             if not s.get(key):
                 problems.append(f"{where}: missing '{key}'")
         sid = s.get("id")
-        if sid in seen:
-            problems.append(f"{where}: duplicate id '{sid}'")
-        seen.add(sid)
+        if sid:
+            if sid in seen:
+                problems.append(f"{where}: duplicate id '{sid}'")
+            seen.add(sid)
         if s.get("target") and not target_exists(s["target"]):
             problems.append(f"{where}: target '{s['target']}' is not a known skill/agent")
         for g in s.get("graders", []):
