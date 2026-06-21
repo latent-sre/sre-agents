@@ -41,7 +41,12 @@ REQUIRED = ("id", "target", "prompt", "graders")
 def load_scenarios() -> list[dict]:
     out = []
     for f in sorted(SCENARIOS_DIR.glob("*.yaml")):
-        data = yaml.safe_load(f.read_text(encoding="utf-8"))
+        try:
+            data = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        except yaml.YAMLError as e:
+            data = {"_yaml_error": str(e)}
+        if not isinstance(data, dict):
+            data = {"_yaml_error": f"expected mapping, got {type(data).__name__}"}
         data["_file"] = f.name
         out.append(data)
     return out
