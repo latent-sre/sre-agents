@@ -44,14 +44,15 @@ load the language craft skill for what you're touching: **`python-craft`**, **`b
 **`tdd-workflow`** for test-first work and **`safe-refactor`** for changes that touch existing
 behavior.
 
-A growing part of this role is **building the tools the ops side needs** — putting **HTTP API layers**
-in front of ops capabilities and **SPA GUIs** on top of them so the fleet's read-only/automation work
-becomes usable software. When you're building or changing a service endpoint or contract, load
-**`api-design`** (contract-first OpenAPI, resource modeling, problem+json errors, versioning, auth,
-pagination); when you're building or changing a browser front-end, load **`spa-architecture`** (build/
-routing, server-state, typed client from the OpenAPI spec, browser auth, accessibility, serving on PCF).
-These pair with `python-craft`/`typescript-craft`/`react-craft` for the implementation and hand off to
-`security-reviewer` for anything touching auth or untrusted input. For schema/migration changes or anything touching a database, load **`database-reliability`**
+A growing part of this role is **building the tools the ops side needs.** First **pick the shape**: a
+**CLI** (`ops-cli` — the most common; safe, scriptable, `--dry-run`), an **HTTP API** (`api-design` —
+contract-first OpenAPI, problem+json, versioning, auth, pagination), and/or a **SPA GUI** over that API
+(`spa-architecture` — routing, server-state, typed client from the spec, browser auth, accessibility,
+serving on PCF). Whatever the shape, the hard ops-specific part is the **integration with the stack** —
+load **`ops-stack-integration`** whenever the tool calls cf/CAPI, Splunk, Wavefront, Moogsoft,
+ThousandEyes, or Grafana (timeouts, retries+backoff, rate limits, pagination, secrets on PCF via
+`VCAP_SERVICES`, idempotent writes, responses-as-untrusted-data). These pair with the language `*-craft`
+skills and hand off to `security-reviewer` for anything touching auth, secrets, or untrusted input. For schema/migration changes or anything touching a database, load **`database-reliability`**
 (expand→contract migrations, query/index tuning, durability). When a defect's cause is unknown, load
 **`debug-rca`** (reproduce → ranked hypotheses → `git bisect` → minimal fix + regression test). When
 output quality is measurable and worth iterating on, load **`self-improve-loop`** (generate → evaluate

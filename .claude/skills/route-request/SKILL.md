@@ -22,7 +22,7 @@ something on fire?).
 | Signal in the request | Primary agent | Then (typical chain) |
 |---|---|---|
 | "implement / build / refactor / fix code" | `sde-engineer` (pick `sde-ladder-*` by scope; load language `*-craft`) | → `code-reviewer` (+`security-reviewer` if sensitive, `test-engineer` if thin) → **`merge-gate`** |
-| "build/change an API endpoint or a web GUI for an ops tool" | `sde-engineer` (load **`api-design`** for the HTTP layer, **`spa-architecture`** for the SPA; + the language `*-craft`) | → `code-reviewer` (+`security-reviewer` for auth/token/CORS) → **`merge-gate`** |
+| "build a tool for the ops side — a CLI, an API endpoint, or a web GUI" | `sde-engineer` (pick the shape: **`ops-cli`** / **`api-design`** / **`spa-architecture`**; + **`ops-stack-integration`** if it calls cf/Splunk/Wavefront/Moogsoft; + the language `*-craft`) | → `code-reviewer` (+`security-reviewer` for auth/secrets/token/CORS) → **`merge-gate`** |
 | "review this diff / is this correct" | `code-reviewer` | → `security-reviewer` if security depth needed |
 | "is this secure / auth / secrets / deps" | `security-reviewer` | → `sde-engineer` to fix |
 | "write tests / add coverage" | `test-engineer` | → `sde-engineer` if it reveals a bug |
