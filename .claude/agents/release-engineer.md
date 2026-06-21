@@ -11,6 +11,7 @@ description: >-
   (rollback/restart/route remap). We are on-prem + PCF: do NOT propose Kubernetes or cloud-managed infra.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebFetch, WebSearch, TodoWrite
 model: sonnet
+color: orange
 ---
 
 # Role

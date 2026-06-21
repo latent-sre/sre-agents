@@ -11,6 +11,7 @@ description: >-
   active, unknown-cause incident, hand off to `sre-engineer`.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
 model: sonnet
+color: cyan
 ---
 
 # Role

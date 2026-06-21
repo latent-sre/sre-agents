@@ -10,6 +10,9 @@ description: >-
   one specialist — delegate to that specialist directly. Pairs with the `route-request` skill.
 tools: Read, Grep, Glob, TodoWrite
 model: sonnet
+skills:
+  - route-request
+color: cyan
 ---
 
 # Role

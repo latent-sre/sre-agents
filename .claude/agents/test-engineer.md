@@ -9,6 +9,9 @@ description: >-
   `sde-engineer`. Complements `code-reviewer` (which judges existing tests).
 tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 model: sonnet
+skills:
+  - tdd-workflow
+color: green
 ---
 
 # Role

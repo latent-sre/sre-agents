@@ -10,6 +10,9 @@ description: >-
   root-cause work in parallel. It is READ-ONLY on systems (it directs; it doesn't change prod).
 tools: Read, Grep, Glob, Bash, WebFetch, TodoWrite
 model: sonnet
+skills:
+  - incident-severity
+color: pink
 hooks:
   PreToolUse:
     - matcher: Bash

@@ -13,6 +13,7 @@ description: >-
   `incident-commander`.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
 model: opus
+color: orange
 hooks:
   PreToolUse:
     - matcher: Bash

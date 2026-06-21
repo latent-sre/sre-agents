@@ -34,6 +34,8 @@ A dashboard exists to answer a question fast under stress — not to show every 
 ## Data sources (our stack)
 - Metrics from **Wavefront / Aria Operations for Applications** (`wavefront-queries`); logs/log-derived
   panels from **Splunk** (`splunk-triage`); external/synthetic from **ThousandEyes**.
+- **Concrete values** — our data-source UIDs, dashboard inventory, conventions, and provisioning path
+  live in `references/dashboards.md` (fill in; loaded on demand, no credentials).
 
 ## Alerting
 - Prefer SLO/burn-rate alerts over static thresholds where possible. Every alerting panel links a
