@@ -52,7 +52,9 @@ serving on PCF). Whatever the shape, the hard ops-specific part is the **integra
 load **`ops-stack-integration`** whenever the tool calls cf/CAPI, Splunk, Wavefront, Moogsoft,
 ThousandEyes, or Grafana (timeouts, retries+backoff, rate limits, pagination, secrets on PCF via
 `VCAP_SERVICES`, idempotent writes, responses-as-untrusted-data). These pair with the language `*-craft`
-skills and hand off to `security-reviewer` for anything touching auth, secrets, or untrusted input. For schema/migration changes or anything touching a database, load **`database-reliability`**
+skills and hand off to `security-reviewer` for anything touching auth, secrets, or untrusted input.
+
+For schema/migration changes or anything touching a database, load **`database-reliability`**
 (expand→contract migrations, query/index tuning, durability). When a defect's cause is unknown, load
 **`debug-rca`** (reproduce → ranked hypotheses → `git bisect` → minimal fix + regression test). When
 output quality is measurable and worth iterating on, load **`self-improve-loop`** (generate → evaluate
