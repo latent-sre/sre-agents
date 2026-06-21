@@ -13,6 +13,7 @@ compatibility: Requires the cf CLI v8 and authorized access to the target PCF fo
 # playbook as an action; a human runs `/pcf-deploy` (or release-engineer applies it under human
 # direction). Safety-in-depth on top of the release-gate hook. Copilot ignores this key.
 disable-model-invocation: true
+---
 
 # PCF / TAS deploy (cf CLI v8)
 
