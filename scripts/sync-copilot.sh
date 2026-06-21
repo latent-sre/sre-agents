@@ -5,7 +5,8 @@
 # Both Claude Code and VS Code/Copilot read `.claude/agents` and `.claude/skills` directly, so the fleet
 # already works in Copilot with no build step. Run this only when you want Copilot-NATIVE files:
 #   * .github/agents/<name>.agent.md  — from .claude/agents/<name>.md, with `tools:` translated to
-#     Copilot's vocabulary and the Claude-only `model:` alias dropped. Body copied verbatim.
+#     Copilot's vocabulary and the Claude-only `model:`, `color:`, `skills:`, `hooks:` keys dropped
+#     (Copilot picks its model and still auto-loads skills by description). Body copied verbatim.
 #   * .github/skills/                 — a mirror of .claude/skills/ (identical SKILL.md open standard).
 #
 # The tool translation is conservative. Claude-only hooks are not portable to Copilot, so generated
@@ -43,19 +44,21 @@ for f in "$claude_agents"/*.md; do
     name="$(basename "$f" .md)"
     dest="$gh_agents/$name.agent.md"
     : > "$dest"
-    fm_seen=0; skip_hooks=0
+    fm_seen=0; skip_block=0
     while IFS= read -r line || [[ -n "$line" ]]; do
         line="${line%$'\r'}"                                     # tolerate CRLF sources (Windows checkouts)
         if [[ "$line" == '---' && $fm_seen -lt 2 ]]; then
-            fm_seen=$((fm_seen + 1)); skip_hooks=0; printf '%s\n' "$line" >> "$dest"; continue
+            fm_seen=$((fm_seen + 1)); skip_block=0; printf '%s\n' "$line" >> "$dest"; continue
         fi
         if [[ $fm_seen -eq 1 ]]; then                                # inside frontmatter
-            if [[ $skip_hooks -eq 1 ]]; then                         # inside a Claude-only hooks: block
-                if [[ "$line" =~ ^[[:space:]]+[^[:space:]] || -z "${line// }" ]]; then continue; else skip_hooks=0; fi
+            if [[ $skip_block -eq 1 ]]; then                         # inside a dropped block (hooks:/skills:)
+                if [[ "$line" =~ ^[[:space:]]+[^[:space:]] || -z "${line// }" ]]; then continue; else skip_block=0; fi
             fi
             if [[ "$line" =~ ^[[:space:]]*tools[[:space:]]*: ]]; then translate_tools "$line" >> "$dest"; continue; fi
             if [[ "$line" =~ ^[[:space:]]*model[[:space:]]*: ]]; then continue; fi   # drop model alias
-            if [[ "$line" =~ ^[[:space:]]*hooks[[:space:]]*: ]]; then skip_hooks=1; continue; fi  # Claude-only
+            if [[ "$line" =~ ^[[:space:]]*color[[:space:]]*: ]]; then continue; fi   # drop Claude-only color
+            if [[ "$line" =~ ^[[:space:]]*hooks[[:space:]]*: ]]; then skip_block=1; continue; fi   # Claude-only
+            if [[ "$line" =~ ^[[:space:]]*skills[[:space:]]*: ]]; then skip_block=1; continue; fi  # Claude-only preload
         fi
         printf '%s\n' "$line" >> "$dest"
     done < "$f"

@@ -7,8 +7,9 @@
   Both Claude Code and VS Code/Copilot read `.claude/agents` and `.claude/skills` directly, so the
   fleet already works in Copilot with no build step. Run this only when you want Copilot-NATIVE files:
     * .github/agents/<name>.agent.md  — generated from .claude/agents/<name>.md, with the `tools:` field
-      translated to Copilot's tool vocabulary and the Claude-only `model:` alias dropped (Copilot uses
-      the model you select). The body (system prompt) is copied verbatim.
+      translated to Copilot's tool vocabulary and the Claude-only `model:`, `color:`, `skills:`, and
+      `hooks:` keys dropped (Copilot picks its own model, has no color/preload/hook concepts; it still
+      auto-loads skills by description). The body (system prompt) is copied verbatim.
     * .github/skills/                 — a mirror of .claude/skills/ (the SKILL.md open standard is
       identical for both tools; this is just the .github-native location).
 
@@ -73,16 +74,18 @@ Get-ChildItem -Path $claudeAgents -Filter '*.md' -File | ForEach-Object {
     $fmEnd = $dashes[1]
 
     $out = [System.Collections.Generic.List[string]]::new()
-    $skipHooks = $false
+    $skipBlock = $false
     for ($i = 0; $i -le $fmEnd; $i++) {
         $l = $lines[$i]
-        if ($skipHooks) {                              # inside a Claude-only hooks: block
+        if ($skipBlock) {                              # inside a dropped multi-line block (hooks:/skills:)
             if ($l -match '^\s+\S' -or $l.Trim() -eq '') { continue }   # indented/blank → still in block
-            $skipHooks = $false                        # dedented → block ended, fall through
+            $skipBlock = $false                        # dedented → block ended, fall through
         }
-        if ($l -match '^\s*tools\s*:') { $out.Add((Convert-ToolsLine $l)); continue }
-        if ($l -match '^\s*model\s*:') { continue }    # drop Claude model alias; Copilot uses selected model
-        if ($l -match '^\s*hooks\s*:') { $skipHooks = $true; continue }  # Claude-only; not portable to Copilot
+        if ($l -match '^\s*tools\s*:')  { $out.Add((Convert-ToolsLine $l)); continue }
+        if ($l -match '^\s*model\s*:')  { continue }   # drop Claude model alias; Copilot uses selected model
+        if ($l -match '^\s*color\s*:')  { continue }   # drop Claude-only display color
+        if ($l -match '^\s*hooks\s*:')  { $skipBlock = $true; continue }  # Claude-only; not portable to Copilot
+        if ($l -match '^\s*skills\s*:') { $skipBlock = $true; continue }  # Claude-only preload list; Copilot auto-loads
         $out.Add($l)
     }
     for ($i = $fmEnd + 1; $i -lt $lines.Count; $i++) { $out.Add($lines[$i]) }   # body, verbatim
