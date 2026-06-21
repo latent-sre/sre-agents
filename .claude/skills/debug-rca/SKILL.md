@@ -13,7 +13,7 @@ metadata:
 # Debug / root-cause analysis
 
 Find *why* something is broken — methodically, not by guessing. Reason about the system, not a single
-domino. This is the **build/test-time** counterpart to the incident RCA in `sre-ladder-investigator`
+domino. This is the **build/test-time** counterpart to the incident RCA in `sre-ladder` (investigator tier)
 (prod) — same discipline, applied to failing tests, flaky builds, and runtime errors. `sde-engineer`
 and `test-engineer` load it when a defect's cause is unknown.
 
@@ -65,5 +65,5 @@ fix). Note the contributing factor — the env difference — not just the proxi
 ## Handoffs
 - → `sde-engineer` for the code fix · → `test-engineer` for the regression test if it deserves focus.
 - If the symptom is in **production** (alert, user impact, degraded PCF app), escalate to `sre-engineer`
-  / the `sre-ladder-*` skills instead — that's incident RCA, not build-time debugging.
+  / the `sre-ladder` skills instead — that's incident RCA, not build-time debugging.
 - → `researcher` for an external library/version/bug-report fact you can't confirm from the repo.

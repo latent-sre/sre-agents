@@ -1,15 +1,3 @@
----
-name: sre-ladder-investigator
-description: >-
-  Root-cause investigation altitude for owning the hunt for the actual cause — hypothesis-driven RCA against logs,
-  metrics, events, and recent changes. Use when first response isn't enough and you need the actual
-  cause: build a timeline, correlate "what changed", form a differential of hypotheses, and test each
-  against evidence. Covers the investigation loop and common app-ops failure modes on PCF.
-metadata:
-  tier: investigator
-  track: sre
----
-
 # Investigator — hypothesis-driven root cause
 
 You own finding the truth. You stay systematic under pressure: stabilize first, then prove the cause
@@ -20,8 +8,8 @@ with evidence — never a confident guess.
 - You need to correlate "what changed" against "when it broke" and test hypotheses against evidence.
 - The blast radius is one service or otherwise bounded — not yet a tangled multi-service failure.
 
-Drop back to `sre-ladder-responder` if it turns out to be a known symptom with a runbook; move up to
-`sre-ladder-elite` if it's a systemic/distributed failure mode that needs prevention design.
+Drop back to the responder tier if it turns out to be a known symptom with a runbook; move up to
+the elite tier if it's a systemic/distributed failure mode that needs prevention design.
 
 ## The investigation loop
 1. **Characterize precisely.** Exact start time, blast radius (which apps/routes/spaces, % of traffic),
@@ -56,4 +44,4 @@ Drop back to `sre-ladder-responder` if it turns out to be a known symptom with a
 - Major incident → `incident-commander` (process/comms) while you keep investigating.
 - Mitigation → `release-engineer` (`rollback-mitigation`). Durable code fix → `sde-engineer`.
 - Capture → `runbook-author`; close the detection gap → `sre-monitor`.
-- Systemic/distributed failure needing prevention design → `sre-ladder-elite`.
+- Systemic/distributed failure needing prevention design → the elite tier.

@@ -23,7 +23,7 @@ Match the repo's existing framework and conventions before applying the defaults
   **Starter:** copy `assets/openapi.starter.yaml` — problem+json, cursor pagination, bearer auth, and an
   idempotency-key header already wired up; lint it in CI.
 - Review the contract *before* writing the handler. A breaking change to a shipped contract is a
-  principal-altitude change — load `sde-ladder-principal` and **expand→migrate→contract**.
+  principal-altitude change — load `sde-ladder` (principal tier) and **expand→migrate→contract**.
 
 ## Resource modeling & HTTP semantics
 - Model **nouns as resources**, plural collections (`/incidents`, `/incidents/{id}/events`). Reserve

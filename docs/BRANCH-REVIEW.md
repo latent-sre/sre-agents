@@ -74,7 +74,7 @@ Legend: 🔴 High · 🟡 Med · ⚪ Low · ✅ = confirmed absent/partial in ou
 ### 🔴 2 — Add a `debug-rca` skill (non-incident root-cause)
 - **Source:** `review-skills…ip9agh` → `debug-rca` (clean, stack-neutral, high quality)
 - **Target:** **new** `.claude/skills/debug-rca/SKILL.md` + **wire it in**
-- **Today (verified):** ✅ absent. Our RCA is **incident-only** (`sre-ladder-*`); failing-test / flaky-build
+- **Today (verified):** ✅ absent. Our RCA is **incident-only** (`sre-ladder`); failing-test / flaky-build
   debugging has **no home**.
 - **Add:** reproduce → "what changed" → rank hypotheses by *likelihood × cheapness-to-test* → `git bisect`
   → causal chain (`trigger → mechanism → failure`) → minimal fix **+ a regression test that fails without it**.

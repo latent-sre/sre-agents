@@ -10,9 +10,9 @@ This repo's full guide lives in [AGENTS.md](AGENTS.md) (the cross-tool source of
   *"use the coordinator"* first; or summon one explicitly — *"use the sre-engineer to triage this"*.
 - **Skills** (`.claude/skills/`) auto-load when a task matches their `description`; you can also invoke
   one directly: `/pcf-ops`, `/release-gate`, `/merge-gate`, etc. The **ladder skills** set altitude —
-  `sde-engineer` and `sre-engineer` pick `*-ladder-*` by task complexity.
+  `sde-engineer` and `sre-engineer` pick `sde-ladder`/`sre-ladder` by task complexity.
 - **Seniority/experience = skills, not agents.** One `sde-engineer` + one `sre-engineer`; the
-  Senior/Principal/Distinguished and Responder/Investigator/Elite levels are the `*-ladder-*` skills.
+  Senior/Principal/Distinguished and Responder/Investigator/Elite levels are the `sde-ladder`/`sre-ladder` skills.
 - **Gates** (`merge-gate`, `release-gate`, `production-change-gate`) are pass/fail checklists. To make
   them *hard* in Claude Code, add a [hook](https://code.claude.com/docs/en/hooks) in
   `.claude/settings.json` (e.g. a `PreToolUse` matcher that blocks the deploy until the gate is cleared)

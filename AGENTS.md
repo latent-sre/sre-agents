@@ -41,12 +41,12 @@ see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom 
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
 | [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request`, `parallelization` |
-| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS); build ops tools (CLIs, API layers & SPA GUIs) | code | `sde-ladder-*`, `*-craft`, `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`, `tool-design`, `adr-template` |
+| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS); build ops tools (CLIs, API layers & SPA GUIs) | code | `sde-ladder`, `*-craft`, `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`, `tool-design`, `adr-template` |
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | `agent-security` |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
 | [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `database-reliability`, `safe-refactor`, `production-change-gate` |
-| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder-*`, `triage-golden-signals`, `database-reliability`, stack skills |
+| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder`, `triage-golden-signals`, `database-reliability`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
 | [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `incident-severity`, `blameless-postmortem` |
 | [`release-engineer`](.claude/agents/release-engineer.md) | CI/CD, deploys, rollbacks (Actions + PCF) | infra/CI | `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`, `rollback-mitigation`, `release-gate` |
@@ -69,15 +69,15 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 [Agent Skills](https://agentskills.io) standard). Both tools auto-load a skill when a task matches its
 `description`; you can also invoke one directly as `/skill-name`.
 
-**Ladders — pick the altitude (SDE):**
-- `sde-ladder-senior` — scoped, well-defined changes inside one component; match patterns, test, ship.
-- `sde-ladder-principal` — cross-cutting design, blast-radius & call-site analysis, expand/contract migrations, API contracts.
-- `sde-ladder-distinguished` — org-wide technical strategy, build-vs-buy, standards, high-ambiguity multi-system architecture.
+**`sde-ladder` — pick the SDE altitude (one skill, three tier files):**
+- *senior* — scoped, well-defined changes inside one component; match patterns, test, ship.
+- *principal* — cross-cutting design, blast-radius & call-site analysis, expand/contract migrations, API contracts.
+- *distinguished* — org-wide technical strategy, build-vs-buy, standards, high-ambiguity multi-system architecture.
 
-**Ladders — pick the altitude (SRE):**
-- `sre-ladder-responder` *(new hire)* — golden-signals triage, safe read-only checks, work the runbook, escalate well.
-- `sre-ladder-investigator` *(experienced)* — hypothesis-driven RCA, "what changed" correlation, test hypotheses against evidence.
-- `sre-ladder-elite` — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
+**`sre-ladder` — pick the SRE altitude (one skill, three tier files):**
+- *responder* *(new hire)* — golden-signals triage, safe read-only checks, work the runbook, escalate well.
+- *investigator* *(experienced)* — hypothesis-driven RCA, "what changed" correlation, test hypotheses against evidence.
+- *elite* — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
 
 **Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `go-craft` · `typescript-craft` ·
 `react-craft` · `tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop` *(generate→evaluate→refine: evaluator-optimizer + the act→verify loop)*

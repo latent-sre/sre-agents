@@ -17,8 +17,8 @@ each leans on. The terse roster table is in [`AGENTS.md`](../AGENTS.md); the col
 ### sde-engineer · `opus` · writes code
 The team's software engineer (Python/Bash/PowerShell, and Go/TypeScript/React when a repo uses them).
 Reads existing code first, matches conventions, writes tests, ships clean reviewable diffs. **Scales
-altitude by loading a ladder skill** — `sde-ladder-senior` (scoped work), `sde-ladder-principal`
-(cross-cutting design & migrations), `sde-ladder-distinguished` (org-wide/high-ambiguity architecture).
+altitude by loading the `sde-ladder` skill at the matching tier** — senior (scoped work), principal
+(cross-cutting design & migrations), distinguished (org-wide/high-ambiguity architecture).
 Loads the language `*-craft` skill for what it touches, `database-reliability` for schema/DB work,
 `tdd-workflow` for test-first, `safe-refactor` and `debug-rca` as needed, `self-improve-loop` to
 iterate against measurable criteria, and `tool-design` when building a tool/MCP integration. For the
@@ -61,8 +61,8 @@ DB-driven incidents.
 ### sre-engineer · `opus` · read-only (guarded)
 Detection-signal interpretation, triage/severity, and structured root-cause investigation when
 something is wrong in prod/staging. Forms and tests hypotheses against Splunk, Wavefront/Grafana,
-events, ThousandEyes, and recent changes. **Scales by ladder skill** — `sre-ladder-responder` (first
-response), `sre-ladder-investigator` (hypothesis-driven RCA), `sre-ladder-elite` (systemic/distributed
+events, ThousandEyes, and recent changes. **Scales by the `sre-ladder` skill** — responder (first
+response), investigator (hypothesis-driven RCA), elite (systemic/distributed
 failure). Loads `triage-golden-signals`, the stack skills (`pcf-ops`, `splunk-triage`,
 `wavefront-queries`, `moogsoft-correlation`, `thousandeyes-network`), and `database-reliability` for
 DB-driven incidents. **Recommends mitigation; does not change prod.**
@@ -132,7 +132,7 @@ Tailored to a pragmatic, on-prem/PCF, ops-heavy team — listed by value. Add on
    current; the natural consumer of every other agent's output. Today this is `runbook-author` plus
    manual upkeep.
 
-> **Deliberately *not* separate agents:** seniority tiers — they're `*-ladder-*` skills loaded by the
+> **Deliberately *not* separate agents:** seniority tiers — they're `sde-ladder`/`sre-ladder` skills loaded by the
 > single `sde-engineer`/`sre-engineer`, not cloned junior/senior/principal agents (see [ARCHITECTURE.md](ARCHITECTURE.md) → *Design principles* #2).
 > *(Database depth, by contrast, earned its own agent — `database-reliability` — because DBRE work is a
 > recurring, separable responsibility, not just an altitude.)*

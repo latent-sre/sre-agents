@@ -60,7 +60,7 @@ rules-based feedback over LLM-as-judge]*
 - **One change per turn, then re-verify** — so you know which change moved the signal (mirrors
   `debug-rca` and `rollback-mitigation`).
 - **Altitude sets depth.** The ladder skills decide how many lenses and iterations a task earns —
-  `sde-ladder-senior`/`sre-ladder-responder` for a quick check; `*-principal`/`*-elite` for multi-lens,
+  `sde-ladder` (senior tier)/`sre-ladder` (responder tier) for a quick check; the principal/elite tiers for multi-lens,
   blast-radius-aware loops.
 - **Don't loop on prod.** Verify in lower envs; production changes still go through the gates with human
   sign-off (`production-change-gate`). Read-only agents *recommend* the next iteration; they don't apply it.

@@ -4,7 +4,7 @@ description: >-
   Architecture Decision Record (ADR) and lightweight RFC/design-doc templates and practices. Use when
   capturing a significant or hard-to-reverse technical decision, writing a design doc/RFC before
   non-trivial work, or recording why an approach was chosen over alternatives. Provides the Nygard ADR
-  format, an RFC skeleton, and MADR guidance. Pairs with sde-ladder-principal and sde-ladder-distinguished.
+  format, an RFC skeleton, and MADR guidance. Pairs with sde-ladder (principal and distinguished tiers).
 metadata:
   domain: doc
 ---
@@ -52,5 +52,5 @@ than flat rejection to keep iteration moving.
 ## When to write which
 - Reversible / local decision → a clear PR description (add a short ADR only if others will wonder "why").
 - Significant or **hard-to-reverse** (data model, platform choice, a team standard) → **ADR**
-  (load `sde-ladder-distinguished`).
-- Non-trivial build spanning systems with an uncertain approach → **RFC first** (load `sde-ladder-principal`).
+  (load `sde-ladder` (distinguished tier)).
+- Non-trivial build spanning systems with an uncertain approach → **RFC first** (load `sde-ladder` (principal tier)).

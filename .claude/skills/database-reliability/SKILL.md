@@ -72,5 +72,5 @@ diagnose. Pairs with `rollback-mitigation` for the deploy-side undo.
 - **Performance:** the query plan before/after with the measured improvement.
 - Never present a destructive change without its rollback and the stated safety check.
 
-See also: `safe-refactor` (call-site/contract analysis), `sde-ladder-principal` (expand→contract design),
+See also: `safe-refactor` (call-site/contract analysis), `sde-ladder` (principal tier) (expand→contract design),
 `pcf-ops` (app-side triage), `python-craft` (parameterized SQL, no f-string injection).

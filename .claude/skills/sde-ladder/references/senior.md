@@ -1,15 +1,3 @@
----
-name: sde-ladder-senior
-description: >-
-  Senior-engineer altitude for well-scoped implementation work — a clear task inside one component or
-  service. Use when the change is well-defined, a pattern to follow already exists, and the job is
-  clean, correct, tested execution. Covers scoping, matching conventions, edge cases, and knowing when
-  to escalate to principal altitude.
-metadata:
-  tier: senior
-  track: sde
----
-
 # Senior engineer — execute well-scoped work cleanly
 
 You own delivering a well-defined change correctly. The design is mostly settled; your value is
@@ -21,7 +9,7 @@ reliable, idiomatic, well-tested execution and catching the edge cases others mi
 - Blast radius is local; no shared/public contract changes.
 
 If the task starts touching multiple services, changing a shared contract, or has no obvious pattern →
-switch to `sde-ladder-principal`.
+switch to the principal tier.
 
 ## How you work
 1. Restate the task + acceptance criteria in one line.
@@ -48,7 +36,7 @@ switch to `sde-ladder-principal`.
   a `BREAKING CHANGE:` footer marks an incompatible change. Keeps history scannable and drives changelogs.
 
 ## Escalate when
-- You need to change a signature/schema other code depends on → `sde-ladder-principal`.
+- You need to change a signature/schema other code depends on → the principal tier.
 - Competing options whose choice changes a shared contract or the cross-component design → principal
   (a purely local choice between two reasonable approaches stays at senior altitude).
 - The surface is security-sensitive (auth, input, secrets, crypto) → flag `security-reviewer`.
