@@ -1,7 +1,7 @@
 # Bash craft
 
 Shell is for glue and orchestration. If a script grows real logic/data structures, recommend Python
-(the Python conventions) instead.
+(see `references/python.md`) instead.
 
 ## Always start with
 ```bash

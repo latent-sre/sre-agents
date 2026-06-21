@@ -52,5 +52,5 @@ than flat rejection to keep iteration moving.
 ## When to write which
 - Reversible / local decision → a clear PR description (add a short ADR only if others will wonder "why").
 - Significant or **hard-to-reverse** (data model, platform choice, a team standard) → **ADR**
-  (load `sde-ladder` (distinguished tier)).
-- Non-trivial build spanning systems with an uncertain approach → **RFC first** (load `sde-ladder` (principal tier)).
+  (load `sde-ladder`, distinguished tier).
+- Non-trivial build spanning systems with an uncertain approach → **RFC first** (load `sde-ladder`, principal tier).

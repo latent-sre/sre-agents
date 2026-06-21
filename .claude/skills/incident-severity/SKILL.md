@@ -33,7 +33,7 @@ blast radius becomes clear.
   failing/evacuating Diego cells ⇒ platform-side ⇒ escalate to the platform team with evidence (see
   `pcf-ops`). If you **can't yet bound** the blast radius, that alone justifies SEV2 and declaring.
 - **Time-box the responder.** First on scene and not stabilized in **~15 min**, or the impact is
-  growing → declare and pull in `incident-commander`; don't keep digging solo (`sre-ladder` (responder tier)).
+  growing → declare and pull in `incident-commander`; don't keep digging solo (`sre-ladder`, responder tier).
 
 ## Communications cadence
 Update on the **fixed cadence for the severity above, even when there is no news** ("still investigating,

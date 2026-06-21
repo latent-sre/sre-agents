@@ -1,6 +1,6 @@
 # React craft
 
-Pairs with the TypeScript conventions. Match the repo's
+Pairs with the TypeScript file (`references/typescript.md`). Match the repo's
 existing patterns first; the defaults below apply when none is set.
 
 ## Hooks rules (enforce)

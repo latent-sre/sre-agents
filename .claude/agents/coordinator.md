@@ -54,7 +54,7 @@ plan**. Load the **`route-request`** skill for the routing decision table.
 5. **Choose the minimum agents.** Prefer one specialist over many. Only add review/test/security steps
    when warranted (prod-facing, security-sensitive, risky).
 6. **Write the plan** (see output contract). For each step say *what context to hand the agent* so it
-   can start cold. Recommend the ladder skill tier where it matters (e.g. "use `sde-ladder` (principal tier)").
+   can start cold. Recommend the ladder skill tier where it matters (e.g. "use `sde-ladder`, principal tier").
 7. **Decide if you should even delegate.** If the whole request is one obvious specialist task, say so
    and route directly — don't manufacture ceremony.
 
