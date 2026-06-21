@@ -15,6 +15,12 @@ Any action that touches production must clear this gate **before execution**. Th
 our **"prod-facing actions require explicit human confirmation"** rule. `sre-engineer`/`sde-engineer`
 *recommend*; `release-engineer` *executes*; a human *approves*.
 
+> **How it layers with `release-gate`:** `release-gate` checks whether a *build/release* is **ready** to
+> ship (artifact, migrations, flags, rollback). This gate authorizes the **prod change itself** — and
+> applies equally to changes that **aren't** releases (a scale, a route remap, a config flip, a data
+> change). A prod release clears `release-gate` **then** this gate; a non-release prod change clears only
+> this one.
+
 ## Checklist
 - [ ] **Approved** — an authorized human has explicitly approved this specific change now (and a change
       record exists if your process / CAB requires one).
