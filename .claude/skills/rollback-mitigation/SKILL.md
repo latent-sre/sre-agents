@@ -34,7 +34,7 @@ sign-off; `incident-commander` owns the decision in a major incident.
 2. **One change at a time**, then observe. Watch the golden signals (`triage-golden-signals`) for 1–2
    minutes before the next action — so you know what worked.
 3. **Restart is a stopgap, not a fix.** If a restart "fixes" it, the cause is still there (leak, poison
-   input, dependency) — capture `cf events`/logs first, then keep investigating (`sre-ladder-investigator`).
+   input, dependency) — capture `cf events`/logs first, then keep investigating (`sre-ladder`, investigator tier).
 4. **Record everything** (UTC) for the timeline and the `blameless-postmortem`: what you changed, when,
    and the effect.
 5. **Confirm before executing.** Every command here changes prod — show the command + the rollback, get

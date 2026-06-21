@@ -23,7 +23,7 @@ Match the repo's existing framework and conventions before applying the defaults
   **Starter:** copy `assets/openapi.starter.yaml` — problem+json, cursor pagination, bearer auth, and an
   idempotency-key header already wired up; lint it in CI.
 - Review the contract *before* writing the handler. A breaking change to a shipped contract is a
-  principal-altitude change — load `sde-ladder-principal` and **expand→migrate→contract**.
+  principal-altitude change — load `sde-ladder` (principal tier) and **expand→migrate→contract**.
 
 ## Resource modeling & HTTP semantics
 - Model **nouns as resources**, plural collections (`/incidents`, `/incidents/{id}/events`). Reserve
@@ -55,7 +55,7 @@ Return one consistent machine-readable shape, `application/problem+json`: `type`
 - **Validate every input** (pydantic/schema) — body, query, path, headers; reject unknown fields; bound
   sizes. **CORS** = explicit origin allowlist, never `*` with credentials. Set security headers.
 - **Idempotency keys** for non-idempotent `POST` so a retried "restart"/"create" doesn't double-fire.
-- **Rate-limit** and set request/time limits. **Never log secrets, tokens, or full bodies** (`python-craft`).
+- **Rate-limit** and set request/time limits. **Never log secrets, tokens, or full bodies** (`craft` (Python)).
 - Hand anything touching auth/crypto/untrusted input to `security-reviewer`.
 
 ## Framework & observability

@@ -25,7 +25,7 @@ standards** — so the data lands in our stack (Wavefront / Splunk / Grafana) an
 5. **USE per resource** (pools/queues/CPU/memory): utilization, saturation, errors — this is what catches
    the "saturation → latency → errors" cascade in `triage-golden-signals`.
 6. **Traces** — propagate W3C trace context across services; tail-sample to keep all error/slow traces.
-7. **Logs** — structured (JSON) carrying the trace/span IDs; **no secrets/PII** (see `python-craft`).
+7. **Logs** — structured (JSON) carrying the trace/span IDs; **no secrets/PII** (see `craft` (Python)).
 8. **Correlate** — verify metric→trace (exemplars) and trace→log (shared IDs) actually link.
 
 ## The cardinality rule (this is what blows up metric stores)

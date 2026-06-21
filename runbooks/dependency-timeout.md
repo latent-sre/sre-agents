@@ -38,12 +38,13 @@ Latency SLO burn + timeout/upstream errors for `<APP>`; ThousandEyes alert on `<
    `<DEP>` instance/region, serve cached/stale data, or disable the non-critical feature that needs
    `<DEP>` (feature flag).
 2. **Stop the amplification:** if we're retry-storming `<DEP>`, recommend backing off (lower retry/raise
-   backoff, or trip the circuit breaker). Retries without backoff make a struggling dependency worse
-   (see `sre-ladder-elite`).
+   backoff, or trip the circuit breaker). Retries without backoff make a struggling dependency worse;
+   see `sre-ladder` elite tier.
 3. **Engage the dependency owner** with evidence (the ThousandEyes path + timeout timeline). Track in the
    incident.
 4. **If the cause is on our side** (connection/thread pool exhaustion, too-tight/-loose timeouts) → durable
-   fix by `sde-engineer` (`sde-ladder-principal`): bounded timeouts, pool sizing, circuit breaker, bulkhead.
+   fix by `sde-engineer` using `sde-ladder` principal tier: bounded timeouts, pool sizing, circuit breaker,
+   bulkhead.
 
 ## Verification
 - Latency and timeout error rate return to baseline; saturation (pool/threads) recovers.
@@ -59,5 +60,5 @@ Latency SLO burn + timeout/upstream errors for `<APP>`; ThousandEyes alert on `<
 
 ## References
 - Skills: `thousandeyes-network`, `splunk-triage`, `triage-golden-signals`, `rollback-mitigation`,
-  `sre-ladder-elite`
+  `sre-ladder` (elite tier)
 - After resolution: `blameless-postmortem`; add the dependency-latency burn alert via `sre-monitor`.

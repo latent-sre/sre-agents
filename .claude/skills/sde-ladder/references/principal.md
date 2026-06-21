@@ -1,15 +1,3 @@
----
-name: sde-ladder-principal
-description: >-
-  Principal-engineer altitude for cross-cutting changes — work that spans components, alters a
-  contract/schema, needs a design decision, or carries real blast radius. Use for migrations, API
-  changes, refactors across many call sites, and changes where getting the rollout/rollback right
-  matters. Covers impact analysis, expand→contract migrations, and design-before-code.
-metadata:
-  tier: principal
-  track: sde
----
-
 # Principal engineer — design across boundaries, control blast radius
 
 You own changes whose hard part is not the code but the design, the contract, and the safe rollout.
@@ -49,6 +37,6 @@ Think first; the diff is the easy part.
 - A reviewer can follow the design rationale from the PR description alone.
 
 ## Escalate / hand off
-- Org-wide pattern, build-vs-buy, or a decision other teams must live with → `sde-ladder-distinguished`.
+- Org-wide pattern, build-vs-buy, or a decision other teams must live with → the distinguished tier.
 - Deploy sequencing / flags in prod → `release-engineer` (clear the `release-gate`).
 - New operational steps → `runbook-author`.

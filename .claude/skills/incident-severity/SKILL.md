@@ -4,7 +4,7 @@ description: >-
   Severity rubric and stakeholder-communications cadence for an incident — classify SEV1–SEV4 by user
   impact × scope × trend, decide what each level triggers (declare, incident-commander, paging, comms
   cadence, postmortem), and send the initial/update/resolution updates. Use the moment you must assign a
-  severity or send a status update. Pairs with incident-commander, sre-ladder-responder, and
+  severity or send a status update. Pairs with incident-commander, sre-ladder (responder tier), and
   blameless-postmortem.
 metadata:
   domain: incident
@@ -33,7 +33,7 @@ blast radius becomes clear.
   failing/evacuating Diego cells ⇒ platform-side ⇒ escalate to the platform team with evidence (see
   `pcf-ops`). If you **can't yet bound** the blast radius, that alone justifies SEV2 and declaring.
 - **Time-box the responder.** First on scene and not stabilized in **~15 min**, or the impact is
-  growing → declare and pull in `incident-commander`; don't keep digging solo (`sre-ladder-responder`).
+  growing → declare and pull in `incident-commander`; don't keep digging solo (`sre-ladder`, responder tier).
 
 ## Communications cadence
 Update on the **fixed cadence for the severity above, even when there is no news** ("still investigating,
@@ -57,6 +57,6 @@ the postmortem (`blameless-postmortem`).
 
 ## Pairs with
 - `incident-commander` — owns declaration, roles, the timeline, and sending these updates.
-- `sre-ladder-responder` — uses this rubric to decide severity and escalate.
+- `sre-ladder` (responder tier) — uses this rubric to decide severity and escalate.
 - `rollback-mitigation` — the fastest-safe mitigation while a SEV1/SEV2 is open.
 - `blameless-postmortem` — required after SEV1/SEV2, seeded from the IC timeline.

@@ -6,7 +6,7 @@ description: >-
   setup, routing, server-state vs UI-state, a typed API client generated from OpenAPI, forms+validation,
   a modern styling approach (utility CSS + accessible headless components, design tokens, dark mode),
   browser auth (OIDC + PKCE), web security (XSS/CORS/CSP/token storage), accessibility, big-table
-  performance, testing, and building/serving the static bundle on PCF. Pairs with react-craft.
+  performance, testing, and building/serving the static bundle on PCF. Pairs with craft (React).
 metadata:
   domain: method
 ---
@@ -16,10 +16,10 @@ metadata:
 You're building a **GUI for an ops tool**: a single-page app in the browser talking to a JSON API. Keep
 it a **thin, well-structured client over a well-designed API** (`api-design`) — business rules and authz
 live on the server; the SPA renders state and collects intent. Match the repo's existing stack first.
-Component-level React patterns live in `react-craft`; this skill is the app around them.
+Component-level React patterns live in `craft` (React); this skill is the app around them.
 
 ## Stack & structure (defaults)
-- **Vite + React + TypeScript** (load `react-craft`, `typescript-craft`). Organize by feature, not by
+- **Vite + React + TypeScript** (load `craft` (React), `craft` (TypeScript)). Organize by feature, not by
   file-type. Everything shipped to the browser is **public** — no secrets in the bundle or env.
 - **Routing:** a client router (React Router / TanStack Router); **lazy-load** routes/code-split so the
   initial bundle stays small.
@@ -46,7 +46,7 @@ values.** Defaults when the repo sets none:
   caching, background refetch, loading/error states, and mutations with invalidation. Don't hand-roll
   fetch-in-`useEffect` + global store — it's the top source of stale-data and waterfall bugs.
 - Keep genuine **UI state** (modals, selection, form drafts) local with `useState`/context. See
-  "you might not need an Effect" in `react-craft`.
+  "you might not need an Effect" in `craft` (React).
 
 ## Typed API client
 Generate the client/types **from the OpenAPI spec** (`openapi-typescript`/`orval`) so the front-end and
@@ -79,7 +79,7 @@ RUM via `instrument-service`.
 
 ## Testing
 **React Testing Library** + **MSW** (mock the API at the network layer) for components/flows; **Playwright**
-for the few critical end-to-end paths. Test behavior as the user sees it (`react-craft`, `tdd-workflow`).
+for the few critical end-to-end paths. Test behavior as the user sees it (`craft` (React), `tdd-workflow`).
 
 ## Definition of done
 Typed client generated from the live OpenAPI spec · server-state via a query cache (no fetch-in-Effect) ·

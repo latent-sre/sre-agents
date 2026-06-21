@@ -35,7 +35,7 @@ shows instances cycling. Dashboard: `<grafana/wavefront link>`.
 4. Decide path:
    - **OOM confirmed + recent deploy** → likely a regression → go to Procedure step 1 (rollback path).
    - **OOM confirmed, no recent change** → leak or load growth → step 2 (stabilize) then investigate.
-   - **Not OOM** (crashes for another reason) → escalate to `sre-engineer` (`sre-ladder-investigator`).
+   - **Not OOM** (crashes for another reason) → escalate to `sre-engineer` using `sre-ladder` investigator tier.
 
 ## Procedure
 > All state changes below are **recommend-only**; hand to `release-engineer`, clear

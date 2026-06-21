@@ -33,7 +33,7 @@ events  →  dedup into ALERTS  →  cluster into SITUATIONS  →  notify / page
    rest are downstream/correlated.
 3. If your foundation merges Situations (a newer one absorbing an older), follow the live one — confirm
    the exact merge/supersede behavior against your version's docs.
-4. Hand the likely-root alert to `sre-ladder-investigator` to confirm cause; don't trust clustering as
+4. Hand the likely-root alert to `sre-ladder` (investigator tier) to confirm cause; don't trust clustering as
    proof of causation — it's a strong hint, not a verdict.
 
 ## Reducing noise (tuning, with `sre-monitor`)

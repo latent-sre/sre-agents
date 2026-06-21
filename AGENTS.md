@@ -41,12 +41,12 @@ see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom 
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
 | [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request`, `parallelization` |
-| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS); build ops tools (CLIs, API layers & SPA GUIs) | code | `sde-ladder-*`, `*-craft`, `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`, `tool-design`, `adr-template` |
+| [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS); build ops tools (CLIs, API layers & SPA GUIs) | code | `sde-ladder`, `craft`, `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`, `tool-design`, `adr-template` |
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | `agent-security` |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
 | [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `database-reliability`, `safe-refactor`, `production-change-gate` |
-| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder-*`, `triage-golden-signals`, `database-reliability`, stack skills |
+| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder`, `triage-golden-signals`, `database-reliability`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
 | [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `incident-severity`, `blameless-postmortem` |
 | [`release-engineer`](.claude/agents/release-engineer.md) | CI/CD, deploys, rollbacks (Actions + PCF) | infra/CI | `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`, `rollback-mitigation`, `release-gate` |
@@ -69,20 +69,20 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 [Agent Skills](https://agentskills.io) standard). Both tools auto-load a skill when a task matches its
 `description`; you can also invoke one directly as `/skill-name`.
 
-**Ladders — pick the altitude (SDE):**
-- `sde-ladder-senior` — scoped, well-defined changes inside one component; match patterns, test, ship.
-- `sde-ladder-principal` — cross-cutting design, blast-radius & call-site analysis, expand/contract migrations, API contracts.
-- `sde-ladder-distinguished` — org-wide technical strategy, build-vs-buy, standards, high-ambiguity multi-system architecture.
+**`sde-ladder` — pick the SDE altitude (one skill, three tier files):**
+- *senior* — scoped, well-defined changes inside one component; match patterns, test, ship.
+- *principal* — cross-cutting design, blast-radius & call-site analysis, expand/contract migrations, API contracts.
+- *distinguished* — org-wide technical strategy, build-vs-buy, standards, high-ambiguity multi-system architecture.
 
-**Ladders — pick the altitude (SRE):**
-- `sre-ladder-responder` *(new hire)* — golden-signals triage, safe read-only checks, work the runbook, escalate well.
-- `sre-ladder-investigator` *(experienced)* — hypothesis-driven RCA, "what changed" correlation, test hypotheses against evidence.
-- `sre-ladder-elite` — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
+**`sre-ladder` — pick the SRE altitude (one skill, three tier files):**
+- *responder* *(new hire)* — golden-signals triage, safe read-only checks, work the runbook, escalate well.
+- *investigator* *(experienced)* — hypothesis-driven RCA, "what changed" correlation, test hypotheses against evidence.
+- *elite* — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
 
-**Craft:** `python-craft` · `bash-craft` · `powershell-craft` · `go-craft` · `typescript-craft` ·
-`react-craft` · `tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop` *(generate→evaluate→refine: evaluator-optimizer + the act→verify loop)*
+**Craft:** `craft` *(one skill, six language files: Python · Bash · PowerShell · Go · TypeScript · React)* ·
+`tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop` *(generate→evaluate→refine: evaluator-optimizer + the act→verify loop)*
 
-**Build the ops side's tooling (pick the shape, then wire it to the stack):** `ops-cli` *(the most common shape: a CLI that's safe under stress and scriptable in CI — exit codes, human-vs-`--json` output, `--dry-run`, idempotency)* · `api-design` *(contract-first OpenAPI, resource modeling, problem+json errors, versioning, pagination, authN/Z — the HTTP layer that fronts ops tools)* · `spa-architecture` *(SPA GUI over that API: build/routing, server-state, typed client from the spec, modern accessible styling, browser auth, serving the bundle on PCF)* · `ops-stack-integration` *(the hard ops-specific part — calling cf/CAPI, Splunk, Wavefront, Moogsoft, ThousandEyes, Grafana safely: timeouts, retries+backoff, rate limits, pagination, secrets on PCF, idempotent writes)*. These turn the fleet's read-only/automation capabilities into usable software; pair with the language `*-craft` skills.
+**Build the ops side's tooling (pick the shape, then wire it to the stack):** `ops-cli` *(the most common shape: a CLI that's safe under stress and scriptable in CI — exit codes, human-vs-`--json` output, `--dry-run`, idempotency)* · `api-design` *(contract-first OpenAPI, resource modeling, problem+json errors, versioning, pagination, authN/Z — the HTTP layer that fronts ops tools)* · `spa-architecture` *(SPA GUI over that API: build/routing, server-state, typed client from the spec, modern accessible styling, browser auth, serving the bundle on PCF)* · `ops-stack-integration` *(the hard ops-specific part — calling cf/CAPI, Splunk, Wavefront, Moogsoft, ThousandEyes, Grafana safely: timeouts, retries+backoff, rate limits, pagination, secrets on PCF, idempotent writes)*. These turn the fleet's read-only/automation capabilities into usable software; pair with the language `craft` skills.
 
 **Agent-system methods (Anthropic agent patterns):** `context-engineering` *(curate the attention budget; JIT retrieval, compaction, sub-agent isolation)* · `parallelization` *(sectioning/voting & multi-agent fan-out — and when the ~15× cost pays)* · `tool-design` *(tools an agent uses well: namespacing, prescriptive descriptions, token efficiency)* · `agent-security` *(prompt injection & the lethal trifecta — treat tool/log/webhook output as data, not instructions)*. Pairs with `self-improve-loop`.
 

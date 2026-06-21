@@ -88,6 +88,6 @@ index=<app_index> error
   field was never extracted; `rex` it first. `_time` is in the search TZ, not necessarily the event's.
 - `stats`/`timechart`/`tstats` aggregate; `transaction` groups events but is expensive — prefer
   `stats by <id>` for correlation.
-- Match the search window to the incident timeline from `sre-ladder-investigator`.
+- Match the search window to the incident timeline from `sre-ladder` (investigator tier).
 - For recurring searches, hand the query to `sre-monitor` to make a saved search / alert (route through
   Moogsoft — see `moogsoft-correlation`).

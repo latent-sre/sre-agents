@@ -26,7 +26,7 @@ lists its own handoff targets; this is the fleet-wide picture. Package context w
    request ─────────────▶ coordinator ──(delegation plan)──┐
       │  (single obvious task: route directly)              │
       ▼                                                     ▼
-  sde-engineer ──(load sde-ladder-* by altitude)──▶ code-reviewer ──▶ [merge-gate] ──▶ release-engineer
+  sde-engineer ──(load sde-ladder by altitude)──▶ code-reviewer ──▶ [merge-gate] ──▶ release-engineer
    │   │   │   ▲                                        │                                  │
    │   │   │   └────────── fix findings ───────────────┘                          [release-gate]
    │   │   │                                                                               │
@@ -102,7 +102,7 @@ The flow above is a **sequential spine** with **one parallel burst**. The `coord
                                                    SLOs / alerts / dashboards)
 ```
 
-- **sre-engineer** loads `sre-ladder-*` by depth (responder → investigator → elite) and
+- **sre-engineer** loads `sre-ladder` by depth (responder → investigator → elite) and
   `triage-golden-signals` to frame the signals; it **investigates and recommends**, it does **not**
   change prod.
 - **sre-engineer ⇄ incident-commander:** declare/run a major incident; technical RCA and process/comms

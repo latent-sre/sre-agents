@@ -7,6 +7,10 @@ description: >-
 metadata:
   domain: cicd
   tool: github-actions
+# Manually-invoked prompt: this migration runs only a handful of times, so it's invoked with
+# /bamboo-to-actions-migration rather than auto-loaded — which keeps its description out of the
+# always-on skill listing. Future option: wire it into CI as a one-shot migration runner.
+disable-model-invocation: true
 ---
 
 # Bamboo → GitHub Actions migration

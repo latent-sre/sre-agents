@@ -31,9 +31,9 @@ Then fix the code and watch it go green. This proves the bug is real and guards 
 - Prefer many fast unit tests; integration where components meet; a few e2e for critical journeys.
 
 ## Frameworks (this team)
-- **Python** → `pytest` (`parametrize`, fixtures, `tmp_path`, `monkeypatch`, `freezegun`). See `python-craft`.
-- **PowerShell** → `Pester` (`Describe/Context/It`, `Mock`, `Should`). See `powershell-craft`.
-- **Bash** → `bats` or an assert harness; assert exit codes + stdout/stderr. See `bash-craft`.
+- **Python** → `pytest` (`parametrize`, fixtures, `tmp_path`, `monkeypatch`, `freezegun`). See `craft` (Python).
+- **PowerShell** → `Pester` (`Describe/Context/It`, `Mock`, `Should`). See `craft` (PowerShell).
+- **Bash** → `bats` or an assert harness; assert exit codes + stdout/stderr. See `craft` (Bash).
 
 ## Done
 - New behavior is covered; the bug-fix test fails without the fix.

@@ -1,16 +1,3 @@
----
-name: sde-ladder-distinguished
-description: >-
-  Distinguished-engineer altitude for high-ambiguity, high-leverage technical decisions — org-wide
-  architecture, build-vs-buy, setting standards and patterns others follow, multi-system design, and
-  long-horizon tradeoffs. Use when the problem is under-specified, spans many systems/teams, or the
-  decision is expensive to reverse. Produces a crisp problem framing and a defensible recommendation,
-  not just code.
-metadata:
-  tier: distinguished
-  track: sde
----
-
 # Distinguished engineer — frame the problem, set the direction
 
 Your leverage is judgment on ambiguous, expensive-to-reverse decisions, and the standards that shape
@@ -43,6 +30,6 @@ how everyone else builds. Code is an output; the decision and its framing are th
 - The reversible first step is defined — we're not betting everything on an untested assumption.
 
 ## Hand off
-- Execution of the chosen design → `sde-ladder-principal` / `sde-engineer`.
+- Execution of the chosen design → the principal tier / `sde-engineer`.
 - An org standard that needs documenting → a design doc/ADR in the repo (+ `runbook-author` for ops).
 - Reliability/architecture for prod → coordinate with `sre-monitor` and `release-engineer`.

@@ -1,15 +1,3 @@
----
-name: typescript-craft
-description: >-
-  Idiomatic, modern (2025–2026) TypeScript conventions for this team — strict tsconfig, linting,
-  testing, and type-safety idioms. Use whenever writing, reviewing, or refactoring TypeScript. Covers
-  strict + verbatimModuleSyntax + noUncheckedIndexedAccess, typescript-eslint vs Biome, Vitest, unknown
-  over any, satisfies, discriminated unions, and import type.
-metadata:
-  domain: language
-  language: typescript
----
-
 # TypeScript craft
 
 Match the repo's existing tooling first; the

@@ -29,12 +29,12 @@ plan**. Load the **`route-request`** skill for the routing decision table.
 
 | Agent | Owns |
 |---|---|
-| `sde-engineer` | Designing/writing/changing code (Python, Bash, PowerShell, …); altitude via `sde-ladder-*` skills |
+| `sde-engineer` | Designing/writing/changing code (Python, Bash, PowerShell, …); altitude via `sde-ladder` skills |
 | `code-reviewer` | Reviewing a diff for correctness/quality before merge (`merge-gate`) |
 | `security-reviewer` | Security-focused review (authz, injection, secrets, supply chain) |
 | `test-engineer` | Authoring/expanding tests and raising coverage |
 | `database-reliability` | Safe DB migrations (expand/contract), query perf, durability — writes migrations, hands prod execution to `release-engineer` |
-| `sre-engineer` | Detection, triage, root-cause investigation; altitude via `sre-ladder-*` skills |
+| `sre-engineer` | Detection, triage, root-cause investigation; altitude via `sre-ladder` skills |
 | `sre-monitor` | Dashboards, SLOs/error budgets, alert design & hygiene (steady-state) |
 | `incident-commander` | Driving the *process* of a live incident (severity, roles, comms, timeline) |
 | `release-engineer` | CI/CD (GitHub Actions), PCF deploys, rollbacks, Bamboo→Actions migration |
@@ -54,7 +54,7 @@ plan**. Load the **`route-request`** skill for the routing decision table.
 5. **Choose the minimum agents.** Prefer one specialist over many. Only add review/test/security steps
    when warranted (prod-facing, security-sensitive, risky).
 6. **Write the plan** (see output contract). For each step say *what context to hand the agent* so it
-   can start cold. Recommend the ladder skill tier where it matters (e.g. "use `sde-ladder-principal`").
+   can start cold. Recommend the ladder skill tier where it matters (e.g. "use `sde-ladder`, principal tier").
 7. **Decide if you should even delegate.** If the whole request is one obvious specialist task, say so
    and route directly — don't manufacture ceremony.
 

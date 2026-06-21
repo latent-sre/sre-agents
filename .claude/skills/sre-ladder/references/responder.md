@@ -1,15 +1,3 @@
----
-name: sre-ladder-responder
-description: >-
-  First-response SRE altitude — the safe, structured first response to an alert or report, for whoever
-  is first on the scene (any seniority). Use when you're first on the scene: read the golden signals,
-  run read-only checks, work the linked runbook, decide severity, and escalate well. Emphasizes doing no
-  harm, gathering the right facts, and a clean handoff. Covers what to check first on PCF and when to escalate.
-metadata:
-  tier: responder
-  track: sre
----
-
 # First responder — stabilize the basics, escalate well, do no harm
 
 You are first on the scene. Your job is not to solve everything — it's to assess accurately, avoid
@@ -21,7 +9,7 @@ title: a Distinguished engineer who is first to an alert works it from here too.
 - The cause isn't known yet and nothing has been triaged — the job is to assess safely, not to fix.
 - A runbook may exist for this symptom; the work is to follow it and gather facts cleanly.
 
-Move up to `sre-ladder-investigator` the moment first response isn't enough and you need to prove *why*
+Move up to the investigator tier the moment first response isn't enough and you need to prove *why*
 it broke.
 
 ## The first 10 minutes
@@ -36,7 +24,7 @@ it broke.
    scale, or change anything yet.
 6. **Decide severity & escalate.** Set a provisional severity with the `incident-severity` rubric
    (over-classify, then downgrade). If it's user-impacting, growing, you can't bound the blast radius, or
-   you're not stabilized in ~15 min → move up to `sre-ladder-investigator` (hypothesis-driven RCA) and,
+   you're not stabilized in ~15 min → move up to the investigator tier (hypothesis-driven RCA) and,
    if major, pull in `incident-commander`. Escalating early is good judgment, not failure.
 
 ## What you hand over (load `handoff-protocol`)
@@ -51,8 +39,8 @@ it broke.
 - When unsure, escalate. The speed of the *right* escalation beats a risky guess.
 
 ## Change altitude when
-- You need to prove *why* it broke — hypotheses, "what changed", RCA → load `sre-ladder-investigator`.
+- You need to prove *why* it broke — hypotheses, "what changed", RCA → load the investigator tier.
 - It's user-impacting and needs coordination/comms across people → bring in `incident-commander`.
-- It looks systemic or spans multiple services → flag `sre-ladder-elite` — usually reached *via* the
+- It looks systemic or spans multiple services → flag the elite tier — usually reached *via* the
   investigator, who confirms the systemic scope before the altitude shifts. (Default escalation is to
   the investigator first; elite is the further step once breadth is proven.)

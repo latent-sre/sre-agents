@@ -1,15 +1,3 @@
----
-name: python-craft
-description: >-
-  Idiomatic, production-grade Python conventions for this team — typing, linting/formatting, testing,
-  errors, structure, and operational safety. Use whenever writing, reviewing, or refactoring Python,
-  especially for ops tooling, automation, and services. Covers type hints, ruff/black, pytest, pathlib,
-  exceptions, subprocess/HTTP safety, and logging without leaking secrets.
-metadata:
-  domain: language
-  language: python
----
-
 # Python craft
 
 Match the repo's existing tooling first; the

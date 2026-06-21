@@ -1,19 +1,6 @@
----
-name: react-craft
-description: >-
-  Modern (2025–2026) React patterns and pitfalls for this team. Use whenever writing, reviewing, or
-  refactoring React. Covers the Rules of Hooks, "you might not need an Effect", Server Components and
-  'use client'/'use server', React 19 Actions (useActionState/useFormStatus/useOptimistic/use), the
-  React Compiler, list keys/virtualization, and React Testing Library.
-metadata:
-  domain: language
-  language: typescript
-  framework: react
----
-
 # React craft
 
-Pairs with `typescript-craft`. Match the repo's
+Pairs with the TypeScript file (`references/typescript.md`). Match the repo's
 existing patterns first; the defaults below apply when none is set.
 
 ## Hooks rules (enforce)

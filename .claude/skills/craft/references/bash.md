@@ -1,19 +1,7 @@
----
-name: bash-craft
-description: >-
-  Safe, robust Bash scripting conventions for this team — strict mode, quoting, structure, cleanup, and
-  portability. Use whenever writing, reviewing, or refactoring shell scripts for automation, CI, or ops
-  glue. Covers set -euo pipefail, quoting, [[ ]] tests, shellcheck, traps/mktemp, and avoiding common
-  word-splitting and parsing pitfalls.
-metadata:
-  domain: language
-  language: bash
----
-
 # Bash craft
 
 Shell is for glue and orchestration. If a script grows real logic/data structures, recommend Python
-(`python-craft`) instead.
+(see `references/python.md`) instead.
 
 ## Always start with
 ```bash

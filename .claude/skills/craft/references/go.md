@@ -1,15 +1,3 @@
----
-name: go-craft
-description: >-
-  Idiomatic, production-grade Go conventions for this team — tooling, error handling, testing,
-  modules/versioning, and concurrency. Use whenever writing, reviewing, or refactoring Go. Covers
-  gofmt/goimports, go vet, golangci-lint, error wrapping with %w, errors.Is/As, table-driven tests
-  with -race, semantic import versioning, and context/goroutine-leak safety.
-metadata:
-  domain: language
-  language: go
----
-
 # Go craft
 
 Match the repo's existing tooling first; the defaults

@@ -1,11 +1,11 @@
 ---
 name: tool-design
 description: >-
-  Design tools an agent can actually use well — clear names, prescriptive descriptions, token-efficient
-  responses. Use when wrapping a capability (cf/Splunk/Wavefront, an internal API, an MCP server) as a
-  tool for an agent, or fixing a tool the model misuses. Covers strategic selection, namespacing,
-  meaningful context, token efficiency, and the prototype→evaluate loop. From Anthropic's "Writing
-  effective tools for agents."
+  Design tools an LLM agent can actually use well — clear names, prescriptive descriptions,
+  token-efficient responses. Use when exposing a capability (cf/Splunk/Wavefront, an internal API, an MCP
+  server) **as a tool an agent calls** — not an HTTP API for humans or services (that's `api-design`) —
+  or fixing a tool the model misuses. Covers strategic selection, namespacing, meaningful context, token
+  efficiency, and the prototype→evaluate loop. From Anthropic's "Writing effective tools for agents."
 metadata:
   domain: method
 ---

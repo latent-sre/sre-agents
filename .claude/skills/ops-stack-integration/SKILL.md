@@ -5,7 +5,7 @@ description: >-
   tooling is made of. Use when writing code that talks to PCF/cf (CAPI V3), Splunk, Wavefront, Moogsoft,
   ThousandEyes, or Grafana: auth and secret handling on PCF, timeouts + retries with backoff, honoring
   rate limits, following pagination, idempotent state changes, caching, and treating every response as
-  untrusted data. Pairs with api-design (what you expose) and python-craft; hand secrets/auth to
+  untrusted data. Pairs with api-design (what you expose) and craft (Python); hand secrets/auth to
   security-reviewer.
 metadata:
   domain: method
@@ -16,7 +16,7 @@ metadata:
 Most tools this team builds are **glue over the platform and observability stack** — cf/CAPI, Splunk,
 Wavefront, Moogsoft, ThousandEyes, Grafana. The tool is only as reliable as those calls are at 3am, so
 code every one as **"this will fail, time out, rate-limit, and lie to me."** Match the repo's HTTP client
-and conventions first (`python-craft`: `httpx`/`requests`).
+and conventions first (`craft` (Python): `httpx`/`requests`).
 
 ## Every external call
 - **Always set timeouts** (connect + read). A hung dependency must not hang your tool.
@@ -49,7 +49,7 @@ and conventions first (`python-craft`: `httpx`/`requests`).
 ## Make writes safe
 **Check current state before acting**, make the write idempotent (a retried "restart" or "scale to 3"
 must converge, not stack), and **separate decision from effect** so `--dry-run` is trivial and the logic
-is testable without side effects (`python-craft`). Cache slow/stable lookups (app GUIDs, metric
+is testable without side effects (`craft` (Python)). Cache slow/stable lookups (app GUIDs, metric
 metadata) with a TTL.
 
 ## Observe your own tool

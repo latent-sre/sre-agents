@@ -1,15 +1,3 @@
----
-name: powershell-craft
-description: >-
-  Idiomatic, robust PowerShell conventions for this team — approved verbs, advanced functions, strict
-  error handling, object-pipeline output, and cross-version care (5.1 vs 7+). Use whenever writing,
-  reviewing, or refactoring PowerShell for Windows/ops automation. Covers CmdletBinding, $null
-  comparison, splatting, PSScriptAnalyzer, Pester, and avoiding Write-Host.
-metadata:
-  domain: language
-  language: powershell
----
-
 # PowerShell craft
 
 Write cmdlet-style PowerShell that composes in a pipeline and fails safely. Mind that **Windows

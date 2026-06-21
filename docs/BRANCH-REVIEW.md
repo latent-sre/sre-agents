@@ -7,8 +7,9 @@ claim verified against our working tree.
 > **📌 Status (updated 2026-06-19):** This is a **historical** review artifact — preserved for the
 > rationale, not the live state. Its counts and recommendations describe a pre-adoption snapshot. Since
 > then: **Recs 1–6 have all shipped** (CI/CD supply-chain hardening, `debug-rca`, `HANDOFFS.md`,
-> `AGENT-CATALOG.md`, the review-standard note, PowerShell depth), the fleet now has **12 agents / 43
-> skills** (not the 37 cited below), and the agent-system skills (`self-improve-loop`,
+> `AGENT-CATALOG.md`, the review-standard note, PowerShell depth), the fleet now has **12 agents / 38
+> skills** (after the ladder 6→2 and craft 6→1 consolidation; not the 37 cited below), and the
+> agent-system skills (`self-improve-loop`,
 > `context-engineering`, `parallelization`, `tool-design`, `agent-security`) were added afterward. Read
 > the recommendation table as "what we decided," already done.
 
@@ -74,7 +75,7 @@ Legend: 🔴 High · 🟡 Med · ⚪ Low · ✅ = confirmed absent/partial in ou
 ### 🔴 2 — Add a `debug-rca` skill (non-incident root-cause)
 - **Source:** `review-skills…ip9agh` → `debug-rca` (clean, stack-neutral, high quality)
 - **Target:** **new** `.claude/skills/debug-rca/SKILL.md` + **wire it in**
-- **Today (verified):** ✅ absent. Our RCA is **incident-only** (`sre-ladder-*`); failing-test / flaky-build
+- **Today (verified):** ✅ absent. Our RCA is **incident-only** (`sre-ladder`); failing-test / flaky-build
   debugging has **no home**.
 - **Add:** reproduce → "what changed" → rank hypotheses by *likelihood × cheapness-to-test* → `git bisect`
   → causal chain (`trigger → mechanism → failure`) → minimal fix **+ a regression test that fails without it**.
@@ -106,9 +107,9 @@ Legend: 🔴 High · 🟡 Med · ⚪ Low · ✅ = confirmed absent/partial in ou
   with comments' is fine."* Plus the empirical sizing note: *defect detection drops past ~400 LOC / ~500 LOC/hr — a reviewer may reject solely for size.*
 - **Benefit:** Calibrates reviewer strictness; prevents nit-blocking.
 
-### 🟡 6 — Enrich `powershell-craft` with named specifics
+### 🟡 6 — Enrich `craft` (PowerShell) with named specifics
 - **Source:** `vscode…` `powershell-scripting` (111 lines vs our 59)
-- **Target:** `.claude/skills/powershell-craft/SKILL.md` · **Today (verified):** ✅ absent
+- **Target:** `.claude/skills/craft/references/powershell.md` · **Today (verified):** ✅ absent
 - **Add:** **SecretManagement + SecretStore** for automation secrets; named high-value **PSScriptAnalyzer**
   rules (`PSUseShouldProcessForStateChangingFunctions`, `PSAvoidUsingConvertToSecureStringWithPlainText`);
   cross-platform notes (`$IsWindows`/`$IsLinux`, `[IO.Path]::PathSeparator`, exact-case env vars on Linux);
@@ -132,7 +133,7 @@ Legend: 🔴 High · 🟡 Med · ⚪ Low · ✅ = confirmed absent/partial in ou
 |---|---|
 | Seniority-as-separate-agents (`senior-developer`/`principal-developer`, `sre-investigator`) | Our **ladder skills** are more capable (extra `distinguished`/`elite` tiers) and avoid sprawl — by design. |
 | `postmortem-writer` as a standalone agent | We fold it into the `blameless-postmortem` skill + `incident-commander`/`runbook-author`. |
-| `*-standards` / `*-development` / `*-scripting` skill renames | Cosmetic churn; our `*-craft` / lane-suffix naming is consistent and referenced everywhere. |
+| `*-standards` / `*-development` / `*-scripting` skill renames | Cosmetic churn; our `craft` / lane-suffix naming is consistent and referenced everywhere. |
 | **Anything from `great-shannon`'s stack content** | Kubernetes, Terraform, PromQL, PagerDuty — **directly violates** our PCF/on-prem/no-K8s charter. |
 | Dropping `readonly-guard.py`, gates, or guard tests to match a leaner branch | Our "*read-only is enforced, not promised*" guarantee is the fleet's key differentiator. |
 

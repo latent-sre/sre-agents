@@ -34,7 +34,7 @@ Most incidents follow a change. Before deep hypotheses, line up **what changed**
 - **dependency** incident or vendor status-page event
 - **cert / credential / secret expiry** (failures starting at a round timestamp)
 - **DB migration** or data change
-A change whose timestamp matches the impact-start is your prime suspect → hand to `sre-ladder-investigator`.
+A change whose timestamp matches the impact-start is your prime suspect → hand to `sre-ladder` (investigator tier).
 
 ## How to read them
 1. **Errors + latency up together** → app or a downstream dependency is failing/slow.
@@ -47,4 +47,4 @@ A change whose timestamp matches the impact-start is your prime suspect → hand
 
 ## Pin it down
 Always establish: **exact start time**, **blast radius** (which apps/routes/spaces, % of traffic), and
-**trend** (worsening/stable/recovering). Hand that to `sre-ladder-investigator` to drive RCA.
+**trend** (worsening/stable/recovering). Hand that to `sre-ladder` (investigator tier) to drive RCA.
