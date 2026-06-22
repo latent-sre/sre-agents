@@ -2,7 +2,7 @@
 name: release-gate
 description: >-
   Pre-release **readiness** gate — is this build ready to ship? Use as the checkpoint before
-  deploying/releasing a build to an environment (especially prod): verifies the change is merged, the
+  deploying/releasing a build to an environment (especially prod): verifies `merge-gate` passed, the
   artifact is promotable, migrations and flags are ready, monitoring is in place, and a tested rollback
   exists. Pass/fail checklist; for prod, pair with `production-change-gate` (which authorizes the action).
 metadata:
