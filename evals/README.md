@@ -24,6 +24,32 @@ python evals/run_evals.py --run          # invoke the fleet and grade (needs a C
 a fresh session so leftover authoring context can't mask gaps (per the skills best-practice). Swap
 `run_agent()` in `run_evals.py` for the Agent SDK if you'd rather drive it programmatically.
 
+## Discovery probe (`discovery_probe.py`) — routing *without* a target hint
+
+`run_evals.py` prepends `"(Use the <target> skill/agent.)"` to every prompt, so it grades
+the **outcome given the right skill** — it can't tell you whether the model *discovers* the
+right skill on its own. `discovery_probe.py` fills that gap: each scenario in `discovery/*.yaml`
+is a realistic prompt that **never names the skill**, and the probe reads which `Skill(...)` the
+model actually invoked from the `stream-json` trace.
+
+```bash
+python evals/discovery_probe.py --validate    # CI-safe: parse + targets exist, no model
+python evals/discovery_probe.py --list
+python evals/discovery_probe.py --run          # measure autonomous discovery (needs a live model)
+python evals/discovery_probe.py --ab           # A=listed vs B=expected-skills-as-name-only
+```
+
+`--ab` answers "does demoting these skills to `skillOverrides: name-only` cost discovery?"
+(`B == A` ⇒ name-only is safe; `B << A` ⇒ it hurts). This is the harness behind the 2026-06
+Tier-1 decision: at `skillListingBudgetFraction: 0.04` the meta-skills' descriptions were
+**6/12 → 6/12** between conditions — no discovery loss, and no measurable gain — so the
+"demote the meta-skills" idea was declined. Like `--run` in `run_evals.py`, the model-driven
+modes are **not** a CI gate; only `--validate` is.
+
+> Caveat: discovery ≠ necessity. A skill scoring 0 may simply mean the model answered well
+> *without* loading it (see `discover-parallelization`). Read these as relative/A-B signals,
+> not absolute pass/fail.
+
 ## Discipline (how to add a scenario)
 
 1. **Eval before docs.** When writing/changing a skill, add ≥1 scenario that fails without it first.

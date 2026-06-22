@@ -1,0 +1,12 @@
+id: discover-self-improve-loop
+expected: self-improve-loop
+prompt: |
+  I keep re-fixing the same kind of regression and it keeps coming back. How do I set up
+  my workflow so a repeated failure gets caught automatically instead of re-judged each
+  time?
+# Baseline 2026-06: 0/3 when listed AND 0/3 when name-only — the model picked
+# `tdd-workflow` (add the regression test) instead, in BOTH conditions. Arguably a
+# correct pick (the two skills genuinely overlap on "stop a recurring regression"), so
+# this is a known territory overlap, not a name-only regression. A candidate for a
+# description-sharpening pass, NOT evidence that listing self-improve-loop helps.
+note: "A/B 2026-06: A 0/3 (chose tdd-workflow), B 0/3. Overlap with tdd-workflow."
