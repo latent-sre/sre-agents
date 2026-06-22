@@ -80,9 +80,10 @@ the **next one item**, run the verifier, commit *only if it passes*, exit; the l
    verifier green). Watch token cost; an outer loop spends like a multi-agent fan-out.
 4. **A human clears `merge-gate` before merge.** The loop produces a diff on a branch, never a deploy.
 
-A reference scaffold that enforces all four lives at [`scripts/ralph-loop.sh`](../../../scripts/ralph-loop.sh)
-— it is an example you run yourself, deliberately **not** wired into CI or any agent. A loop that can
-change prod, or that commits unverified work, is not a Ralph loop — it's an incident generator.
+A reference scaffold that enforces all four rails lives at [`ralph-loop.sh`](../../../scripts/ralph-loop.sh)
+in the repo's scripts directory — it is an example you run yourself, deliberately **not** wired into CI or
+any agent. A loop that can change prod, or that commits unverified work, is not a Ralph loop — it's an
+incident generator.
 
 ## Run the loop well
 - **Bound it.** Set a max-iterations budget up front (often 2–3). No convergence by then → stop and
