@@ -31,9 +31,9 @@ Then fix the code and watch it go green. This proves the bug is real and guards 
 - Prefer many fast unit tests; integration where components meet; a few e2e for critical journeys.
 
 ## Frameworks (this team)
-- **Python** → `pytest` (`parametrize`, fixtures, `tmp_path`, `monkeypatch`, `freezegun`). See `craft` (Python).
-- **PowerShell** → `Pester` (`Describe/Context/It`, `Mock`, `Should`). See `craft` (PowerShell).
-- **Bash** → `bats` or an assert harness; assert exit codes + stdout/stderr. See `craft` (Bash).
+Per-language frameworks and setup live in **`craft`** (read the language file) — `pytest` (Python),
+`Pester` (PowerShell), `bats` (Bash), Vitest (TS/React), `testing` (Go). This skill owns the *method*
+(red-green, what to test); `craft` owns the *tooling*.
 
 ## Done
 - New behavior is covered; the bug-fix test fails without the fix.

@@ -1,12 +1,10 @@
 ---
 name: spa-architecture
 description: >-
-  Architecture for building a single-page-app GUI that puts a usable front-end on our ops tools — the
-  browser client over an `api-design` backend. Use when standing up or extending a SPA: project/build
-  setup, routing, server-state vs UI-state, a typed API client generated from OpenAPI, forms+validation,
-  a modern styling approach (utility CSS + accessible headless components, design tokens, dark mode),
-  browser auth (OIDC + PKCE), web security (XSS/CORS/CSP/token storage), accessibility, big-table
-  performance, testing, and building/serving the static bundle on PCF. Pairs with craft (React).
+  Architecture for a single-page-app GUI over our ops-tool APIs — the browser client on top of an
+  `api-design` backend. Use when standing up or extending a SPA: build/routing, server-state vs UI-state,
+  a typed OpenAPI client, modern accessible styling, browser auth (OIDC+PKCE), web security
+  (XSS/CORS/CSP/token storage), and building/serving the bundle on PCF. Pairs with `craft` (React).
 metadata:
   domain: method
 ---

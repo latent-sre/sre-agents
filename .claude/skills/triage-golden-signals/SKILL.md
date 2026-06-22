@@ -1,9 +1,10 @@
 ---
 name: triage-golden-signals
 description: >-
-  The framing layer for any triage or investigation — read the four golden signals (latency, traffic,
-  errors, saturation) plus RED and USE, and know what each tells you and where to find it on our stack.
-  Use at the start of every incident/triage to characterize the problem before forming hypotheses.
+  Read the four golden signals — latency, traffic, errors, saturation — plus RED and USE, to
+  characterize a problem before forming hypotheses: what each signal tells you and where to find it on
+  our stack. Load it for the signal-reading step at the start of triage. (The `sre-ladder` tiers set
+  your overall response depth; this is the signal read inside it.)
 metadata:
   domain: sre
 ---
