@@ -132,7 +132,7 @@ Legend: 🔴 High · 🟡 Med · ⚪ Low · ✅ = confirmed absent/partial in ou
 | Tempting | Why reject |
 |---|---|
 | Seniority-as-separate-agents (`senior-developer`/`principal-developer`, `sre-investigator`) | Our **ladder skills** are more capable (extra `distinguished`/`elite` tiers) and avoid sprawl — by design. |
-| `postmortem-writer` as a standalone agent | We fold it into the `blameless-postmortem` skill + `incident-commander`/`runbook-author`. |
+| `postmortem-writer` as a standalone agent | We fold it into the `blameless-postmortem` skill + the incident-command process (`incident-severity`) and `runbook-author`. |
 | `*-standards` / `*-development` / `*-scripting` skill renames | Cosmetic churn; our `craft` / lane-suffix naming is consistent and referenced everywhere. |
 | **Anything from `great-shannon`'s stack content** | Kubernetes, Terraform, PromQL, PagerDuty — **directly violates** our PCF/on-prem/no-K8s charter. |
 | Dropping `readonly-guard.py`, gates, or guard tests to match a leaner branch | Our "*read-only is enforced, not promised*" guarantee is the fleet's key differentiator. |
