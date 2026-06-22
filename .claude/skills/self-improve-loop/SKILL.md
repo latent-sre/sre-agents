@@ -2,9 +2,10 @@
 name: self-improve-loop
 description: >-
   Generate → evaluate → refine self-improvement loops, from Anthropic's agent patterns — the
-  evaluator-optimizer workflow and the agent verify-loop (act → verify → repeat). Use when output
-  quality can be measured and iteration demonstrably improves it: a draft to harden, a fix to verify,
-  a review to act on. Covers stop criteria, bounded iteration, and the discipline of preferring
+  evaluator-optimizer workflow, the agent verify-loop (act → verify → repeat), and the unattended outer
+  loop ("Ralph"). Use when output quality can be measured and iteration demonstrably improves it: a draft
+  to harden, a fix to verify, a review to act on, or a large test-backed build to grind through. Covers
+  stop criteria, bounded iteration, branch-only/gate-verified safety, and the discipline of preferring
   deterministic checks (tests, linters, gates) over LLM-as-judge.
 metadata:
   domain: method
@@ -52,6 +53,36 @@ rules-based feedback over LLM-as-judge]*
 > When the **same failure recurs**, encode it as a rules-based check (a test, a lint rule, a gate item,
 > a hook) rather than re-judging it by reasoning each time. Move the lesson left.
 > *[sourced: Anthropic — "add rules-based feedback via hooks when you see repeated failure patterns"]*
+
+## Pattern 3 — The unattended outer loop ("Ralph")
+
+Brute-force the verify-loop from *outside* the agent: a shell loop re-invokes a **fresh** coding-agent
+process each iteration against a **spec + a task backlog in files**, so durable state lives in the repo
+(spec, backlog, code, git history) — not in a context window that rots. Each pass: read the backlog, do
+the **next one item**, run the verifier, commit *only if it passes*, exit; the loop restarts clean.
+*[sourced: Geoffrey Huntley, "Ralph Wiggum as a software engineer"; mechanics = `context-engineering`
+(externalize state) + Pattern 2 (act → verify), run as an outer loop.]*
+
+- **Use when** the work is large, decomposable, and **test-backed** — greenfield building of ops tooling
+  (a CLI/API/SPA) against a spec where each unit verifies mechanically. **Not** for triage, review, or
+  anything prod-facing.
+- **Why it works:** fresh context per iteration sidesteps context rot; the files are the memory. (Our
+  `evals/run_evals.py` already uses fresh-process-per-trial for the same reason.)
+- **Why it's dangerous bare:** an outer loop with no hard verifier makes confident messes at machine
+  speed. The verifier *is* the safety system — it is not optional.
+
+**Non-negotiable guardrails (this is an ops repo):**
+1. **Code-building on a branch only.** Never point it at `release-engineer`/prod actions — no `cf push`,
+   route remap, scale, or migration in a loop. The `readonly-guard` + `production-change-gate` lines hold.
+2. **A hard verify gate every iteration.** Tests/evals/linters must pass or the iteration is rejected and
+   **not committed** (`tdd-workflow`; Pattern 2's deterministic checks first). No verifier → don't run it.
+3. **Bounded + a real stop condition** — a max-iteration cap and an explicit exit (backlog empty AND
+   verifier green). Watch token cost; an outer loop spends like a multi-agent fan-out.
+4. **A human clears `merge-gate` before merge.** The loop produces a diff on a branch, never a deploy.
+
+A reference scaffold that enforces all four lives at [`scripts/ralph-loop.sh`](../../../scripts/ralph-loop.sh)
+— it is an example you run yourself, deliberately **not** wired into CI or any agent. A loop that can
+change prod, or that commits unverified work, is not a Ralph loop — it's an incident generator.
 
 ## Run the loop well
 - **Bound it.** Set a max-iterations budget up front (often 2–3). No convergence by then → stop and
