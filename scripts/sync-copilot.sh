@@ -36,6 +36,9 @@ translate_tools() {
     printf 'tools: [%s]\n' "$out"
 }
 
+# Clean first (like skills, below) so agents deleted upstream don't linger as stale
+# .github/agents/*.agent.md wrappers — Copilot reads those, so a removed agent would still show.
+rm -rf "$gh_agents"
 mkdir -p "$gh_agents"
 agent_count=0
 
