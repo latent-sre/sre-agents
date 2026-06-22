@@ -1,14 +1,18 @@
 # Agent catalog
 
-Narrative descriptions of the 12 subagents in [`.claude/agents/`](../.claude/agents/) and the skills
+Narrative descriptions of the 10 subagents in [`.claude/agents/`](../.claude/agents/) and the skills
 each leans on. The terse roster table is in [`AGENTS.md`](../AGENTS.md); the collaboration map is in
 [`HANDOFFS.md`](HANDOFFS.md); the *why* is in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
-> **Read-only agents** (no Edit/Write): `coordinator`, `code-reviewer`, `security-reviewer`,
-> `sre-engineer`, `incident-commander`, `researcher`. The four that keep `Bash` for observation are
-> further constrained by `scripts/readonly-guard.py`, which blocks state-changing shell. The writers
+> **Read-only agents** (no Edit/Write): `code-reviewer`, `security-reviewer`, `sre-engineer`,
+> `researcher`. The three that keep `Bash` for observation are further constrained by
+> `scripts/readonly-guard.py`, which blocks state-changing shell. The writers
 > (`sde-engineer`, `test-engineer`, `database-reliability`, `sre-monitor`, `release-engineer`,
 > `runbook-author`) edit files; prod-facing execution still needs human sign-off via the gates.
+>
+> **Routing and incident-command are *skills*, not agents** — `route-request` and `incident-severity`
+> run in the main session (classic subagents can't dispatch; see [ARCHITECTURE.md](ARCHITECTURE.md) and
+> [adr/0001](adr/0001-routing-and-incident-command-as-skills.md)).
 
 ---
 
@@ -73,12 +77,9 @@ budgets, Moogsoft correlation to cut noise, ThousandEyes synthetics. Owns alert 
 and SLO configs. Skills: `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`,
 `moogsoft-correlation`. The agent that **closes detection gaps** after an incident.
 
-### incident-commander · `sonnet` · read-only (guarded)
-Runs the *process* of a live major incident (not the debugging): declares severity, structures the
-response, keeps the timeline, drives stakeholder comms, tracks action items, calls resolution and
-schedules the postmortem. Coordinates; `sre-engineer` does the technical RCA in parallel. Skills:
-`incident-severity` (SEV1–4 rubric + comms cadence), `blameless-postmortem`. Emits a delegation plan
-rather than dispatching directly (see [CLAUDE.md](../CLAUDE.md) → *Subagent dispatch*).
+> **Running a live incident is a skill, not an agent.** `incident-severity` (SEV1–4 rubric, comms
+> cadence, roles, the live timeline, drive-to-mitigation) is loaded by `sre-engineer` or a human IC in
+> the main session — there is no `incident-commander` agent (it could only emit a plan it can't dispatch).
 
 ---
 
@@ -100,13 +101,11 @@ Consumes findings from `sre-engineer` and `release-engineer`. Skills: `runbook-t
 
 ---
 
-## Selectors & support
+## Support
 
-### coordinator · `sonnet` · read-only (plan only, no Bash)
-The router. For non-trivial/multi-step requests it triages intent, decomposes the work, and returns an
-explicit **delegation plan** (which agent, what context, success criteria, sequencing, gates) that the
-main session executes. Skip it for a single obvious task. Skills: `route-request`, `parallelization`
-(what to fan out vs. keep sequential, and when the cost pays).
+> **Routing is a skill, not an agent.** Multi-step/ambiguous requests are planned in the main session via
+> `route-request` (with `parallelization` for what to fan out vs. keep sequential) — there is no
+> `coordinator` agent (see [adr/0001](adr/0001-routing-and-incident-command-as-skills.md)).
 
 ### researcher · `sonnet` · read-only (no Bash)
 Evidence-first fact-finding: official docs, specs/RFCs, vendor APIs, library behavior, version

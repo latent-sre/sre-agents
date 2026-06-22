@@ -3,8 +3,8 @@ name: route-request
 description: >-
   The routing/selector decision table — classify an SRE/SDE request and route it to the right agent(s)
   in the right order, with the gates that apply. Use at the start of any multi-step or ambiguous request
-  to produce a delegation plan, or to decide whether a request even needs delegation. Backs the
-  coordinator agent.
+  to produce a delegation plan, or to decide whether a request even needs delegation. This is the fleet's
+  routing logic — the main session loads it to plan multi-step work (there is no separate coordinator agent).
 metadata:
   domain: routing
 ---
@@ -28,8 +28,8 @@ something on fire?).
 | "write tests / add coverage" | `test-engineer` | → `sde-engineer` if it reveals a bug |
 | "failing test / flaky build / bug, cause unknown" | `sde-engineer` (or `test-engineer`) + **`debug-rca`** skill | → `sde-engineer` for the fix; → `sre-engineer` if it's actually a prod incident |
 | "DB schema/migration / slow query / DB incident" | `database-reliability` (loads the **`database-reliability`** skill; pairs with `sde-engineer` on query/ORM code) | → `code-reviewer` → **`merge-gate`**; prod migration → `release-engineer` runs it under **`production-change-gate`** |
-| "X is broken / slow / erroring / alerting" | `sre-engineer` (`sre-ladder` by depth) | → `incident-commander` if major; → `release-engineer` to mitigate |
-| "run the incident / comms / who's doing what" | `incident-commander` | ⇄ `sre-engineer` (technical) in parallel |
+| "X is broken / slow / erroring / alerting" | `sre-engineer` (`sre-ladder` by depth) | → run the incident-command process (`incident-severity`) if major; → `release-engineer` to mitigate |
+| "run the incident / comms / who's doing what" | load **`incident-severity`** (severity, roles, comms, timeline) | ⇄ `sre-engineer` (technical RCA) in parallel |
 | "set up monitoring / noisy alert / define SLO" | `sre-monitor` | → `runbook-author` for alert runbooks |
 | "ship / release / deploy / roll back / move off Bamboo" | `release-engineer` | **`release-gate`** + **`production-change-gate`** for prod |
 | "write/update a runbook / document this" | `runbook-author` | — |
@@ -50,3 +50,8 @@ Risks / watch-for: <…>
 ```
 Each step names the **context to hand the agent** so it can start cold (`handoff-protocol`). For
 prod-facing or destructive steps, mark them and require explicit human confirmation.
+
+## Guardrails
+- **Don't invent an agent** that isn't in the fleet — if none fits, say so (or have the main session do it).
+- **Stay a router.** If you find yourself doing the investigation or writing the code, stop and route it —
+  routing runs in the main session's context, not a separate one.

@@ -14,7 +14,7 @@ metadata:
 
 **Mitigate before you fully understand.** Stopping user pain comes before root cause. Pick the
 **fastest safe, reversible** action. `sre-engineer` recommends; `release-engineer` executes with human
-sign-off; `incident-commander` owns the decision in a major incident.
+sign-off; in a major incident the incident commander (the on-call lead running `incident-severity`) owns the decision.
 
 ## Choose the mitigation (fastest-safe-first)
 | Situation | Mitigation | Command (confirm first) |

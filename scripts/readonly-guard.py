@@ -2,7 +2,7 @@
 """PreToolUse guard — enforce read-only agents at the command level.
 
 Wired into the read-only agents that still need Bash for observation
-(sre-engineer, code-reviewer, security-reviewer, incident-commander) via their
+(sre-engineer, code-reviewer, security-reviewer) via their
 `hooks: PreToolUse` frontmatter. Claude Code pipes the pending tool call as JSON on
 stdin; this denies Bash commands that CHANGE STATE (prod or repo) so "read-only" is
 enforced, not merely promised. Read-only triage commands (cf logs/app/events, git

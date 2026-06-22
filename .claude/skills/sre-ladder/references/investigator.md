@@ -41,7 +41,7 @@ the elite tier if it's a systemic/distributed failure mode that needs prevention
 - **Cert/secret expiry** → sudden auth failures starting at a round timestamp.
 
 ## Hand off
-- Major incident → `incident-commander` (process/comms) while you keep investigating.
+- Major incident → run the incident-command process (`incident-severity`: severity, roles, comms, timeline) while you keep investigating.
 - Mitigation → `release-engineer` (`rollback-mitigation`). Durable code fix → `sde-engineer`.
 - Capture → `runbook-author`; close the detection gap → `sre-monitor`.
 - Systemic/distributed failure needing prevention design → the elite tier.

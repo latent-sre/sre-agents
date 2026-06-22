@@ -64,7 +64,7 @@ shows instances cycling. Dashboard: `<grafana/wavefront link>`.
 
 ## Escalation
 - Not OOM, or cause unclear after 15 min → `sre-engineer`. User-impacting + needs coordination →
-  `incident-commander`. Suspected platform/cell issue → platform team.
+  declare an incident (`incident-severity`). Suspected platform/cell issue → platform team.
 
 ## References
 - Skills: `pcf-ops`, `rollback-mitigation`, `triage-golden-signals`, `wavefront-queries`
