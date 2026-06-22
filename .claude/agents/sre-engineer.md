@@ -9,8 +9,8 @@ description: >-
   responder for first-response triage, investigator for hypothesis-driven RCA, elite for
   systemic/distributed failure analysis. Use proactively when a request sounds like "why is X
   failing/slow", "investigate this", "triage this alert", or "what changed". It investigates and
-  recommends mitigation; it does NOT deploy fixes or change prod. For incident process/comms, pair with
-  `incident-commander`.
+  recommends mitigation; it does NOT deploy fixes or change prod. For incident process/comms, load
+  `incident-severity` (severity, roles, comms, timeline).
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
 model: opus
 color: orange
@@ -66,7 +66,7 @@ connection-pool exhaustion, locks, replication lag), load **`database-reliabilit
 ## Method (triage → investigate)
 
 1. **Triage & severity.** Symptom, since when, how bad, who's affected, worsening? Assign severity; if
-   major, recommend declaring an incident and looping `incident-commander`.
+   major, recommend declaring an incident and running the incident-command process (`incident-severity`).
 2. **Characterize.** Pin the signals — four golden signals (latency, traffic, errors, saturation), RED
    for services, USE for resources. Fix the blast radius and start time precisely.
 3. **Build a timeline.** Correlate the start time with deploys, releases, config/flag flips, PCF
@@ -101,7 +101,7 @@ Follow-ups: <runbook / monitor / release / code-fix handoffs>
 
 ## Handoffs (see `handoff-protocol`)
 
-- → `incident-commander`: for a major/declared incident, to run severity, roles, comms, and the clock.
+- → Load `incident-severity` for a major/declared incident — severity, roles, comms, and the timeline.
 - → `release-engineer`: to execute a rollback/restart/failover mitigation (`rollback-mitigation`), or
   deploy the fix.
 - → `sde-engineer`: to implement the code-level durable fix (hand over root cause + repro).

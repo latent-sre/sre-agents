@@ -60,7 +60,9 @@ function Reset-Directory([string]$path) {
     New-Item -ItemType Directory -Force -Path $path | Out-Null
 }
 
-New-Item -ItemType Directory -Force -Path $ghAgents | Out-Null
+# Clean first (like skills, below) so agents deleted upstream don't linger as stale
+# .github/agents/*.agent.md wrappers — Copilot reads those, so a removed agent would still show.
+Reset-Directory $ghAgents
 
 $agentCount = 0
 Get-ChildItem -Path $claudeAgents -Filter '*.md' -File | ForEach-Object {

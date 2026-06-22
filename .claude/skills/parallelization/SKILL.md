@@ -42,13 +42,13 @@ perspectives. Two shapes: *[sourced: Anthropic, "Building Effective Agents"]*
 - Combine deliberately: a citation/merge pass that reconciles the strands beats naive concatenation.
 
 ## In this fleet
-`coordinator` and `incident-commander` produce an **ordered plan**; the main session executes its
+The `route-request` skill produces an **ordered plan**; the main session executes its
 parallel strands (classic subagents don't dispatch each other). During an incident, technical RCA
-(`sre-engineer`) runs *in parallel* with process/comms (`incident-commander`), and `researcher` fans out
+(`sre-engineer`) runs *in parallel* with the incident-command process (`incident-severity`), and `researcher` fans out
 alongside. The fleet handoff map ([`docs/HANDOFFS.md`](../../../docs/HANDOFFS.md)) carries the
 "parallelize independent work, keep coupled work sequential" rule — this skill is the *why* and *how much*.
 
 ## Handoffs
-- → `coordinator` to turn a parallelizable request into an ordered delegation plan.
+- → `route-request` to turn a parallelizable request into an ordered delegation plan.
 - → `handoff-protocol` to package each strand's mandate and merge results.
 - → `context-engineering` to keep fanned-out sub-agents lean and summary-returning.

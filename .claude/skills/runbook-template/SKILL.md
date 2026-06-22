@@ -17,7 +17,7 @@ stressed, low-context, and in a hurry.
 ## Runbook vs playbook vs SOP
 - **Runbook** — the steps to handle *one* alert/task/failure mode (this template).
 - **Playbook** — a broader response *strategy* that orchestrates multiple runbooks (e.g. a major-incident
-  playbook). Lives closer to `incident-severity` / `incident-commander`.
+  playbook). Lives closer to `incident-severity` (incident command).
 - **SOP** — a fixed procedure for routine, normal operations (not incident-driven).
 
 Keep them current the only way that works: **rehearse them.** Run game days / drills under realistic

@@ -40,7 +40,6 @@ see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom 
 
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
-| [`coordinator`](.claude/agents/coordinator.md) | Route a request → delegation plan | no | `route-request`, `parallelization` |
 | [`sde-engineer`](.claude/agents/sde-engineer.md) | Design/write/refactor/fix code (Py/Bash/PS/Go/TS); build ops tools (CLIs, API layers & SPA GUIs) | code | `sde-ladder`, `craft`, `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`, `database-reliability`, `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`, `tool-design`, `adr-template` |
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | `agent-security` |
@@ -48,16 +47,20 @@ see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom 
 | [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `database-reliability`, `safe-refactor`, `production-change-gate` |
 | [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder`, `triage-golden-signals`, `database-reliability`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
-| [`incident-commander`](.claude/agents/incident-commander.md) | Run the *process* of a live incident | no | `incident-severity`, `blameless-postmortem` |
 | [`release-engineer`](.claude/agents/release-engineer.md) | CI/CD, deploys, rollbacks (Actions + PCF) | infra/CI | `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`, `rollback-mitigation`, `release-gate` |
 | [`runbook-author`](.claude/agents/runbook-author.md) | Create/update operational runbooks | docs | `runbook-template`, `blameless-postmortem` |
 | [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | `context-engineering` |
 
-**Read-only agents** (no Edit/Write): `coordinator`, `code-reviewer`, `security-reviewer`,
-`sre-engineer`, `incident-commander`, `researcher`. They report, recommend, and hand off. The four that
-keep `Bash` for observation (`code-reviewer`, `security-reviewer`, `sre-engineer`, `incident-commander`)
-are further constrained by a `PreToolUse` guard ([scripts/readonly-guard.py](scripts/readonly-guard.py))
-that **blocks state-changing shell commands** — so "read-only" is enforced, not just promised.
+**Read-only agents** (no Edit/Write): `code-reviewer`, `security-reviewer`, `sre-engineer`, `researcher`.
+They report, recommend, and hand off. The three that keep `Bash` for observation (`code-reviewer`,
+`security-reviewer`, `sre-engineer`) are further constrained by a `PreToolUse` guard
+([scripts/readonly-guard.py](scripts/readonly-guard.py)) that **blocks state-changing shell commands** —
+so "read-only" is enforced, not just promised.
+
+> **Routing and incident-command are *skills*, not agents.** `route-request` (planning a multi-step
+> request) and `incident-severity` (running a live incident) run in the **main session's** context.
+> Classic subagents can't dispatch other subagents, so an orchestration *agent* could only emit a plan
+> the main session re-runs — pure overhead. See [`docs/adr/0001-routing-and-incident-command-as-skills.md`](docs/adr/0001-routing-and-incident-command-as-skills.md).
 
 > **Seniority/experience is carried by skills, not separate agents.** There is *one* `sde-engineer`
 > and *one* `sre-engineer`. They scale altitude by loading a **ladder skill** — pick the tier that
@@ -104,7 +107,7 @@ index tuning, connection-pool/lock/replication-lag triage, and tested backups (R
 ## Routing & gates (selectors that control the workflow)
 
 **Selectors** decide *who/what runs next*:
-- `coordinator` agent + `route-request` skill classify a request → an ordered delegation plan
+- the `route-request` skill (loaded by the main session) classifies a request → an ordered delegation plan
   (which agent, what context to pass, success criteria, sequencing).
 
 **Gates** are checkpoints that must pass *before work advances* — they protect quality and prod:
@@ -122,7 +125,7 @@ Gates are portable Markdown checklists by default. In Claude Code they can be **
 - **Ship a feature:** `sde-engineer` → `code-reviewer` (+`security-reviewer` if sensitive) →
   `test-engineer` → `merge-gate` → `release-engineer` (`release-gate` → `pcf-deploy`) →
   `runbook-author` if new ops steps.
-- **Production incident:** `sre-engineer` (triage + RCA) ⇄ `incident-commander` (process/comms);
+- **Production incident:** `sre-engineer` (triage + RCA) + `incident-severity` (severity, roles, comms, timeline);
   `release-engineer` executes mitigation (`rollback-mitigation`); `sde-engineer` fixes root cause;
   `runbook-author` captures it; `sre-monitor` closes the detection gap.
 - **Reliability hardening:** `sre-monitor` defines SLOs/alerts → `runbook-author` links runbooks.
@@ -191,7 +194,7 @@ because Claude hooks are not portable.
 ## Using it
 
 - **Claude Code:** describe the task; it routes via each agent's `description`. For multi-step or
-  ambiguous work, ask it to *"use the coordinator"* first. Invoke a skill directly with `/skill-name`.
+  ambiguous work, invoke `/route-request` first (or let it route). Invoke a skill directly with `/skill-name`.
 - **VS Code / Copilot:** pick a custom agent from the Chat agents dropdown (or `/agents`); skills load
   automatically or via `/` in chat. Run the generator first if you want `.github/agents` wrappers.
 - Agents and skills are plain Markdown — edit frontmatter (`tools`, `model`, `description`) or the body

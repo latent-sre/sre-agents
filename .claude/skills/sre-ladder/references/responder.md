@@ -25,7 +25,7 @@ it broke.
 6. **Decide severity & escalate.** Set a provisional severity with the `incident-severity` rubric
    (over-classify, then downgrade). If it's user-impacting, growing, you can't bound the blast radius, or
    you're not stabilized in ~15 min → move up to the investigator tier (hypothesis-driven RCA) and,
-   if major, pull in `incident-commander`. Escalating early is good judgment, not failure.
+   if major, declare and run the incident-command process (`incident-severity`). Escalating early is good judgment, not failure.
 
 ## What you hand over (load `handoff-protocol`)
 - What fired, when, and the current blast radius.
@@ -40,7 +40,7 @@ it broke.
 
 ## Change altitude when
 - You need to prove *why* it broke — hypotheses, "what changed", RCA → load the investigator tier.
-- It's user-impacting and needs coordination/comms across people → bring in `incident-commander`.
+- It's user-impacting and needs coordination/comms across people → run the incident-command process (`incident-severity`).
 - It looks systemic or spans multiple services → flag the elite tier — usually reached *via* the
   investigator, who confirms the systemic scope before the altitude shifts. (Default escalation is to
   the investigator first; elite is the further step once breadth is proven.)

@@ -2,8 +2,9 @@
 
 A "handoff" here means: a specialist finishes, returns a **structured summary**, and names **who picks
 up next**. Classic Claude Code subagents **cannot call each other** — only the main session delegates —
-so the `coordinator` and `incident-commander` emit an *ordered plan* (see
-[ARCHITECTURE.md](ARCHITECTURE.md) and [CLAUDE.md](../CLAUDE.md)'s *Subagent dispatch* note) and the main thread routes between agents. Each agent's body
+so routing and incident-command are **skills** (`route-request`, `incident-severity`) the main session
+loads to emit an *ordered plan* (see [ARCHITECTURE.md](ARCHITECTURE.md) and [CLAUDE.md](../CLAUDE.md)'s
+*Subagent dispatch* note), then it routes between agents. Each agent's body
 lists its own handoff targets; this is the fleet-wide picture. Package context with `handoff-protocol`.
 
 ## Principles
@@ -23,7 +24,7 @@ lists its own handoff targets; this is the fleet-wide picture. Package context w
 
 ```
                  (multi-step / ambiguous?)
-   request ─────────────▶ coordinator ──(delegation plan)──┐
+   request ───────▶ /route-request (main session) ──(plan)──┐
       │  (single obvious task: route directly)              │
       ▼                                                     ▼
   sde-engineer ──(load sde-ladder by altitude)──▶ code-reviewer ──▶ [merge-gate] ──▶ release-engineer
@@ -38,7 +39,7 @@ lists its own handoff targets; this is the fleet-wide picture. Package context w
                                                                                        (if new ops steps)
 ```
 
-- **coordinator → everyone:** produces the plan; the main session executes it. Skip it for one obvious task.
+- **route-request (main session) → everyone:** produces the plan, then the main session executes it. Skip planning for one obvious task.
 - **sde-engineer → code-reviewer:** every non-trivial change before merge (this *is* the `merge-gate`).
 - **sde-engineer → security-reviewer:** auth, crypto, input handling, deserialization, dependency changes.
 - **sde-engineer ⇄ test-engineer:** hand off when coverage is thin; test-engineer hands a *real bug* back.
@@ -52,7 +53,7 @@ lists its own handoff targets; this is the fleet-wide picture. Package context w
 
 ### Worked example — "ship feature X with tests and a runbook" (where to parallelize)
 
-The flow above is a **sequential spine** with **one parallel burst**. The `coordinator` loads
+The flow above is a **sequential spine** with **one parallel burst**. The main session (via `route-request`) loads
 [`parallelization`](../.claude/skills/parallelization/SKILL.md) to decide what runs at once:
 
 ```
@@ -64,7 +65,7 @@ The flow above is a **sequential spine** with **one parallel burst**. The `coord
    ┌──────────── on the finished diff (sectioning) ───────────┐
    │  code-reviewer  ∥  security-reviewer  ∥  test-engineer    │ ── PARALLEL (independent lenses)
    └───────────────────────────┬──────────────────────────────┘
-                               ▼  coordinator merges findings → one fix list
+                               ▼  main session merges findings → one fix list
                        sde-engineer applies fixes  → re-verify   (evaluator-optimizer loop)
                                ▼
                           [merge-gate] ─▶ release-engineer ([release-gate] → [production-change-gate] → pcf-deploy)
@@ -78,7 +79,7 @@ The flow above is a **sequential spine** with **one parallel burst**. The `coord
   if an API/spec is unknown). That's 3–4 strands — the right-sized band, run as fan-out **inside the
   main session**, not a costly multi-agent swarm.
 - **Each strand** gets an isolated context + a bounded mandate and returns a **short summary**
-  ([`context-engineering`](../.claude/skills/context-engineering/SKILL.md)); the `coordinator` does a
+  ([`context-engineering`](../.claude/skills/context-engineering/SKILL.md)); the main session does a
   **merge pass** (dedupe/reconcile) before routing one consolidated fix list back — the
   [`self-improve-loop`](../.claude/skills/self-improve-loop/SKILL.md) generate→evaluate→revise cycle.
 - **runbook-author is downstream-gated**, not parallel with the build — it documents the *final*
@@ -89,9 +90,9 @@ The flow above is a **sequential spine** with **one parallel burst**. The `coord
 ## Operate → mitigate → learn
 
 ```
-  alert / "X is broken/slow" ─▶ sre-engineer ──(Sev1/Sev2)──▶ incident-commander
+  alert / "X is broken/slow" ─▶ sre-engineer ──(Sev1/Sev2)──▶ incident-command (incident-severity)
                                   │  │  │                          │ (process, severity, comms, timeline)
-        researcher ◀─────────────┘  │  └─▶ release-engineer       ├─▶ coordinates strands:
+        researcher ◀─────────────┘  │  └─▶ release-engineer       ├─▶ main session runs strands:
         (unknown error / CVE,        │      (rollback-mitigation;   │    sre-engineer ∥ researcher ∥
          KEV first)                   │       deploy = cause)        │    release-engineer ∥ sde-engineer
                                       ▼                              ▼
@@ -105,8 +106,9 @@ The flow above is a **sequential spine** with **one parallel burst**. The `coord
 - **sre-engineer** loads `sre-ladder` by depth (responder → investigator → elite) and
   `triage-golden-signals` to frame the signals; it **investigates and recommends**, it does **not**
   change prod.
-- **sre-engineer ⇄ incident-commander:** declare/run a major incident; technical RCA and process/comms
-  run *in parallel*. The commander sizes severity with `incident-severity` (SEV1–4 + comms cadence).
+- **sre-engineer + incident-command (`incident-severity`):** declare/run a major incident; technical RCA
+  and process/comms run *in parallel*. `incident-severity` sizes severity, assigns roles, and owns the
+  timeline + comms cadence — loaded in the main session.
 - **sre-engineer → release-engineer:** to execute a mitigation (`rollback-mitigation`) — **with human
   confirmation**.
 - **sre-engineer → database-reliability:** when the incident is DB-driven (slow queries, lock/connection-

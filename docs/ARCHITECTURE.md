@@ -9,7 +9,10 @@ paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map)
    procedures and stack knowledge, loaded on demand (progressive disclosure) so context stays cheap.
 2. **Seniority/experience = skills, not agents.** One `sde-engineer` + one `sre-engineer` scale altitude
    by loading a *ladder* skill (senior/principal/distinguished; responder/investigator/elite) — no agent
-   sprawl and no need to guess the level before routing.
+   sprawl and no need to guess the level before routing. The same logic demotes **orchestration** to
+   skills: routing (`route-request`) and incident-command (`incident-severity`) run in the main session,
+   because a classic subagent can't dispatch others — an orchestration *agent* could only emit a plan the
+   main session re-runs (see [adr/0001](adr/0001-routing-and-incident-command-as-skills.md)).
 3. **Graded autonomy (propose → execute).** Read-only agents *recommend*; writer agents produce diffs;
    **production-facing execution always needs a human + the `production-change-gate`.**
 4. **Least privilege, enforced.** Read-only agents have no Edit/Write; in Claude Code, the ones that keep Bash for
@@ -24,7 +27,6 @@ paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map)
 ## Roster (model · mutates? · guard)
 | Agent | Lane | Model | Mutates? | Read-only guard |
 |---|---|---|---|---|
-| coordinator | route → plan | sonnet | no | n/a (no Bash) |
 | sde-engineer | build/refactor/fix code | opus | code | — |
 | database-reliability | DB migrations, query perf, durability | opus | migration files (never prod DB) | — |
 | code-reviewer | correctness/quality review | opus | no | ✅ |
@@ -32,7 +34,6 @@ paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map)
 | test-engineer | tests / coverage | sonnet | tests | — |
 | sre-engineer | detect / triage / RCA | opus | no | ✅ |
 | sre-monitor | dashboards / SLOs / alerts | sonnet | obs-as-code | — |
-| incident-commander | incident process / comms | sonnet | no | ✅ |
 | release-engineer | CI/CD + PCF deploy | sonnet | infra/CI (prod = gated) | — |
 | runbook-author | runbooks | sonnet | docs | — |
 | researcher | cited fact-finding | sonnet | no | n/a (no Bash) |
@@ -40,8 +41,7 @@ paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map)
 ## Handoff map
 ```mermaid
 flowchart TD
-  U([User / main session]) --> C[coordinator]
-  C -. delegation plan .-> SDE & SRE & REL & MON & RB
+  U([User / main session]) -. route-request plan .-> SDE & SRE & REL & MON & RB
 
   SDE[sde-engineer] --> CR[code-reviewer]
   SDE --> SEC[security-reviewer]
@@ -50,7 +50,7 @@ flowchart TD
   CR --> MG{{merge-gate}}
 
   MON[sre-monitor] -- detects --> SRE[sre-engineer]
-  SRE <--> IC[incident-commander]
+  SRE -. loads incident-severity .-> ICMD([incident-command])
   SRE -- mitigate --> REL[release-engineer]
   SRE -- root-cause fix --> SDE
   DB -- migration --> REL

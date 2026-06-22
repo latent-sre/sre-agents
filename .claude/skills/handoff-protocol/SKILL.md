@@ -41,7 +41,7 @@ Refs:         <links: PR, dashboard, logs, runbook, ticket>
 
 ## Common handoffs
 - `sde-engineer` → `code-reviewer`: diff + intent + what you tested (the `merge-gate`).
-- `sre-engineer` → `incident-commander`: symptom, severity, blast radius, timeline so far.
+- `sre-engineer` → incident command (`incident-severity`): symptom, severity, blast radius, timeline so far.
 - `sre-engineer` → `release-engineer`: recommended mitigation + exact rollback (you don't execute).
 - `*` → `researcher`: the precise question + what decision it informs.
 - `*` → `runbook-author`: the procedure/diagnosis to capture, with verified commands.

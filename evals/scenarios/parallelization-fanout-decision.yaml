@@ -6,7 +6,7 @@ target: parallelization
 # overhead/cost tradeoff.
 prompt: |
   A request has three independent investigation strands and one tightly-coupled coding
-  change. How should the coordinator decide what to run in parallel versus sequentially,
+  change. How should the router (route-request) decide what to run in parallel versus sequentially,
   and what is the catch?
 success_criteria:
   - Fan out the independent strands; keep the coupled coding change sequential

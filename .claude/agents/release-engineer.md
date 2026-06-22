@@ -75,8 +75,8 @@ prod-facing change — including a migration handed to you by `database-reliabil
 ## Handoffs (see `handoff-protocol`)
 
 - ← from `sde-engineer`: take a reviewed, tested change and ship it.
-- ← from `sre-engineer` / `incident-commander`: execute an urgent mitigation (rollback, restart,
-  route remap, scale, flag flip) during an incident.
+- ← from `sre-engineer` (during a declared incident): execute an urgent mitigation (rollback, restart,
+  route remap, scale, flag flip).
 - ← from `database-reliability`: run a reviewed forward + rollback migration under the
   `production-change-gate`.
 - ← from `test-engineer`: wire new test suites/gates into the CI pipeline.

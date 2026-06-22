@@ -4,7 +4,7 @@ description: >-
   Structure and principles for a blameless postmortem after an incident. Use after an incident is
   resolved to write up what happened, the systemic cause and contributing factors, the timeline, and
   owned, dated action items. Covers the blameless stance and the standard sections. Pairs with
-  incident-commander (timeline) and sre-engineer (root cause).
+  incident-severity (the incident timeline) and sre-engineer (root cause).
 metadata:
   domain: doc
 ---
@@ -59,5 +59,5 @@ time (a backup we never tested that happened to work, an alert that fired by coi
 happened to be online). Luck is a preventative action item waiting to be written.
 
 ## Tip
-Seed this from the `incident-commander` timeline and the `sre-engineer` root-cause writeup so it's
+Seed this from the incident timeline (`incident-severity`) and the `sre-engineer` root-cause writeup so it's
 accurate and fast while memory is fresh.

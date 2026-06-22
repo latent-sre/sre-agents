@@ -25,7 +25,7 @@ So a single source under `.claude/` is read natively by both. An optional genera
 ## Quick start
 
 **Claude Code** — open the repo. Describe a task; it routes by each agent's `description`. Or be explicit:
-- *"Use the coordinator to plan this."*  ·  *"Use the sre-engineer to triage this alert."*
+- *"Use the sre-engineer to triage this alert."*  ·  invoke `/route-request` to plan a multi-step task.
 - Invoke a skill directly: `/release-gate`, `/pcf-ops`, `/merge-gate`.
 
 **VS Code / GitHub Copilot** — open the repo; pick a custom agent from the Chat agents dropdown (skills
@@ -41,7 +41,7 @@ bash scripts/sync-copilot.sh      # macOS / Linux
 AGENTS.md                  cross-tool source of truth (roster, conventions, routing, portability)
 CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude specifics)
 .claude/
-  agents/                  12 agents — read by Claude Code AND VS Code/Copilot
+  agents/                  10 agents — read by Claude Code AND VS Code/Copilot
   skills/                  38 skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
@@ -57,9 +57,9 @@ scripts/
 
 ## The fleet
 
-**Agents (who):** `coordinator` · `sde-engineer` · `code-reviewer` · `security-reviewer` ·
-`test-engineer` · `sre-engineer` · `sre-monitor` · `incident-commander` · `release-engineer` ·
-`runbook-author` · `database-reliability` · `researcher`.
+**Agents (who):** `sde-engineer` · `code-reviewer` · `security-reviewer` · `test-engineer` ·
+`sre-engineer` · `sre-monitor` · `release-engineer` · `runbook-author` · `database-reliability` ·
+`researcher`. (Routing and incident-command are **skills** — `route-request`, `incident-severity` — not agents.)
 
 **Seniority/experience is carried by skills, not separate agents** — one `sde-engineer` and one
 `sre-engineer` scale altitude by loading a ladder skill (one skill per track, three tier files):
@@ -81,7 +81,8 @@ scripts/
 
 ## Routing & gates
 
-`coordinator` + the `route-request` skill turn a request into an ordered delegation plan. **Gates** are
+The `route-request` skill turns a request into an ordered delegation plan (run in the main session).
+**Gates** are
 pass/fail checkpoints that protect quality and prod: `merge-gate` before merge; `release-gate` +
 `production-change-gate` before any prod deploy. Portable as checklists; hardenable via GitHub branch
 protection / environment reviewers, or Claude Code hooks.

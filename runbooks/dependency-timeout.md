@@ -55,8 +55,8 @@ Latency SLO burn + timeout/upstream errors for `<APP>`; ThousandEyes alert on `<
   changed and when).
 
 ## Escalation
-- `<DEP>` owner / vendor for their fix; `incident-commander` if cross-team coordination or leadership
-  comms are needed; `sre-engineer` if it turns out not to be the dependency.
+- `<DEP>` owner / vendor for their fix; declare an incident (`incident-severity`) if cross-team
+  coordination or leadership comms are needed; `sre-engineer` if it turns out not to be the dependency.
 
 ## References
 - Skills: `thousandeyes-network`, `splunk-triage`, `triage-golden-signals`, `rollback-mitigation`,

@@ -32,7 +32,7 @@ least privilege: include what the step needs, nothing it doesn't.
   the decisions and open threads, drop the chatter. *[sourced: Anthropic — compaction]*
 - **Sub-agent context isolation.** Hand expensive, bounded fact-finding to a focused sub-agent that
   burns its own context and returns a **short summary** — the caller's window stays lean. This is
-  exactly what `researcher` does; the `coordinator`/`incident-commander` emit a plan, not a transcript.
+  exactly what `researcher` does; a routing pass (`route-request`) likewise emits a plan, not a transcript.
   *[sourced: Anthropic multi-agent research system]*
 - **Structured note-taking / external memory.** Persist durable knowledge *outside* the window where
   it survives compaction — for us that's runbooks, postmortems, and the knowledge loop, not a giant

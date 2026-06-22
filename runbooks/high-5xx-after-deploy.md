@@ -58,7 +58,7 @@ Dashboard: `<grafana link>`.
 
 ## Escalation
 - Rollback doesn't restore service (so the deploy wasn't the cause) → `sre-engineer` immediately.
-- Multiple services or stakeholders involved → `incident-commander`.
+- Multiple services or stakeholders involved → declare an incident and run the incident-command process (`incident-severity`).
 
 ## References
 - Skills: `rollback-mitigation`, `splunk-triage`, `wavefront-queries`, `slo-error-budget`, `pcf-ops`

@@ -6,8 +6,8 @@ This repo's full guide lives in [AGENTS.md](AGENTS.md) (the cross-tool source of
 
 ## Claude Code specifics
 
-- **Agents** (`.claude/agents/`) auto-route by their `description`. For multi-step/ambiguous work, ask
-  *"use the coordinator"* first; or summon one explicitly — *"use the sre-engineer to triage this"*.
+- **Agents** (`.claude/agents/`) auto-route by their `description`. For multi-step/ambiguous work, invoke
+  `/route-request` first; or summon an agent explicitly — *"use the sre-engineer to triage this"*.
 - **Skills** (`.claude/skills/`) auto-load when a task matches their `description`; you can also invoke
   one directly: `/pcf-ops`, `/release-gate`, `/merge-gate`, etc. The **ladder skills** set altitude —
   `sde-engineer` and `sre-engineer` pick `sde-ladder`/`sre-ladder` by task complexity.
@@ -17,9 +17,11 @@ This repo's full guide lives in [AGENTS.md](AGENTS.md) (the cross-tool source of
   them *hard* in Claude Code, add a [hook](https://code.claude.com/docs/en/hooks) in
   `.claude/settings.json` (e.g. a `PreToolUse` matcher that blocks the deploy until the gate is cleared)
   — optional, Claude-only. In GitHub, back them with branch protection + environment reviewers instead.
-- **Subagent dispatch:** classic subagents don't spawn other subagents, so `coordinator` and
-  `incident-commander` produce *plans* the main session executes. (Newer "agent teams" can dispatch
-  directly; keep the plan-output behavior for portability with Copilot.)
+- **Subagent dispatch:** classic subagents don't spawn other subagents, so an orchestration *agent* could
+  only emit a *plan* the main session re-runs — pure overhead. Routing and incident-command therefore live
+  as **skills** (`route-request`, `incident-severity`) that run in the main session, not as agents. (Newer
+  "agent teams" can dispatch directly; if you adopt one, re-promoting them may pay — see
+  [`docs/adr/0001-routing-and-incident-command-as-skills.md`](docs/adr/0001-routing-and-incident-command-as-skills.md).)
 
 ### Model policy (the `model:` frontmatter)
 
@@ -31,15 +33,15 @@ hard to catch; `sonnet` for structured work that follows a defined method, check
   `security-reviewer` (adversarial threat reasoning), `sre-engineer` (hypothesis-driven RCA),
   `database-reliability` (schema-safety judgment on irreversible data). These hinge on getting an
   open-ended judgment *right*.
-- **`sonnet` (7):** `coordinator`, `incident-commander`, `release-engineer`, `researcher`,
-  `runbook-author`, `sre-monitor`, `test-engineer`. Each runs a **defined procedure** — a routing table,
-  the incident lifecycle, a deploy/rollback playbook, a source-and-cite loop, a runbook template, alert/
-  SLO config, or a test plan.
-- **Why `release-engineer`/`incident-commander` are `sonnet` despite prod stakes:** the *safety control
-  is the gate, not the model* — prod actions run only through `release-gate` + `production-change-gate`
-  with explicit human sign-off, and these agents execute *pre-approved plans* rather than invent them.
-  Bump either to `opus` if your team wants extra reasoning headroom on rollback-under-pressure calls;
-  it's a one-line frontmatter change, not an architectural one.
+- **`sonnet` (5):** `release-engineer`, `researcher`, `runbook-author`, `sre-monitor`, `test-engineer`.
+  Each runs a **defined procedure** — a deploy/rollback playbook, a source-and-cite loop, a runbook
+  template, alert/SLO config, or a test plan. (Routing and the incident lifecycle are now the
+  `sonnet`-class skills `route-request` / `incident-severity`, run in the main session.)
+- **Why `release-engineer` is `sonnet` despite prod stakes:** the *safety control is the gate, not the
+  model* — prod actions run only through `release-gate` + `production-change-gate` with explicit human
+  sign-off, and it executes *pre-approved plans* rather than inventing them. Bump it to `opus` if your team
+  wants extra reasoning headroom on rollback-under-pressure calls; it's a one-line frontmatter change, not
+  an architectural one.
 - **Tuning:** `model:` is Claude-specific frontmatter. Change it per agent freely; Copilot ignores it and
   uses its own model selection. Keep this policy in sync when you do.
 
