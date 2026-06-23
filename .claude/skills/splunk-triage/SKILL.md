@@ -60,11 +60,13 @@ index=<app_index> (error OR status>=500)
 
 ## Correlate one request across services (trace/correlation id)
 ```spl
-index=* (request_id="<id>" OR trace_id="<id>")
+index=<app_indexes> (request_id="<id>" OR trace_id="<id>")   # scope to your services' indexes
 | sort _time                                   # the full path of one failing request
 | table _time host service status message
 ```
-If logs lack a correlation id, that's a finding — recommend adding one (`sde-engineer`).
+Tracing one id is the rare case a broad search is justified — use `index=*` only when the request may
+touch services you can't enumerate, and keep the time window tight. If logs lack a correlation id, that's
+a finding — recommend adding one (`sde-engineer`).
 
 ## Compare before vs after a deploy
 ```spl
@@ -80,8 +82,10 @@ index=<app_index> error
 ```
 
 ## Tips & gotchas (Splunk-specific — where the default bites)
-- **Never leave the search unscoped.** `index=*` scans every index — slow, costly, and may silently
-  miss role-restricted data. Always scope to the app index from `references/` (fill in your real values).
+- **Never leave the search broadly unscoped without reason.** `index=*` scans every index — slow, costly,
+  and may silently miss role-restricted data. Scope to the app index from `references/` (fill in your real
+  values); the one justified exception is tracing a single correlation id across services you can't
+  enumerate — and even then, keep the time window tight.
 - **The time range is implicit and dangerous.** A bare search uses the picker's range (often last 24h);
   in a saved search/API job it's whatever the job sets. Set `earliest`/`latest` explicitly during triage.
 - **Fields are case-sensitive and only exist after extraction.** `table status` shows nothing if the

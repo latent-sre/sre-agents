@@ -75,7 +75,9 @@ buffer, go to Splunk (`splunk-triage`).
 - **502 Bad Gateway** — Gorouter reached a backend but the response/connection failed: app crashed
   mid-request, exceeded the router timeout, or the **keep-alive race** — if the app's keep-alive idle
   timeout is **< 90s**, it can close a connection just as Gorouter reuses it → 502. Fix: set the app
-  server's keep-alive idle timeout **> 90s** (Gorouter closes idle conns at 90s). Usually app-side.
+  server's keep-alive idle timeout **> 90s** (Gorouter's backend idle timeout is a hardcoded 90s — not an
+  operator-tunable knob, so the fix is always **app-side**, e.g. Tomcat `server.tomcat.keep-alive-timeout`).
+  Usually app-side.
 - **503 Service Unavailable** — Gorouter has **no backend to route to**: all instances down/crashed, or
   the route isn't registered yet (registration lag right after a push). App-down or routing. Also seen
   platform-side: **clock skew** between Gorouter and a Diego cell breaks the TLS handshake
