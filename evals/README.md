@@ -92,8 +92,12 @@ write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 
 ## Graders available (`graders.py`)
 
-`contains_all` · `contains_any` · `not_contains` · `regex`. Each scores the response text and returns
-`(passed, detail)`. Add new ones to the `REGISTRY`.
+`contains_all` · `contains_any` · `not_contains` · `regex` · `not_regex` (passes iff the pattern does
+*not* match — used for "must not propose to act" checks). Each scores the response text and returns
+`(passed, detail)`. Add new ones to the `REGISTRY`. The graders and the stream-json parser are
+unit-tested offline and run in CI: `python evals/test_graders.py` (includes adversarial should-fail
+verdicts — e.g. a `BLOCKED … does not pass` that must not score as PASS) and
+`python evals/test_discovery_probe.py`.
 
 > The bundled graders are keyword/structural proxies — fast, deterministic, and good at catching
 > "it routed to the wrong agent" or "it complied with an injection." They do **not** judge prose

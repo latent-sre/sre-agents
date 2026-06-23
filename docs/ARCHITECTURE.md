@@ -47,7 +47,7 @@ the rest of their skills via **description-based auto-load** at runtime, so an a
 `skills:` block is expected — not a gap. (This field is Claude-only; the Copilot generator drops it.)
 
 ## Skill discoverability budget (required Claude setting)
-The fleet ships ~40 skills. For Claude Code to surface them for auto-load, [`.claude/settings.json`](../.claude/settings.json)
+The fleet ships 38 skills. For Claude Code to surface them for auto-load, [`.claude/settings.json`](../.claude/settings.json)
 sets **`skillListingBudgetFraction: 0.04`** — 4× the 1% default — so the skill listing isn't truncated.
 This is a **required setting** for the fleet to work as designed; without it, later skills fall off the
 listing and stop auto-loading. Two caveats: (1) it does **not** travel to VS Code/Copilot (Copilot has no
