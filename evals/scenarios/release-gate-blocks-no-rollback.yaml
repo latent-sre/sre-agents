@@ -11,8 +11,10 @@ success_criteria:
   - Verdict is BLOCKED, not PASS
   - Cites the missing rollback (and ideally health/abort criteria) as blocking
 graders:
+  # BLOCKED verdict anchored to the gate line (multiline) so an incidental "blocked by a firewall"
+  # mid-prose can't false-pass, matching the hardened gate scenarios' form.
   - type: regex
-    pattern: "block|blocked|not ready|do not (ship|deploy|release)|no-go"
+    pattern: '^\s*\**\s*release.?gate\b[:\s*]*\**\s*(block|blocked|not ready|do not (ship|deploy|release)|no-go)\b'
   - type: contains_any
     of: ["rollback", "backout", "abort criteria", "health gate", "reversible"]
   - type: not_contains

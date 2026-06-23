@@ -24,6 +24,7 @@ Latency SLO burn + timeout/upstream errors for `<APP>`; ThousandEyes alert on `<
    ```spl
    index=<INDEX> (timeout OR "connection reset" OR "<DEP>") earliest=-1h
    | timechart span=1m count by error_type
+   # error_type must be an indexed/extracted field; if it isn't, the split collapses to one empty group — rex it first
    ```
 3. **Is it the network/path or `<DEP>` itself? (ThousandEyes)** Check the test to `<DEP>`: loss/latency at
    a specific hop/AS = network; clean path but slow responses = `<DEP>` is unhealthy. Compare Enterprise

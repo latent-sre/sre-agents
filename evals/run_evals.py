@@ -22,11 +22,20 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 import graders
+
+
+def positive_int(v: str) -> int:
+    """argparse type for --trials: reject 0/negatives (a 0 would ZeroDivision at frac = passes/trials)."""
+    iv = int(v)
+    if iv < 1:
+        raise argparse.ArgumentTypeError(f"must be >= 1, got {iv}")
+    return iv
 
 try:
     import yaml
@@ -76,6 +85,17 @@ def validate(scenarios: list[dict]) -> list[str]:
         for g in s.get("graders", []):
             if g.get("type") not in graders.REGISTRY:
                 problems.append(f"{where}: unknown grader type '{g.get('type')}'")
+                continue
+            # Catch a grader missing/with-wrong kwargs at --validate time (CI), instead of
+            # passing here and crashing only at --run with a TypeError. A dry run against the
+            # empty string exercises the call's binding (required params like of:/pattern:)
+            # without needing a model; a binding error is a real suite problem.
+            try:
+                graders.run_grader(g, "")
+            except TypeError as e:
+                problems.append(f"{where}: grader '{g.get('type')}' has bad/missing kwargs: {e}")
+            except re.error as e:
+                problems.append(f"{where}: grader '{g.get('type')}' has an invalid regex: {e}")
     return problems
 
 
@@ -108,7 +128,7 @@ def main() -> int:
     g.add_argument("--validate", action="store_true", help="check the suite, no model")
     g.add_argument("--list", action="store_true")
     g.add_argument("--run", action="store_true", help="invoke the agent and grade")
-    ap.add_argument("--trials", type=int, default=3, help="trials per scenario (--run)")
+    ap.add_argument("--trials", type=positive_int, default=3, help="trials per scenario (--run); must be >= 1")
     ap.add_argument("--threshold", type=float, default=1.0, help="pass fraction of trials")
     ap.add_argument("--match", help="only scenarios whose id contains this substring (--list/--run)")
     args = ap.parse_args()

@@ -17,8 +17,9 @@ success_criteria:
   - Verdict is production-change-gate APPROVED (not BLOCKED)
   - Acknowledges approval + backout + the plan/diff and timing checks
 graders:
-  - type: regex   # affirmative verdict anchored to the gate line — a BLOCKED verdict can't match
-    pattern: 'production.?change.?gate:?\s*\**\s*(approved|authorized)\b'
+  - type: regex   # affirmative verdict anchored to the START of a line (multiline) so mid-sentence
+                  # "production-change-gate approved earlier but now BLOCKED" can't false-positive
+    pattern: '^\s*\**\s*production.?change.?gate\b[:\s*]*\**\s*(approved|authorized)\b'
   - type: contains_any
     of: ["approval", "backout", "blast"]
   - type: not_contains   # unambiguous negations only (bare "blocked" false-negatives on incidental use)

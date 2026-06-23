@@ -13,15 +13,22 @@ This repo's full guide lives in [AGENTS.md](AGENTS.md) (the cross-tool source of
   `sde-engineer` and `sre-engineer` pick `sde-ladder`/`sre-ladder` by task complexity.
 - **Seniority/experience = skills, not agents.** One `sde-engineer` + one `sre-engineer`; the
   Senior/Principal/Distinguished and Responder/Investigator/Elite levels are the `sde-ladder`/`sre-ladder` skills.
-- **Gates** (`merge-gate`, `release-gate`, `production-change-gate`) are pass/fail checklists. To make
-  them *hard* in Claude Code, add a [hook](https://code.claude.com/docs/en/hooks) in
-  `.claude/settings.json` (e.g. a `PreToolUse` matcher that blocks the deploy until the gate is cleared)
-  — optional, Claude-only. In GitHub, back them with branch protection + environment reviewers instead.
-- **Subagent dispatch:** classic subagents don't spawn other subagents, so an orchestration *agent* could
-  only emit a *plan* the main session re-runs — pure overhead. Routing and incident-command therefore live
-  as **skills** (`route-request`, `incident-severity`) that run in the main session, not as agents. (Newer
-  "agent teams" can dispatch directly; if you adopt one, re-promoting them may pay — see
-  [`docs/adr/0001-routing-and-incident-command-as-skills.md`](docs/adr/0001-routing-and-incident-command-as-skills.md).)
+- **Gates** (`merge-gate`, `release-gate`, `production-change-gate`) are pass/fail checklists. **The real
+  enforcement for prod changes is GitHub branch protection + protected environments** (our own
+  `github-actions-ci` pattern: required reviews, required status checks, environment reviewers) — that is
+  the security boundary. As an *auditable speed-bump* in Claude Code, `release-engineer` also runs a
+  `PreToolUse` hook ([scripts/production-change-guard.py](scripts/production-change-guard.py)) that blocks
+  state-changing `cf` commands unless the gate sentinel (`PCF_GATE_CLEARED=1` or a `.gate-cleared` file)
+  is set. Treat that hook as a checklist-forcing convenience for a cooperative agent, **not** a security
+  control — a determined path around a local denylist exists; branch protection + environments do not
+  depend on the agent cooperating.
+- **Subagent dispatch:** an orchestration *agent* would double-pay the routing round-trip and discard the
+  main session's live context that the work needs — pure overhead. Routing and incident-command therefore
+  live as **skills** (`route-request`, `incident-severity`) that run in the main session, not as agents.
+  Claude Code now supports nested subagent dispatch, so the old "subagents can't spawn subagents" capability
+  limit no longer applies, but that cost argument still holds; re-promoting an orchestration agent should be
+  gated on an A/B that beats the skill — see
+  [`docs/adr/0001-routing-and-incident-command-as-skills.md`](docs/adr/0001-routing-and-incident-command-as-skills.md).
 
 ### Model policy (the `model:` frontmatter)
 

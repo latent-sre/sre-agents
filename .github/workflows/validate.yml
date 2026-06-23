@@ -10,12 +10,45 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  # Linux job: Python guard tests, eval-suite STRUCTURE validation, and Copilot-generator
+  # drift detection (the .sh path). This is the gating job for cross-platform correctness.
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Test read-only guard
+        run: python3 scripts/test_readonly_guard.py
+
+      - name: Test production-change guard
+        run: python3 scripts/test_production_change_guard.py
+
+      - name: Validate eval + discovery suites (structure only)
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 evals/run_evals.py --validate
+          python3 evals/discovery_probe.py --validate
+
+      - name: Test graders and discovery probe
+        run: |
+          python3 evals/test_graders.py
+          python3 evals/test_discovery_probe.py
+
+      - name: Verify Copilot artifacts are in sync (drift gate)
+        run: |
+          bash scripts/sync-copilot.sh
+          git diff --exit-code .github/ || (echo "Copilot artifacts drifted — re-run scripts/sync-copilot.sh and commit"; exit 1)
+
+  # Windows job: exercises the PowerShell path — the fleet validator and the .ps1 generator —
+  # so both generators stay green on their native platform.
+  windows:
     runs-on: windows-latest
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Validate agent and skill metadata
         shell: pwsh

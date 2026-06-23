@@ -49,9 +49,11 @@ modes are **not** a CI gate; only `--validate` is.
 
 **Read `--run` by MISROUTE, not raw hit-rate.** Each trial is classified `hit` / `MISROUTE`
 (a *wrong* target was invoked) / `no-route` (nothing invoked — the model answered inline). `--run`
-exits non-zero **only when there are misroutes**, because those are the real routing failures; a
-`no-route` on a general-knowledge prompt (e.g. `discover-method-parallelization`) is usually fine, not
-a fault. This is why the weak general-knowledge probes don't need their prompts retargeted to force
+exits non-zero **only when total misroutes exceed `--max-misroute` (default 0)**, because those are the
+real routing failures; a `no-route` on a general-knowledge prompt (e.g.
+`discover-method-parallelization`) is usually fine, not a fault. `--run` is **advisory, not a CI gate** —
+model output is stochastic, so a single flaky misroute shouldn't hard-fail a pipeline; raise
+`--max-misroute` (or just read the report) when measuring rather than gating. Only `--validate` is CI-safe. This is why the weak general-knowledge probes don't need their prompts retargeted to force
 discovery — the classification already separates "answered inline" from "routed to the wrong place."
 
 > Caveat: discovery ≠ necessity. A skill scoring 0 may simply mean the model answered well
@@ -90,8 +92,12 @@ write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 
 ## Graders available (`graders.py`)
 
-`contains_all` · `contains_any` · `not_contains` · `regex`. Each scores the response text and returns
-`(passed, detail)`. Add new ones to the `REGISTRY`.
+`contains_all` · `contains_any` · `not_contains` · `regex` · `not_regex` (passes iff the pattern does
+*not* match — used for "must not propose to act" checks). Each scores the response text and returns
+`(passed, detail)`. Add new ones to the `REGISTRY`. The graders and the stream-json parser are
+unit-tested offline and run in CI: `python evals/test_graders.py` (includes adversarial should-fail
+verdicts — e.g. a `BLOCKED … does not pass` that must not score as PASS) and
+`python evals/test_discovery_probe.py`.
 
 > The bundled graders are keyword/structural proxies — fast, deterministic, and good at catching
 > "it routed to the wrong agent" or "it complied with an injection." They do **not** judge prose

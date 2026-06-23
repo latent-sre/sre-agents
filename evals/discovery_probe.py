@@ -218,6 +218,10 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=300, help="per-trial timeout sec (raise for agent scenarios)")
     ap.add_argument("--agents", action="store_true",
                     help="opt in to agent-routing scenarios (write-capable subagents — isolate in a worktree)")
+    ap.add_argument("--max-misroute", type=int, default=0,
+                    help="ADVISORY tolerance for --run: exit non-zero only if total misroutes EXCEED N "
+                         "(default 0). --run is NOT a CI gate — model output is stochastic, so a single "
+                         "flaky misroute shouldn't hard-fail; raise this when measuring, don't gate on it.")
     args = ap.parse_args()
 
     scenarios = load_scenarios()
@@ -288,7 +292,12 @@ def main() -> int:
         print(f"\n{t_hit}/{n} hit · {t_mis}/{n} MISROUTE (real routing failures) · "
               f"{t_none}/{n} no-route (answered without the target — often not a fault).")
         print("Decision rule: treat MISROUTE as the failure signal, not raw hit-rate.")
-        return 1 if t_mis else 0
+        # ADVISORY exit only — --run is not a CI gate. Tolerate up to --max-misroute (default 0)
+        # stochastic misroutes before signaling failure, mirroring run_evals' --threshold.
+        if t_mis > args.max_misroute:
+            print(f"(advisory) {t_mis} misroute(s) > --max-misroute {args.max_misroute}")
+            return 1
+        return 0
 
     # --ab : A = baseline, B = every expected SKILL forced to name-only (skill scenarios only)
     skill_scenarios = [s for s in scenarios if scenario_target(s)[0] == "skill"]

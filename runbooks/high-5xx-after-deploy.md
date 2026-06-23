@@ -24,9 +24,11 @@ Dashboard: `<grafana link>`.
    ```
 2. **Confirm the error spike and its start time (Splunk):**
    ```spl
-   index=<INDEX> (status>=500 OR error) earliest=-2h
-   | timechart span=1m count                 # does the rise line up with the deploy minute?
-   | append [ search index=<INDEX> | stats count by error_type | sort -count | head 5 ]
+   index=<INDEX> error earliest=-2h
+   | where status>=500                       # status/error_type must be extracted fields — keep numeric
+   | timechart span=1m count                 # comparisons OUT of the keyword base search, or a non-extracted
+   | append [ search index=<INDEX> error earliest=-2h
+            | stats count by error_type | sort -count | head 5 ]   # field silently matches nothing → false all-clear
    ```
 3. **Error ratio (Wavefront):**
    ```
