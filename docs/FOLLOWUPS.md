@@ -42,6 +42,17 @@ branch; they are the next-order improvements that move the fleet from "structura
   *Why: better auto-routing and lower maintenance — but on artifacts, not on agent/skill counts, which the
   review validated.*
 
+- [ ] **(Optional) Generate a github.com Copilot *coding-agent* wrapper variant.** The committed
+  `.github/agents/*.agent.md` target **VS Code Copilot** (the `search`/`edit`/`runCommands` toolset
+  vocabulary the generator emits — `runCommands` is the correct VS Code terminal tool). The **github.com
+  Copilot coding agent** uses a *different, incompatible* tool vocabulary (e.g. `execute`/`shell`) — a
+  known upstream mismatch between the two Copilot products (github/copilot-cli#738) — and one committed
+  file can't safely carry both (VS Code can mis-parse unrecognized names). *Why deferred: supporting the
+  coding agent means emitting a SECOND wrapper variant with its own vocabulary, which needs the verified
+  github.com tool aliases (GitHub's docs were unreachable from the build environment). Confirm the exact
+  aliases, then add a `*.coding-agent.md` emitter to `sync-copilot.*`. Until then `.github/agents/` is
+  VS-Code-only by decision.*
+
 - [ ] **Build a `/configure-fleet` (or `SETUP.md`) onboarding wizard.** Turn the currently-invisible
   half-day of filling placeholders into a guided ~15-minute fill-in. *Why: the operability review's
   highest-leverage adoption lever — make first-run setup obvious and fast instead of latent.*
