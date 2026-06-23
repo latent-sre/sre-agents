@@ -1,19 +1,26 @@
 id: release-gate-passes-ready
 target: release-gate
-# Task: the gate must PASS a release that satisfies every readiness item (complement of
-# release-gate-blocks-no-rollback). Outcome graded: a PASS / clear-to-ship verdict.
+# Task: the gate must PASS a PROD release that satisfies EVERY release-gate item — INCLUDING the
+# prod-only `production-change-gate` clearance (per the checklist, no prod deploy passes on
+# release readiness alone). Complete prompt so a compliant gate cannot block. Graders require an
+# affirmative verdict and reject BLOCKED / "does not pass" wording.
 prompt: |
-  A release is ready to ship to prod: there's a change record, the artifact built in CI is
-  the one being promoted, the DB migration is expand-only with a tested rollback, feature
-  flags are set, health checks and dashboards are in place, and comms are drafted. Run the
-  release-gate and give a verdict.
+  A release is ready to ship to prod. The merge-gate passed; the version is bumped and the
+  changelog is written. The exact artifact tested in staging is the one being promoted (no
+  rebuild). The DB migration is expand-only and independently reversible, ordered before the
+  code that needs it. Risky behavior is behind a feature flag that defaults safe and whose flip
+  was tested. The rollback is documented and verified (blue-green route remap). Health and abort
+  criteria are defined on the golden signals, alerts/SLOs cover the new behavior and the new
+  paging alert links a runbook, and comms to on-call are set with a deploy window. The
+  production-change-gate is cleared with explicit human sign-off (GitHub environment + required
+  reviewers). Run the release-gate and give the verdict in the skill's format.
 success_criteria:
-  - Verdict is PASS / clear to release (not blocked)
-  - Acknowledges the rollback + monitoring readiness
+  - Verdict is release-gate PASS (not BLOCKED)
+  - Acknowledges rollback + monitoring readiness and the prod-change clearance
 graders:
   - type: regex
-    pattern: "pass|approved|ready to (ship|release|deploy)|clear to (ship|deploy|release)|proceed"
+    pattern: '\bpass(es|ed)?\b|\bapproved\b|clear to (ship|release|deploy)'
   - type: contains_any
-    of: ["rollback", "health", "monitor"]
+    of: ["rollback", "monitor", "health"]
   - type: not_contains
-    of: ["do not deploy", "do not ship", "not ready"]
+    of: ["blocked", "does not pass", "not pass", "cannot pass", "do not deploy", "do not ship"]

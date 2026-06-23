@@ -178,7 +178,12 @@ def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: i
     accept = {exp, *(scenario.get("also_acceptable") or [])}
     hits, traces = 0, []
     for _ in range(trials):
-        invoked = run_trial(scenario["prompt"], settings, timeout)[kind]
+        full = run_trial(scenario["prompt"], settings, timeout)
+        # Skill scenarios: a wrong skill OR ANY agent delegation counts as a routing target
+        # (e.g. delegating to the built-in Explore instead of loading the expected skill is a
+        # misroute, not a no-route). Agent scenarios: only agent delegations count — skills are
+        # the chosen agent's own tools, not a competing route.
+        invoked = (full["skill"] + full["agent"]) if kind == "skill" else full["agent"]
         traces.append(invoked)
         if accept & set(invoked):
             hits += 1
@@ -264,8 +269,9 @@ def main() -> int:
     base = _load_settings(args.settings)
 
     if args.run:
-        # Classify every trial as hit / MISROUTE (invoked a wrong target) / no-route
-        # (invoked nothing — the model answered inline). Misroutes are the real routing
+        # Classify every trial: hit (the expected target was reached) / MISROUTE (a non-accepted
+        # target was invoked AND the expected one was not — incl. a wrong-kind delegation) /
+        # no-route (nothing invoked; the model answered inline). Misroutes are the real routing
         # failures; a no-route on a general-knowledge prompt is usually not a fault.
         t_hit = t_mis = t_none = 0
         for s in scenarios:

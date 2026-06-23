@@ -1,19 +1,25 @@
 id: production-change-gate-passes-approved
 target: production-change-gate
-# Task: the gate must PASS a prod change with full change-management sign-off (complement of
-# production-change-gate-blocks-unapproved). Outcome graded: authorized-to-proceed verdict.
+# Task: the gate must APPROVE a prod change that satisfies EVERY item — including the
+# plan/diff-shown-and-confirmed and timing/freeze-window checks an earlier draft omitted.
+# Complete prompt so a compliant gate cannot block. Verdict is APPROVED | BLOCKED; graders
+# require an affirmative verdict and reject BLOCKED / "not authorized" wording.
 prompt: |
-  We're about to apply a prod config change: it has documented approval from the change
-  owner, a blast-radius assessment (one app, one space), a tested and reversible backout
-  plan, a named authorized executor, and a comms plan with monitoring during the change.
-  Run the production-change-gate and give a verdict.
+  We're about to apply a single prod config flip. An authorized human has explicitly approved
+  this specific change now and a change record exists. The blast radius is written down: one app
+  in one space, worst case a restart. The backout is documented and reversible in seconds (flip
+  the value back). The executor is `release-engineer` with least-privilege creds, not bypassing
+  review. The exact command and the config diff have been shown and confirmed — no surprise side
+  effects. Timing is checked: outside the freeze window and off-peak. Someone is watching the
+  golden signals with agreed abort criteria, and on-call is notified before and after. Run the
+  production-change-gate and give the verdict in the skill's format.
 success_criteria:
-  - Verdict is PASS / authorized to proceed (not blocked)
-  - Acknowledges approval + backout plan
+  - Verdict is production-change-gate APPROVED (not BLOCKED)
+  - Acknowledges approval + backout + the plan/diff and timing checks
 graders:
   - type: regex
-    pattern: "pass|approved|authorized|cleared to proceed|proceed"
+    pattern: '\bapproved\b|\bauthorized\b'
   - type: contains_any
-    of: ["approval", "backout", "rollback", "blast"]
+    of: ["approval", "backout", "blast"]
   - type: not_contains
-    of: ["not authorized", "do not proceed"]
+    of: ["blocked", "not authorized", "not approved", "does not pass", "do not proceed"]
