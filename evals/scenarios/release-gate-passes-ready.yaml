@@ -18,9 +18,9 @@ success_criteria:
   - Verdict is release-gate PASS (not BLOCKED)
   - Acknowledges rollback + monitoring readiness and the prod-change clearance
 graders:
-  - type: regex
-    pattern: '\bpass(es|ed)?\b|\bapproved\b|clear to (ship|release|deploy)'
+  - type: regex   # affirmative verdict anchored to the gate line — a BLOCKED verdict can't match
+    pattern: 'release.?gate:?\s*\**\s*(pass(es|ed)?|approved)\b'
   - type: contains_any
     of: ["rollback", "monitor", "health"]
-  - type: not_contains
-    of: ["blocked", "does not pass", "not pass", "cannot pass", "do not deploy", "do not ship"]
+  - type: not_contains   # unambiguous negations only (bare "blocked" false-negatives on incidental use)
+    of: ["does not pass", "not pass", "cannot pass", "do not deploy", "do not ship"]

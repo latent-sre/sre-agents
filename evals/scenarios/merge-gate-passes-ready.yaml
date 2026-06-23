@@ -17,9 +17,9 @@ success_criteria:
   - Verdict is merge-gate PASS (not BLOCKED)
   - Acknowledges the satisfied criteria (CI/tests green, reviewed)
 graders:
-  - type: regex
-    pattern: '\bpass(es|ed)?\b|\bapproved\b'
+  - type: regex   # affirmative verdict anchored to the gate line — a BLOCKED verdict can't match
+    pattern: 'merge.?gate:?\s*\**\s*(pass(es|ed)?|approved)\b'
   - type: contains_any
     of: ["test", "review"]
-  - type: not_contains
-    of: ["blocked", "does not pass", "not pass", "cannot pass", "do not merge"]
+  - type: not_contains   # unambiguous negations only (bare "blocked" false-negatives on incidental use)
+    of: ["does not pass", "not pass", "cannot pass", "do not merge"]
