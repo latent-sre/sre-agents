@@ -52,7 +52,10 @@ _SKILL_RE = re.compile(r'"skill"\s*:\s*"([a-z0-9-]+)"')
 def load_scenarios() -> list[dict]:
     out = []
     for f in sorted(DISCOVERY_DIR.glob("*.yaml")):
-        data = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        try:
+            data = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        except yaml.YAMLError as e:
+            data = {"_error": f"YAML parse error: {e}"}
         if not isinstance(data, dict):
             data = {"_error": f"expected mapping, got {type(data).__name__}"}
         data["_file"] = f.name
@@ -76,9 +79,10 @@ def validate(scenarios: list[dict]) -> list[str]:
             if not s.get(key):
                 problems.append(f"{where}: missing '{key}'")
         sid = s.get("id")
-        if sid and sid in seen:
-            problems.append(f"{where}: duplicate id '{sid}'")
-        seen.add(sid)
+        if sid:
+            if sid in seen:
+                problems.append(f"{where}: duplicate id '{sid}'")
+            seen.add(sid)
         for t in [s.get("expected"), *(s.get("also_acceptable") or [])]:
             if t and not skill_exists(t):
                 problems.append(f"{where}: target '{t}' is not a known skill")
@@ -122,6 +126,10 @@ def run_trial(prompt: str, settings: str | None) -> list[str]:
     if settings:
         cmd += ["--settings", settings]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=False)
+    if proc.returncode != 0:
+        # Surface a failing runner instead of silently scoring it as a discovery miss
+        # (a bad --settings payload or auth failure would otherwise corrupt --ab columns).
+        print(f"    [runner error rc={proc.returncode}] {proc.stderr.strip()[:300]}", file=sys.stderr)
     return _skills_from_stream(proc.stdout)
 
 
@@ -183,7 +191,8 @@ def main() -> int:
     if args.list:
         for s in scenarios:
             extra = f"  (also: {', '.join(s.get('also_acceptable') or [])})" if s.get("also_acceptable") else ""
-            print(f"- {s['id']} -> {s['expected']}{extra}\n    {s['prompt'].strip().splitlines()[0]}")
+            lines = (s.get("prompt") or "").strip().splitlines()
+            print(f"- {s.get('id', '?')} -> {s.get('expected', '?')}{extra}\n    {lines[0] if lines else '(no prompt)'}")
         return 0
 
     base = _load_settings(args.settings)

@@ -58,8 +58,8 @@ unlike it, does **not** pre-inject the target skill; it reads which `Skill(...)`
 the `stream-json` trace, so it measures *autonomous discovery*. Re-run:
 
 ```bash
-python evals/discovery_probe.py --ab                 # Tier-1 A/B (listed vs name-only)
-python evals/discovery_probe.py --run --match obs    # Tier-3 observability baseline
+python evals/discovery_probe.py --ab  --match method  # Tier-1 A/B: the 4 method-skills, listed vs name-only
+python evals/discovery_probe.py --run --match obs     # Tier-3 observability baseline
 ```
 
 | Probe | Result |

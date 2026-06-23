@@ -1,4 +1,4 @@
-id: discover-self-improve-loop
+id: discover-method-self-improve-loop
 expected: self-improve-loop
 prompt: |
   I keep re-fixing the same kind of regression and it keeps coming back. How do I set up

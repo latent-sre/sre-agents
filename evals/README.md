@@ -35,19 +35,20 @@ model actually invoked from the `stream-json` trace.
 ```bash
 python evals/discovery_probe.py --validate    # CI-safe: parse + targets exist, no model
 python evals/discovery_probe.py --list
-python evals/discovery_probe.py --run          # measure autonomous discovery (needs a live model)
-python evals/discovery_probe.py --ab           # A=listed vs B=expected-skills-as-name-only
+python evals/discovery_probe.py --run --match obs     # measure discovery for a subset (needs a live model)
+python evals/discovery_probe.py --ab  --match method  # A=listed vs B=name-only, over the 4 method-skills
 ```
 
 `--ab` answers "does demoting these skills to `skillOverrides: name-only` cost discovery?"
-(`B == A` ⇒ name-only is safe; `B << A` ⇒ it hurts). This is the harness behind the 2026-06
-Tier-1 decision: at `skillListingBudgetFraction: 0.04` the meta-skills' descriptions were
-**6/12 → 6/12** between conditions — no discovery loss, and no measurable gain — so the
+(`B == A` ⇒ name-only is safe; `B << A` ⇒ it hurts) — it forces `name-only` on the expected
+skills of the selected scenarios, so scope it with `--match`. This is the harness behind the
+2026-06 Tier-1 decision: with `--match method` (the four `domain=method` skills) at
+`skillListingBudgetFraction: 0.04` discovery was **6/12 → 6/12** between conditions — no discovery loss, and no measurable gain — so the
 "demote the meta-skills" idea was declined. Like `--run` in `run_evals.py`, the model-driven
 modes are **not** a CI gate; only `--validate` is.
 
 > Caveat: discovery ≠ necessity. A skill scoring 0 may simply mean the model answered well
-> *without* loading it (see `discover-parallelization`). Read these as relative/A-B signals,
+> *without* loading it (see `discover-method-parallelization`). Read these as relative/A-B signals,
 > not absolute pass/fail.
 
 ## Discipline (how to add a scenario)

@@ -1,4 +1,4 @@
-id: discover-parallelization
+id: discover-method-parallelization
 expected: parallelization
 prompt: |
   I have three independent investigation strands and one tightly-coupled code change to

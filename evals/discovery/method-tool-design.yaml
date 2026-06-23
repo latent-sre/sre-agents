@@ -1,4 +1,4 @@
-id: discover-tool-design
+id: discover-method-tool-design
 expected: tool-design
 prompt: |
   I'm exposing our cf CLI as a tool that an LLM agent will call directly. How should I
