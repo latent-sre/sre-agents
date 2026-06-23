@@ -53,11 +53,11 @@ _CMD = (
 # State-changing command patterns — denied for read-only agents. Case-insensitive.
 _DENY_PATTERNS = [
     # PCF / cf CLI writes: deploys, scaling, lifecycle, routes, services, env, ssh, tasks
-    r"\bcf\s+(push|delete|delete-[a-z-]+|scale|restart|restage|restart-app-instance|stop|start|"
-    r"stage|map-route|unmap-route|create-route|delete-route|set-env|unset-env|rename|bind-service|"
+    r"\bcf\s+(?:v3-)?(push|delete|delete-[a-z-]+|scale|restart|restage|restart-app-instance|stop|start|"
+    r"stage|map-route|unmap-route|create-route|delete-route|set-env|unset-env|set-label|unset-label|rename|bind-service|"
     r"unbind-service|create-service|update-service|create-user-provided-service|"
     r"update-user-provided-service|delete-user-provided-service|create-service-key|"
-    r"delete-service-key|enable-ssh|disable-ssh|ssh|run-task|terminate-task|rollback|"
+    r"delete-service-key|enable-ssh|disable-ssh|ssh(?!-)|run-task|terminate-task|rollback|"
     r"continue-deployment|cancel-deployment|create-app|delete-app|copy-source|set-droplet|"
     r"set-health-check|bind-route-service|unbind-route-service|share-service|unshare-service|"
     r"create-org|delete-org|create-space|delete-space|set-org-role|unset-org-role|"
@@ -70,7 +70,7 @@ _DENY_PATTERNS = [
     r"set-running-environment-variable-group|set-staging-environment-variable-group)\b",
     r"\bcf\s+curl\b.*-X\s*(POST|PUT|DELETE|PATCH)",
     r"\bcf\s+curl\b.*--request[=\s]+(POST|PUT|DELETE|PATCH)",
-    r"\bcf\s+curl\b.*(--data|--data-raw|--data-binary|\s-d\s)",
+    r"\bcf\s+curl\b.*(--data(-raw|-binary|-urlencode)?|\s-d[\s'\"@=])",
     # GitHub CLI writes: PR/issue/release/workflow/secrets/repo mutations
     r"\bgh\s+(pr|issue)\s+(create|edit|close|reopen|merge|ready|lock|unlock|comment|review)\b",
     r"\bgh\s+workflow\s+run\b",
@@ -125,11 +125,13 @@ _DENY_PATTERNS = [
     r"\b(apk\s+add|pacman\s+-S)\b",
     # HTTP writes, file downloads/uploads (these mutate the local FS or a remote)
     r"\bcurl\b.*(-X\s*(POST|PUT|DELETE|PATCH)|--request\s+(POST|PUT|DELETE|PATCH))",
-    r"\bcurl\b.*(--data|--data-raw|--data-binary|--form|\s-d\s|\s-F\s)",
+    r"\bcurl\b.*(--data(-raw|-binary|-urlencode)?|--form|\s-d[\s'\"@=]|\s-F[\s'\"@=])",
     # curl flags are case-sensitive (-O/-o/-T differ), so scope these out of the IGNORECASE compile
     r"\bcurl\b.*(\s(?-i:-O)\b|\s--remote-name\b|\s(?-i:-o)\s+(?!/dev/null|-)|\s(?-i:-T)\s|\s--upload-file\b)",
     r"\bwget\b(?!.*(-O\s*-|-qO-|--output-document[= ]-))",  # wget writes a file unless piped to stdout
-    r"\bscp\b",
+    r"\b(scp|sftp)\b",
+    # crontab edits/loads (mutations); a bare `crontab -l` listing is read-only and passes.
+    r"\bcrontab\s+(?!-l\b)\S",
     # --- Data-egress / exfiltration channels (the lethal-trifecta exit) ------------------
     # A read-only agent can read secrets; these stop it from shipping them out. Raw-socket
     # tools are a clean exfil channel with no read-only-triage need on our stack (ThousandEyes
@@ -145,7 +147,7 @@ _DENY_PATTERNS = [
     _CMD + r"(dig|nslookup|host)\b[^|;&]*(\$\(|`|<\()",
     # Nested shells/interpreters are too easy to use as mutation bypasses.
     # Shell interpreters: -c / /c / -Command run an inline command string.
-    r"\b(bash|sh|zsh|pwsh|powershell|cmd)\b.*\s(-c|/c|-Command)\b",
+    r"\b(bash|sh|zsh|pwsh|powershell|cmd)\b.*\s(-c|/c|-Command|-File)\b",
     # Code interpreters: -c/-e/-E/-p/--eval/--print eval inline code — perl/ruby/node -e
     # are exact peers of python -c. A bare trailing `-` or a heredoc feeds a script on stdin.
     r"\b(python|python3|py|perl|ruby|node)\b.*\s(-c|-e|-E|-p|--eval|--print)\b",
@@ -170,11 +172,15 @@ _DENY_PATTERNS = [
     r"\b(python|python3|py)\s+(?!-)\S*\.py\b",
     r"\bnode\s+(?!-)\S*\.(js|mjs|cjs)\b",
     r"\bruby\s+(?!-)\S*\.rb\b",
-    # Direct execution of a local file by path in command position: `./deploy.sh`,
-    # `../bin/x`, `/usr/local/bin/x`, `bin/run`, `scripts/x.sh`. Requires a slash so a
-    # bare command name (`ls`, `git`) is not caught; anchored to command position so a
-    # path ARGUMENT (`cat path/to/file`) is not — `cat` holds the command slot there.
-    r"(?:^|[|;&]\s*)(?:\.{0,2}/|[A-Za-z0-9_.~-]+/)\S*",
+    # Direct execution of a local file by RELATIVE path in command position: `./deploy.sh`,
+    # `../bin/x`, `bin/run`, `scripts/x.sh`. The leading char must be a non-`/` path char, so
+    # ABSOLUTE paths (`/bin/cat`, `/usr/local/bin/cf apps`, `/opt/splunk/bin/splunk search`) are
+    # NOT caught here — a read-only binary invoked by absolute path is fine, and an absolute-path
+    # *mutating* command is still caught by its verb rule (`/bin/rm` → `\brm\b`, `…/cf push` →
+    # the cf-write rule). Anchored to command position so a path ARGUMENT (`cat path/to/file`) is
+    # not — `cat` holds the command slot there. The fleet's own bundled read-only triage helper is
+    # exempted up front via _ALLOW_RE (it's a relative path that would otherwise trip this).
+    r"(?:^|[|;&]\s*)[A-Za-z0-9_.~-]+/\S*",
     # Sourcing a file pulls its (possibly mutating) commands into the current shell.
     r"(?:^|[|;&]\s*)source\b",
     r"(?:^|[|;&]\s*)\.\s+\S",
@@ -183,6 +189,19 @@ _DENY_PATTERNS = [
     r"\|\s*(sudo\s+)?(sh|bash|zsh)\s*(\||$|;|&)",
 ]
 _DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE)
+
+# Allowlist: the fleet's own bundled READ-ONLY triage helper (pcf-ops/scripts/triage.{sh,ps1}),
+# which AGENTS.md/pcf-ops document a read-only agent should run. It's a relative-path script
+# invocation, so the path-exec / `bash …​.sh` rules above would otherwise (wrongly) deny it.
+# Anchored to the WHOLE command (optional interpreter prefix, optional args, but no command
+# separators) so a chained mutation like `triage.sh; rm -rf /` does NOT get a free pass — that
+# falls through to the deny rules. Args are bounded by [^|;&] to forbid pipelines/chaining.
+_ALLOW_RE = re.compile(
+    r"^\s*(?:bash\s+|pwsh\s+(?:-File\s+)?)?"
+    r"(?:[\w.~/-]*/)?pcf-ops/scripts/triage\.(?:sh|ps1)"
+    r"(?:\s+[^|;&]*)?\s*$",
+    re.IGNORECASE,
+)
 
 _REASON = (
     "Blocked: this is a read-only agent. The command appears to change state "
@@ -207,6 +226,8 @@ def main() -> None:
         sys.exit(0)
 
     command = (data.get("tool_input") or {}).get("command", "") or ""
+    if _ALLOW_RE.match(command):
+        sys.exit(0)  # bundled read-only triage helper — explicitly permitted
     if _DENY_RE.search(command):
         print(json.dumps({
             "hookSpecificOutput": {

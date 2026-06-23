@@ -21,6 +21,15 @@ ALLOW = [
     "cf logs checkout --recent",
     "cf logs checkout --recent | tail -n 120",
     "cf curl /v3/apps/abc",                 # GET via cf curl
+    "cf ssh-code",                          # prints a one-time SSH code — read-only
+    "cf ssh-enabled checkout",              # queries a flag — read-only
+    "/bin/cat /var/log/app.log",            # absolute-path read binary (not a script)
+    "/usr/local/bin/cf apps",               # cf by absolute path, read subcommand
+    "/opt/splunk/bin/splunk search 'index=app'",   # absolute-path read tool
+    "pcf-ops/scripts/triage.sh checkout",   # the bundled READ-ONLY triage helper
+    ".claude/skills/pcf-ops/scripts/triage.sh checkout",
+    "bash pcf-ops/scripts/triage.sh checkout",
+    "crontab -l",                           # listing cron is read-only
     "git log --oneline -20",
     "git diff main...HEAD",
     "git status",
@@ -80,6 +89,18 @@ DENY = [
     "cf scale checkout -i 5",
     "cf restart checkout",
     "cf restage checkout",
+    "cf v3-push checkout",                   # v3- alias write
+    "cf v3-scale checkout -i 3",
+    "cf v3-stop checkout",
+    "cf set-label app checkout env=prod",    # metadata write
+    "cf curl /v3/apps -X POST -d'{\"name\":\"x\"}'",  # glued -d body write
+    "cf curl /v3/apps -d @payload.json",
+    "/usr/local/bin/cf push checkout",       # absolute-path cf WRITE still caught by verb rule
+    "pcf-ops/scripts/triage.sh checkout; rm -rf /tmp/x",  # chained mutation defeats the allowlist
+    "sftp user@prod-host",                   # exfil channel
+    "pwsh -File deploy.ps1",                  # running a PS script file
+    "crontab -e",                            # editing cron is a mutation
+    "crontab schedule.txt",                  # loading a cron file
     "cf set-env checkout KEY value",
     "cf map-route checkout apps.example.com --hostname checkout",
     "cf rollback checkout --version 3",

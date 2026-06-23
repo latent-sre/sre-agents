@@ -39,11 +39,11 @@ import sys
 # State-changing `cf` subcommands — mirrors the cf-write classification in readonly-guard.py.
 # Kept deliberately aligned: if you add a cf write there, add it here too.
 _CF_WRITE = re.compile(
-    r"\bcf\s+(push|delete|delete-[a-z-]+|scale|restart|restage|restart-app-instance|stop|start|"
-    r"stage|map-route|unmap-route|create-route|delete-route|set-env|unset-env|rename|bind-service|"
+    r"\bcf\s+(?:v3-)?(push|delete|delete-[a-z-]+|scale|restart|restage|restart-app-instance|stop|start|"
+    r"stage|map-route|unmap-route|create-route|delete-route|set-env|unset-env|set-label|unset-label|rename|bind-service|"
     r"unbind-service|create-service|update-service|create-user-provided-service|"
     r"update-user-provided-service|delete-user-provided-service|create-service-key|"
-    r"delete-service-key|enable-ssh|disable-ssh|ssh|run-task|terminate-task|rollback|"
+    r"delete-service-key|enable-ssh|disable-ssh|ssh(?!-)|run-task|terminate-task|rollback|"
     r"continue-deployment|cancel-deployment|create-app|delete-app|copy-source|set-droplet|"
     r"set-health-check|bind-route-service|unbind-route-service|share-service|unshare-service|"
     r"create-org|delete-org|create-space|delete-space|set-org-role|unset-org-role|"
@@ -59,7 +59,7 @@ _CF_WRITE = re.compile(
 # `cf curl` carrying a write method or a body is also a state change.
 _CF_CURL_WRITE = re.compile(
     r"\bcf\s+curl\b.*(-X\s*(POST|PUT|DELETE|PATCH)|--request[=\s]+(POST|PUT|DELETE|PATCH)|"
-    r"--data|--data-raw|--data-binary|\s-d\s)",
+    r"--data(-raw|-binary|-urlencode)?|\s-d[\s'\"@=])",
     re.IGNORECASE,
 )
 

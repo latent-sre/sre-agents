@@ -39,6 +39,11 @@ CF_WRITES = [
     "cf curl /v3/apps -X POST -d '{}'",
     "cf curl /v3/apps --request PATCH --data '{}'",
     "cf curl /v3/apps --request=DELETE",
+    "cf v3-push checkout",                   # v3- alias write
+    "cf v3-scale checkout -i 3",
+    "cf set-label app checkout env=prod",    # metadata write
+    "cf curl /v3/apps -X POST -d'{}'",       # glued -d body (no space)
+    "cf curl /v3/apps -d@payload.json",      # -d@file body
 ]
 
 # Read-only cf commands — must ALWAYS pass, gate cleared or not.
@@ -51,6 +56,8 @@ CF_READS = [
     "cf target",
     "cf curl /v3/apps/abc",                 # GET via cf curl
     "cf curl /v3/apps --request GET",
+    "cf ssh-code",                          # one-time SSH code — read-only, not `cf ssh`
+    "cf ssh-enabled checkout",              # queries the flag — read-only
 ]
 
 # Non-cf commands are out of this guard's narrow scope — must pass (the gate + creds cover them).

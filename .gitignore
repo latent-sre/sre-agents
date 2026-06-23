@@ -9,3 +9,9 @@
 # Python bytecode
 __pycache__/
 *.pyc
+
+# production-change-gate clearance sentinel — a LOCAL, per-session signal that the gate was
+# cleared. Never commit it: a committed .gate-cleared would silently clear the prod-change
+# speed-bump for every checkout. (scripts/production-change-guard.py reads ./.gate-cleared.)
+.gate-cleared
+**/.gate-cleared
