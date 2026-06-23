@@ -4,3 +4,6 @@ prompt: |
   Dozens of alerts just fired across many services within the same two minutes and the
   on-call is drowning. How do I cut through the noise and find the single underlying
   problem they all point to?
+# 2026-06: 2/3 baseline -> 3/3 after front-loading the "alert storm" symptom in the
+# moogsoft-correlation description (the product/version naming had buried the trigger).
+note: "3/3 after symptom-first description; was 2/3."
