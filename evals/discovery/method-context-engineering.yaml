@@ -1,0 +1,10 @@
+id: discover-method-context-engineering
+expected: context-engineering
+# Realistic prompt that never names the skill; it should still be discovered.
+prompt: |
+  My agent keeps filling its context window on long multi-file tasks and the answers
+  degrade as the transcript grows. What discipline should I apply to manage what stays
+  in context?
+# Baseline 2026-06: 3/3 discovered when listed AND 3/3 when name-only — the skill NAME
+# alone carries the signal here. A strong "name-only is safe" case.
+note: "A/B 2026-06: A 3/3, B 3/3."

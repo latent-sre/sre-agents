@@ -1,0 +1,7 @@
+id: discover-method-tool-design
+expected: tool-design
+prompt: |
+  I'm exposing our cf CLI as a tool that an LLM agent will call directly. How should I
+  write its name, description, and response shape so the model uses it well?
+# Baseline 2026-06: 3/3 discovered when listed AND 3/3 when name-only.
+note: "A/B 2026-06: A 3/3, B 3/3."

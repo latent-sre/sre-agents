@@ -3,8 +3,8 @@ name: tdd-workflow
 description: >-
   Test-driven and regression-first workflow — write the failing test before the code, then make it
   pass. Use when implementing a feature test-first, and ALWAYS after a bug fix (add the test that fails
-  without the fix). Covers red-green-refactor, what to test (behavior not internals), and the per-
-  language frameworks this team uses (pytest, Pester, bats).
+  without the fix). Covers red-green-refactor and what to test (behavior not internals) — the *method*;
+  the per-language frameworks/tooling (pytest, Pester, bats, Vitest) live in `craft`.
 metadata:
   domain: practice
 ---
@@ -31,9 +31,9 @@ Then fix the code and watch it go green. This proves the bug is real and guards 
 - Prefer many fast unit tests; integration where components meet; a few e2e for critical journeys.
 
 ## Frameworks (this team)
-- **Python** → `pytest` (`parametrize`, fixtures, `tmp_path`, `monkeypatch`, `freezegun`). See `craft` (Python).
-- **PowerShell** → `Pester` (`Describe/Context/It`, `Mock`, `Should`). See `craft` (PowerShell).
-- **Bash** → `bats` or an assert harness; assert exit codes + stdout/stderr. See `craft` (Bash).
+Per-language frameworks and setup live in **`craft`** (read the language file) — `pytest` (Python),
+`Pester` (PowerShell), `bats` (Bash), Vitest (TS/React), `testing` (Go). This skill owns the *method*
+(red-green, what to test); `craft` owns the *tooling*.
 
 ## Done
 - New behavior is covered; the bug-fix test fails without the fix.

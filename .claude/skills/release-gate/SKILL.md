@@ -1,10 +1,10 @@
 ---
 name: release-gate
 description: >-
-  Pre-release readiness gate that must pass before a deploy/release. Use as the checkpoint before
-  shipping a build to an environment (especially prod) — verifies the change is mergeable, the artifact
-  is promotable, migrations and flags are ready, monitoring is in place, and the rollback is written and
-  reversible. Pass/fail checklist; pairs with production-change-gate for prod.
+  Pre-release **readiness** gate — is this build ready to ship? Use as the checkpoint before
+  deploying/releasing a build to an environment (especially prod): verifies `merge-gate` passed, the
+  artifact is promotable, migrations and flags are ready, monitoring is in place, and a tested rollback
+  exists. Pass/fail checklist; for prod, pair with `production-change-gate` (which authorizes the action).
 metadata:
   domain: gate
 ---

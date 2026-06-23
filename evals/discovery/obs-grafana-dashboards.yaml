@@ -1,0 +1,5 @@
+id: discover-obs-grafana-dashboards
+expected: grafana-dashboards
+prompt: |
+  I want to build a service-health view the on-call can read at 3am — top-level health at
+  a glance down to drill-downs. How should I lay it out and what should it show?

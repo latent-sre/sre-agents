@@ -1,0 +1,11 @@
+id: discover-method-parallelization
+expected: parallelization
+prompt: |
+  I have three independent investigation strands and one tightly-coupled code change to
+  do. What should I run concurrently versus sequentially, and what is the catch of doing
+  it concurrently?
+# Baseline 2026-06: 0/3 when listed AND 0/3 when name-only — the model answered the
+# fan-out question from general knowledge WITHOUT loading the skill in either condition.
+# So the listed description isn't driving discovery here (loading isn't required for a
+# correct answer). Kept as an honest "skill not pulled" datapoint, not a pass/fail gate.
+note: "A/B 2026-06: A 0/3, B 0/3 (answered without the skill in both)."

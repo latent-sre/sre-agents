@@ -1,0 +1,6 @@
+id: discover-obs-splunk-triage
+expected: splunk-triage
+prompt: |
+  Error rate jumped right after the 2pm release. I want to find the actual exceptions and
+  read how they trend over time, correlated by request id, comparing before and after the
+  deploy. Where do I start?

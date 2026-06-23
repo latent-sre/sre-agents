@@ -1,10 +1,11 @@
 ---
 name: production-change-gate
 description: >-
-  Change-management checkpoint for ANY production-facing or destructive action — deploys, route/traffic
-  changes, scaling, config flips, data changes, cf writes. Use immediately before executing a prod
-  change to confirm approval, blast-radius assessment, a reversible backout plan, authorized executor,
-  comms, and monitoring. Enforces our safety rule that prod changes need explicit human sign-off.
+  Change-**authorization** checkpoint for ANY production-facing or destructive action — deploys,
+  route/traffic changes, scaling, config flips, data changes, cf writes (including changes that aren't
+  releases). Use immediately before executing to confirm human approval, blast-radius assessment, a
+  reversible backout plan, an authorized executor, comms, and monitoring. Enforces that prod changes
+  need explicit human sign-off. (`release-gate` checks build readiness; this authorizes the action.)
 metadata:
   domain: gate
 ---
