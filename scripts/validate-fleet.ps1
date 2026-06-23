@@ -90,7 +90,10 @@ foreach ($d in (Get-ChildItem (Join-Path $root '.claude/skills') -Directory)) {
         # Skip a bare directory reference (no filename component, e.g. "assets/") -- only check files.
         $leaf = Split-Path $rel -Leaf
         if ($leaf -eq 'references' -or $leaf -eq 'assets' -or $leaf -eq 'scripts') { continue }
-        if (-not (Test-Path (Join-Path $d.FullName $rel))) {
+        # Resolve against the skill's own bundle first, then fall back to the repo root: a SKILL.md may
+        # legitimately reference a SHARED repo-root script (e.g. scripts/production-change-guard.py),
+        # not only a file bundled under the skill. A genuinely missing file fails BOTH checks.
+        if (-not (Test-Path (Join-Path $d.FullName $rel)) -and -not (Test-Path (Join-Path $root $rel))) {
             $issues.Add("skill '$($d.Name)': references missing file '$rel'")
         }
     }
@@ -161,7 +164,10 @@ $scopeAllow  = @(
     'do NOT propose Kubernetes',  # release-engineer.md  -- charter disclaimer
     'cloud or Kubernetes',        # sde-engineer.md       -- charter disclaimer (line-wrapped)
     'or Terraform/grafana',       # grafana-dashboards    -- dashboards-as-code provisioning aside
+    'datasource-managed',         # grafana-dashboards    -- Grafana unified-alerting rule-mode note
     'Prometheus style',           # instrument-service    -- OTel metric-naming portability note
+    'suffixes are added by the',  # instrument-service    -- OTel names vs Prometheus-exporter suffixes
+    'build verbs (',              # agent-security        -- readonly-guard blocked-verb example (terraform)
     'PromQL equivalence',         # wavefront-queries     -- section heading
     'accepts PromQL'              # wavefront-queries     -- WQL/PromQL equivalence note
 )
