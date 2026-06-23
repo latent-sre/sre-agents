@@ -30,8 +30,10 @@ clear **`production-change-gate`**.
 - [ ] **Monitoring in place** — alerts/SLOs cover the new behavior; new paging alerts link a runbook
       (`sre-monitor`).
 - [ ] **Comms ready** — stakeholders/on-call know the deploy window; status updates planned.
-- [ ] **(Prod only) Production change approved** — `production-change-gate` cleared with explicit human
-      sign-off (GitHub environment + required reviewers); no prod deploy passes on this checklist alone.
+- [ ] **(Prod only) `production-change-gate` is queued as a prerequisite** — release-gate confirms build
+      *readiness* only; it **cannot** authorize a prod action. Prod releases additionally require a
+      separate `production-change-gate` sign-off (GitHub environment + required reviewers) *before* the
+      deploy runs. Check this box to confirm that gate is lined up — not that it is granted here.
 
 ## Verdict
 ```
@@ -43,8 +45,10 @@ Blocking items: <the NOs>
 
 ## Notes
 - **Gate topology:** release-gate **absorbs** `merge-gate` as a precondition (it's the first line item
-  above), but `production-change-gate` is a **separate, later** gate that authorizes the prod action —
-  it is *not* a line item here and must not be skipped.
+  above), but `production-change-gate` is a **separate, later** gate that authorizes the prod action.
+  release-gate checks build **readiness** only and never grants prod authorization in-checklist — the
+  prod line item above is a *prerequisite pointer* to `production-change-gate`, not an approval; that
+  gate must still be cleared on its own and must not be skipped.
 - Back this with a GitHub **environment + required reviewers** so the deploy job literally pauses for
   approval (`github-actions-ci`).
 - A release you can't cleanly roll back does not pass this gate — fix the rollback first.
