@@ -110,6 +110,7 @@ def main() -> int:
     g.add_argument("--run", action="store_true", help="invoke the agent and grade")
     ap.add_argument("--trials", type=int, default=3, help="trials per scenario (--run)")
     ap.add_argument("--threshold", type=float, default=1.0, help="pass fraction of trials")
+    ap.add_argument("--match", help="only scenarios whose id contains this substring (--list/--run)")
     args = ap.parse_args()
 
     scenarios = load_scenarios()
@@ -125,6 +126,12 @@ def main() -> int:
             return 1
         print(f"eval suite OK — {len(scenarios)} scenario(s), graders and targets resolve.")
         return 0
+
+    if args.match:
+        scenarios = [s for s in scenarios if args.match in (s.get("id") or "")]
+        if not scenarios:
+            print(f"no scenarios match '{args.match}'")
+            return 1
 
     if args.list:
         for s in scenarios:

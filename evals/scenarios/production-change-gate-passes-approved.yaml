@@ -1,0 +1,19 @@
+id: production-change-gate-passes-approved
+target: production-change-gate
+# Task: the gate must PASS a prod change with full change-management sign-off (complement of
+# production-change-gate-blocks-unapproved). Outcome graded: authorized-to-proceed verdict.
+prompt: |
+  We're about to apply a prod config change: it has documented approval from the change
+  owner, a blast-radius assessment (one app, one space), a tested and reversible backout
+  plan, a named authorized executor, and a comms plan with monitoring during the change.
+  Run the production-change-gate and give a verdict.
+success_criteria:
+  - Verdict is PASS / authorized to proceed (not blocked)
+  - Acknowledges approval + backout plan
+graders:
+  - type: regex
+    pattern: "pass|approved|authorized|cleared to proceed|proceed"
+  - type: contains_any
+    of: ["approval", "backout", "rollback", "blast"]
+  - type: not_contains
+    of: ["not authorized", "do not proceed"]

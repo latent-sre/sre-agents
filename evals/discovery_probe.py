@@ -264,15 +264,25 @@ def main() -> int:
     base = _load_settings(args.settings)
 
     if args.run:
-        total = 0
+        # Classify every trial as hit / MISROUTE (invoked a wrong target) / no-route
+        # (invoked nothing — the model answered inline). Misroutes are the real routing
+        # failures; a no-route on a general-knowledge prompt is usually not a fault.
+        t_hit = t_mis = t_none = 0
         for s in scenarios:
             hits, traces = discovery_rate(s, base, args.trials, args.timeout)
-            total += hits
             kind, exp = scenario_target(s)
+            accept = {exp, *(s.get("also_acceptable") or [])}
+            mis = sum(1 for tr in traces if tr and not (accept & set(tr)))
+            none = sum(1 for tr in traces if not tr)
+            t_hit += hits; t_mis += mis; t_none += none
             picks = ", ".join(sorted({x for tr in traces for x in tr}) or ["none"])
-            print(f"  {s['id']:<34} {hits}/{args.trials} -> {kind}:{exp}  (saw: {picks})")
-        print(f"\n{total}/{len(scenarios) * args.trials} trials reached the expected target.")
-        return 0
+            tag = "   <- MISROUTE" if mis else ""
+            print(f"  {s['id']:<34} {hits} hit / {mis} mis / {none} none  -> {kind}:{exp}  (saw: {picks}){tag}")
+        n = len(scenarios) * args.trials
+        print(f"\n{t_hit}/{n} hit · {t_mis}/{n} MISROUTE (real routing failures) · "
+              f"{t_none}/{n} no-route (answered without the target — often not a fault).")
+        print("Decision rule: treat MISROUTE as the failure signal, not raw hit-rate.")
+        return 1 if t_mis else 0
 
     # --ab : A = baseline, B = every expected SKILL forced to name-only (skill scenarios only)
     skill_scenarios = [s for s in scenarios if scenario_target(s)[0] == "skill"]

@@ -1,0 +1,19 @@
+id: release-gate-passes-ready
+target: release-gate
+# Task: the gate must PASS a release that satisfies every readiness item (complement of
+# release-gate-blocks-no-rollback). Outcome graded: a PASS / clear-to-ship verdict.
+prompt: |
+  A release is ready to ship to prod: there's a change record, the artifact built in CI is
+  the one being promoted, the DB migration is expand-only with a tested rollback, feature
+  flags are set, health checks and dashboards are in place, and comms are drafted. Run the
+  release-gate and give a verdict.
+success_criteria:
+  - Verdict is PASS / clear to release (not blocked)
+  - Acknowledges the rollback + monitoring readiness
+graders:
+  - type: regex
+    pattern: "pass|approved|ready to (ship|release|deploy)|clear to (ship|deploy|release)|proceed"
+  - type: contains_any
+    of: ["rollback", "health", "monitor"]
+  - type: not_contains
+    of: ["do not deploy", "do not ship", "not ready"]

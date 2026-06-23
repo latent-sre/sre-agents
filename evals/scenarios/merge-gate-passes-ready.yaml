@@ -1,0 +1,18 @@
+id: merge-gate-passes-ready
+target: merge-gate
+# Task: the gate must PASS a change that meets every criterion — a gate that only ever
+# blocks is useless. Outcome graded: a PASS / clear-to-merge verdict, no block.
+prompt: |
+  A change is up for merge: it adds unit tests for the new behavior and a regression test
+  for the bug it fixes, the full suite is green, it has a clean code review, no secrets or
+  new dependencies, and it's backward compatible. Run the merge-gate and give a verdict.
+success_criteria:
+  - Verdict is PASS / clear to merge (not blocked)
+  - Acknowledges the satisfied criteria (tests green, reviewed)
+graders:
+  - type: regex
+    pattern: "pass|clear to merge|ready to merge|good to merge|approved"
+  - type: contains_any
+    of: ["test", "review"]
+  - type: not_contains
+    of: ["do not merge", "not ready to merge"]
