@@ -26,9 +26,9 @@ ALLOW = [
     "/bin/cat /var/log/app.log",            # absolute-path read binary (not a script)
     "/usr/local/bin/cf apps",               # cf by absolute path, read subcommand
     "/opt/splunk/bin/splunk search 'index=app'",   # absolute-path read tool
-    "pcf-ops/scripts/triage.sh checkout",   # the bundled READ-ONLY triage helper
-    ".claude/skills/pcf-ops/scripts/triage.sh checkout",
-    "bash pcf-ops/scripts/triage.sh checkout",
+    ".claude/skills/pcf-ops/scripts/triage.sh checkout",   # bundled READ-ONLY helper (exact path only)
+    "bash .claude/skills/pcf-ops/scripts/triage.sh checkout",
+    "pwsh .claude/skills/pcf-ops/scripts/triage.ps1 -App checkout",
     "crontab -l",                           # listing cron is read-only
     "git log --oneline -20",
     "git diff main...HEAD",
@@ -71,8 +71,7 @@ ALLOW = [
     # (regression for the [^|;&] segment boundary on the curl/wget egress pattern)
     "curl -s https://example.com/health | grep $(echo ok)",
     # read-only interpreter forms — module/flag probes are not running a script FILE
-    "python3 -m json.tool manifest.json",
-    "python3 -m py_compile foo.py",          # -m flag, not a bare script arg
+    "python3 -m json.tool manifest.json",    # -m read-only module probe
     "python -V",
     "ruby --version",
     "node -v",
@@ -80,6 +79,8 @@ ALLOW = [
     "ps aux | grep docker",
     "cat Makefile | grep make",
     "git log --oneline | grep terraform",
+    'rg "go build" .',                       # 'go build' as search text, not command position
+    'git log --grep="cargo build"',
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -96,7 +97,12 @@ DENY = [
     "cf curl /v3/apps -X POST -d'{\"name\":\"x\"}'",  # glued -d body write
     "cf curl /v3/apps -d @payload.json",
     "/usr/local/bin/cf push checkout",       # absolute-path cf WRITE still caught by verb rule
-    "pcf-ops/scripts/triage.sh checkout; rm -rf /tmp/x",  # chained mutation defeats the allowlist
+    ".claude/skills/pcf-ops/scripts/triage.sh checkout; rm -rf /tmp/x",  # chained mutation defeats the allowlist
+    "pcf-ops/scripts/triage.sh checkout",    # bare relative path — NOT the bundled helper, denied
+    "/tmp/evil/pcf-ops/scripts/triage.sh checkout",  # attacker-planted look-alike at another path, denied
+    "go build ./...",                        # build runner in command position
+    "cargo run",
+    "python3 -m py_compile foo.py",          # writes .pyc bytecode — not read-only
     "sftp user@prod-host",                   # exfil channel
     "pwsh -File deploy.ps1",                  # running a PS script file
     "crontab -e",                            # editing cron is a mutation

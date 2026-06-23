@@ -26,9 +26,11 @@ Read-only `cf` commands (cf app/apps/logs/events/target, `cf curl` GET) always p
 guard only speed-bumps WRITES. Non-`cf` and non-Bash calls pass untouched (other state
 changes are out of this guard's narrow scope; the gate + creds cover them).
 
-Cross-platform: pure Python stdlib, no jq. The agent hook invokes this as
-`python3 ... || python ...` so a `python3`-only host doesn't silently fail open.
-Covered by scripts/test_production_change_guard.py (pure-stdlib, runs offline).
+Cross-platform: pure Python stdlib, no jq. The agent hook invokes this via
+`"$(command -v python3 || command -v python)" -c ...` — selecting the interpreter once so this
+guard's blocking exit 2 propagates unchanged (the older `python3 ... || python ...` form re-ran on
+the exit-2 deny and, on a python3-only host where the `|| python` fallback then failed with 127,
+let the blocked prod write proceed). Covered by scripts/test_production_change_guard.py (offline).
 See https://code.claude.com/docs/en/hooks
 """
 import json

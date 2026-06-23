@@ -32,10 +32,11 @@ Covered by scripts/test_readonly_guard.py (pure-stdlib, runs offline).
 Decision is returned as a permissionDecision JSON on stdout with exit 0 (the documented
 non-error path). See https://code.claude.com/docs/en/hooks
 
-Cross-platform: pure Python stdlib, no jq. The agent hook frontmatter invokes this as
-`python3 ... || python ...` so a `python3`-only host doesn't silently fail open (a missing
-interpreter would skip the hook and ALLOW the command); the fallback keeps Windows, where
-the launcher is usually `python`, working too.
+Cross-platform: pure Python stdlib, no jq. The agent hook frontmatter invokes this via
+`"$(command -v python3 || command -v python)" -c ...` — it SELECTS the interpreter once (python3,
+else python on Windows) and runs the guard a single time, so the guard's exit code propagates
+unchanged. (The older `python3 ... || python ...` form re-ran on any non-zero exit, which turned a
+deny into a fall-through on a python3-only host for the exit-2-blocking production-change-guard.)
 """
 import json
 import re
@@ -160,9 +161,10 @@ _DENY_PATTERNS = [
     # Build / orchestration runners (bare verb in command position; covers `make target`,
     # `docker run ...`, `terraform apply`, `kubectl ...`, `ansible-playbook ...`, `npx ...`).
     _CMD + r"(make|docker|terraform|kubectl|ansible-playbook|npx|mvn|gradle)\b",
-    # cargo/go run-or-build (install/get already covered above).
-    r"\bcargo\s+(run|build)\b",
-    r"\bgo\s+(run|build)\b",
+    # cargo/go run-or-build (install/get already covered above). Command-position anchored like the
+    # make/docker rule, so observation-only text — `rg "go build" .`, `grep "cargo build" notes` —
+    # is NOT a false-positive; only an actual `go build`/`cargo run` in the command slot is blocked.
+    _CMD + r"(go|cargo)\s+(run|build)\b",
     # An interpreter invoked on a script FILE (not an inline-code flag, not a read-only probe).
     # `bash deploy.sh`, `sh ./run.sh`, `zsh path/to/x.sh` — arg ending in .sh or a path.
     _CMD + r"(bash|sh|zsh)\s+[\"'./~$A-Za-z0-9_-]*\S+\.sh\b",
@@ -172,6 +174,9 @@ _DENY_PATTERNS = [
     r"\b(python|python3|py)\s+(?!-)\S*\.py\b",
     r"\bnode\s+(?!-)\S*\.(js|mjs|cjs)\b",
     r"\bruby\s+(?!-)\S*\.rb\b",
+    # `python -m py_compile`/`-m compileall` WRITE bytecode (.pyc) — not read-only. Use a pure-read
+    # syntax check instead (e.g. `python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())"`).
+    r"\bpy(thon3?)?\s+(?:-\S+\s+)*-m\s+(py_compile|compileall)\b",
     # Direct execution of a local file by RELATIVE path in command position: `./deploy.sh`,
     # `../bin/x`, `bin/run`, `scripts/x.sh`. The leading char must be a non-`/` path char, so
     # ABSOLUTE paths (`/bin/cat`, `/usr/local/bin/cf apps`, `/opt/splunk/bin/splunk search`) are
@@ -181,6 +186,12 @@ _DENY_PATTERNS = [
     # not — `cat` holds the command slot there. The fleet's own bundled read-only triage helper is
     # exempted up front via _ALLOW_RE (it's a relative path that would otherwise trip this).
     r"(?:^|[|;&]\s*)[A-Za-z0-9_.~-]+/\S*",
+    # An ABSOLUTE path to a SCRIPT FILE (by extension) in command position — `/tmp/x.sh`,
+    # `/opt/app/deploy.py`. Absolute paths to BINARIES (`/bin/cat`, `/usr/local/bin/cf`) have no
+    # script extension and stay allowed (handled above); this blocks running an arbitrary local
+    # *script* by absolute path, which the relative-path rule above would otherwise miss. The bundled
+    # triage helper is invoked by its relative `.claude/skills/...` path and allowlisted via _ALLOW_RE.
+    r"(?:^|[|;&]\s*)/\S*\.(sh|bash|zsh|py|rb|js|mjs|cjs|pl|ps1)\b",
     # Sourcing a file pulls its (possibly mutating) commands into the current shell.
     r"(?:^|[|;&]\s*)source\b",
     r"(?:^|[|;&]\s*)\.\s+\S",
@@ -190,15 +201,17 @@ _DENY_PATTERNS = [
 ]
 _DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE)
 
-# Allowlist: the fleet's own bundled READ-ONLY triage helper (pcf-ops/scripts/triage.{sh,ps1}),
-# which AGENTS.md/pcf-ops document a read-only agent should run. It's a relative-path script
-# invocation, so the path-exec / `bash …​.sh` rules above would otherwise (wrongly) deny it.
-# Anchored to the WHOLE command (optional interpreter prefix, optional args, but no command
-# separators) so a chained mutation like `triage.sh; rm -rf /` does NOT get a free pass — that
-# falls through to the deny rules. Args are bounded by [^|;&] to forbid pipelines/chaining.
+# Allowlist: the fleet's own bundled READ-ONLY triage helper, at its EXACT bundled path
+# `.claude/skills/pcf-ops/scripts/triage.{sh,ps1}` (the path pcf-ops/foundations.md documents).
+# The path-exec / `bash …​.sh` rules above would otherwise (wrongly) deny it. Pinned to the bundled
+# path (optional leading `./`) so an attacker-planted look-alike at a DIFFERENT path —
+# `/tmp/evil/pcf-ops/scripts/triage.sh`, or a CWD-relative `pcf-ops/scripts/triage.sh` — is NOT
+# exempted. Anchored to the WHOLE command (optional interpreter prefix, optional args, but no command
+# separators) so a chained mutation like `triage.sh; rm -rf /` does NOT get a free pass — that falls
+# through to the deny rules. Args are bounded by [^|;&] to forbid pipelines/chaining.
 _ALLOW_RE = re.compile(
     r"^\s*(?:bash\s+|pwsh\s+(?:-File\s+)?)?"
-    r"(?:[\w.~/-]*/)?pcf-ops/scripts/triage\.(?:sh|ps1)"
+    r"(?:\./)?\.claude/skills/pcf-ops/scripts/triage\.(?:sh|ps1)"
     r"(?:\s+[^|;&]*)?\s*$",
     re.IGNORECASE,
 )
