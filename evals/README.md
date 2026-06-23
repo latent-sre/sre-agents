@@ -51,6 +51,29 @@ modes are **not** a CI gate; only `--validate` is.
 > *without* loading it (see `discover-method-parallelization`). Read these as relative/A-B signals,
 > not absolute pass/fail.
 
+### Agent-routing scenarios (`expected_agent`)
+
+A scenario can target an **agent** instead of a skill (`expected_agent: sre-engineer`); the probe
+then reads `Task`/`Agent` `subagent_type` delegations from the trace. These spawn a *real* subagent
+that does real work, so they're minutes-slow — scope with `--match agent`, raise `--timeout`, and run
+in a throwaway git worktree (writing agents like `sde-engineer` are isolated there).
+
+```bash
+python evals/discovery_probe.py --run --agents --match agent --trials 2 --timeout 540
+```
+
+Agent scenarios are **opt-in** (`--agents`) and excluded from default runs, because they spawn
+write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
+
+> **Important limitation — measures delegation propensity, not routing quality.** Headless `claude -p`
+> often answers a request *inline* instead of delegating, so a low agent score is **not** a fleet
+> routing fault. The 2026-06 baseline was **4/12**: `security-reviewer` and `sre-engineer` routed
+> 2/2 (investigative/review work naturally spins up a subagent), while `database-reliability`,
+> `release-engineer`, and `runbook-author` were handled inline (`saw: none`) and `sde-engineer`
+> delegated to the built-in `Explore` agent. The authoritative test of *routing correctness* is the
+> `route-request` skill's decision (see `run_evals.py`'s `route-request-*` scenario), not headless
+> delegation. These scenarios are kept as a working capability + a documented baseline, not a gate.
+
 ## Discipline (how to add a scenario)
 
 1. **Eval before docs.** When writing/changing a skill, add ≥1 scenario that fails without it first.

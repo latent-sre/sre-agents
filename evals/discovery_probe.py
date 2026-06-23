@@ -1,31 +1,35 @@
 #!/usr/bin/env python3
-"""Discovery probe — does the fleet route to the right SKILL on its own?
+"""Discovery probe — does the fleet route to the right SKILL or AGENT on its own?
 
 Sibling of `run_evals.py`, filling a gap that one has by design: `run_evals.py`
 prepends "(Use the <target> skill/agent.)" to every prompt, so it grades the
-*outcome given the right skill* — never whether the model **discovers** the right
-skill unprompted. This harness does the opposite: the prompt is realistic and
-NEVER names the target, and we read which `Skill(...)` the model actually invoked
-from the stream-json trace. It answers "is this skill discoverable from its
-listing entry?" and, in --ab mode, "does demoting it to name-only cost discovery?"
+*outcome given the right target* — never whether the model **discovers** the
+right one unprompted. This harness does the opposite: the prompt is realistic and
+NEVER names the target, and we read what the model actually invoked from the
+stream-json trace — `Skill(<skill>)` for skill routing, or a `Task`/`Agent`
+delegation (`subagent_type`) for agent routing.
 
 It needs a live model (like `run_evals.py --run`), so it is NOT a CI gate —
-`--validate` (no model) is the only CI-safe mode here.
+`--validate` (no model) is the only CI-safe mode here. NOTE: agent-routing
+scenarios spawn a real subagent that does real work, so they are MUCH slower than
+skill scenarios (minutes each) — scope them with `--match` and raise `--timeout`.
 
-Scenario files: evals/discovery/*.yaml
+Scenario files: evals/discovery/*.yaml — each targets exactly one of:
+  expected:        a SKILL that should be invoked (folder in .claude/skills/), or
+  expected_agent:  an AGENT the request should delegate to (file in .claude/agents/)
   id:              short id
-  expected:        the skill that *should* be invoked (a folder in .claude/skills/)
-  also_acceptable: optional list of other skills that also count as correct
-  prompt:          a realistic, AMBIGUOUS prompt that does NOT name the skill
+  also_acceptable: optional list of other targets of the SAME kind that also count as correct
+  prompt:          a realistic, AMBIGUOUS prompt that does NOT name the target
 
 Modes:
-  --validate                 parse files + confirm `expected` targets exist (no model)
+  --validate                 parse files + confirm targets exist (no model)
   --list                     print the scenarios
   --run [--settings JSON]    invoke per scenario; report discovery rate
-  --ab                       A = baseline vs B = expected-skills forced to name-only;
-                             prints the side-by-side discovery table (the Tier-1 probe)
+  --ab                       A = baseline vs B = expected-SKILLS forced to name-only
+                             (skill scenarios only; the Tier-1 probe)
 
-Common flags: --trials N (default 3), --settings <json-or-file> (baseline settings).
+Common flags: --trials N (3), --match SUBSTR, --settings <json-or-file>,
+              --timeout SECONDS (300; raise for agent scenarios).
 """
 from __future__ import annotations
 
@@ -45,8 +49,9 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parent.parent
 DISCOVERY_DIR = Path(__file__).resolve().parent / "discovery"
 SKILLS_DIR = ROOT / ".claude/skills"
-REQUIRED = ("id", "expected", "prompt")
+AGENTS_DIR = ROOT / ".claude/agents"
 _SKILL_RE = re.compile(r'"skill"\s*:\s*"([a-z0-9-]+)"')
+_AGENT_RE = re.compile(r'"subagent_type"\s*:\s*"([^"]+)"')  # accept capitals (built-in Explore/Plan)
 
 
 def load_scenarios() -> list[dict]:
@@ -67,6 +72,17 @@ def skill_exists(name: str) -> bool:
     return (SKILLS_DIR / name / "SKILL.md").is_file()
 
 
+def agent_exists(name: str) -> bool:
+    return (AGENTS_DIR / f"{name}.md").is_file()
+
+
+def scenario_target(s: dict) -> tuple[str, str | None]:
+    """('agent', name) for an agent-routing scenario, else ('skill', name)."""
+    if s.get("expected_agent"):
+        return "agent", s["expected_agent"]
+    return "skill", s.get("expected")
+
+
 def validate(scenarios: list[dict]) -> list[str]:
     problems, seen = [], set()
     if not scenarios:
@@ -75,23 +91,34 @@ def validate(scenarios: list[dict]) -> list[str]:
         where = s.get("_file", "?")
         if s.get("_error"):
             problems.append(f"{where}: {s['_error']}")
-        for key in REQUIRED:
-            if not s.get(key):
-                problems.append(f"{where}: missing '{key}'")
+        if not s.get("id"):
+            problems.append(f"{where}: missing 'id'")
+        if not s.get("prompt"):
+            problems.append(f"{where}: missing 'prompt'")
+        # exactly one of expected / expected_agent
+        if bool(s.get("expected")) == bool(s.get("expected_agent")):
+            problems.append(f"{where}: set exactly one of 'expected' (skill) or 'expected_agent'")
         sid = s.get("id")
         if sid:
             if sid in seen:
                 problems.append(f"{where}: duplicate id '{sid}'")
             seen.add(sid)
-        for t in [s.get("expected"), *(s.get("also_acceptable") or [])]:
-            if t and not skill_exists(t):
-                problems.append(f"{where}: target '{t}' is not a known skill")
+        kind, _ = scenario_target(s)
+        exists = agent_exists if kind == "agent" else skill_exists
+        noun = "agent" if kind == "agent" else "skill"
+        targets = [s.get("expected_agent") if kind == "agent" else s.get("expected"),
+                   *(s.get("also_acceptable") or [])]
+        for t in targets:
+            if t and not exists(t):
+                problems.append(f"{where}: target '{t}' is not a known {noun}")
     return problems
 
 
-def _skills_from_stream(blob: str) -> list[str]:
-    """Every skill the model invoked, parsed from a stream-json transcript."""
-    found: list[str] = []
+def _invocations_from_stream(blob: str) -> dict[str, list[str]]:
+    """What the model invoked, parsed from a stream-json transcript:
+    {'skill': [...], 'agent': [...]} (order-preserving, de-duped)."""
+    skills: list[str] = []
+    agents: list[str] = []
     for line in blob.splitlines():
         line = line.strip()
         if not line:
@@ -99,45 +126,59 @@ def _skills_from_stream(blob: str) -> list[str]:
         try:
             evt = json.loads(line)
         except json.JSONDecodeError:
-            found += _SKILL_RE.findall(line)  # fallback: regex the raw line
+            skills += _SKILL_RE.findall(line)   # fallback: regex the raw line
+            agents += _AGENT_RE.findall(line)
             continue
         stack = [evt]
         while stack:
             node = stack.pop()
             if isinstance(node, dict):
-                if node.get("type") == "tool_use" and node.get("name") == "Skill":
-                    sk = (node.get("input") or {}).get("skill")
-                    if isinstance(sk, str):
-                        found.append(sk)
+                if node.get("type") == "tool_use":
+                    inp = node.get("input") or {}
+                    if node.get("name") == "Skill" and isinstance(inp.get("skill"), str):
+                        skills.append(inp["skill"])
+                    elif node.get("name") in ("Task", "Agent") and isinstance(inp.get("subagent_type"), str):
+                        agents.append(inp["subagent_type"])
                 stack.extend(node.values())
             elif isinstance(node, list):
                 stack.extend(node)
-    # de-dupe, preserve order
-    seen, uniq = set(), []
-    for s in found:
-        if s not in seen:
-            seen.add(s); uniq.append(s)
-    return uniq
+
+    def _dedupe(xs: list[str]) -> list[str]:
+        seen, out = set(), []
+        for x in xs:
+            if x not in seen:
+                seen.add(x); out.append(x)
+        return out
+
+    return {"skill": _dedupe(skills), "agent": _dedupe(agents)}
 
 
-def run_trial(prompt: str, settings: str | None) -> list[str]:
+def run_trial(prompt: str, settings: str | None, timeout: int) -> dict[str, list[str]]:
     claude = os.environ.get("CLAUDE_BIN", "claude")
     cmd = [claude, "-p", prompt, "--output-format", "stream-json", "--verbose"]
     if settings:
         cmd += ["--settings", settings]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=False)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
+    except subprocess.TimeoutExpired as e:
+        # A delegation may have been emitted BEFORE the (slow-subagent) timeout — parse the
+        # partial trace rather than scoring a real routing decision as a miss.
+        out = e.stdout if isinstance(e.stdout, str) else (e.stdout or b"").decode("utf-8", "replace")
+        print(f"    [runner timeout after {timeout}s — parsing partial trace]", file=sys.stderr)
+        return _invocations_from_stream(out)
     if proc.returncode != 0:
-        # Surface a failing runner instead of silently scoring it as a discovery miss
-        # (a bad --settings payload or auth failure would otherwise corrupt --ab columns).
+        # Surface a failing runner instead of silently scoring it as a miss
+        # (a bad --settings payload or auth failure would otherwise corrupt results).
         print(f"    [runner error rc={proc.returncode}] {proc.stderr.strip()[:300]}", file=sys.stderr)
-    return _skills_from_stream(proc.stdout)
+    return _invocations_from_stream(proc.stdout)
 
 
-def discovery_rate(scenario: dict, settings: str | None, trials: int) -> tuple[int, list[list[str]]]:
-    accept = {scenario["expected"], *(scenario.get("also_acceptable") or [])}
+def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: int) -> tuple[int, list[list[str]]]:
+    kind, exp = scenario_target(scenario)
+    accept = {exp, *(scenario.get("also_acceptable") or [])}
     hits, traces = 0, []
     for _ in range(trials):
-        invoked = run_trial(scenario["prompt"], settings)
+        invoked = run_trial(scenario["prompt"], settings, timeout)[kind]
         traces.append(invoked)
         if accept & set(invoked):
             hits += 1
@@ -169,18 +210,27 @@ def main() -> int:
     ap.add_argument("--trials", type=int, default=3)
     ap.add_argument("--match", help="only scenarios whose id contains this substring (--list/--run/--ab)")
     ap.add_argument("--settings", help="baseline settings JSON string or file path")
+    ap.add_argument("--timeout", type=int, default=300, help="per-trial timeout sec (raise for agent scenarios)")
+    ap.add_argument("--agents", action="store_true",
+                    help="opt in to agent-routing scenarios (write-capable subagents — isolate in a worktree)")
     args = ap.parse_args()
 
     scenarios = load_scenarios()
+    problems = validate(scenarios)
 
     if args.validate:
-        problems = validate(scenarios)
         if problems:
             print("DISCOVERY SUITE INVALID:")
             print("\n".join("  - " + p for p in problems))
             return 1
         print(f"discovery suite OK — {len(scenarios)} scenario(s), targets resolve.")
         return 0
+
+    # All model-driven modes need a clean suite (fail fast with a clear list).
+    if problems and (args.run or args.ab):
+        print("DISCOVERY SUITE INVALID (fix before running):")
+        print("\n".join("  - " + p for p in problems))
+        return 1
 
     if args.match:
         scenarios = [s for s in scenarios if args.match in (s.get("id") or "")]
@@ -190,36 +240,57 @@ def main() -> int:
 
     if args.list:
         for s in scenarios:
+            kind, exp = scenario_target(s)
             extra = f"  (also: {', '.join(s.get('also_acceptable') or [])})" if s.get("also_acceptable") else ""
             lines = (s.get("prompt") or "").strip().splitlines()
-            print(f"- {s.get('id', '?')} -> {s.get('expected', '?')}{extra}\n    {lines[0] if lines else '(no prompt)'}")
+            print(f"- {s.get('id', '?')} -> {kind}:{exp}{extra}\n    {lines[0] if lines else '(no prompt)'}")
         return 0
+
+    # Agent scenarios spawn WRITE-CAPABLE subagents in the CWD; require explicit opt-in and exclude
+    # them from default runs so a bare `--run` can't mutate the caller's checkout.
+    if not args.agents:
+        skipped = [s for s in scenarios if scenario_target(s)[0] == "agent"]
+        scenarios = [s for s in scenarios if scenario_target(s)[0] == "skill"]
+        if skipped:
+            print(f"note: skipped {len(skipped)} agent scenario(s); pass --agents to include them "
+                  f"(write-capable — isolate in a throwaway git worktree).\n")
+        if not scenarios:
+            print("no skill scenarios selected (agent scenarios require --agents).")
+            return 1
+    elif args.run or args.ab:
+        print("WARNING: --agents runs write-capable subagents in the CWD — isolate this in a "
+              "throwaway git worktree so the working tree can't be mutated.\n")
 
     base = _load_settings(args.settings)
 
     if args.run:
         total = 0
         for s in scenarios:
-            hits, traces = discovery_rate(s, base, args.trials)
+            hits, traces = discovery_rate(s, base, args.trials, args.timeout)
             total += hits
-            picks = ", ".join(sorted({sk for tr in traces for sk in tr}) or ["none"])
-            print(f"  {s['id']:<28} {hits}/{args.trials} discovered {s['expected']}  (saw: {picks})")
-        print(f"\n{total}/{len(scenarios) * args.trials} trials discovered the expected skill.")
+            kind, exp = scenario_target(s)
+            picks = ", ".join(sorted({x for tr in traces for x in tr}) or ["none"])
+            print(f"  {s['id']:<34} {hits}/{args.trials} -> {kind}:{exp}  (saw: {picks})")
+        print(f"\n{total}/{len(scenarios) * args.trials} trials reached the expected target.")
         return 0
 
-    # --ab : A = baseline, B = every expected skill forced to name-only
-    expected = {s["expected"] for s in scenarios}
+    # --ab : A = baseline, B = every expected SKILL forced to name-only (skill scenarios only)
+    skill_scenarios = [s for s in scenarios if scenario_target(s)[0] == "skill"]
+    if not skill_scenarios:
+        print("--ab applies to skill scenarios only; none selected.")
+        return 1
+    expected = {s["expected"] for s in skill_scenarios}
     b_settings = _name_only(base, expected)
     print(f"A = baseline | B = name-only for: {', '.join(sorted(expected))}\n")
-    print(f"  {'scenario':<28} {'A':>5} {'B':>5}")
+    print(f"  {'scenario':<34} {'A':>5} {'B':>5}")
     ta = tb = 0
-    for s in scenarios:
-        ha, _ = discovery_rate(s, base, args.trials)
-        hb, _ = discovery_rate(s, b_settings, args.trials)
+    for s in skill_scenarios:
+        ha, _ = discovery_rate(s, base, args.trials, args.timeout)
+        hb, _ = discovery_rate(s, b_settings, args.trials, args.timeout)
         ta += ha; tb += hb
         flag = "" if ha == hb else "   <- changed"
-        print(f"  {s['id']:<28} {ha}/{args.trials:<3} {hb}/{args.trials:<3}{flag}")
-    print(f"\n  {'TOTAL':<28} {ta}/{len(scenarios)*args.trials:<3} {tb}/{len(scenarios)*args.trials:<3}")
+        print(f"  {s['id']:<34} {ha}/{args.trials:<3} {hb}/{args.trials:<3}{flag}")
+    print(f"\n  {'TOTAL':<34} {ta}/{len(skill_scenarios)*args.trials:<3} {tb}/{len(skill_scenarios)*args.trials:<3}")
     print("\nReading: B << A means demoting these skills costs discovery; B == A means name-only is safe.")
     return 0
 

@@ -1,0 +1,6 @@
+id: route-agent-release-engineer
+expected_agent: release-engineer
+prompt: |
+  The release we shipped to prod twenty minutes ago broke checkout. I need to roll it
+  back to the previous version now.
+note: "2026-06: 0/2 — handled inline, no delegation."

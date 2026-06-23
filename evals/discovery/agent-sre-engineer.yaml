@@ -1,0 +1,7 @@
+id: route-agent-sre-engineer
+expected_agent: sre-engineer
+prompt: |
+  Our checkout app on PCF is throwing intermittent 502s in production right now and I
+  don't know why. Figure out the likely cause and what I should check.
+# Feasibility-verified 2026-06: delegated to sre-engineer.
+note: "2026-06: 2/2 — delegated to sre-engineer."

@@ -1,0 +1,7 @@
+id: route-agent-security-reviewer
+expected_agent: security-reviewer
+also_acceptable: [code-reviewer]
+prompt: |
+  Take a hard look at how this service stores, signs, and validates its auth tokens —
+  I'm worried there are vulnerabilities in the handling. What's wrong and how bad is it?
+note: "2026-06: 2/2 — delegated to security-reviewer."
