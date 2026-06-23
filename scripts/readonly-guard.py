@@ -8,15 +8,25 @@ stdin; this denies Bash commands that CHANGE STATE (prod or repo) so "read-only"
 enforced, not merely promised. Read-only triage commands (cf logs/app/events, git
 log/diff/status, grep, curl GET, redirect to /dev/null, etc.) pass through untouched.
 
-Scope: this is a guardrail for a COOPERATIVE agent, not a sandbox. It blocks the common
-state-changing commands: cf writes, gh/GitHub writes, git writes, file/process/service
-mutations, package installs, HTTP writes, output redirection to a file, tee, cp,
-in-place sed/perl, and common nested shell/interpreter bypasses. It also blocks the
-common DATA-EGRESS / exfiltration channels (the lethal-trifecta exit): raw-socket tools
-(nc/ncat/netcat/socat/telnet), HTTP egress carrying command substitution, and DNS-tunnel
-lookups carrying substitution — a read-only agent can read secrets, so it must not be able
-to ship them out. Plain GET health checks and plain DNS lookups still pass. Pair it with
-OS-level least-privilege credentials and an outbound allowlist for defense in depth.
+Honest boundary — this is NOT a sandbox. It is a denylist that blocks the COMMON
+state-changing and data-egress VERBS for a COOPERATIVE agent; it is defense-in-depth,
+not a security boundary. It cannot stop a determined adversary who fully controls the
+command string (obfuscation, novel interpreters, encodings, and new tools will always
+out-run a regex denylist). The LOAD-BEARING control is OS-level least-privilege
+credentials (read-only CAPI / CF scopes that physically cannot mutate prod) plus an
+outbound network allowlist. Treat this guard as a speed-bump that catches the obvious,
+not as the thing standing between an attacker and production.
+
+What it blocks (common verbs): cf writes, gh/GitHub writes, git writes, file/process/
+service mutations, package installs (incl. cargo/go/uv/poetry/apk/pacman), HTTP writes,
+output redirection to a file, tee, cp, in-place sed/perl, common nested shell/interpreter
+bypasses, running local SCRIPTS or build/orchestration verbs (make/docker/terraform/
+kubectl/ansible-playbook/npx/mvn/gradle, `bash deploy.sh`, `./run.sh`, `source x`,
+`python3 mutate.py`, `node x.js`, `ruby x.rb`), and the common DATA-EGRESS / exfiltration
+channels (the lethal-trifecta exit): raw-socket tools (nc/ncat/netcat/socat/telnet), HTTP
+egress carrying command substitution, DNS-tunnel lookups carrying substitution, and a bare
+`sh`/`bash` consuming a piped script on stdin. Plain GET health checks, plain DNS lookups,
+and read-only interpreter probes (`python3 --version`, `python3 -m json.tool`) still pass.
 Covered by scripts/test_readonly_guard.py (pure-stdlib, runs offline).
 
 Decision is returned as a permissionDecision JSON on stdout with exit 0 (the documented
@@ -107,6 +117,12 @@ _DENY_PATTERNS = [
     # package / dependency installs (state change, out of scope for read-only triage)
     r"\b(apt|apt-get|yum|dnf|zypper|pip|pip3|npm|pnpm|yarn|gem|brew|choco)\s+"
     r"(install|remove|uninstall|update|upgrade|add)\b",
+    # more package managers the original list missed
+    r"\bcargo\s+install\b",
+    r"\b(go)\s+(install|get)\b",
+    r"\buv\s+pip\s+install\b",
+    r"\bpoetry\s+(add|install)\b",
+    r"\b(apk\s+add|pacman\s+-S)\b",
     # HTTP writes, file downloads/uploads (these mutate the local FS or a remote)
     r"\bcurl\b.*(-X\s*(POST|PUT|DELETE|PATCH)|--request\s+(POST|PUT|DELETE|PATCH))",
     r"\bcurl\b.*(--data|--data-raw|--data-binary|--form|\s-d\s|\s-F\s)",
@@ -135,6 +151,36 @@ _DENY_PATTERNS = [
     r"\b(python|python3|py|perl|ruby|node)\b.*\s(-c|-e|-E|-p|--eval|--print)\b",
     r"\b(python|python3|py|perl|ruby|node|bash|sh|zsh|pwsh|powershell)\s+-(\s|$)",
     r"\b(python|python3|py|perl|ruby|node|bash|sh|zsh|pwsh|powershell)\b[^|;&]*<<-?\s*[\"']?\w",
+    # --- running local SCRIPTS / build & orchestration verbs --------------------------------
+    # A read-only agent has no business executing arbitrary local scripts or kicking off
+    # build/deploy/orchestration runners — these are open-ended state changes. Conservative on
+    # purpose: only fire on forms that clearly RUN something, not on read-only sub-commands.
+    # Build / orchestration runners (bare verb in command position; covers `make target`,
+    # `docker run ...`, `terraform apply`, `kubectl ...`, `ansible-playbook ...`, `npx ...`).
+    _CMD + r"(make|docker|terraform|kubectl|ansible-playbook|npx|mvn|gradle)\b",
+    # cargo/go run-or-build (install/get already covered above).
+    r"\bcargo\s+(run|build)\b",
+    r"\bgo\s+(run|build)\b",
+    # An interpreter invoked on a script FILE (not an inline-code flag, not a read-only probe).
+    # `bash deploy.sh`, `sh ./run.sh`, `zsh path/to/x.sh` — arg ending in .sh or a path.
+    _CMD + r"(bash|sh|zsh)\s+[\"'./~$A-Za-z0-9_-]*\S+\.sh\b",
+    _CMD + r"(bash|sh|zsh)\s+\.{0,2}/\S+",
+    # `python3 ./mutate.py`, `node x.js|.mjs|.cjs`, `ruby x.rb` — a script-file argument.
+    # The earlier `-c/-e/--eval` and `--version`/`-m` forms are read-only and pass through.
+    r"\b(python|python3|py)\s+(?!-)\S*\.py\b",
+    r"\bnode\s+(?!-)\S*\.(js|mjs|cjs)\b",
+    r"\bruby\s+(?!-)\S*\.rb\b",
+    # Direct execution of a local file by path in command position: `./deploy.sh`,
+    # `../bin/x`, `/usr/local/bin/x`, `bin/run`, `scripts/x.sh`. Requires a slash so a
+    # bare command name (`ls`, `git`) is not caught; anchored to command position so a
+    # path ARGUMENT (`cat path/to/file`) is not — `cat` holds the command slot there.
+    r"(?:^|[|;&]\s*)(?:\.{0,2}/|[A-Za-z0-9_.~-]+/)\S*",
+    # Sourcing a file pulls its (possibly mutating) commands into the current shell.
+    r"(?:^|[|;&]\s*)source\b",
+    r"(?:^|[|;&]\s*)\.\s+\S",
+    # A bare `sh`/`bash`/`zsh` at the END of a pipeline consumes a script on stdin
+    # (`... | base64 -d | sh`) — no `-c` needed. Anchored to a pipe so it's the sink.
+    r"\|\s*(sudo\s+)?(sh|bash|zsh)\s*(\||$|;|&)",
 ]
 _DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE)
 
