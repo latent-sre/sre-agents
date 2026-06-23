@@ -47,9 +47,15 @@ skills of the selected scenarios, so scope it with `--match`. This is the harnes
 "demote the meta-skills" idea was declined. Like `--run` in `run_evals.py`, the model-driven
 modes are **not** a CI gate; only `--validate` is.
 
+**Read `--run` by MISROUTE, not raw hit-rate.** Each trial is classified `hit` / `MISROUTE`
+(a *wrong* target was invoked) / `no-route` (nothing invoked — the model answered inline). `--run`
+exits non-zero **only when there are misroutes**, because those are the real routing failures; a
+`no-route` on a general-knowledge prompt (e.g. `discover-method-parallelization`) is usually fine, not
+a fault. This is why the weak general-knowledge probes don't need their prompts retargeted to force
+discovery — the classification already separates "answered inline" from "routed to the wrong place."
+
 > Caveat: discovery ≠ necessity. A skill scoring 0 may simply mean the model answered well
-> *without* loading it (see `discover-method-parallelization`). Read these as relative/A-B signals,
-> not absolute pass/fail.
+> *without* loading it. Read these as relative/A-B and misroute signals, not absolute hit-rate.
 
 ### Agent-routing scenarios (`expected_agent`)
 
