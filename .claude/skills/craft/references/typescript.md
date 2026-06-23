@@ -14,7 +14,7 @@ defaults below apply when none is set.
 - **typescript-eslint flat config** for plugin-rich / type-aware projects: `recommended` → `strict` +
   `stylistic`; enable type-checked rules via `strictTypeChecked`/`stylisticTypeChecked` with
   `parserOptions.projectService` (typed linting runs ≈at type-check speed — worth it).
-- **Biome** is the fast all-in-one (single Rust binary, lint+format, ~97% Prettier-compatible) — good
+- **Biome** is the fast all-in-one (single Rust binary, lint+format, largely Prettier-compatible) — good
   for new/speed-sensitive projects; keep ESLint when you need its plugins or type-aware rules.
 
 ## Idioms

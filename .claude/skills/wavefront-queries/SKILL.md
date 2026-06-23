@@ -59,9 +59,11 @@ ts(app.container.memory.usage) / ts(app.container.memory.limit) * 100   # mem % 
 ```
 
 ## Missing data & PromQL equivalence
-- **Alert on data gaps** (agent down / app stopped reporting): `mcount(5m, ts(<metric>, app="checkout")) <= 3`
-  fires when a series reports ≤3 points in 5 minutes. A metric that simply *stops* is a real outage
-  signal that plain threshold alerts miss.
+- **Alert on data gaps** (agent down / app stopped reporting): derive the threshold from the metric's
+  **reporting interval**. For a metric reported once per minute you expect ~5 points per 5 min, so
+  `mcount(5m, ts(<metric>, app="checkout")) < 5` flags a series that's dropping points (tune the
+  number to your actual cadence). A metric that simply *stops* is a real outage signal that plain
+  threshold alerts miss.
 - **WQL ↔ PromQL** (Aria Operations also accepts PromQL): `sum(ts(m), tag)` ≈ `sum by(label)(m)`;
   `rate(ts(counter))` ≈ `rate(m[5m])`; `mavg(5m, ts(m))` ≈ a moving average. Write in whichever your
   team reads fluently.

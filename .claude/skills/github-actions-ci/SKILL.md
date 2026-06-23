@@ -23,7 +23,7 @@ promote the same artifact; gate prod with environments.
   repo calls one maintained pipeline:
   ```yaml
   jobs:
-    build: { uses: my-org/.github/.github/workflows/build.yml@v1, with: {lang: python} }
+    build: { uses: my-org/ci/.github/workflows/build.yml@v1, with: {lang: python} }   # repo: my-org/ci, workflow at .github/workflows/build.yml
   ```
 - **Composite action** (`action.yml`) — package repeated steps.
 

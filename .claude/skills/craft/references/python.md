@@ -31,7 +31,8 @@ defaults below apply when none is set.
 - Fail loud in tooling: non-zero exit + a clear stderr message.
 
 ## Operational safety (ops/automation code)
-- `subprocess.run([...], check=True)` with a **list** (never `shell=True` on untrusted input).
+- `subprocess.run([...], check=True)` with a **list**. Avoid `shell=True`; if it's unavoidable, never
+  interpolate variables into the command string.
 - HTTP (`requests`/`httpx`): **always set timeouts**; retry idempotent calls with backoff; check status.
 - Parameterize SQL — never f-string user input into a query.
 - Make scripts idempotent and re-runnable; guard destructive actions behind an explicit flag.

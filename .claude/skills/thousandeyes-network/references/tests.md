@@ -27,5 +27,5 @@ Concrete values for the `thousandeyes-network` skill. The agent loads this on de
 | `<prefix>` | `<BGP monitor>` | `<network/provider contact>` |
 
 ## Automation
-- API v7 base / account group: `<label>` (no token here).
+- REST API base / account group: `<label>` (confirm the current API version against the docs; no token here).
 - Test/alert-as-code location: `<repo path>` — changes via `release-engineer`/`sde-engineer`.

@@ -6,7 +6,8 @@ Shell is for glue and orchestration. If a script grows real logic/data structure
 ## Always start with
 ```bash
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+shopt -s inherit_errexit
 ```
 - **Set `IFS` locally where you split, not globally.** A global `IFS=$'\n\t'` changes *every* unquoted
   expansion and surprises more than it helps; scope it to the read that needs it

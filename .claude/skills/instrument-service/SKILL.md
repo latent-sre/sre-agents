@@ -24,7 +24,9 @@ standards** — so the data lands in our stack (Wavefront / Splunk / Grafana) an
    — split **success vs error** latency. Bounded labels only (method, route template, status class).
 5. **USE per resource** (pools/queues/CPU/memory): utilization, saturation, errors — this is what catches
    the "saturation → latency → errors" cascade in `triage-golden-signals`.
-6. **Traces** — propagate W3C trace context across services; tail-sample to keep all error/slow traces.
+6. **Traces** — propagate W3C trace context across services. To keep all error/slow traces, run a
+   **Collector tail-sampling processor** with explicit policies (status=error, latency threshold) — note
+   it buffers spans until the trace completes, so it carries memory/latency cost; size it deliberately.
 7. **Logs** — structured (JSON) carrying the trace/span IDs; **no secrets/PII** (see `craft` (Python)).
 8. **Correlate** — verify metric→trace (exemplars) and trace→log (shared IDs) actually link.
 
@@ -34,8 +36,10 @@ emails, raw SQL) → traces and logs, **never** metric labels. A label with unbo
 time series per value and melts the metrics backend.
 
 ## Naming
-- **OTel / Prometheus style** for portability: `namespace_subsystem_unit` in base units (seconds, bytes);
-  counters end `_total`; histograms expose `_bucket`/`_sum`/`_count`. Dimensions live in labels, not the name.
+- **OTel / Prometheus style** for portability: `namespace_subsystem_unit` in base units (seconds, bytes).
+  Dimensions live in labels, not the name. Name **native OTel instruments without suffixes** — the
+  `_total` (counters) and `_bucket`/`_sum`/`_count` (histograms) suffixes are added by the **Prometheus
+  exporter**, not part of the OTel instrument name itself.
 - In **Wavefront** the same metrics arrive as dot-delimited names (`app.http.requests.latency`) + point
   tags — keep the identical bounded-tag discipline (see `wavefront-queries`).
 

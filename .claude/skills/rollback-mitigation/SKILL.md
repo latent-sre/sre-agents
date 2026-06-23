@@ -21,7 +21,7 @@ sign-off; in a major incident the incident commander (the on-call lead running `
 |---|---|---|
 | **Bad deploy** (errors start at deploy time), previous app still exists | **Blue-green rollback** — remap prod route to the previously-live app | `cf map-route <previous-app> <domain> --hostname <app>` then `cf unmap-route <current-app> …` (blue/green are *roles*, not fixed names — colors alternate each deploy; confirm which is live with `cf apps` first) |
 | Bad deploy, revisions enabled | **Revision rollback** | `cf revisions <app>` (find last good `<n>`) → `cf rollback <app> --version <n>` |
-| Rolling/canary deploy in flight going wrong | **Abort the deploy** | `cf cancel-deployment <app>` — **in-progress only**; once the deploy completes it's a no-op, use revision rollback |
+| Rolling/canary deploy in flight going wrong | **Abort the deploy** | `cf cancel-deployment <app>` — **in-progress only**; once the deploy has completed it **errors** ("No active deployment found"), so use **revision rollback** (`cf rollback <app> --version <n>`) instead |
 | Instances hung / wedged / leaking, no recent change | **Restart** (buys time; doesn't fix cause) | `cf restart <app>` or `cf restart-app-instance <app> <i>` |
 | Bad config/env change | Revert env + restage | `cf set-env <app> KEY <old>` → `cf restage <app>` |
 | Load/capacity-driven saturation | **Scale out** | `cf scale <app> -i <more>` |

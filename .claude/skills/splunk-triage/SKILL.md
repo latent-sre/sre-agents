@@ -20,12 +20,18 @@ and a tight time window first — broad searches are slow and noisy.
 ## Start narrow
 ```spl
 index=<app_index> host=<...> sourcetype=<...> earliest=-1h latest=now
-  ("ERROR" OR "Exception" OR status>=500)
+  ("ERROR" OR "Exception")
+| where status>=500     # keep the field comparison OUT of the base search — see the warning below
 ```
+> **Numeric field comparisons (`status>=500`, `error_type=...`) belong in a `| where`/`| search`
+> *after* the base search, not in the raw keyword search.** A numeric comparison on a field that isn't
+> search-time-extracted silently matches **nothing** — a false "all clear" mid-incident. Confirm
+> `status`/`error_type` are extracted (or `rex` them first); see the extraction note under *Tips*.
 
 ## Read it over time (is it a spike? when did it start?)
 ```spl
-index=<app_index> (error OR status>=500)
+index=<app_index> error
+| where status>=500                            # status must be an extracted field; keyword-only base above
 | timechart span=1m count                      # error count per minute — find the exact onset
 ```
 ```spl
@@ -36,15 +42,17 @@ index=<app_index>
 ## Top offenders
 ```spl
 index=<app_index> error
-| stats count by error_type, message
-| sort -count                                  # which error dominates
+| stats count by error_type, message           # error_type must be an indexed/extracted field — if it
+| sort -count                                  # isn't, `stats by error_type` buckets into one empty group
 ```
+`error_type` must be search-time-extracted; if it isn't, `rex` it first (see *Tips* below).
 
 ## Spot a spike vs the baseline (anomaly detection)
 `eventstats` adds an aggregate to **every** row (unlike `stats`, which collapses rows) — use it to flag
 buckets above the period's mean:
 ```spl
-index=<app_index> (error OR status>=500) earliest=-24h
+index=<app_index> error earliest=-24h
+| where status>=500                             # status is an extracted field; keep it out of the base search
 | bin _time span=5m | stats count by _time
 | eventstats avg(count) as avg, stdev(count) as sd
 | where count > avg + 2*sd                      # 5-min buckets > 2σ above the day's mean
@@ -52,7 +60,8 @@ index=<app_index> (error OR status>=500) earliest=-24h
 `streamstats` computes a **trailing** baseline (per row, over a moving window) — answers "is *now* worse
 than the last N points?":
 ```spl
-index=<app_index> (error OR status>=500)
+index=<app_index> error
+| where status>=500                             # extracted field — not in the keyword base search
 | bin _time span=1m | stats count by _time
 | streamstats window=30 avg(count) as base
 | eval ratio=count/base | where ratio > 3       # current minute 3x the trailing 30-min average
@@ -77,8 +86,9 @@ index=<app_index> error
 
 ## Extract fields ad hoc
 ```spl
-... | rex field=_raw "latency=(?<latency_ms>\d+)"
-    | stats p95(latency_ms), max(latency_ms) by uri
+index=<app_index> sourcetype=<...> earliest=-1h     # scope the base search — never start with a bare `...`
+| rex field=_raw "latency=(?<latency_ms>[\d.]+)"    # [\d.]+ keeps fractional ms; plain \d+ truncates them
+| stats p95(latency_ms), max(latency_ms) by uri
 ```
 
 ## Tips & gotchas (Splunk-specific — where the default bites)

@@ -38,7 +38,8 @@ below apply when none is set.
 ## Modules & versioning
 - **Semantic Import Versioning:** v2+ carries a `/v2` suffix in the module path and imports. Released
   versions are immutable. Run `go mod vendor` to build `vendor/`; once it exists and is consistent, `go`
-  commands use it automatically (the `-mod=vendor` default).
+  commands use it automatically (the `-mod=vendor` default) — **but only for modules whose `go.mod`
+  declares `go >=1.14`**; older modules need an explicit `-mod=vendor`.
 
 ## Definition of done
 `gofmt`/`goimports` clean · `go vet` + `golangci-lint` clean · `go test ./...` (with `-race` where

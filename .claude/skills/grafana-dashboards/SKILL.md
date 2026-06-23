@@ -29,7 +29,9 @@ A dashboard exists to answer a question fast under stress — not to show every 
 
 ## Variables (make it reusable)
 - Template variables for `app`, `env`, `instance`, `route` so one dashboard serves many services.
-- Use a consistent data-source variable so the same dashboard works across Wavefront/Splunk back ends.
+- A **data-source variable only switches between same-type sources** (e.g. prod vs nonprod Wavefront) —
+  it cannot make one panel render against both Wavefront and Splunk. Wavefront-vs-Splunk are inherently
+  separate panels (different query languages/plugins); use the variable to swap environments, not stacks.
 
 ## Data sources (our stack)
 - Metrics from **Wavefront / Aria Operations for Applications** (`wavefront-queries`); logs/log-derived
@@ -37,10 +39,14 @@ A dashboard exists to answer a question fast under stress — not to show every 
 - **Concrete values** — our data-source UIDs, dashboard inventory, conventions, and provisioning path
   live in `references/dashboards.md` (fill in; loaded on demand, no credentials).
 
-## Alerting
-- Prefer SLO/burn-rate alerts over static thresholds where possible. Every alerting panel links a
-  **runbook** (`runbook-template`). Route alert notifications through Moogsoft for correlation
-  (`moogsoft-correlation`).
+## Alerting (unified alerting — Grafana 9+)
+- Define **alert rules** (in alert-rule folders), not the legacy per-panel dashboard alerts. Rules are
+  **Grafana-managed** (Grafana evaluates the query) or **datasource-managed** (delegated to a Prometheus/
+  Mimir-style rule backend) — pick per where the data and evaluation live.
+- Prefer SLO/burn-rate alerts over static thresholds where possible. Link the **runbook** from each rule
+  via a `runbook_url` **annotation** (`runbook-template`).
+- Route notifications with **contact points** + **notification policies**; send to Moogsoft for
+  correlation (`moogsoft-correlation`).
 
 ## As code
 - Export the dashboard **JSON model** and commit it; use Grafana **provisioning** (or Terraform/grafana

@@ -14,10 +14,9 @@ Think first; the diff is the easy part.
    tradeoffs.
 2. **Impact analysis.** Grep every call site / consumer of what you're changing. Enumerate who breaks
    and how. Load `safe-refactor`.
-3. **Design for backward compatibility — default to expand → migrate → contract:**
-   - *Expand:* add the new field/endpoint/behavior alongside the old; both work.
-   - *Migrate:* move callers/data over; dual-write/dual-read if needed.
-   - *Contract:* remove the old path only after nothing uses it.
+3. **Design for backward compatibility.** Default to **expand → migrate → contract** (add the new path,
+   move callers/data over, remove the old path only once nothing uses it) — the mechanics live in
+   `safe-refactor`; don't re-derive them here. What's distinct at this altitude is the contract framing:
    - **Hyrum's Law:** with enough consumers, *every* observable behavior of your contract — response
      shape, ordering, timing, even error codes — is depended on by someone. Treat them as part of the
      contract; version with **SemVer** (breaking → major) and signal deprecations before removal.

@@ -31,6 +31,10 @@ PCF and bind to managed relational services (Postgres / Oracle / MS SQL) — you
   4. **Switch** — flip reads to the new shape once backfill is verified.
   5. **Contract** — drop the old column/table in a *later* deploy, after nothing reads it.
 - **Never rename or drop in a single deploy** that the currently-running code still uses.
+- **Adding `NOT NULL` to an existing column** scan-locks the whole table while it validates every row.
+  In Postgres, add the constraint as `CHECK (col IS NOT NULL) NOT VALID` first (cheap, takes a brief
+  lock), backfill, then `VALIDATE CONSTRAINT` (which scans without blocking writes) — and set the column
+  `NOT NULL` once validated. Don't `ALTER COLUMN … SET NOT NULL` directly on a hot, large table.
 - Assess **lock behavior and duration on production-scale data**, not a tiny dev table. Know which DDL
   is online for your engine (e.g. Postgres `CREATE INDEX CONCURRENTLY`, `ADD COLUMN` without a volatile
   default; avoid blocking `ALTER`s on hot tables). Run migrations through tooling (Flyway/Liquibase/

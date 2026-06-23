@@ -44,7 +44,8 @@ application-layer results. Use it to separate **network/path** problems from **a
 ## Designing checks (with `sre-monitor`)
 - Add a transaction/HTTP test for each **critical user journey** and a network test to each **key
   dependency**; alert on loss/latency/availability and link a runbook.
-- API v7 is available to script tests/alerts; hand automation to `release-engineer`/`sde-engineer`.
+- The current REST API can script tests/alerts (confirm the version against the ThousandEyes docs
+  before relying on it — `[unverified]`); hand automation to `release-engineer`/`sde-engineer`.
 
 ## Concrete values
 Our enterprise agents, test inventory, critical-journey coverage, and BGP monitors live in
