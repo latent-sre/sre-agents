@@ -60,7 +60,7 @@ index=<app_index> (error OR status>=500)
 
 ## Correlate one request across services (trace/correlation id)
 ```spl
-index=<app_index> (request_id="<id>" OR trace_id="<id>")   # scope to your service index(es); (index=a OR index=b) to span a few
+index=<app_index> (request_id="<id>" OR trace_id="<id>")   # one index; use (index=a OR index=b) to span several (a list inside index= is NOT valid SPL)
 | sort _time                                   # the full path of one failing request
 | table _time host service status message
 ```
