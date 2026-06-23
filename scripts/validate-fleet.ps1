@@ -87,7 +87,7 @@ foreach ($d in (Get-ChildItem (Join-Path $root '.claude/skills') -Directory)) {
     foreach ($m in [regex]::Matches($body, '(?<![\w./])(references|assets|scripts)/[A-Za-z0-9._/-]*[A-Za-z0-9_-]')) {
         $rel = $m.Value -replace '[.,;:)\]]+$', ''      # drop trailing prose punctuation
         if ([string]::IsNullOrWhiteSpace($rel)) { continue }
-        # Skip a bare directory reference (no filename component, e.g. "assets/") — only check files.
+        # Skip a bare directory reference (no filename component, e.g. "assets/") -- only check files.
         $leaf = Split-Path $rel -Leaf
         if ($leaf -eq 'references' -or $leaf -eq 'assets' -or $leaf -eq 'scripts') { continue }
         if (-not (Test-Path (Join-Path $d.FullName $rel))) {
@@ -120,7 +120,7 @@ foreach ($a in $agentFiles) {
 }
 
 # ---- Model policy ----
-# The model: frontmatter must match the documented policy (CLAUDE.md → "Model policy"): opus for
+# The model: frontmatter must match the documented policy (CLAUDE.md -> "Model policy"): opus for
 # open-ended reasoning under ambiguity, sonnet for structured/procedural work. Drift here silently
 # changes cost/behavior, so assert it structurally in CI.
 $modelPolicy = @{
@@ -137,7 +137,7 @@ $modelPolicy = @{
 }
 foreach ($a in $agentFiles) {
     if (-not $modelPolicy.ContainsKey($a.BaseName)) {
-        $issues.Add("model-policy: agent '$($a.BaseName)' is not listed in the documented model policy (validate-fleet.ps1 `$modelPolicy) — add it with its intended model.")
+        $issues.Add("model-policy: agent '$($a.BaseName)' is not listed in the documented model policy (validate-fleet.ps1 `$modelPolicy) -- add it with its intended model.")
         continue
     }
     $fm = Get-Frontmatter $a.FullName
