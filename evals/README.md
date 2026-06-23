@@ -59,8 +59,11 @@ that does real work, so they're minutes-slow — scope with `--match agent`, rai
 in a throwaway git worktree (writing agents like `sde-engineer` are isolated there).
 
 ```bash
-python evals/discovery_probe.py --run --match agent --trials 2 --timeout 540
+python evals/discovery_probe.py --run --agents --match agent --trials 2 --timeout 540
 ```
+
+Agent scenarios are **opt-in** (`--agents`) and excluded from default runs, because they spawn
+write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 
 > **Important limitation — measures delegation propensity, not routing quality.** Headless `claude -p`
 > often answers a request *inline* instead of delegating, so a low agent score is **not** a fleet

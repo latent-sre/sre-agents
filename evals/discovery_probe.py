@@ -18,7 +18,7 @@ Scenario files: evals/discovery/*.yaml — each targets exactly one of:
   expected:        a SKILL that should be invoked (folder in .claude/skills/), or
   expected_agent:  an AGENT the request should delegate to (file in .claude/agents/)
   id:              short id
-  also_acceptable: optional list of other skills/agents that also count as correct
+  also_acceptable: optional list of other targets of the SAME kind that also count as correct
   prompt:          a realistic, AMBIGUOUS prompt that does NOT name the target
 
 Modes:
@@ -51,7 +51,7 @@ DISCOVERY_DIR = Path(__file__).resolve().parent / "discovery"
 SKILLS_DIR = ROOT / ".claude/skills"
 AGENTS_DIR = ROOT / ".claude/agents"
 _SKILL_RE = re.compile(r'"skill"\s*:\s*"([a-z0-9-]+)"')
-_AGENT_RE = re.compile(r'"subagent_type"\s*:\s*"([a-z0-9-]+)"')
+_AGENT_RE = re.compile(r'"subagent_type"\s*:\s*"([^"]+)"')  # accept capitals (built-in Explore/Plan)
 
 
 def load_scenarios() -> list[dict]:
@@ -160,9 +160,12 @@ def run_trial(prompt: str, settings: str | None, timeout: int) -> dict[str, list
         cmd += ["--settings", settings]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
-    except subprocess.TimeoutExpired:
-        print(f"    [runner timeout after {timeout}s]", file=sys.stderr)
-        return {"skill": [], "agent": []}
+    except subprocess.TimeoutExpired as e:
+        # A delegation may have been emitted BEFORE the (slow-subagent) timeout — parse the
+        # partial trace rather than scoring a real routing decision as a miss.
+        out = e.stdout if isinstance(e.stdout, str) else (e.stdout or b"").decode("utf-8", "replace")
+        print(f"    [runner timeout after {timeout}s — parsing partial trace]", file=sys.stderr)
+        return _invocations_from_stream(out)
     if proc.returncode != 0:
         # Surface a failing runner instead of silently scoring it as a miss
         # (a bad --settings payload or auth failure would otherwise corrupt results).
@@ -208,18 +211,26 @@ def main() -> int:
     ap.add_argument("--match", help="only scenarios whose id contains this substring (--list/--run/--ab)")
     ap.add_argument("--settings", help="baseline settings JSON string or file path")
     ap.add_argument("--timeout", type=int, default=300, help="per-trial timeout sec (raise for agent scenarios)")
+    ap.add_argument("--agents", action="store_true",
+                    help="opt in to agent-routing scenarios (write-capable subagents — isolate in a worktree)")
     args = ap.parse_args()
 
     scenarios = load_scenarios()
+    problems = validate(scenarios)
 
     if args.validate:
-        problems = validate(scenarios)
         if problems:
             print("DISCOVERY SUITE INVALID:")
             print("\n".join("  - " + p for p in problems))
             return 1
         print(f"discovery suite OK — {len(scenarios)} scenario(s), targets resolve.")
         return 0
+
+    # All model-driven modes need a clean suite (fail fast with a clear list).
+    if problems and (args.run or args.ab):
+        print("DISCOVERY SUITE INVALID (fix before running):")
+        print("\n".join("  - " + p for p in problems))
+        return 1
 
     if args.match:
         scenarios = [s for s in scenarios if args.match in (s.get("id") or "")]
@@ -234,6 +245,21 @@ def main() -> int:
             lines = (s.get("prompt") or "").strip().splitlines()
             print(f"- {s.get('id', '?')} -> {kind}:{exp}{extra}\n    {lines[0] if lines else '(no prompt)'}")
         return 0
+
+    # Agent scenarios spawn WRITE-CAPABLE subagents in the CWD; require explicit opt-in and exclude
+    # them from default runs so a bare `--run` can't mutate the caller's checkout.
+    if not args.agents:
+        skipped = [s for s in scenarios if scenario_target(s)[0] == "agent"]
+        scenarios = [s for s in scenarios if scenario_target(s)[0] == "skill"]
+        if skipped:
+            print(f"note: skipped {len(skipped)} agent scenario(s); pass --agents to include them "
+                  f"(write-capable — isolate in a throwaway git worktree).\n")
+        if not scenarios:
+            print("no skill scenarios selected (agent scenarios require --agents).")
+            return 1
+    elif args.run or args.ab:
+        print("WARNING: --agents runs write-capable subagents in the CWD — isolate this in a "
+              "throwaway git worktree so the working tree can't be mutated.\n")
 
     base = _load_settings(args.settings)
 
