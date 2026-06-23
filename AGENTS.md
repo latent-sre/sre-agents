@@ -61,9 +61,10 @@ is **OS-level least-privilege credentials + an outbound allowlist** at the host/
 is a fast speed-bump on top of that, not a substitute for it.
 
 > **Routing and incident-command are *skills*, not agents.** `route-request` (planning a multi-step
-> request) and `incident-severity` (running a live incident) run in the **main session's** context.
-> Classic subagents can't dispatch other subagents, so an orchestration *agent* could only emit a plan
-> the main session re-runs — pure overhead. See [`docs/adr/0001-routing-and-incident-command-as-skills.md`](docs/adr/0001-routing-and-incident-command-as-skills.md).
+> request) and `incident-severity` (running a live incident) run in the **main session's** context. The
+> durable reason is cost, not capability: a coordinator *subagent* would double-pay the routing
+> round-trip and discard the main session's live context that the work actually needs — true even now
+> that Claude Code supports nested subagent dispatch. See [`docs/adr/0001-routing-and-incident-command-as-skills.md`](docs/adr/0001-routing-and-incident-command-as-skills.md).
 
 > **Seniority/experience is carried by skills, not separate agents.** There is *one* `sde-engineer`
 > and *one* `sre-engineer`. They scale altitude by loading a **ladder skill** — pick the tier that

@@ -22,11 +22,13 @@ This repo's full guide lives in [AGENTS.md](AGENTS.md) (the cross-tool source of
   is set. Treat that hook as a checklist-forcing convenience for a cooperative agent, **not** a security
   control — a determined path around a local denylist exists; branch protection + environments do not
   depend on the agent cooperating.
-- **Subagent dispatch:** classic subagents don't spawn other subagents, so an orchestration *agent* could
-  only emit a *plan* the main session re-runs — pure overhead. Routing and incident-command therefore live
-  as **skills** (`route-request`, `incident-severity`) that run in the main session, not as agents. (Newer
-  "agent teams" can dispatch directly; if you adopt one, re-promoting them may pay — see
-  [`docs/adr/0001-routing-and-incident-command-as-skills.md`](docs/adr/0001-routing-and-incident-command-as-skills.md).)
+- **Subagent dispatch:** an orchestration *agent* would double-pay the routing round-trip and discard the
+  main session's live context that the work needs — pure overhead. Routing and incident-command therefore
+  live as **skills** (`route-request`, `incident-severity`) that run in the main session, not as agents.
+  Claude Code now supports nested subagent dispatch, so the old "subagents can't spawn subagents" capability
+  limit no longer applies, but that cost argument still holds; re-promoting an orchestration agent should be
+  gated on an A/B that beats the skill — see
+  [`docs/adr/0001-routing-and-incident-command-as-skills.md`](docs/adr/0001-routing-and-incident-command-as-skills.md).
 
 ### Model policy (the `model:` frontmatter)
 

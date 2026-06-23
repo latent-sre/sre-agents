@@ -2,7 +2,8 @@
 
 Design rationale + maps for the fleet. The cross-tool usage guide is [AGENTS.md](../AGENTS.md); this
 doc explains *why* it's shaped this way. Companion docs: [AGENT-CATALOG.md](AGENT-CATALOG.md) (a
-paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map).
+paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map). Deferred strategic work
+surfaced by review is tracked in [FOLLOWUPS.md](FOLLOWUPS.md).
 
 ## Design principles
 1. **Agents are *who*, skills are *how*.** Thin, single-lane agents; reusable `SKILL.md` skills carry the
@@ -11,8 +12,9 @@ paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map)
    by loading a *ladder* skill (senior/principal/distinguished; responder/investigator/elite) — no agent
    sprawl and no need to guess the level before routing. The same logic demotes **orchestration** to
    skills: routing (`route-request`) and incident-command (`incident-severity`) run in the main session,
-   because a classic subagent can't dispatch others — an orchestration *agent* could only emit a plan the
-   main session re-runs (see [adr/0001](adr/0001-routing-and-incident-command-as-skills.md)).
+   because a coordinator *subagent* would double-pay the routing round-trip and discard the main session's
+   live context the work actually needs — true even now that nested subagent dispatch exists (see
+   [adr/0001](adr/0001-routing-and-incident-command-as-skills.md)).
 3. **Graded autonomy (propose → execute).** Read-only agents *recommend*; writer agents produce diffs;
    **production-facing execution always needs a human + the `production-change-gate`.**
 4. **Least privilege (defense-in-depth, not a sandbox).** Read-only agents have no Edit/Write. In Claude
@@ -29,14 +31,22 @@ paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map)
    Splunk / Grafana / Wavefront / Moogsoft / ThousandEyes + GitHub Actions.
 
 ## When is something an agent vs. a skill?
-**Decision rule:** an **agent** exists only when it needs a **distinct tool-scope or guard posture**;
-everything else is a **skill**. Example: `database-reliability` WRITES migration files but must *not* write
-to a production DB — that is a distinct write-scope no other agent has, so it earns an agent. Seniority
-tiers, by contrast, share their agent's tool-scope, so they are ladder *skills*, not cloned agents. This
-turns the looser "altitude vs. lane" intuition into a crisp test. **The agent and its same-named skill are
-intentionally paired, not a collision:** the **agent is the lane** (who, with what tool-scope/guard) and
-the **skill is the method** (the engine-specific playbook the agent loads). `database-reliability` is both
-on purpose.
+**Decision rule:** an **agent** exists when it needs a **distinct tool-scope**, a **distinct guard
+posture**, **OR** is a **recurring, separable domain lane with its own handoff edges**; everything else is
+a **skill**. (The first two are mechanical, enforced by the harness; the third is editorial — a lane worth
+routing to on its own.) Example: `database-reliability` is the **lane** case. Its tool-scope is *not*
+distinct — its frontmatter `tools:` (`Read, Write, Edit, Grep, Glob, Bash, TodoWrite`) is byte-identical to
+`test-engineer`'s and a subset of `sde-engineer`'s — and there is no read-only `PreToolUse` guard on it. What
+makes it an agent is that it's a recurring DBRE domain with its own handoff edges (← `sde-engineer`,
+→ `release-engineer`, `sre-engineer`, `sre-monitor`). Its critical prohibition — **never write to a
+production DB** — is *not* carried by tool-scoping (the tools allow writes); it is **behavioral** (stated in
+the agent body and `description`) and **gate-enforced** (forward + rollback scripts hand off to
+`release-engineer` under the `production-change-gate`). Seniority tiers, by contrast, share their agent's
+tool-scope *and* its lane, so they are ladder *skills*, not cloned agents. This turns the looser "altitude
+vs. lane" intuition into a usable test without overclaiming a tool-scope difference that isn't there. **The
+agent and its same-named skill are intentionally paired, not a collision:** the **agent is the lane** (who,
+with what handoff edges) and the **skill is the method** (the engine-specific playbook the agent loads).
+`database-reliability` is both on purpose.
 
 ## The `skills:` frontmatter convention
 Only some agents declare a `skills:` block, and that is by design. When present, `skills:` lists the
