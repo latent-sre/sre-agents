@@ -3,7 +3,18 @@
 Design rationale + maps for the fleet. The cross-tool usage guide is [AGENTS.md](../AGENTS.md); this
 doc explains *why* it's shaped this way. Companion docs: [AGENT-CATALOG.md](AGENT-CATALOG.md) (a
 paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map). Deferred strategic work
-surfaced by review is tracked in [FOLLOWUPS.md](FOLLOWUPS.md).
+surfaced by review is tracked in [FOLLOWUPS.md](FOLLOWUPS.md); how to adopt the fleet in tiers (what to
+turn on now vs. defer) is in [ADOPTION.md](ADOPTION.md).
+
+> **Surface-area review (2026-06-23).** A nine-scan gauntlet (5 independent + 2 devil's-advocate + 2
+> Anthropic-best-practice) re-examined whether **10 agents / ~38 skills** should be consolidated. Verdict:
+> **the counts are right-sized — keep them.** Eight of nine scans kept the 10 agents; the aggressive
+> "merge to 4" case was refuted because folding the read-only reviewers into a writer would destroy a
+> *mechanically enforced* guard posture and assemble the lethal trifecta. The real surface work is **fill
+> the placeholder content, tier adoption, and trim CI machinery** — not cut agents/skills. We also
+> explicitly **declined to add** new comms/FinOps lanes (the roster stays at 10). Acted on: ~5 skill
+> descriptions sharpened for cleaner auto-discovery, the `parallelization` orphan given an inbound path,
+> the Copilot SKILL-mirror un-committed, and CI consolidated to a single Python validator on Linux.
 
 ## Design principles
 1. **Agents are *who*, skills are *how*.** Thin, single-lane agents; reusable `SKILL.md` skills carry the
