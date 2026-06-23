@@ -1,0 +1,22 @@
+id: incident-severity-classifies
+target: incident-severity
+# Task: given a described impact, the skill must produce a CORRECT severity classification and the
+# matching comms cadence. The scenario describes a customer-facing outage for most users (the SEV1
+# row: all/most users down) — grade that it lands SEV1 (over-classify, round up) and names the
+# 15-minute update cadence that SEV1 triggers.
+prompt: |
+  The checkout service is returning 5xx for essentially all users — nobody can complete a purchase,
+  and it's been down for ~6 minutes with no sign of recovery. Classify this incident's severity and
+  tell me the communications cadence and what it triggers.
+success_criteria:
+  - Classifies as SEV1 (customer-facing outage for all/most users); rounds up under uncertainty
+  - States the SEV1 comms cadence (status updates every 15 min) and that an incident commander is assigned
+graders:
+  - type: regex   # severity token anchored — SEV1 / SEV-1 / SEV 1
+    pattern: '\bsev[\s-]?1\b'
+  - type: contains_any
+    of: ["15 min", "15 minute", "every 15", "fifteen min"]
+  - type: contains_any
+    of: ["incident commander", "declare", "page", "on-call", "postmortem"]
+  - type: not_regex   # must not under-classify this all-users outage to a lower severity
+    pattern: '\bsev[\s-]?[34]\b'

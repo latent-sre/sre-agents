@@ -41,11 +41,21 @@ def regex(response: str, pattern: str) -> tuple[bool, str]:
     return (ok, f"/{pattern}/ {'matched' if ok else 'no match'}")
 
 
+def not_regex(response: str, pattern: str) -> tuple[bool, str]:
+    """Passes iff the pattern does NOT match — a negative assertion that needs regex power
+    (alternation, word boundaries) rather than plain substrings. Use for "must not propose to
+    RUN a state-changing command" style checks where `not_contains` can't express the phrasing."""
+    m = re.search(pattern, response, re.IGNORECASE | re.MULTILINE)
+    detail = f"matched: {m.group(0)!r}" if m else "absent (good)"
+    return (m is None, f"/{pattern}/ {detail}")
+
+
 REGISTRY: dict[str, Callable[..., tuple[bool, str]]] = {
     "contains_all": contains_all,
     "contains_any": contains_any,
     "not_contains": not_contains,
     "regex": regex,
+    "not_regex": not_regex,
 }
 
 
