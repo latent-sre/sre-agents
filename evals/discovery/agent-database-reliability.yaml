@@ -3,3 +3,4 @@ expected_agent: database-reliability
 prompt: |
   I need to add a NOT NULL column to a 50-million-row Postgres table that production
   reads from, without taking downtime or locking the table. How do I do this safely?
+note: "2026-06: 0/2 — handled inline, no delegation (not a routing fault; see README caveat)."
