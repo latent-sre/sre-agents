@@ -1,0 +1,5 @@
+id: discover-obs-instrument-service
+expected: instrument-service
+prompt: |
+  My new service is basically a black box — almost no metrics, traces, or structured logs.
+  What should I add so that when it breaks someone can actually triage it?

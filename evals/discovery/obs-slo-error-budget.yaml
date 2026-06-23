@@ -1,0 +1,6 @@
+id: discover-obs-slo-error-budget
+expected: slo-error-budget
+prompt: |
+  This CPU threshold alert is too noisy and nobody trusts it. I'd rather alert on whether
+  users are actually being hurt, and know whether we're still within budget for the month.
+  How do I set that up?

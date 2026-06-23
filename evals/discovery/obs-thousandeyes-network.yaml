@@ -1,0 +1,6 @@
+id: discover-obs-thousandeyes-network
+expected: thousandeyes-network
+prompt: |
+  Users in our Singapore region report the app is slow, but users elsewhere are fine and
+  our app's own latency and error metrics look normal. How do I figure out whether this is
+  a network, DNS, or routing problem rather than the app itself?

@@ -1,0 +1,6 @@
+id: discover-obs-pcf-ops
+expected: pcf-ops
+prompt: |
+  One of our apps on the platform keeps crashing and restarting. I need to check its
+  instance states, recent platform events, routes, and recent logs without changing
+  anything. What are the safe commands to run?

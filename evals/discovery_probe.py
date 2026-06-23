@@ -159,6 +159,7 @@ def main() -> int:
     g.add_argument("--run", action="store_true", help="measure autonomous discovery")
     g.add_argument("--ab", action="store_true", help="baseline vs expected-skills-as-name-only")
     ap.add_argument("--trials", type=int, default=3)
+    ap.add_argument("--match", help="only scenarios whose id contains this substring (--list/--run/--ab)")
     ap.add_argument("--settings", help="baseline settings JSON string or file path")
     args = ap.parse_args()
 
@@ -172,6 +173,12 @@ def main() -> int:
             return 1
         print(f"discovery suite OK — {len(scenarios)} scenario(s), targets resolve.")
         return 0
+
+    if args.match:
+        scenarios = [s for s in scenarios if args.match in (s.get("id") or "")]
+        if not scenarios:
+            print(f"no scenarios match '{args.match}'")
+            return 1
 
     if args.list:
         for s in scenarios:
