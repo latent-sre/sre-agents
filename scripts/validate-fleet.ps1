@@ -78,10 +78,18 @@ foreach ($d in (Get-ChildItem (Join-Path $root '.claude/skills') -Directory)) {
     if ($descLen -eq 0)    { $issues.Add("skill '$($d.Name)': empty description") }
     if ($descLen -gt 1024) { $issues.Add("skill '$($d.Name)': description $descLen > 1024 chars") }
 
-    # referenced bundle files exist (references/ assets/ scripts/)
+    # referenced bundle files exist (references/ assets/ scripts/).
+    # Require the final path segment to be a real filename: at least one name char, NOT ending in a
+    # bare '.' or '/'. Without this, prose like "assets/." extracted "assets/." and Test-Path matched
+    # the directory, masking a genuinely missing file. We then strip any trailing punctuation that
+    # leaked in from surrounding prose ('.', ',', ')', etc.) before the existence check.
     $body = Get-Content -LiteralPath $sk -Encoding UTF8 -Raw
-    foreach ($m in [regex]::Matches($body, '(?<![\w./])(references|assets|scripts)/[A-Za-z0-9._/-]+')) {
-        $rel = $m.Value
+    foreach ($m in [regex]::Matches($body, '(?<![\w./])(references|assets|scripts)/[A-Za-z0-9._/-]*[A-Za-z0-9_-]')) {
+        $rel = $m.Value -replace '[.,;:)\]]+$', ''      # drop trailing prose punctuation
+        if ([string]::IsNullOrWhiteSpace($rel)) { continue }
+        # Skip a bare directory reference (no filename component, e.g. "assets/") — only check files.
+        $leaf = Split-Path $rel -Leaf
+        if ($leaf -eq 'references' -or $leaf -eq 'assets' -or $leaf -eq 'scripts') { continue }
         if (-not (Test-Path (Join-Path $d.FullName $rel))) {
             $issues.Add("skill '$($d.Name)': references missing file '$rel'")
         }
@@ -111,13 +119,43 @@ foreach ($a in $agentFiles) {
     }
 }
 
+# ---- Model policy ----
+# The model: frontmatter must match the documented policy (CLAUDE.md → "Model policy"): opus for
+# open-ended reasoning under ambiguity, sonnet for structured/procedural work. Drift here silently
+# changes cost/behavior, so assert it structurally in CI.
+$modelPolicy = @{
+    'sde-engineer'         = 'opus'
+    'code-reviewer'        = 'opus'
+    'security-reviewer'    = 'opus'
+    'sre-engineer'         = 'opus'
+    'database-reliability' = 'opus'
+    'release-engineer'     = 'sonnet'
+    'researcher'           = 'sonnet'
+    'runbook-author'       = 'sonnet'
+    'sre-monitor'          = 'sonnet'
+    'test-engineer'        = 'sonnet'
+}
+foreach ($a in $agentFiles) {
+    if (-not $modelPolicy.ContainsKey($a.BaseName)) {
+        $issues.Add("model-policy: agent '$($a.BaseName)' is not listed in the documented model policy (validate-fleet.ps1 `$modelPolicy) — add it with its intended model.")
+        continue
+    }
+    $fm = Get-Frontmatter $a.FullName
+    $model = if ($null -ne $fm) { Get-Field $fm 'model' } else { $null }
+    $expected = $modelPolicy[$a.BaseName]
+    if ($model -ne $expected) {
+        $issues.Add("model-policy: agent '$($a.BaseName)' has model '$model' but policy requires '$expected' (see CLAUDE.md model policy).")
+    }
+}
+
 # ---- Scope guard ----
 # Charter (AGENTS.md): application operations on on-prem + PCF. NO Kubernetes, IaC, or cloud-managed
 # infra; observability is Wavefront/Splunk/Grafana, not Prometheus. Fail any agent/skill that
 # *promotes* off-charter tooling, so the charter is enforced in CI rather than living only in prose.
 # Legitimate mentions (charter disclaimers; portability/equivalence notes) are allowlisted by exact
 # fragment below -- add a line here WITH a reason if a new legitimate use appears.
-$scopeTokens = 'kubernetes','kubectl','k8s','terraform','prometheus','promql'
+$scopeTokens = 'kubernetes','kubectl','k8s','terraform','prometheus','promql',
+               'eks','gke','aks','helm','argocd','datadog','pagerduty','cloudformation','openshift'
 $scopeRe     = '(?i)\b(' + ($scopeTokens -join '|') + ')\b'
 $scopeAllow  = @(
     'do NOT propose Kubernetes',  # release-engineer.md  -- charter disclaimer

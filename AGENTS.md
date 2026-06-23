@@ -53,9 +53,12 @@ see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom 
 
 **Read-only agents** (no Edit/Write): `code-reviewer`, `security-reviewer`, `sre-engineer`, `researcher`.
 They report, recommend, and hand off. The three that keep `Bash` for observation (`code-reviewer`,
-`security-reviewer`, `sre-engineer`) are further constrained by a `PreToolUse` guard
-([scripts/readonly-guard.py](scripts/readonly-guard.py)) that **blocks state-changing shell commands** —
-so "read-only" is enforced, not just promised.
+`security-reviewer`, `sre-engineer`) run a `PreToolUse` guard
+([scripts/readonly-guard.py](scripts/readonly-guard.py)) that **blocks common state-changing and egress
+verbs** for a *cooperative* agent. This is **defense-in-depth, not a sandbox**: it raises the bar and
+leaves an audit trail, but a determined or novel command can evade a denylist. The load-bearing control
+is **OS-level least-privilege credentials + an outbound allowlist** at the host/network layer — the guard
+is a fast speed-bump on top of that, not a substitute for it.
 
 > **Routing and incident-command are *skills*, not agents.** `route-request` (planning a multi-step
 > request) and `incident-severity` (running a live incident) run in the **main session's** context.
@@ -180,9 +183,13 @@ because Claude hooks are not portable.
 - **Validate the fleet:** `pwsh scripts/validate-fleet.ps1` checks every skill/agent against the
   Agent Skills spec (names, descriptions, referenced files). Run it before committing or in CI.
 - **Behavioral evals:** [`evals/`](evals/) holds scenario + grader pairs that check the fleet *behaves*
-  (routing lands right, gates block, agents treat untrusted input as data). `python evals/run_evals.py
-  --validate` checks the suite in CI; `--run` grades it against a Claude-enabled runner. Add a scenario
-  when you add/change a skill (eval-before-docs); grade the outcome, not the path.
+  (routing lands right, gates block, agents treat untrusted input as data). **What CI gates vs. what is
+  manual:** CI enforces **structure only** — `python evals/run_evals.py --validate` and
+  `python evals/discovery_probe.py --validate` lint the suite, plus the read-only-guard and
+  production-change-guard tests and the grader/probe unit tests. The **behavioral** runs
+  (`run_evals.py --run`/`--ab`, discovery probing) need a Claude-enabled runner and are executed
+  **manually or on a schedule — they are NOT a merge gate.** Add a scenario when you add/change a skill
+  (eval-before-docs); grade the outcome, not the path.
 - **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency
   timeout), authored with the `runbook-template` skill; fill placeholders before treating them as live.
 - **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),

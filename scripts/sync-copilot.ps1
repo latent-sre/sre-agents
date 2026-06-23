@@ -49,13 +49,11 @@ function Write-Utf8NoBom([string]$path, [string[]]$lines) {
 }
 
 function Reset-Directory([string]$path) {
+    # Hard-fail (do NOT swallow) if the clean fails: a partial delete can leave stale generated files
+    # that then ship to Copilot or trip the CI drift gate with confusing diffs. This matches the .sh
+    # path, which hard-fails under `set -e` — keep the two generators' failure semantics in agreement.
     if (Test-Path -LiteralPath $path) {
-        try {
-            [System.IO.Directory]::Delete($path, $true)
-        }
-        catch {
-            Write-Warning "Could not fully clean '$path' ($($_.Exception.Message)); mirroring in place. Stale generated files may remain."
-        }
+        [System.IO.Directory]::Delete($path, $true)   # throws -> $ErrorActionPreference='Stop' aborts the run
     }
     New-Item -ItemType Directory -Force -Path $path | Out-Null
 }
