@@ -55,6 +55,6 @@ hard to catch; `sonnet` for structured work that follows a defined method, check
 ## VS Code / Copilot
 
 Both tools read `.claude/` directly, so the fleet works in Copilot as-is. For Copilot-native
-`.github/agents/*.agent.md` (translated tool scoping) + `.github/skills/`, run
+`.github/agents/*.agent.md` (translated tool scoping; the `.github/skills/` mirror is optional and gitignored), run
 `pwsh scripts/sync-copilot.ps1` (or `bash scripts/sync-copilot.sh`). Those outputs are generated —
 edit definitions under `.claude/` and re-run; don't hand-edit `.github/`.

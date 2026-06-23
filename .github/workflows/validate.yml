@@ -10,14 +10,20 @@ permissions:
   contents: read
 
 jobs:
-  # Linux job: Python guard tests, eval-suite STRUCTURE validation, and Copilot-generator
-  # drift detection (the .sh path). This is the gating job for cross-platform correctness.
-  linux:
+  # Single Linux job: structural fleet validation (Python), guard tests, eval-suite STRUCTURE
+  # validation, the error-budget helper smoke test, and Copilot agent-wrapper drift detection.
+  # The validator is pure-stdlib Python (scripts/validate_fleet.py), so one platform covers it —
+  # the former Windows leg (PowerShell validator + .ps1 generator) was retired: validate-fleet.ps1
+  # and sync-copilot.ps1 remain as on-demand Windows-local equivalents, not CI gates.
+  validate:
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Validate agent and skill metadata
+        run: python3 scripts/validate_fleet.py
 
       - name: Test read-only guard
         run: python3 scripts/test_readonly_guard.py
@@ -36,39 +42,13 @@ jobs:
           python3 evals/test_graders.py
           python3 evals/test_discovery_probe.py
 
-      - name: Verify Copilot artifacts are in sync (drift gate)
+      - name: Smoke-test error budget helper
+        run: python3 .claude/skills/slo-error-budget/scripts/error_budget.py --slo 99.9 --window-days 28 --bad-minutes 10
+
+      # Copilot drift gate — only the .agent.md wrappers are committed (they carry real tool-
+      # translation). The SKILL.md mirror under .github/skills/ is an optional, gitignored local
+      # artifact (Copilot reads .claude/skills/ directly), so it is not generated-and-gated here.
+      - name: Verify Copilot agent wrappers are in sync (drift gate)
         run: |
           bash scripts/sync-copilot.sh
-          git diff --exit-code .github/ || (echo "Copilot artifacts drifted — re-run scripts/sync-copilot.sh and commit"; exit 1)
-
-  # Windows job: exercises the PowerShell path — the fleet validator and the .ps1 generator —
-  # so both generators stay green on their native platform.
-  windows:
-    runs-on: windows-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Validate agent and skill metadata
-        shell: pwsh
-        run: powershell -ExecutionPolicy Bypass -File .\scripts\validate-fleet.ps1
-
-      - name: Test read-only guard
-        shell: pwsh
-        run: python .\scripts\test_readonly_guard.py
-
-      - name: Validate eval suite
-        shell: pwsh
-        run: |
-          python -m pip install --quiet pyyaml
-          python .\evals\run_evals.py --validate
-          python .\evals\discovery_probe.py --validate
-
-      - name: Smoke-test error budget helper
-        shell: pwsh
-        run: python .\.claude\skills\slo-error-budget\scripts\error_budget.py --slo 99.9 --window-days 28 --bad-minutes 10
-
-      - name: Verify Copilot artifact generation
-        shell: pwsh
-        run: powershell -ExecutionPolicy Bypass -File .\scripts\sync-copilot.ps1
+          git diff --exit-code .github/agents/ || (echo "Copilot agent wrappers drifted — re-run scripts/sync-copilot.sh and commit .github/agents/"; exit 1)
