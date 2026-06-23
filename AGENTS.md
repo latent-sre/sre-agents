@@ -178,7 +178,9 @@ bash scripts/sync-copilot.sh       # macOS / Linux
 The only non-portable seam is the agent `tools:` field (Claude uses `Read, Grep`; Copilot uses arrays
 like `['edit','search/codebase']`). Behavioral guardrails are written in each agent body (honored by
 both); the generator translates `tools` for Copilot and removes terminal access from read-only agents
-because Claude hooks are not portable.
+because Claude hooks are not portable. The translated names target **VS Code Copilot's** tool
+vocabulary (`search`/`edit`/`runCommands`); the github.com Copilot *coding agent* uses a different,
+incompatible vocabulary (a known upstream mismatch) and is out of scope for these wrappers.
 
 ## Validate & operate
 

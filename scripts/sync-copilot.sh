@@ -22,6 +22,11 @@ gh_agents="$root/.github/agents"
 gh_skills="$root/.github/skills"
 
 # Map Claude tool names -> Copilot tool/toolset names, preserving read-only vs. write intent.
+#
+# SURFACE (by decision): these names target **VS Code Copilot** custom agents — the `search` / `edit` /
+# `runCommands` toolset vocabulary, where `runCommands` IS the terminal tool. The github.com Copilot
+# *coding agent* uses a different, incompatible vocabulary (a known upstream mismatch,
+# github/copilot-cli#738) and is intentionally OUT OF SCOPE for these wrappers.
 translate_tools() {
     local line="$1"
     local out="'search'"                                             # read/search codebase (toolset)
