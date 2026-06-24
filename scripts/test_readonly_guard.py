@@ -55,6 +55,12 @@ ALLOW = [
     "git -C /srv/repo log --oneline",
     "git --no-pager diff main...HEAD",
     "git -C /srv/repo status",
+    # a git WRITE verb appearing only as ARGUMENT / search text is not the command — must NOT be denied
+    # (regression: the git rules are command-position anchored like the rest of the denylist)
+    'grep "git push" Makefile',
+    "echo 'remember to git commit before deploy'",
+    'rg "git reset --hard" docs/',
+    "cat README | grep 'git config user.email'",
     # interpreter version/encoding probes and 'install' as a path must NOT be blocked
     "python3 --version",
     "node --version",
@@ -195,6 +201,12 @@ DENY = [
     "git --git-dir=/srv/repo/.git commit -m z",
     "git --no-pager push origin main",
     "git -C /srv/repo config user.email evil@example.com",
+    # ABSOLUTE/relative-path git and wrapper-prefixed git must still be denied after the
+    # command-position anchoring fix (the `(?:\S*/)?` + _CMD wrapper tolerance preserves this)
+    "/usr/bin/git push origin main",
+    "/usr/local/bin/git commit -m x",
+    "sudo git reset --hard origin/main",
+    "cat x | /usr/bin/git push",
     # interpreter eval bypasses: perl/ruby/node -e are peers of python -c
     "perl -e 'unlink \"x\"'",
     "ruby -e 'File.write(1,2)'",

@@ -14,7 +14,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def _block(path, start, end='}'):
     """Return the text from `start` up to the next `end` char (the table literal), or None."""
-    text = open(path, encoding='utf-8').read()
+    with open(path, encoding='utf-8') as fh:
+        text = fh.read()
     i = text.find(start)
     if i == -1:
         return None
