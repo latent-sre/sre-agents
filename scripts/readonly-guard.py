@@ -29,6 +29,16 @@ egress carrying command substitution, DNS-tunnel lookups carrying substitution, 
 and read-only interpreter probes (`python3 --version`, `python3 -m json.tool`) still pass.
 Covered by scripts/test_readonly_guard.py (pure-stdlib, runs offline).
 
+Known residuals (ACCEPTED BY DESIGN — do not chase with more regex): a regex denylist cannot
+fully parse shell, so a state-changing verb deliberately hidden behind shell *evaluation* will pass
+— e.g. backtick command substitution (``x=`git push` ``), a verb after a shell *keyword* the anchor
+doesn't enumerate (`for r in *; do git push; done`), `eval "$cmd"`, or a base64/hex-decoded payload
+piped to an interpreter. These are exactly the "adversary fully controls the command string" cases
+the Honest boundary above disclaims; the containment for them is OS-level least-privilege creds +
+the network allowlist, NOT this pattern. We match COMMAND-POSITION verbs (start of line / after a
+separator / subshell opener / VAR=val / wrapper / a path to the binary), which catches the forms a
+COOPERATIVE agent actually emits; we intentionally do not try to out-parse an adversarial shell.
+
 Decision is returned as a permissionDecision JSON on stdout with exit 0 (the documented
 non-error path). See https://code.claude.com/docs/en/hooks
 
