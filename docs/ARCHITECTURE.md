@@ -120,7 +120,9 @@ flowchart TD
 are portable Markdown checklists. **The real enforcement for prod changes is GitHub branch protection +
 protected environments** (the fleet's own `github-actions-ci` pattern — required reviews, required status
 checks, environment reviewers with human sign-off): that is the security boundary, and it does not depend
-on any agent cooperating. As an *auditable speed-bump* in Claude Code, `release-engineer` additionally
+on any agent cooperating — **provided GitHub's *Allow administrators to bypass protection rules* is
+disabled** (it is ON by default, and while enabled an admin/automation token can push straight past the
+boundary). As an *auditable speed-bump* in Claude Code, `release-engineer` additionally
 runs a `PreToolUse` hook ([../scripts/production-change-guard.py](../scripts/production-change-guard.py))
 that blocks state-changing `cf` commands unless the gate sentinel (`PCF_GATE_CLEARED=1` or a
 `.gate-cleared` file) is set — a checklist-forcing convenience for a cooperative agent, **not** a security

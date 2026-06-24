@@ -166,7 +166,8 @@ Authored once under `.claude/`, consumed by both tools:
 | Copilot conventions | (see AGENTS.md) | [`.github/copilot-instructions.md`](.github/copilot-instructions.md) |
 
 Both tools read `.claude/` directly, so the fleet works in Copilot with **zero extra steps**. For
-Copilot-native tool scoping (`.agent.md` arrays, `handoffs`, `target`) run the generator:
+Copilot-native tool scoping (the `tools:` field translated to `.agent.md`'s array form — the generator
+translates *only* `tools:`, not `handoffs`/`target`) run the generator:
 
 ```bash
 # from repo root — emits .github/agents/*.agent.md (committed, drift-gated); also writes an optional

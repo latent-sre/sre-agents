@@ -1,11 +1,13 @@
 # Handoff map
 
 A "handoff" here means: a specialist finishes, returns a **structured summary**, and names **who picks
-up next**. Classic Claude Code subagents **cannot call each other** — only the main session delegates —
-so routing and incident-command are **skills** (`route-request`, `incident-severity`) the main session
-loads to emit an *ordered plan* (see [ARCHITECTURE.md](ARCHITECTURE.md) and [CLAUDE.md](../CLAUDE.md)'s
-*Subagent dispatch* note), then it routes between agents. Each agent's body
-lists its own handoff targets; this is the fleet-wide picture. Package context with `handoff-protocol`.
+up next**. Routing and incident-command are **skills** (`route-request`, `incident-severity`) the main
+session loads to emit an *ordered plan* (see [ARCHITECTURE.md](ARCHITECTURE.md) and [CLAUDE.md](../CLAUDE.md)'s
+*Subagent dispatch* note), then it routes between agents. They stay skills on **cost, not capability**:
+even though Claude Code now supports nested subagent dispatch, a coordinator subagent would double-pay
+the routing round-trip and discard the main session's live context the work needs (see
+[adr/0001](adr/0001-routing-and-incident-command-as-skills.md)). Each agent's body lists its own handoff
+targets; this is the fleet-wide picture. Package context with `handoff-protocol`.
 
 ## Principles
 - **Hand off, don't sprawl.** When work leaves your lane, name the target agent and give them what they

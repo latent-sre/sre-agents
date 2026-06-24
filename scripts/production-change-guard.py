@@ -26,6 +26,12 @@ Read-only `cf` commands (cf app/apps/logs/events/target, `cf curl` GET) always p
 guard only speed-bumps WRITES. Non-`cf` and non-Bash calls pass untouched (other state
 changes are out of this guard's narrow scope; the gate + creds cover them).
 
+SCOPE — `cf` ONLY: this hook does NOT speed-bump the GitHub-Actions prod path the team is migrating
+to (`git push` to a protected branch, `gh workflow run`, `gh release create`, Terraform, etc.). Those
+are gated by the load-bearing control — GitHub branch protection + protected environments with required
+reviewers (admin-bypass disabled) — NOT by this local hook. Do not read "the guard didn't fire" as
+"this prod change is safe": for non-`cf` prod actions the GitHub gate is the only thing in the way.
+
 Cross-platform: pure Python stdlib, no jq. The agent hook invokes this via
 `"$(command -v python3 || command -v python)" -c ...` — selecting the interpreter once so this
 guard's blocking exit 2 propagates unchanged (the older `python3 ... || python ...` form re-ran on

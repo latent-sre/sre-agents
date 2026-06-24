@@ -5,4 +5,6 @@
 #   python3 -m pip install -r requirements-dev.txt
 #
 # Note: scripts/validate_fleet.py and the guard tests have NO third-party deps — run them directly.
-pyyaml>=6.0
+# Pinned to an exact version so CI is reproducible — CI installs via `-r requirements-dev.txt`, never a
+# bare `pip install pyyaml`. Bumped by Dependabot (.github/dependabot.yml).
+pyyaml==6.0.2

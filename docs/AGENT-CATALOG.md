@@ -11,8 +11,9 @@ each leans on. The terse roster table is in [`AGENTS.md`](../AGENTS.md); the col
 > `runbook-author`) edit files; prod-facing execution still needs human sign-off via the gates.
 >
 > **Routing and incident-command are *skills*, not agents** — `route-request` and `incident-severity`
-> run in the main session (classic subagents can't dispatch; see [ARCHITECTURE.md](ARCHITECTURE.md) and
-> [adr/0001](adr/0001-routing-and-incident-command-as-skills.md)).
+> run in the main session (a coordinator subagent would double-pay the routing round-trip and discard
+> the main session's live context — cost, not a capability limit; see [ARCHITECTURE.md](ARCHITECTURE.md)
+> and [adr/0001](adr/0001-routing-and-incident-command-as-skills.md)).
 
 ---
 
@@ -87,7 +88,8 @@ and SLO configs. Skills: `slo-error-budget`, `wavefront-queries`, `grafana-dashb
 
 > **Running a live incident is a skill, not an agent.** `incident-severity` (SEV1–4 rubric, comms
 > cadence, roles, the live timeline, drive-to-mitigation) is loaded by `sre-engineer` or a human IC in
-> the main session — there is no `incident-commander` agent (it could only emit a plan it can't dispatch).
+> the main session — there is no `incident-commander` agent (isolating it from the investigation would
+> double-pay the round-trip and strand it from the live incident context it needs).
 
 ---
 

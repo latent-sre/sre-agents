@@ -29,6 +29,16 @@ egress carrying command substitution, DNS-tunnel lookups carrying substitution, 
 and read-only interpreter probes (`python3 --version`, `python3 -m json.tool`) still pass.
 Covered by scripts/test_readonly_guard.py (pure-stdlib, runs offline).
 
+Known residuals (ACCEPTED BY DESIGN — do not chase with more regex): a regex denylist cannot
+fully parse shell, so a state-changing verb deliberately hidden behind shell *evaluation* will pass
+— e.g. backtick command substitution (``x=`git push` ``), a verb after a shell *keyword* the anchor
+doesn't enumerate (`for r in *; do git push; done`), `eval "$cmd"`, or a base64/hex-decoded payload
+piped to an interpreter. These are exactly the "adversary fully controls the command string" cases
+the Honest boundary above disclaims; the containment for them is OS-level least-privilege creds +
+the network allowlist, NOT this pattern. We match COMMAND-POSITION verbs (start of line / after a
+separator / subshell opener / VAR=val / wrapper / a path to the binary), which catches the forms a
+COOPERATIVE agent actually emits; we intentionally do not try to out-parse an adversarial shell.
+
 Decision is returned as a permissionDecision JSON on stdout with exit 0 (the documented
 non-error path). See https://code.claude.com/docs/en/hooks
 
@@ -42,13 +52,53 @@ import json
 import re
 import sys
 
-# Command-position anchor: start of string or just after a pipe/sep, tolerating a leading
-# wrapper such as `sudo`, `env FOO=1`, `xargs`, `nice -n 10`, `time`, `nohup`, etc. Without the
-# wrapper tolerance, `sudo install ...` / `sudo vim ...` would slip past the position-anchored
-# patterns below. Bounded to a single command via [^|;&] so it can't span a pipeline.
-_CMD = (
-    r"(?:^|[|;&]\s*)"
-    r"(?:(?:sudo|xargs|nice|env|time|command|nohup|setsid|stdbuf|ionice)\b[^|;&]*?\s)?"
+# Leading-wrapper tolerance shared by the command-position anchors: an optional `sudo`, `env FOO=1`,
+# `xargs`, `nice -n 10`, `time`, `nohup`, etc. before the real command. Without it, `sudo install ...` /
+# `sudo vim ...` would slip past the position-anchored patterns below. Bounded to a single command via
+# [^|;&] so it can't span a pipeline.
+_WRAP = r"(?:(?:sudo|xargs|nice|env|time|command|nohup|setsid|stdbuf|ionice)\b[^|;&]*?\s)?"
+
+# Command-position anchor: start of string or just after a pipe/sep, plus the wrapper tolerance.
+_CMD = r"(?:^|[|;&]\s*)" + _WRAP
+
+# Git accepts GLOBAL options BETWEEN `git` and the subcommand (`git -C <path> push`, `git -c k=v commit`,
+# `git --git-dir=… --work-tree=… add`, `git --no-pager reset`). Without tolerating that prefix, the verb
+# anchor `\bgit\s+(push|commit|…)` is bypassed by the idiomatic, non-adversarial `git -C repo …` form.
+# Matches a run of global options (those that take a value consume the following token) so the write-verb
+# and config-write rules can anchor AFTER it. `\S+` stays within one command (no separators inside a token).
+# A global-option VALUE: a quoted string (which may contain spaces — `git -C "/repo with space"`, common
+# on Windows / shared drives) or a bare whitespace-delimited token. A plain `\S+` would stop at the first
+# space inside a quoted path and let the trailing write verb escape the anchor.
+_VAL = r"(?:\"[^\"]*\"|'[^']*'|\S+)"
+_GIT_PRE = (
+    r"(?:(?:"
+    r"-C\s+" + _VAL + r"|-c\s+" + _VAL + r"|"
+    r"--git-dir(?:=" + _VAL + r"|\s+" + _VAL + r")|--work-tree(?:=" + _VAL + r"|\s+" + _VAL + r")|"
+    r"--namespace(?:=" + _VAL + r"|\s+" + _VAL + r")|"
+    r"--exec-path(?:=" + _VAL + r")?|--config-env=" + _VAL + r"|"
+    r"-p|--paginate|--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--no-optional-locks|"
+    r"--(?:no-)?(?:glob|noglob|icase)-pathspecs"
+    r")\s+)*"
+)
+
+# Command-position prefix for `git` itself. A bare `\bgit\s+<verb>` also matches a git verb that
+# appears only as an ARGUMENT or search text (`grep "git push" file`, `echo "git commit"`) — a
+# false-positive denial of a read. We instead require git to be in COMMAND position, but more
+# permissively than plain `_CMD` so we don't REGRESS real write forms the bare `\bgit` caught:
+#   - start of string, modulo leading whitespace;
+#   - after a separator/pipe (`;` `&` `|`, so `&&`/`||` too) or a subshell/brace opener (`(` `{`);
+#   - after leading `VAR=val` assignments (`GIT_SSH_COMMAND=… git push` is a real idiom);
+#   - after a sudo/env-style wrapper; and `(?:\S*/)?` re-admits an absolute/relative path to the binary.
+# The trailing write-verb list still gates it, so a git READ in any of these positions (`(git log)`)
+# stays allowed. Residual (accepted — matches the guard's cooperative-agent / non-sandbox posture and
+# the rest of the denylist): a git write hidden after a shell *keyword* (`...; do git push`) or a
+# literal `(git push)` inside a quoted grep argument is not perfectly classified; the load-bearing
+# control is OS-level least-privilege creds + a network allowlist, not this regex.
+_GIT_CMD = (
+    r"(?:^|[|;&(){}])\s*"
+    r"(?:\w+=\S+\s+)*"
+    + _WRAP
+    + r"(?:\S*/)?git\s+"
 )
 
 # State-changing command patterns — denied for read-only agents. Case-insensitive.
@@ -80,15 +130,18 @@ _DENY_PATTERNS = [
     r"\bgh\s+release\s+(create|delete|edit|upload)\b",
     r"\bgh\s+repo\s+(create|delete|fork|edit|rename|sync|archive|unarchive)\b",
     r"\bgh\s+api\b.*(-X\s*(POST|PUT|DELETE|PATCH)|--method[=\s]+(POST|PUT|DELETE|PATCH))",
-    # git writes: history, remote, index, or worktree mutations
-    r"\bgit\s+(add|mv|rm|push|commit|reset|rebase|merge|cherry-pick|revert|clean|am|apply|"
+    # git writes: history, remote, index, or worktree mutations. _GIT_CMD anchors git to command
+    # position (no false positive when a git verb is only grep'd/echoed text) while keeping absolute-path
+    # coverage; _GIT_PRE tolerates git's global-option prefix (git -C <path> / -c k=v / --work-tree=… /
+    # --no-pager) so it can't bypass the verb anchor.
+    _GIT_CMD + _GIT_PRE + r"(add|mv|rm|push|commit|reset|rebase|merge|cherry-pick|revert|clean|am|apply|"
     r"restore|checkout|switch|pull|stash|gc|prune|init|worktree|update-ref|update-index|"
     r"symbolic-ref|filter-branch|branch\s+-[dDmM]|tag\s+-d|"
     r"remote\s+(add|rm|remove|set-url))\b",
     # git config WRITE: a dotted key followed by a value, or an explicit write flag.
-    # Reads (`--get`/`--list`) lack the trailing value, so they pass through.
-    r"\bgit\s+config\s+(?:--\S+\s+)*\S+\.\S+\s+\S",
-    r"\bgit\s+config\s+(--unset|--unset-all|--replace-all|--add|--rename-section|--remove-section)\b",
+    # Reads (`--get`/`--list`) lack the trailing value, so they pass through. _GIT_CMD/_GIT_PRE as above.
+    _GIT_CMD + _GIT_PRE + r"config\s+(?:--\S+\s+)*\S+\.\S+\s+\S",
+    _GIT_CMD + _GIT_PRE + r"config\s+(--unset|--unset-all|--replace-all|--add|--rename-section|--remove-section)\b",
     # filesystem / process / service mutations
     r"\b(rm|rmdir|mv|cp|rsync|dd|truncate|shred|chmod|chown|chgrp|ln|mkfs|mkdir|touch)\b",
     r"\bfind\b.*\s-delete\b",
@@ -205,7 +258,10 @@ _DENY_PATTERNS = [
     # `(?:\S*/)?` prefix closes the absolute-path form (`... | /bin/sh`), matching the script-file rules.
     r"\|\s*(sudo\s+)?(?:\S*/)?(sh|bash|zsh)\s*(\||$|;|&)",
 ]
-_DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE)
+# re.MULTILINE so the command-position anchor `^` matches at the start of EVERY line, not just the whole
+# string — otherwise a state-changing verb on a later line of a multiline Bash command (`echo hi\ngit
+# push`) would slip past every `(?:^|…)`-anchored rule. A newline is a command separator just like `;`.
+_DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE | re.MULTILINE)
 
 # Allowlist: the fleet's own bundled READ-ONLY triage helper, at its EXACT bundled path
 # `.claude/skills/pcf-ops/scripts/triage.{sh,ps1}` (the path pcf-ops/foundations.md documents).
@@ -245,7 +301,10 @@ def main() -> None:
         sys.exit(0)
 
     command = (data.get("tool_input") or {}).get("command", "") or ""
-    if _ALLOW_RE.match(command):
+    # The allowlist is a SINGLE-command exemption; require a single line so a multiline command that
+    # merely STARTS with the triage helper (`triage.sh\nrm -rf /`) can't ride the exemption past the
+    # (now MULTILINE) denylist. A legitimate triage invocation is always one line.
+    if "\n" not in command and "\r" not in command and _ALLOW_RE.match(command):
         sys.exit(0)  # bundled read-only triage helper — explicitly permitted
     if _DENY_RE.search(command):
         print(json.dumps({

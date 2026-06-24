@@ -51,6 +51,19 @@ ALLOW = [
     "curl -o /dev/null -s https://example.com/health",
     "git config --get user.name",
     "git config --list",
+    # git global options before a READ verb stay allowed (regression for the global-option prefix)
+    "git -C /srv/repo log --oneline",
+    "git --no-pager diff main...HEAD",
+    "git -C /srv/repo status",
+    # a git WRITE verb appearing only as ARGUMENT / search text is not the command — must NOT be denied
+    # (regression: the git rules are command-position anchored like the rest of the denylist)
+    'grep "git push" Makefile',
+    "echo 'remember to git commit before deploy'",
+    'rg "git reset --hard" docs/',
+    "cat README | grep 'git config user.email'",
+    # a git READ on a later line of a multiline command stays allowed (write-verb list still gates;
+    # regression companion to the MULTILINE deny cases below)
+    "echo checking\ngit log --oneline -n 5",
     # interpreter version/encoding probes and 'install' as a path must NOT be blocked
     "python3 --version",
     "node --version",
@@ -183,6 +196,45 @@ DENY = [
     "git config --global user.name Attacker",
     "git worktree add ../wt",
     "git update-ref refs/heads/main HEAD",
+    # git GLOBAL OPTIONS before the write verb must not bypass the denylist (git -C / -c / --work-tree /
+    # --git-dir / --no-pager are idiomatic prefixes that defeated the bare `\bgit\s+<verb>` anchor)
+    "git -C /srv/repo reset --hard origin/main",
+    "git -c user.name=x commit -m y",
+    "git --work-tree=/srv/repo add .",
+    "git --git-dir=/srv/repo/.git commit -m z",
+    "git --no-pager push origin main",
+    "git -C /srv/repo config user.email evil@example.com",
+    # ABSOLUTE/relative-path git and wrapper-prefixed git must still be denied after the
+    # command-position anchoring fix (the `(?:\S*/)?` + wrapper tolerance preserves this)
+    "/usr/bin/git push origin main",
+    "/usr/local/bin/git commit -m x",
+    "sudo git reset --hard origin/main",
+    "cat x | /usr/bin/git push",
+    # command-position git that the anchor must NOT lose vs the old bare `\bgit` (regression for the
+    # Bugbot finding: VAR=val assignments, subshell/brace openers, leading whitespace, and &&/||/;)
+    "FOO=bar git push origin main",
+    "GIT_SSH_COMMAND=ssh git push",
+    "(git push)",
+    "(cd repo && git push)",
+    "foo && git push origin main",
+    "foo || git commit -m x",
+    "  git push origin main",
+    "{ git push; }",
+    "x=1 git reset --hard",
+    # quoted global-option value with spaces must not let the write verb escape the anchor
+    # (regression: `_GIT_PRE`'s value matcher accepts a quoted path, not just a bare \S+ token)
+    'git -C "/tmp/repo space" reset --hard',
+    "git -C '/srv/my repo' push origin main",
+    'git --work-tree="/srv/my repo" add .',
+    'git -c "user.name=A B" commit -m x',
+    # MULTILINE: a state-changing verb on a LATER line of a multiline command must still be denied
+    # (regression: `^` anchors matched only the whole-string start without re.MULTILINE)
+    "echo hi\ngit push origin main",
+    "cd repo\n  git commit -m x",
+    "echo step 1\nrm -rf /tmp/cache",
+    "ls\n./deploy.sh",
+    # allowlisted triage helper must NOT smuggle a second-line mutation past the exemption
+    ".claude/skills/pcf-ops/scripts/triage.sh\nrm -rf /tmp/x",
     # interpreter eval bypasses: perl/ruby/node -e are peers of python -c
     "perl -e 'unlink \"x\"'",
     "ruby -e 'File.write(1,2)'",

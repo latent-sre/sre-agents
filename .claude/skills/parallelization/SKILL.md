@@ -43,8 +43,10 @@ perspectives. Two shapes: *[sourced: Anthropic, "Building Effective Agents"]*
 
 ## In this fleet
 The `route-request` skill produces an **ordered plan**; the main session executes its
-parallel strands (classic subagents don't dispatch each other). During an incident, technical RCA
-(`sre-engineer`) runs *in parallel* with the incident-command process (`incident-severity`), and `researcher` fans out
+parallel strands — kept in the session that holds the live context rather than paying a coordinator
+subagent's extra round-trip (a cost choice, not a capability limit: subagents *can* now nest-dispatch).
+During an incident, technical RCA (`sre-engineer`) runs *in parallel* with the incident-command process
+(`incident-severity`), and `researcher` fans out
 alongside. The fleet handoff map ([`docs/HANDOFFS.md`](../../../docs/HANDOFFS.md)) carries the
 "parallelize independent work, keep coupled work sequential" rule — this skill is the *why* and *how much*.
 

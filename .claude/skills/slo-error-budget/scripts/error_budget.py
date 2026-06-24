@@ -17,6 +17,7 @@ Examples:
   python error_budget.py --slo 99.9 --window-days 28 --bad-minutes 12 --sli 99.2
 """
 import argparse
+import math
 import sys
 
 
@@ -38,6 +39,9 @@ def main(argv=None) -> int:
 
     if not (0 < args.slo < 100):
         p.error("--slo must be between 0 and 100 (exclusive)")
+    if not math.isfinite(args.window_days) or args.window_days <= 0:
+        # argparse's float parser accepts "nan"/"inf"; reject them so budget math stays meaningful.
+        p.error("--window-days must be a positive, finite number")
     budget_fraction = 1.0 - args.slo / 100.0          # e.g. 99.9 -> 0.001
     window_minutes = args.window_days * 24 * 60
     budget_minutes = window_minutes * budget_fraction
