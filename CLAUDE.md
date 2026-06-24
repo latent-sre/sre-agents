@@ -47,10 +47,13 @@ hard to catch; `sonnet` for structured work that follows a defined method, check
 - **Why `release-engineer` is `sonnet` despite prod stakes:** the *safety control is the gate, not the
   model* — prod actions run only through `release-gate` + `production-change-gate` with explicit human
   sign-off, and it executes *pre-approved plans* rather than inventing them. Bump it to `opus` if your team
-  wants extra reasoning headroom on rollback-under-pressure calls; it's a one-line frontmatter change, not
-  an architectural one.
-- **Tuning:** `model:` is Claude-specific frontmatter. Change it per agent freely; Copilot ignores it and
-  uses its own model selection. Keep this policy in sync when you do.
+  wants extra reasoning headroom on rollback-under-pressure calls — a one-line frontmatter change, but
+  update the model-policy table in [`scripts/validate_fleet.py`](scripts/validate_fleet.py) (and
+  `scripts/validate-fleet.ps1`) in the **same commit**, or CI fails.
+- **Tuning:** `model:` is Claude-specific frontmatter (Copilot ignores it and uses its own selection).
+  Change it per agent as your team sees fit — but it is an **enforced** policy, not a free-for-all:
+  `scripts/validate_fleet.py` is the source of truth and **fails CI** on any agent whose `model:` doesn't
+  match its table, so edit the table in the same commit.
 
 ## VS Code / Copilot
 

@@ -31,6 +31,9 @@ jobs:
       - name: Test production-change guard
         run: python3 scripts/test_production_change_guard.py
 
+      - name: Test guard cf-write parity
+        run: python3 scripts/test_guard_cf_parity.py
+
       - name: Validate eval + discovery suites (structure only)
         run: |
           python3 -m pip install --quiet pyyaml

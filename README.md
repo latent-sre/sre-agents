@@ -46,14 +46,15 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 evals/                     behavioral evals (scenarios + graders) — routing, gates, security; --validate runs in CI
-docs/                       ARCHITECTURE (why) · AGENT-CATALOG (per-agent roster) · HANDOFFS (collab map) · BRANCH-REVIEW
+docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · adr/ · FOLLOWUPS
 scripts/
   sync-copilot.ps1 / .sh   generate .github/agents (committed) + an optional gitignored .github/skills mirror
   validate_fleet.py        validate all skills/agents against the Agent Skills spec (the CI gate; pure stdlib)
   validate-fleet.ps1       PowerShell equivalent for Windows-local use (not the CI gate)
   readonly-guard.py        PreToolUse hook: blocks state-changing + data-egress shell commands for read-only agents
 .github/
-  agents/  skills/         GENERATED (gitignored) — do not hand-edit; edit .claude/ and re-run sync
+  agents/                  GENERATED but COMMITTED + drift-gated in CI — edit .claude/ and re-run sync
+  skills/                  GENERATED, gitignored local mirror (Copilot reads .claude/skills/ directly)
 ```
 
 ## The fleet

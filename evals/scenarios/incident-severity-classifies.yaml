@@ -18,5 +18,8 @@ graders:
     of: ["15 min", "15 minute", "every 15", "fifteen min"]
   - type: contains_any
     of: ["incident commander", "declare", "page", "on-call", "postmortem"]
-  - type: not_regex   # must not under-classify this all-users outage to a lower severity
-    pattern: '\bsev[\s-]?[34]\b'
+  # Must not CLASSIFY this all-users outage as a lower severity. Gated so a CONTRASTING mention
+  # ("SEV1, not SEV3/SEV4") does not false-fail: require an actual classifying lead-in and exempt
+  # "not / than / above". (graders apply re.IGNORECASE, so lowercase lead-ins match "Severity:" etc.)
+  - type: not_regex
+    pattern: '(?<!not )(?<!not a )(?<!than )(?<!above )(severity[:\s]+|classify (?:it |this )?as (?:a )?|this is (?:a |an )?)sev[\s-]?[34]\b'
