@@ -164,11 +164,16 @@ _DENY_PATTERNS = [
     # cargo/go run-or-build (install/get already covered above). Command-position anchored like the
     # make/docker rule, so observation-only text — `rg "go build" .`, `grep "cargo build" notes` —
     # is NOT a false-positive; only an actual `go build`/`cargo run` in the command slot is blocked.
-    _CMD + r"(go|cargo)\s+(run|build)\b",
+    # The `(?:\S*/)?` prefix also catches an absolute-path toolchain: `/usr/local/go/bin/go build`,
+    # `/usr/bin/cargo run`. (A read-only `command -v go` doesn't run anything and stays allowed.)
+    _CMD + r"(?:\S*/)?(go|cargo)\s+(run|build)\b",
     # An interpreter invoked on a script FILE (not an inline-code flag, not a read-only probe).
-    # `bash deploy.sh`, `sh ./run.sh`, `zsh path/to/x.sh` — arg ending in .sh or a path.
-    _CMD + r"(bash|sh|zsh)\s+[\"'./~$A-Za-z0-9_-]*\S+\.sh\b",
-    _CMD + r"(bash|sh|zsh)\s+\.{0,2}/\S+",
+    # `bash deploy.sh`, `sh ./run.sh`, `zsh path/to/x.sh` — arg ending in .sh or a path. The
+    # optional `(?:\S*/)?` prefix closes the absolute-path bypass: `/bin/bash deploy.sh` is treated
+    # identically to bare `bash deploy.sh` (the inline `-c`/`-e` forms above already cover abs paths
+    # via `\b`; these file-exec rules were command-position-anchored and missed the path prefix).
+    _CMD + r"(?:\S*/)?(bash|sh|zsh)\s+[\"'./~$A-Za-z0-9_-]*\S+\.sh\b",
+    _CMD + r"(?:\S*/)?(bash|sh|zsh)\s+\.{0,2}/\S+",
     # `python3 ./mutate.py`, `node x.js|.mjs|.cjs`, `ruby x.rb` — a script-file argument.
     # The earlier `-c/-e/--eval` and `--version`/`-m` forms are read-only and pass through.
     r"\b(python|python3|py)\s+(?!-)\S*\.py\b",
@@ -196,8 +201,9 @@ _DENY_PATTERNS = [
     r"(?:^|[|;&]\s*)source\b",
     r"(?:^|[|;&]\s*)\.\s+\S",
     # A bare `sh`/`bash`/`zsh` at the END of a pipeline consumes a script on stdin
-    # (`... | base64 -d | sh`) — no `-c` needed. Anchored to a pipe so it's the sink.
-    r"\|\s*(sudo\s+)?(sh|bash|zsh)\s*(\||$|;|&)",
+    # (`... | base64 -d | sh`) — no `-c` needed. Anchored to a pipe so it's the sink. The
+    # `(?:\S*/)?` prefix closes the absolute-path form (`... | /bin/sh`), matching the script-file rules.
+    r"\|\s*(sudo\s+)?(?:\S*/)?(sh|bash|zsh)\s*(\||$|;|&)",
 ]
 _DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE)
 

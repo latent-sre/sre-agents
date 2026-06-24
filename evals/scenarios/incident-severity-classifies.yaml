@@ -19,7 +19,9 @@ graders:
   - type: contains_any
     of: ["incident commander", "declare", "page", "on-call", "postmortem"]
   # Must not CLASSIFY this all-users outage as a lower severity. Gated so a CONTRASTING mention
-  # ("SEV1, not SEV3/SEV4") does not false-fail: require an actual classifying lead-in and exempt
-  # "not / than / above". (graders apply re.IGNORECASE, so lowercase lead-ins match "Severity:" etc.)
+  # ("SEV1, not SEV3/SEV4", "more severe than SEV3") does not false-fail, while an actual lower-sev
+  # CONCLUSION does — including verdicts with no "this is" lead-in ("should be SEV3", "= SEV4",
+  # "downgrade to SEV3"). Exemptions (not / than / above) bind via lookbehind.
+  # (graders apply re.IGNORECASE, so lowercase lead-ins match "Severity:" / "This is" etc.)
   - type: not_regex
-    pattern: '(?<!not )(?<!not a )(?<!than )(?<!above )(severity[:\s]+|classify (?:it |this )?as (?:a )?|this is (?:a |an )?)sev[\s-]?[34]\b'
+    pattern: '(?<!not )(?<!not a )(?<!than )(?<!above )(?<!above a )(severity[:=\s]+|classif\w+(?: it| this)? as (?:an? )?|this (?:is|should be|would be|is now)(?: an?)? |should be (?:an? )?|downgrade(?:d)? to (?:an? )?|=\s*|→\s*)sev[\s-]?[34]\b'
