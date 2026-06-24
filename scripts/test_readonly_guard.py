@@ -202,11 +202,22 @@ DENY = [
     "git --no-pager push origin main",
     "git -C /srv/repo config user.email evil@example.com",
     # ABSOLUTE/relative-path git and wrapper-prefixed git must still be denied after the
-    # command-position anchoring fix (the `(?:\S*/)?` + _CMD wrapper tolerance preserves this)
+    # command-position anchoring fix (the `(?:\S*/)?` + wrapper tolerance preserves this)
     "/usr/bin/git push origin main",
     "/usr/local/bin/git commit -m x",
     "sudo git reset --hard origin/main",
     "cat x | /usr/bin/git push",
+    # command-position git that the anchor must NOT lose vs the old bare `\bgit` (regression for the
+    # Bugbot finding: VAR=val assignments, subshell/brace openers, leading whitespace, and &&/||/;)
+    "FOO=bar git push origin main",
+    "GIT_SSH_COMMAND=ssh git push",
+    "(git push)",
+    "(cd repo && git push)",
+    "foo && git push origin main",
+    "foo || git commit -m x",
+    "  git push origin main",
+    "{ git push; }",
+    "x=1 git reset --hard",
     # interpreter eval bypasses: perl/ruby/node -e are peers of python -c
     "perl -e 'unlink \"x\"'",
     "ruby -e 'File.write(1,2)'",

@@ -42,14 +42,14 @@ import json
 import re
 import sys
 
-# Command-position anchor: start of string or just after a pipe/sep, tolerating a leading
-# wrapper such as `sudo`, `env FOO=1`, `xargs`, `nice -n 10`, `time`, `nohup`, etc. Without the
-# wrapper tolerance, `sudo install ...` / `sudo vim ...` would slip past the position-anchored
-# patterns below. Bounded to a single command via [^|;&] so it can't span a pipeline.
-_CMD = (
-    r"(?:^|[|;&]\s*)"
-    r"(?:(?:sudo|xargs|nice|env|time|command|nohup|setsid|stdbuf|ionice)\b[^|;&]*?\s)?"
-)
+# Leading-wrapper tolerance shared by the command-position anchors: an optional `sudo`, `env FOO=1`,
+# `xargs`, `nice -n 10`, `time`, `nohup`, etc. before the real command. Without it, `sudo install ...` /
+# `sudo vim ...` would slip past the position-anchored patterns below. Bounded to a single command via
+# [^|;&] so it can't span a pipeline.
+_WRAP = r"(?:(?:sudo|xargs|nice|env|time|command|nohup|setsid|stdbuf|ionice)\b[^|;&]*?\s)?"
+
+# Command-position anchor: start of string or just after a pipe/sep, plus the wrapper tolerance.
+_CMD = r"(?:^|[|;&]\s*)" + _WRAP
 
 # Git accepts GLOBAL options BETWEEN `git` and the subcommand (`git -C <path> push`, `git -c k=v commit`,
 # `git --git-dir=… --work-tree=… add`, `git --no-pager reset`). Without tolerating that prefix, the verb
@@ -66,13 +66,25 @@ _GIT_PRE = (
     r")\s+)*"
 )
 
-# Command-position anchor for `git` itself. A bare `\bgit\s+<verb>` matches the verb even when it
-# appears only as an ARGUMENT or search text (`grep "git push" file`, `echo "git commit"`), a
-# false-positive denial of a read-only command — the same trap the other verb rules avoid with `_CMD`.
-# `_CMD` pins git to command position (start of string / after a pipe-or-sep, tolerating a sudo/env/…
-# wrapper); `(?:\S*/)?` then re-admits an absolute/relative path to the binary (`/usr/local/bin/git
-# push`, `sudo git reset`) so we keep the absolute-path coverage the bare `\bgit` gave for free.
-_GIT_CMD = _CMD + r"(?:\S*/)?git\s+"
+# Command-position prefix for `git` itself. A bare `\bgit\s+<verb>` also matches a git verb that
+# appears only as an ARGUMENT or search text (`grep "git push" file`, `echo "git commit"`) — a
+# false-positive denial of a read. We instead require git to be in COMMAND position, but more
+# permissively than plain `_CMD` so we don't REGRESS real write forms the bare `\bgit` caught:
+#   - start of string, modulo leading whitespace;
+#   - after a separator/pipe (`;` `&` `|`, so `&&`/`||` too) or a subshell/brace opener (`(` `{`);
+#   - after leading `VAR=val` assignments (`GIT_SSH_COMMAND=… git push` is a real idiom);
+#   - after a sudo/env-style wrapper; and `(?:\S*/)?` re-admits an absolute/relative path to the binary.
+# The trailing write-verb list still gates it, so a git READ in any of these positions (`(git log)`)
+# stays allowed. Residual (accepted — matches the guard's cooperative-agent / non-sandbox posture and
+# the rest of the denylist): a git write hidden after a shell *keyword* (`...; do git push`) or a
+# literal `(git push)` inside a quoted grep argument is not perfectly classified; the load-bearing
+# control is OS-level least-privilege creds + a network allowlist, not this regex.
+_GIT_CMD = (
+    r"(?:^|[|;&(){}])\s*"
+    r"(?:\w+=\S+\s+)*"
+    + _WRAP
+    + r"(?:\S*/)?git\s+"
+)
 
 # State-changing command patterns — denied for read-only agents. Case-insensitive.
 _DENY_PATTERNS = [
