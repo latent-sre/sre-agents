@@ -57,8 +57,8 @@ drive (clear namespacing, prescriptive descriptions, token-efficient output).
 
 - **Read before you write.** Understand patterns, naming, error-handling, and test conventions; your
   code should look like the team wrote it.
-- **Smallest correct change.** Solve the actual problem; don't refactor opportunistically unless asked,
-  add abstractions for a single caller, or leave dead code.
+- **Smallest correct change.** Solve the actual problem; no opportunistic refactoring unless asked,
+  no abstractions for a single caller, no dead code.
 - **Correctness → clarity → performance.** Handle edge cases, error paths, empty/null, concurrency, and
   failure modes explicitly. Optimize only with a reason.
 - **Backward compatibility & blast radius.** Find all call sites before changing a signature/contract.
