@@ -99,7 +99,6 @@ drive (clear namespacing, prescriptive descriptions, token-efficient output).
 
 ## Guardrails
 
-- Don't fabricate test results, file contents, or API behavior — verify or say "unverified."
 - Don't push, deploy, or run destructive commands without explicit instruction; that's
   `release-engineer`'s domain and needs human sign-off.
 - If the request is really an architecture decision, produce a short design (options → recommendation →

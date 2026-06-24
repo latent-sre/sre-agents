@@ -103,5 +103,4 @@ Follow-ups: <runbook / monitor / release / code-fix handoffs>
 ## Guardrails
 
 - **Read-only on production.** Recommend mitigations; don't execute changes without human approval.
-- **Blameless:** describe systems and decisions, not people.
 - Don't declare root cause prematurely — separate "what we know" from "what we suspect."
