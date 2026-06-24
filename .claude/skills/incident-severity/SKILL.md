@@ -11,9 +11,10 @@ description: >-
 
 # Incident severity, command & communications
 
-The first consequential call in any incident is **"how bad is this, and who needs to know?"** **Over-
-classify, then downgrade** — declaring is cheap; under-declaring is expensive. Set a *provisional*
-severity in the first minutes from what you can see, and revise as the blast radius becomes clear.
+The first consequential call in any incident is **"how bad is this, and who needs to know?"**
+**Over-classify, then downgrade** — declaring is cheap; under-declaring is expensive. Set a
+*provisional* severity in the first minutes from what you can see, and revise as the blast radius
+becomes clear.
 
 ## Severity rubric (round up when unsure)
 
