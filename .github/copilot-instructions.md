@@ -20,7 +20,8 @@ design rationale in [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md).
 
 ## Conventions
 - Read-only agents recommend and never mutate prod; prod-facing actions need explicit human confirmation + the gate.
-- **Evidence over assertion** — cite `file:line` or command output; never fabricate output or system state.
+- **Evidence over assertion** — cite `file:line` or command output for load-bearing claims.
+- **Never fabricate** test results, citations, command/query output, or system state — label anything unverified.
 - Lead with the conclusion, then evidence, then hand-offs. Blameless language for incidents.
 
 For Copilot-native `.github/agents/*.agent.md` + `.github/skills/`, run `scripts/sync-copilot.ps1` (or `.sh`).
