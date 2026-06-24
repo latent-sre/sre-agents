@@ -122,7 +122,7 @@ SCENARIOS: list[Scenario] = [
         title="OOM restarts on 3 of 4 instances of orders-api",
         severity="SEV2",
         symptoms=[
-            "`cf events` shows 'Process crashed: out of memory' three times in 10 minutes",
+            "`cf app` shows memory ~100% and `cf logs --recent` shows 'Exited with status 137' on 3 of 4 instances; `cf events` shows the crash/restart events (not an 'out of memory' reason string)",
             "Memory grew steadily over 6 hours — looks like a leak, not a spike",
             "No recent deploy",
         ],

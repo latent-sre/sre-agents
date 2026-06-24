@@ -1,0 +1,20 @@
+# Keep the supply-chain pins current so they don't silently rot:
+#   * GitHub Actions are SHA-pinned in .github/workflows/ (best practice) — Dependabot opens a PR with
+#     the new commit SHA + version comment when an action releases.
+#   * requirements-dev.txt pins pyyaml to an exact version — Dependabot bumps it the same way.
+# This is the auto-bump half of "pin third-party actions to a SHA" from the github-actions-ci skill.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: deps

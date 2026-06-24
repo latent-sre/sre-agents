@@ -34,7 +34,8 @@ the elite tier if it's a systemic/distributed failure mode that needs prevention
 ## Common app-ops failure modes (PCF)
 - **Bad deploy / config** → errors begin at deploy time; check `cf events`, compare droplet/instance
   versions, diff the release.
-- **Memory/quota saturation** → OOM restarts in `cf events`, rising memory in Wavefront.
+- **Memory/quota saturation** → OOM crashes/restarts in `cf events` (the crash shows as `Exited with
+  status 137`, not a literal "out of memory" string), rising memory in Wavefront.
 - **Downstream dependency slow/erroring** → latency up + upstream-timeout errors; confirm path with
   ThousandEyes.
 - **Connection/thread-pool exhaustion** → latency climbs, then errors; saturation signal leads.

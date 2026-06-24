@@ -38,6 +38,8 @@ def main(argv=None) -> int:
 
     if not (0 < args.slo < 100):
         p.error("--slo must be between 0 and 100 (exclusive)")
+    if args.window_days <= 0:
+        p.error("--window-days must be positive")
     budget_fraction = 1.0 - args.slo / 100.0          # e.g. 99.9 -> 0.001
     window_minutes = args.window_days * 24 * 60
     budget_minutes = window_minutes * budget_fraction

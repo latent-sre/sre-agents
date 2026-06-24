@@ -51,6 +51,21 @@ _CMD = (
     r"(?:(?:sudo|xargs|nice|env|time|command|nohup|setsid|stdbuf|ionice)\b[^|;&]*?\s)?"
 )
 
+# Git accepts GLOBAL options BETWEEN `git` and the subcommand (`git -C <path> push`, `git -c k=v commit`,
+# `git --git-dir=… --work-tree=… add`, `git --no-pager reset`). Without tolerating that prefix, the verb
+# anchor `\bgit\s+(push|commit|…)` is bypassed by the idiomatic, non-adversarial `git -C repo …` form.
+# Matches a run of global options (those that take a value consume the following token) so the write-verb
+# and config-write rules can anchor AFTER it. `\S+` stays within one command (no separators inside a token).
+_GIT_PRE = (
+    r"(?:(?:"
+    r"-C\s+\S+|-c\s+\S+|"
+    r"--git-dir(?:=\S+|\s+\S+)|--work-tree(?:=\S+|\s+\S+)|--namespace(?:=\S+|\s+\S+)|"
+    r"--exec-path(?:=\S+)?|--config-env=\S+|"
+    r"-p|--paginate|--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--no-optional-locks|"
+    r"--(?:no-)?(?:glob|noglob|icase)-pathspecs"
+    r")\s+)*"
+)
+
 # State-changing command patterns — denied for read-only agents. Case-insensitive.
 _DENY_PATTERNS = [
     # PCF / cf CLI writes: deploys, scaling, lifecycle, routes, services, env, ssh, tasks
@@ -80,15 +95,16 @@ _DENY_PATTERNS = [
     r"\bgh\s+release\s+(create|delete|edit|upload)\b",
     r"\bgh\s+repo\s+(create|delete|fork|edit|rename|sync|archive|unarchive)\b",
     r"\bgh\s+api\b.*(-X\s*(POST|PUT|DELETE|PATCH)|--method[=\s]+(POST|PUT|DELETE|PATCH))",
-    # git writes: history, remote, index, or worktree mutations
-    r"\bgit\s+(add|mv|rm|push|commit|reset|rebase|merge|cherry-pick|revert|clean|am|apply|"
+    # git writes: history, remote, index, or worktree mutations. _GIT_PRE tolerates git's global-option
+    # prefix (git -C <path> / -c k=v / --work-tree=… / --no-pager) so it can't bypass the verb anchor.
+    r"\bgit\s+" + _GIT_PRE + r"(add|mv|rm|push|commit|reset|rebase|merge|cherry-pick|revert|clean|am|apply|"
     r"restore|checkout|switch|pull|stash|gc|prune|init|worktree|update-ref|update-index|"
     r"symbolic-ref|filter-branch|branch\s+-[dDmM]|tag\s+-d|"
     r"remote\s+(add|rm|remove|set-url))\b",
     # git config WRITE: a dotted key followed by a value, or an explicit write flag.
-    # Reads (`--get`/`--list`) lack the trailing value, so they pass through.
-    r"\bgit\s+config\s+(?:--\S+\s+)*\S+\.\S+\s+\S",
-    r"\bgit\s+config\s+(--unset|--unset-all|--replace-all|--add|--rename-section|--remove-section)\b",
+    # Reads (`--get`/`--list`) lack the trailing value, so they pass through. _GIT_PRE as above.
+    r"\bgit\s+" + _GIT_PRE + r"config\s+(?:--\S+\s+)*\S+\.\S+\s+\S",
+    r"\bgit\s+" + _GIT_PRE + r"config\s+(--unset|--unset-all|--replace-all|--add|--rename-section|--remove-section)\b",
     # filesystem / process / service mutations
     r"\b(rm|rmdir|mv|cp|rsync|dd|truncate|shred|chmod|chown|chgrp|ln|mkfs|mkdir|touch)\b",
     r"\bfind\b.*\s-delete\b",

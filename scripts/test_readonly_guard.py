@@ -51,6 +51,10 @@ ALLOW = [
     "curl -o /dev/null -s https://example.com/health",
     "git config --get user.name",
     "git config --list",
+    # git global options before a READ verb stay allowed (regression for the global-option prefix)
+    "git -C /srv/repo log --oneline",
+    "git --no-pager diff main...HEAD",
+    "git -C /srv/repo status",
     # interpreter version/encoding probes and 'install' as a path must NOT be blocked
     "python3 --version",
     "node --version",
@@ -183,6 +187,14 @@ DENY = [
     "git config --global user.name Attacker",
     "git worktree add ../wt",
     "git update-ref refs/heads/main HEAD",
+    # git GLOBAL OPTIONS before the write verb must not bypass the denylist (git -C / -c / --work-tree /
+    # --git-dir / --no-pager are idiomatic prefixes that defeated the bare `\bgit\s+<verb>` anchor)
+    "git -C /srv/repo reset --hard origin/main",
+    "git -c user.name=x commit -m y",
+    "git --work-tree=/srv/repo add .",
+    "git --git-dir=/srv/repo/.git commit -m z",
+    "git --no-pager push origin main",
+    "git -C /srv/repo config user.email evil@example.com",
     # interpreter eval bypasses: perl/ruby/node -e are peers of python -c
     "perl -e 'unlink \"x\"'",
     "ruby -e 'File.write(1,2)'",

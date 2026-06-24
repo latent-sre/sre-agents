@@ -76,12 +76,13 @@ buffer, go to Splunk (`splunk-triage`).
   mid-request, exceeded the router timeout, or the **keep-alive race** — if the app's keep-alive idle
   timeout is **< 90s**, it can close a connection just as Gorouter reuses it → 502. Fix: set the app
   server's keep-alive idle timeout **> 90s** (the Gorouter side is a hardcoded 90s, not an operator-tunable
-  knob — e.g. set Tomcat's `server.tomcat.keep-alive-timeout`). Usually app-side.
+  knob — e.g. set Tomcat's `server.tomcat.keep-alive-timeout`). Usually app-side. Also seen
+  **platform-side**: **clock skew** between Gorouter and a Diego cell makes the cell's TLS cert look
+  not-yet-valid (`x509: certificate ... is not yet valid`), which CF surfaces as a **502**
+  (`ExpiredOrNotYetValidCertFailure`) — an NTP/time-sync problem for the platform team; escalate with
+  evidence, don't chase it app-side. *[sourced: CF router error docs; Broadcom KB 297999]*
 - **503 Service Unavailable** — Gorouter has **no backend to route to**: all instances down/crashed, or
-  the route isn't registered yet (registration lag right after a push). App-down or routing. Also seen
-  platform-side: **clock skew** between Gorouter and a Diego cell breaks the TLS handshake
-  (`x509: certificate ... is not yet valid`) → 503; that's an NTP/time-sync problem for the platform team
-  to fix — escalate, don't chase it app-side.
+  the route isn't registered yet (registration lag right after a push). App-down or routing.
 - **One route/app 502/503 while others are fine ⇒ app-side; foundation-wide ⇒ platform-side** (escalate).
 
 **Health checks (`cf set-health-check` / manifest):**

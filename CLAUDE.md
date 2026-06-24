@@ -16,7 +16,8 @@ This repo's full guide lives in [AGENTS.md](AGENTS.md) (the cross-tool source of
 - **Gates** (`merge-gate`, `release-gate`, `production-change-gate`) are pass/fail checklists. **The real
   enforcement for prod changes is GitHub branch protection + protected environments** (our own
   `github-actions-ci` pattern: required reviews, required status checks, environment reviewers) — that is
-  the security boundary. As an *auditable speed-bump* in Claude Code, `release-engineer` also runs a
+  the security boundary, **provided GitHub's *Allow administrators to bypass protection rules* is disabled**
+  (it is ON by default). As an *auditable speed-bump* in Claude Code, `release-engineer` also runs a
   `PreToolUse` hook ([scripts/production-change-guard.py](scripts/production-change-guard.py)) that blocks
   state-changing `cf` commands unless the gate sentinel (`PCF_GATE_CLEARED=1` or a `.gate-cleared` file)
   is set. Treat that hook as a checklist-forcing convenience for a cooperative agent, **not** a security
