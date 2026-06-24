@@ -212,3 +212,29 @@ incompatible vocabulary (a known upstream mismatch) and is out of scope for thes
   automatically or via `/` in chat. Run the generator first if you want `.github/agents` wrappers.
 - Agents and skills are plain Markdown — edit frontmatter (`tools`, `model`, `description`) or the body
   to tune behavior. Drop project-specific commands/links into the relevant skill.
+
+## Cursor Cloud specific instructions
+
+This repo has **no application server, database, or long-running service** — the "app" is a Markdown
+fleet plus a pure-Python tooling/CI layer. "Running the app" means running the validation/test suite
+defined in [`.github/workflows/validate.yml`](.github/workflows/validate.yml). Reproduce CI locally with:
+
+- `python3 scripts/validate_fleet.py` — primary gate; validates all 38 skills + 10 agents (pure stdlib).
+- `python3 scripts/test_readonly_guard.py`, `python3 scripts/test_production_change_guard.py`,
+  `python3 scripts/test_guard_cf_parity.py` — guard unit tests (pure stdlib).
+- `python3 evals/run_evals.py --validate` and `python3 evals/discovery_probe.py --validate` — eval
+  **structure** validation (needs `pyyaml`).
+- `python3 evals/test_graders.py`, `python3 evals/test_discovery_probe.py` — grader/probe unit tests.
+- `python3 .claude/skills/slo-error-budget/scripts/error_budget.py --slo 99.9 --window-days 28 --bad-minutes 10`
+  — error-budget helper smoke test.
+- Copilot drift gate: `bash scripts/sync-copilot.sh` then `git diff --exit-code .github/agents/`. After
+  editing anything under `.claude/agents/`, re-run the sync script and commit `.github/agents/` or CI fails.
+
+Non-obvious caveats:
+
+- Only `pyyaml` is a third-party dependency (for the eval harnesses); everything else is stdlib. `pyyaml`
+  is preinstalled in the base image and via the update script.
+- `pwsh` is **not installed** and is **not** a CI gate — `scripts/validate-fleet.ps1` / `sync-copilot.ps1`
+  are Windows-local equivalents only; use the `.py` / `.sh` versions here.
+- The behavioral eval runs (`evals/run_evals.py --run`/`--ab`, `discovery_probe.py --run`/`--ab`) need a
+  Claude-enabled model runner and are **not** part of CI — only the `--validate` structural checks are.
