@@ -5,8 +5,6 @@ description: >-
   observable behavior. Use when reshaping existing code without adding behavior; contrast `tdd-workflow`,
   which drives NEW behavior. Covers characterization tests to pin current behavior, call-site/impact
   analysis, and small reversible steps.
-metadata:
-  domain: practice
 ---
 
 # Safe refactor

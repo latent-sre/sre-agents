@@ -4,9 +4,6 @@ description: >-
   Splunk SPL search patterns for incident triage and investigation — finding error spikes, reading them
   over time, correlating by request/trace id, comparing before/after a deploy, and extracting fields.
   Use when investigating logs in Splunk during triage or RCA, or when designing log-based alerts.
-metadata:
-  domain: observability
-  tool: splunk
 ---
 
 # Splunk triage (SPL)

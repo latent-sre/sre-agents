@@ -5,9 +5,6 @@ description: >-
   investigating a degraded or crashing app on PCF — checking app state, instances, recent platform
   events, logs, routes, services, and env. Lists the safe read-only commands for an SRE and flags the
   state-changing commands that require human sign-off via release-engineer.
-metadata:
-  domain: ops
-  platform: pcf-tas
 compatibility: Requires the cf CLI v8 and access/auth to the target PCF foundation
 ---
 

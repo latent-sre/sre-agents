@@ -5,8 +5,6 @@ description: >-
   OpenTelemetry, plus the cardinality discipline that keeps metrics cheap. Use when adding monitoring to
   a service or improving its telemetry so it can actually be triaged. Emits via OTel so signals flow to
   our stack (Wavefront metrics, Splunk logs, Grafana dashboards); pairs with slo-error-budget.
-metadata:
-  domain: observability
 ---
 
 # Instrument a service

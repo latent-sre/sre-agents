@@ -5,8 +5,6 @@ description: >-
   testing, before declaring a change "done" or merging a PR. A pass/fail checklist covering tests,
   review, security, coverage, secrets, compatibility, and docs. Run it (or invoke /merge-gate) to verify
   readiness.
-metadata:
-  domain: gate
 ---
 
 # Merge gate

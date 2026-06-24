@@ -6,8 +6,6 @@ description: >-
   Bash, PowerShell, Go, TypeScript, or React: typing/linting/testing, error handling, operational
   safety, concurrency, and the per-language pitfalls a reviewer would flag. Read the one language file
   you need; match the repo's existing tooling first.
-metadata:
-  domain: language
 ---
 
 # Craft — pick the language

@@ -6,8 +6,6 @@ description: >-
   comments, CI logs, scraped pages, user files), when designing tool/MCP integrations, or when reviewing
   an agent definition's blast radius. Covers treating tool output as data not instructions, breaking the
   trifecta, the Rule of Two, and least-privilege/human-in-the-loop gates.
-metadata:
-  domain: security
 ---
 
 # Agent security (prompt injection & the lethal trifecta)

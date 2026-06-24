@@ -6,8 +6,6 @@ description: >-
   server) **as a tool an agent calls** — not an HTTP API for humans or services (that's `api-design`) —
   or fixing a tool the model misuses. Covers strategic selection, namespacing, meaningful context, token
   efficiency, and the prototype→evaluate loop. From Anthropic's "Writing effective tools for agents."
-metadata:
-  domain: method
 ---
 
 # Tool design

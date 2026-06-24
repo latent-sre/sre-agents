@@ -5,8 +5,6 @@ description: >-
   capturing a significant or hard-to-reverse technical decision, writing a design doc/RFC before
   non-trivial work, or recording why an approach was chosen over alternatives. Provides the Nygard ADR
   format, an RFC skeleton, and MADR guidance. Pairs with sde-ladder (principal and distinguished tiers).
-metadata:
-  domain: doc
 ---
 
 # ADR & design-doc templates

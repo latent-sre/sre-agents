@@ -6,8 +6,6 @@ description: >-
   issues, and database-driven incidents. Covers online/reversible migrations, the expand→contract +
   backfill + dual-write pattern, EXPLAIN/index/N+1 tuning, connection-pool/lock/replication-lag triage,
   and tested backups with RPO/RTO. Pairs with pcf-ops, sre-engineer, and slo-error-budget.
-metadata:
-  domain: data
 ---
 
 # Database reliability

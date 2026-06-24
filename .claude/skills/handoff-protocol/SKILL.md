@@ -5,8 +5,6 @@ description: >-
   and another agent must pick it up — package intent, what's done, what you found, current state, and
   success criteria so the receiver can start cold. This is the transfer format between agents; for
   curating one agent's own attention budget, see `context-engineering`.
-metadata:
-  domain: convention
 ---
 
 # Handoff protocol

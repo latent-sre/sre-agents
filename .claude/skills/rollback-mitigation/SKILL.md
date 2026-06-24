@@ -5,9 +5,6 @@ description: >-
   root cause. Use when an incident needs immediate mitigation: pick the fastest reversible action
   (route remap, revision rollback, restart, scale, flag flip) for the situation. State-changing: all of
   these require human confirmation; sre-engineer recommends, release-engineer executes.
-metadata:
-  domain: incident
-  platform: pcf-tas
 ---
 
 # Rollback & mitigation playbook (PCF)

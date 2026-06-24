@@ -5,8 +5,6 @@ description: >-
   when output QUALITY IS MEASURABLE and iteration demonstrably improves it — a draft to harden, a tunable
   prompt/output to grind up — including the unattended outer ("Ralph") loop. Prefers deterministic checks
   (tests, linters, gates) over LLM-as-judge. For diagnosing a known-broken thing, use `debug-rca`/`tdd-workflow`.
-metadata:
-  domain: method
 ---
 
 # Self-improvement loops

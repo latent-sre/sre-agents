@@ -6,8 +6,6 @@ description: >-
   files/logs/turns, or output quality is degrading as the transcript grows ("context rot"). Covers
   just-in-time retrieval, compaction, sub-agent context isolation, structured note-taking, and the
   least-context principle. From Anthropic's "Effective context engineering for AI agents."
-metadata:
-  domain: method
 ---
 
 # Context engineering

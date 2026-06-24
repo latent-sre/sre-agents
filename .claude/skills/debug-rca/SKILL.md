@@ -6,8 +6,6 @@ description: >-
   skills, which own prod incidents). Use when something is broken in dev or CI and the cause is not yet
   known. Covers reproduce → what changed → ranked parallel hypotheses → test one at a time (git bisect)
   → the causal chain → minimal fix + a regression test that would have caught it.
-metadata:
-  domain: method
 ---
 
 # Debug / root-cause analysis

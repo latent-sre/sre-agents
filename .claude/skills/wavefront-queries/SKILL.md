@@ -5,9 +5,6 @@ description: >-
   Operations for Applications (formerly Tanzu Observability by Wavefront). Use when querying metrics —
   latency percentiles, error ratios, saturation, rates — during RCA, or when designing metric alerts.
   Covers ts(), aggregation, rate/deriv, moving windows, and error-ratio patterns.
-metadata:
-  domain: observability
-  tool: wavefront-aria-operations-for-applications
 ---
 
 # Wavefront queries (WQL / `ts()`)

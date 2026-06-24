@@ -5,8 +5,6 @@ description: >-
   ops-focused team. Use when someone says "define an SLO", "what should we alert on", "are we within
   budget", or when turning a noisy threshold alert into a symptom/burn-rate alert. Covers SLI formulas,
   window/target choices, and multi-window burn-rate alerting on our stack.
-metadata:
-  domain: sre
 ---
 
 # SLOs & error budgets (pragmatic)

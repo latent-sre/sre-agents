@@ -5,9 +5,6 @@ description: >-
   Cloud vs Enterprise agents, path visualization and BGP route monitoring, and reading synthetic/web
   results. Use during triage when the symptom looks external (reachability, latency from a region, DNS,
   a flaky dependency) or to design synthetic monitoring of a critical path.
-metadata:
-  domain: observability
-  tool: cisco-thousandeyes
 ---
 
 # Cisco ThousandEyes — network & synthetic checks

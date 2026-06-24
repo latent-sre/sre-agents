@@ -7,8 +7,6 @@ description: >-
   the initial/update/resolution updates. Use the moment you must assign a severity, run the incident
   (who's doing what), or send a status update. Pairs with sre-ladder (responder tier) and
   blameless-postmortem.
-metadata:
-  domain: incident
 ---
 
 # Incident severity, command & communications

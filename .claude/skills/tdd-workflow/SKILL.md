@@ -5,8 +5,6 @@ description: >-
   pass. Use when implementing a feature test-first, and ALWAYS after a bug fix (add the test that fails
   without the fix). Covers red-green-refactor and what to test (behavior not internals) — the *method*;
   the per-language frameworks/tooling (pytest, Pester, bats, Vitest) live in `craft`.
-metadata:
-  domain: practice
 ---
 
 # Test-driven & regression-first workflow

@@ -6,8 +6,6 @@ description: >-
   releases). Use immediately before executing to confirm human approval, blast-radius assessment, a
   reversible backout plan, an authorized executor, comms, and monitoring. Enforces that prod changes
   need explicit human sign-off. (`release-gate` checks build readiness; this authorizes the action.)
-metadata:
-  domain: gate
 ---
 
 # Production change gate

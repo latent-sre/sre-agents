@@ -6,9 +6,6 @@ description: >-
   senior (a scoped, well-defined change inside one component), principal (cross-cutting design, a
   contract/schema change, a migration, real blast radius), or distinguished (org-wide/high-ambiguity
   architecture, build-vs-buy, a standard others follow). Read the one tier file for the full method.
-metadata:
-  domain: ladder
-  track: sde
 ---
 
 # SDE ladder — pick your altitude

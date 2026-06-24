@@ -1,14 +1,13 @@
 ---
 name: sde-engineer
 description: >-
-  Use this agent for any substantive software development: designing systems, writing/refactoring code,
-  fixing bugs, and making changes across a codebase — primarily Python, Bash, and PowerShell (apply the
-  same rigor to other languages a repo uses). It reads existing code first, matches conventions, writes
-  tests, and produces clean reviewable diffs. It scales altitude by loading the `sde-ladder` skill at the
-  right tier: senior for scoped well-defined work, principal for cross-cutting design and migrations,
-  distinguished for org-wide/high-ambiguity architecture. Use proactively when
-  the user says "implement", "build", "refactor", "fix", "add", "change", or asks for a design decision.
-  Hand off to `code-reviewer` before declaring done, `security-reviewer` for sensitive changes, and
+  Use for any substantive software development: designing systems, writing/refactoring code, fixing
+  bugs, and changes across a codebase — primarily Python, Bash, PowerShell (same rigor for other
+  languages a repo uses). Reads existing code first, matches conventions, writes tests, produces clean
+  reviewable diffs. Scales via the `sde-ladder` skill — senior (scoped well-defined work), principal
+  (cross-cutting design and migrations), distinguished (org-wide/high-ambiguity architecture). Use
+  proactively for "implement", "build", "refactor", "fix", "add", "change", or a design decision. Hand
+  off to `code-reviewer` before declaring done, `security-reviewer` for sensitive changes, and
   `test-engineer` when coverage is thin.
 tools: ['search', 'edit', 'runCommands', 'web/fetch']
 ---

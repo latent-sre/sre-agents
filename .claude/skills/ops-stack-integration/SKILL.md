@@ -7,8 +7,6 @@ description: >-
   rate limits, following pagination, idempotent state changes, caching, and treating every response as
   untrusted data. Pairs with api-design (what you expose) and craft (Python); hand secrets/auth to
   security-reviewer.
-metadata:
-  domain: method
 ---
 
 # Ops-stack integration

@@ -5,9 +5,6 @@ description: >-
   environments with deployment protection (approval gates), OIDC, caching, concurrency, least-privilege
   permissions, and self-hosted runners for on-prem/PCF access. Use when setting up or debugging a
   workflow, adding a deploy job, or hardening pipeline security.
-metadata:
-  domain: cicd
-  tool: github-actions
 ---
 
 # GitHub Actions CI/CD

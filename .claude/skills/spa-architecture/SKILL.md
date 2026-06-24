@@ -5,8 +5,6 @@ description: >-
   `api-design` backend. Use when standing up or extending a SPA: build/routing, server-state vs UI-state,
   a typed OpenAPI client, modern accessible styling, browser auth (OIDC+PKCE), web security
   (XSS/CORS/CSP/token storage), and building/serving the bundle on PCF. Pairs with `craft` (React).
-metadata:
-  domain: method
 ---
 
 # SPA architecture

@@ -5,8 +5,6 @@ description: >-
   traffic, errors, saturation) plus RED and USE to characterize a symptom before forming hypotheses:
   what each signal tells you and where to find it on our stack. Not a general SRE/triage skill; load it
   for the signal-reading moment only. (The `sre-ladder` tiers set depth; this is the signal read inside it.)
-metadata:
-  domain: sre
 ---
 
 # Golden signals — read the system in 60 seconds

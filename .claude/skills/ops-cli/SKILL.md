@@ -6,8 +6,6 @@ description: >-
   meaningful exit codes, human-vs-JSON output, stdout/stderr discipline, --dry-run and confirm-before-
   destruct, config/secret precedence, idempotency, and testing. Pairs with craft (Python/Bash/
   PowerShell) and ops-stack-integration.
-metadata:
-  domain: method
 ---
 
 # Ops CLI

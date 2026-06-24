@@ -6,9 +6,6 @@ description: >-
   when tuning clustering/dedup, or when reducing pager fatigue. Covers how events become deduplicated
   alerts and cluster into Situations. On-prem Moogsoft v9.x (the cloud product is rebranded Dell APEX
   AIOps Incident Management); uses v9.x terminology.
-metadata:
-  domain: aiops
-  tool: moogsoft-apex-aiops
 ---
 
 # Moogsoft / Dell APEX AIOps — correlation & noise reduction

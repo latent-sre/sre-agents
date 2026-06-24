@@ -6,8 +6,6 @@ description: >-
   wrapping an ops capability (cf/Splunk/Wavefront/an internal script) behind an API. Covers contract-first
   OpenAPI, resource modeling, HTTP semantics + status codes, RFC 9457 problem+json errors, versioning
   (expand→contract), cursor pagination, idempotency keys, authN/Z, rate limiting, and PCF health checks.
-metadata:
-  domain: method
 ---
 
 # API design

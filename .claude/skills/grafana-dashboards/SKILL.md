@@ -5,9 +5,6 @@ description: >-
   sources, alerting, and dashboards-as-code. Use when building or improving a dashboard, deciding what
   to visualize, or wiring Grafana alerts. Built for the 3am on-call reader: top-down from SLO/health to
   drill-down.
-metadata:
-  domain: observability
-  tool: grafana
 ---
 
 # Grafana dashboards

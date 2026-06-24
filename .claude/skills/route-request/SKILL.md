@@ -5,8 +5,6 @@ description: >-
   in the right order, with the gates that apply. Use at the start of any multi-step or ambiguous request
   to produce a delegation plan, or to decide whether a request even needs delegation. This is the fleet's
   routing logic — the main session loads it to plan multi-step work (there is no separate coordinator agent).
-metadata:
-  domain: routing
 ---
 
 # Route a request (selector)

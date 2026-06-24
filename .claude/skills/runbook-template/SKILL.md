@@ -5,8 +5,6 @@ description: >-
   reader. Use when creating or updating a runbook/playbook for an alert, task, or failure mode. Provides
   the required sections (trigger, procedure, verification, rollback, escalation) and a fill-in template
   in assets/. Pairs with the runbook-author agent.
-metadata:
-  domain: doc
 ---
 
 # Runbook template & rules

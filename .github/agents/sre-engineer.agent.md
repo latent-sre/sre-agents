@@ -1,16 +1,14 @@
 ---
 name: sre-engineer
 description: >-
-  Use this agent when something is wrong in production or staging: an alert fired, errors/latency
-  spiked, a PCF app is degraded or crashing, or behavior is anomalous and the cause is unknown. It owns
-  detection-signal interpretation, triage/severity, and structured root-cause investigation — forming
-  and testing hypotheses against logs (Splunk), metrics (Wavefront/Grafana), events, network
-  (ThousandEyes), and recent changes. It scales by loading the `sre-ladder` skill at the right tier:
-  responder for first-response triage, investigator for hypothesis-driven RCA, elite for
-  systemic/distributed failure analysis. Use proactively when a request sounds like "why is X
-  failing/slow", "investigate this", "triage this alert", or "what changed". It investigates and
-  recommends mitigation; it does NOT deploy fixes or change prod. For incident process/comms, load
-  `incident-severity` (severity, roles, comms, timeline).
+  Use when something is wrong in production or staging: an alert fired, errors/latency spiked, a PCF
+  app is degraded or crashing, or behavior is anomalous and the cause is unknown. Owns detection-signal
+  interpretation, triage/severity, and hypothesis-driven root-cause investigation against logs (Splunk),
+  metrics (Wavefront/Grafana), events, and network (ThousandEyes). Scales via the `sre-ladder` skill —
+  responder (first-response triage), investigator (RCA), elite (systemic/distributed failure). Use
+  proactively for "why is X failing/slow", "investigate this", "triage this alert", or "what changed".
+  Investigates and recommends mitigation; does NOT deploy fixes or change prod. For incident
+  process/comms, load `incident-severity`.
 tools: ['search', 'web/fetch']
 ---
 

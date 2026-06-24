@@ -6,8 +6,6 @@ description: >-
   many files/services) or when diverse takes improve a judgment. Covers when to parallelize vs stay
   sequential, fan-out economics, and right-sizing. Distinct from `context-engineering` (one agent's
   attention budget). From Anthropic's "Building Effective Agents" and multi-agent research system.
-metadata:
-  domain: method
 ---
 
 # Parallelization

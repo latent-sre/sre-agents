@@ -5,8 +5,6 @@ description: >-
   resolved to write up what happened, the systemic cause and contributing factors, the timeline, and
   owned, dated action items. Covers the blameless stance and the standard sections. Pairs with
   incident-severity (the incident timeline) and sre-engineer (root cause).
-metadata:
-  domain: doc
 ---
 
 # Blameless postmortem

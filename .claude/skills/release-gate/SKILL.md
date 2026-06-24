@@ -5,8 +5,6 @@ description: >-
   deploying/releasing a build to an environment (especially prod): verifies `merge-gate` passed, the
   artifact is promotable, migrations and flags are ready, monitoring is in place, and a tested rollback
   exists. Pass/fail checklist; for prod, pair with `production-change-gate` (which authorizes the action).
-metadata:
-  domain: gate
 ---
 
 # Release gate
