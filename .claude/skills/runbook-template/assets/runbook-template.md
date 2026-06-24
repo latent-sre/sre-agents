@@ -28,7 +28,7 @@ Dashboard: <link>  ·  Source/repo: <link>
    - If <condition B> → this isn't the right runbook; see <other runbook> / escalate.
 
 ## Procedure
-> Mark destructive steps ⚠️ and require confirmation (production-change-gate).
+> Mark destructive steps ⚠️; require confirmation (production-change-gate).
 
 1. <imperative step>
    ```bash

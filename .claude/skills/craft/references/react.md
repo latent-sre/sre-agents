@@ -1,7 +1,7 @@
 # React craft
 
-Pairs with the TypeScript file (`references/typescript.md`). Match the repo's
-existing patterns first; the defaults below apply when none is set.
+Pairs with the TypeScript file (`references/typescript.md`). Match the repo's existing patterns first;
+defaults below apply when none is set.
 
 ## Hooks rules (enforce)
 - Call Hooks only at the **top level** of components/custom Hooks — never in loops, conditions, nested

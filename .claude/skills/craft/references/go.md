@@ -1,7 +1,6 @@
 # Go craft
 
-Match the repo's existing tooling first; the defaults
-below apply when none is set.
+Match the repo's existing tooling first; defaults below apply when none is set.
 
 ## Style & tooling
 - **Format with `gofmt`** (non-negotiable — enforce in CI); use `goimports` (superset that also fixes
@@ -22,8 +21,8 @@ below apply when none is set.
 - "Share memory by communicating" — prefer channels to pass ownership; use `sync.Mutex` when it's
   simpler. `sync.WaitGroup` to wait on goroutines.
 - **`context.Context`** for cancellation/deadlines: pass it as the first arg; **always `defer cancel()`**
-  after `WithCancel/WithTimeout/WithDeadline` to avoid goroutine/timer leaks. Goroutines exit promptly
-  on cancel/timeout — never leak one waiting on an un-cancelled context.
+  after `WithCancel/WithTimeout/WithDeadline` to avoid goroutine/timer leaks. Goroutines should exit
+  promptly on cancel/timeout — never leak one waiting on an un-cancelled context.
 
 ## Correctness traps
 - Naked returns in long funcs; ignored errors. (Loop-variable capture in closures/goroutines was a

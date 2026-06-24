@@ -11,8 +11,8 @@ description: >-
 # Context engineering
 
 The model has a **limited attention budget**; every token spent on noise is attention not spent on the
-task. As capability grows, the lever isn't a cleverer prompt — it's *thoughtfully curating what's in
-context at each step*. More tokens ≠ better: large or stale context degrades reasoning ("context rot").
+task. The lever isn't a cleverer prompt — it's *thoughtfully curating what's in context at each step*.
+More tokens ≠ better: large or stale context degrades reasoning ("context rot").
 *[sourced: Anthropic, "Effective context engineering for AI agents"]*
 
 ## The principle
@@ -29,8 +29,8 @@ least privilege: include what the step needs, nothing it doesn't.
 - **Compaction.** Near the limit, summarize the conversation's durable facts and reinitialize — carry
   the decisions and open threads, drop the chatter. *[sourced: Anthropic — compaction]*
 - **Sub-agent context isolation.** Hand expensive, bounded fact-finding to a focused sub-agent that
-  burns its own context and returns a **short summary** — the caller's window stays lean. This is
-  exactly what `researcher` does; a routing pass (`route-request`) likewise emits a plan, not a transcript.
+  burns its own context and returns a **short summary** — the caller's window stays lean. This is what
+  `researcher` does; a routing pass (`route-request`) likewise emits a plan, not a transcript.
   *[sourced: Anthropic multi-agent research system]*
 - **Structured note-taking / external memory.** Persist durable knowledge *outside* the window where
   it survives compaction — for us that's runbooks, postmortems, and the knowledge loop, not a giant
@@ -51,8 +51,8 @@ least privilege: include what the step needs, nothing it doesn't.
 ## In this fleet
 The architecture already embodies this: thin agents, skills loaded on demand, `researcher` as the
 context-offload, `handoff-protocol` packaging the *minimal* cold-start context, gates carrying forward
-only the evidence that matters. When a task is sprawling, apply the techniques above before reaching for
-a bigger model or a longer prompt.
+only the evidence that matters. When a task sprawls, apply the techniques above before reaching for a
+bigger model or a longer prompt.
 
 ## Anti-patterns
 - Dumping an entire file/log/repo into context "to be safe" — it dilutes attention and invites context rot.

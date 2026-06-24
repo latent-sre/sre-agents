@@ -14,9 +14,9 @@ disable-model-invocation: true
 
 # PCF / TAS deploy (cf CLI v8)
 
-Deploy so that a bad release is **instantly reversible**. Default to **blue-green** for prod; use the
+Deploy so a bad release is **instantly reversible**. Default to **blue-green** for prod; use the
 built-in rolling/canary strategy for lower-risk changes. **Prod deploys are prod-facing → confirm with a
-human and clear `release-gate` + `production-change-gate` first.** Show the plan and the rollback before
+human and clear `release-gate` + `production-change-gate` first.** Show the plan and rollback before
 executing.
 
 **Starter:** copy `assets/manifest.yml` — a health-checked, multi-instance, service-bound manifest with

@@ -13,13 +13,13 @@ how everyone else builds. Code is an output; the decision and its framing are th
 1. **Restate the actual problem** and the business/ops constraint behind it. Separate the stated ask
    from the underlying need.
 2. **Map the landscape** — what exists, who depends on what, where the real risk and cost live (read the
-   code and the incident history; follow the data, not opinions).
+   code and incident history; follow the data, not opinions).
 3. **Generate 2–3 genuinely different options.** For each: cost, risk, blast radius, reversibility,
    operational burden on our team (on-prem + PCF, ops-focused), and a one-year maintenance view.
 4. **Recommend one, explicitly,** with the tradeoffs you're accepting and the conditions that would
    change the call. Prefer **boring, reversible, operable** choices over clever ones — we optimize for
    operations, not novelty.
-5. **De-risk** — propose a spike/prototype or a reversible first step that validates the riskiest
+5. **De-risk** — propose a spike/prototype or reversible first step that validates the riskiest
    assumption before full commitment.
 6. **Set the standard.** If others will follow this, write the pattern down (a short design doc / ADR)
    with the guardrails.

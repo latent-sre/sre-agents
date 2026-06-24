@@ -11,7 +11,7 @@ description: >-
 
 **Mitigate before you fully understand.** Stopping user pain comes before root cause. Pick the
 **fastest safe, reversible** action. `sre-engineer` recommends; `release-engineer` executes with human
-sign-off; in a major incident the incident commander (the on-call lead running `incident-severity`) owns the decision.
+sign-off; in a major incident the incident commander (on-call lead running `incident-severity`) owns the decision.
 
 ## Choose the mitigation (fastest-safe-first)
 | Situation | Mitigation | Command (confirm first) |
@@ -32,11 +32,10 @@ sign-off; in a major incident the incident commander (the on-call lead running `
    minutes before the next action — so you know what worked.
 3. **Restart is a stopgap, not a fix.** If a restart "fixes" it, the cause is still there (leak, poison
    input, dependency) — capture `cf events`/logs first, then keep investigating (`sre-ladder`, investigator tier).
-4. **Record everything** (UTC) for the timeline and the `blameless-postmortem`: what you changed, when,
-   and the effect.
-5. **Confirm before executing.** Every command here changes prod — show the command + the rollback, get
+4. **Record everything** (UTC) for the timeline and `blameless-postmortem`: what you changed, when, the effect.
+5. **Confirm before executing.** Every command here changes prod — show the command + rollback, get
    human sign-off (`production-change-gate`), then run.
 
 ## After mitigation
 User pain stopped ≠ incident over. Hand to `sre-engineer` for root cause and `release-engineer` for the
-proper fix forward; capture the procedure with `runbook-author`.
+fix forward; capture the procedure with `runbook-author`.

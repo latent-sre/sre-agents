@@ -25,7 +25,7 @@ Before hypotheses, characterize the symptom with a standard signal set. Pull the
 - **USE** (per resource): **U**tilization, **S**aturation, **E**rrors. Best for memory/CPU/pools/queues.
 
 ## Ask "what changed?" first
-Most incidents follow a change. Before deep hypotheses, line up **what changed** against **when it broke**:
+Most incidents follow a change. Before deep hypotheses, line up **what changed** vs **when it broke**:
 - recent **deploy / release** (`cf events`, the release pipeline, `git log`)
 - **config or feature-flag** flip
 - **PCF platform event** (cell evacuation, quota, cert rotation — `cf events`)

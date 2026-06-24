@@ -46,6 +46,6 @@ Watching: <who, which signals>   Abort if: <criteria>
 ```
 
 ## Emergency exception
-During a declared incident, mitigation speed can outweigh full process — but **never skip a human
+During a declared incident, mitigation speed can outweigh full process — but **never skip human
 confirmation and a backout plan**. Record the emergency decision and who made it; reconcile the change
 record afterward.

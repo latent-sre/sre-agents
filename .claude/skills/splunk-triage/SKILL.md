@@ -32,9 +32,9 @@ index=<app_index>                              # scope by index/sourcetype/host/
 | where status>=500                            # status must be an extracted field, else this matches nothing
 | timechart span=1m count                      # 5xx count per minute — find the exact onset
 ```
-> A keyword like `error` in the base search filters to events whose raw text contains "error" *before*
-> `| where status>=500` runs — so it misses 5xx access-log events with no "error" in them and can
-> false-clear the spike. Scope the base search; filter the status in `| where`.
+> Same trap as above: a keyword like `error` in the base search filters before `| where status>=500`
+> runs, missing 5xx access-log events with no "error" text and false-clearing the spike. Scope the base
+> search; filter the status in `| where`.
 ```spl
 index=<app_index>
 | timechart span=1m count by status            # split by HTTP status to see 5xx vs 4xx
@@ -75,8 +75,8 @@ index=<app_index> (request_id="<id>" OR trace_id="<id>")   # one index; use (ind
 | table _time host service status message
 ```
 Tracing one id is the rare case a broad search is justified — use `index=*` only when the request may
-touch services you can't enumerate, and keep the time window tight. If logs lack a correlation id, that's
-a finding — recommend adding one (`sde-engineer`).
+touch services you can't enumerate, and keep the window tight. If logs lack a correlation id, that's a
+finding — recommend adding one (`sde-engineer`).
 
 ## Compare before vs after a deploy
 ```spl
@@ -94,9 +94,9 @@ index=<app_index> sourcetype=<...> earliest=-1h     # scope the base search — 
 
 ## Tips & gotchas (Splunk-specific — where the default bites)
 - **Never leave the search broadly unscoped without reason.** `index=*` scans every index — slow, costly,
-  and may silently miss role-restricted data. Scope to the app index from `references/` (fill in your real
-  values); the one justified exception is tracing a single correlation id across services you can't
-  enumerate — and even then, keep the time window tight.
+  and may silently miss role-restricted data. Scope to the app index from `references/`; the one justified
+  exception is tracing a single correlation id across services you can't enumerate — even then, keep the
+  window tight.
 - **The time range is implicit and dangerous.** A bare search uses the picker's range (often last 24h);
   in a saved search/API job it's whatever the job sets. Set `earliest`/`latest` explicitly during triage.
 - **Fields are case-sensitive and only exist after extraction.** `table status` shows nothing if the
@@ -104,5 +104,5 @@ index=<app_index> sourcetype=<...> earliest=-1h     # scope the base search — 
 - `stats`/`timechart`/`tstats` aggregate; `transaction` groups events but is expensive — prefer
   `stats by <id>` for correlation.
 - Match the search window to the incident timeline from `sre-ladder` (investigator tier).
-- For recurring searches, hand the query to `sre-monitor` to make a saved search / alert (route through
+- For recurring searches, hand the query to `sre-monitor` for a saved search / alert (route through
   Moogsoft — see `moogsoft-correlation`).

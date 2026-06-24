@@ -12,7 +12,7 @@ description: >-
 Record decisions, not just mechanics: capture **context, the decision, and its consequences** so future
 readers (and agents) understand the *why*. Treat docs like code — version-controlled, reviewed, owned.
 **ADRs are immutable once accepted**: don't edit a superseded decision — mark it `superseded by ADR-NNN`
-and write a new one. Keep them in-repo, numbered and append-only (e.g. `docs/adr/NNNN-title.md`). The
+and write a new one. Keep them in-repo, numbered, append-only (e.g. `docs/adr/NNNN-title.md`). The
 copy-paste fill-in is in [assets/adr-template.md](assets/adr-template.md).
 
 ## ADR — Michael Nygard format
@@ -32,7 +32,7 @@ For a large/contested trade-off space, **MADR** adds *Decision Drivers*, *Consid
 
 ## Lightweight RFC / design doc (before non-trivial work)
 Write one when the approach is uncertain, the change spans multiple files/systems, or others must weigh
-in. RFCs **force clarity** — they're hard to write unless you actually understand the problem.
+in. RFCs **force clarity** — hard to write unless you actually understand the problem.
 ```markdown
 # RFC: <title>   Author: <name>   Status: <draft|review|accepted>   Reviewers: <3–5 named>
 ## Problem & context        <what & why; current state; constraints>

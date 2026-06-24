@@ -21,7 +21,7 @@ test suite and small steps.
 ## Work in small reversible steps
 - One refactor per commit; **never mix a refactor with a behavior change** — they hide each other in review.
 - Keep the suite green after each step. If it goes red, you changed behavior — stop and reassess.
-- Use the tooling's safe operations (rename symbol, extract function) over manual edits where possible.
+- Prefer the tooling's safe operations (rename symbol, extract function) over manual edits.
 
 ## Changing a shared contract → expand → migrate → contract
 Don't break callers in one shot:

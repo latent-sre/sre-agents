@@ -13,13 +13,13 @@ A good runbook is **specific, sequential, verifiable, and reversible** — not a
 stressed, low-context, and in a hurry.
 
 ## Runbook vs playbook vs SOP
-- **Runbook** — the steps to handle *one* alert/task/failure mode (this template).
-- **Playbook** — a broader response *strategy* that orchestrates multiple runbooks (e.g. a major-incident
+- **Runbook** — steps to handle *one* alert/task/failure mode (this template).
+- **Playbook** — a broader response *strategy* orchestrating multiple runbooks (e.g. a major-incident
   playbook). Lives closer to `incident-severity` (incident command).
-- **SOP** — a fixed procedure for routine, normal operations (not incident-driven).
+- **SOP** — a fixed procedure for routine operations (not incident-driven).
 
 Keep them current the only way that works: **rehearse them.** Run game days / drills under realistic
-conditions — *ten minutes of rehearsal prevents ten hours of confusion* — and bump `last_verified` after each.
+conditions, and bump `last_verified` after each.
 
 ## Authoring rules
 - **Numbered, imperative steps.** Copy-pasteable commands with real values or clearly templated
@@ -31,14 +31,14 @@ conditions — *ten minutes of rehearsal prevents ten hours of confusion* — an
   escalate to <whom>."
 - **Current or deleted** — date it, own it, prune what's wrong. A wrong runbook is worse than none.
 - **Machine-linkable frontmatter** — give each runbook YAML frontmatter (`alert_names`, `owner`,
-  `severity`, `last_verified`, `version`) so alerts can auto-link to it and a linter can flag any not
+  `severity`, `last_verified`, `version`) so alerts auto-link and a linter can flag any not
   verified in ~90 days.
 - **Verify commands before publishing** — run read-only ones to confirm syntax; never run destructive
   steps to "test" them; mark anything unverified.
 
 ## Required sections (never drop trigger, procedure, verification, rollback, escalation)
-The full fill-in template is in [assets/runbook-template.md](assets/runbook-template.md) — copy it to
-start a new runbook. Structure:
+Full fill-in template in [assets/runbook-template.md](assets/runbook-template.md) — copy it to start a
+new runbook. Structure:
 
 ```
 # Runbook: <title / the alert it answers>
@@ -57,12 +57,11 @@ Owner · Last reviewed · Severity
 ```
 
 ## Tip
-Link every paging alert to its runbook (`sre-monitor`). The best runbook step is sometimes "run this
-script" — if a step is fully mechanical, recommend automating it (`sde-engineer`/`release-engineer`)
-along the **Crawl → Walk → Run** path: first document the manual steps (crawl), then wrap them in a
-checked script the on-call runs by hand (walk), then trigger it automatically once it's proven (run).
-Data-drive the alert→runbook link so saved searches/alerts surface the right runbook automatically —
-each tool in our stack has a mechanism:
+Link every paging alert to its runbook (`sre-monitor`). If a step is fully mechanical, recommend
+automating it (`sde-engineer`/`release-engineer`) along the **Crawl → Walk → Run** path: document the
+manual steps (crawl), wrap them in a checked script the on-call runs by hand (walk), then trigger it
+automatically once proven (run). Data-drive the alert→runbook link so saved searches/alerts surface the
+right runbook automatically — each tool in our stack has a mechanism:
 - **Splunk:** `... | lookup instructions_lookup alert_type OUTPUT runbook_url`.
 - **Grafana:** a `runbook_url` annotation on the alert rule (templated by labels).
 - **Wavefront:** the alert's resolution/runbook link, with Mustache-templated targets.

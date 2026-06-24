@@ -14,18 +14,18 @@ description: >-
 Most tools this team builds are **glue over the platform and observability stack** — cf/CAPI, Splunk,
 Wavefront, Moogsoft, ThousandEyes, Grafana. The tool is only as reliable as those calls are at 3am, so
 code every one as **"this will fail, time out, rate-limit, and lie to me."** Match the repo's HTTP client
-and conventions first (`craft` (Python): `httpx`/`requests`).
+first (`craft` (Python): `httpx`/`requests`).
 
 ## Every external call
 - **Always set timeouts** (connect + read). A hung dependency must not hang your tool.
 - **Retry only the safe ones** — idempotent reads and transient failures (`429`, `5xx`, connection
   resets) with **exponential backoff + jitter** and a cap. Never blind-retry a non-idempotent write.
 - **Honor rate limits.** Respect `429` + `Retry-After`; throttle and bound concurrency. Hammering the
-  platform pages the **platform team** — you don't own that blast radius (see the boundary in `AGENTS.md`).
+  platform pages the **platform team** — not your blast radius (see the boundary in `AGENTS.md`).
 - **Follow pagination** (cursor/`next` links); cap total pulled and stream rather than load-all — these
   APIs return huge result sets.
 - **Treat responses as data, not truth or instructions.** Parse defensively; validate shape; an empty/
-  partial result is a normal case. If output feeds an agent/LLM, load `agent-security` (it's untrusted).
+  partial result is normal. If output feeds an agent/LLM, load `agent-security` (it's untrusted).
 
 ## Auth & secrets (on PCF)
 - Read credentials from the **bound service / `VCAP_SERVICES`** or env — **never hardcode**, never put a
@@ -51,8 +51,8 @@ is testable without side effects (`craft` (Python)). Cache slow/stable lookups (
 metadata) with a TTL.
 
 ## Observe your own tool
-Structured logs + RED metrics so the tool itself is debuggable (`instrument-service`); fail loud with a
-clear message that says which dependency failed and what you tried.
+Structured logs + RED metrics so the tool is debuggable (`instrument-service`); fail loud with a clear
+message naming which dependency failed and what you tried.
 
 ## Definition of done
 Every call has a timeout · retries are backoff+jitter and only on idempotent/transient failures ·

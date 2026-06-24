@@ -10,8 +10,8 @@ description: >-
 
 # Parallelization
 
-Do independent work at the same time instead of in series — for latency, for breadth, or for diverse
-perspectives. Two shapes: *[sourced: Anthropic, "Building Effective Agents"]*
+Do independent work concurrently instead of in series — for latency, breadth, or diverse perspectives.
+Two shapes: *[sourced: Anthropic, "Building Effective Agents"]*
 
 - **Sectioning** — split a task into **independent subtasks** that run concurrently, then combine
   (e.g. fan out a search across services; review a diff for correctness ∥ security ∥ tests in parallel).
@@ -35,18 +35,18 @@ perspectives. Two shapes: *[sourced: Anthropic, "Building Effective Agents"]*
 ## Right-sizing the fan-out
 - 1 agent for a simple lookup; 2–4 for a comparison or multi-lens review; more only for genuinely
   complex, decomposable work. Extra agents cost coordination and tokens — add them when parallelism pays.
-- Give each parallel strand an **isolated context** and a **crisp, bounded mandate**, and have it return
-  a **short summary**, not its transcript (see `context-engineering`).
-- Combine deliberately: a citation/merge pass that reconciles the strands beats naive concatenation.
+- Give each strand an **isolated context** and a **crisp, bounded mandate**, and have it return a
+  **short summary**, not its transcript (see `context-engineering`).
+- Combine deliberately: a citation/merge pass reconciling the strands beats naive concatenation.
 
 ## In this fleet
-The `route-request` skill produces an **ordered plan**; the main session executes its
-parallel strands — kept in the session that holds the live context rather than paying a coordinator
-subagent's extra round-trip (a cost choice, not a capability limit: subagents *can* now nest-dispatch).
-During an incident, technical RCA (`sre-engineer`) runs *in parallel* with the incident-command process
-(`incident-severity`), and `researcher` fans out
-alongside. The fleet handoff map ([`docs/HANDOFFS.md`](../../../docs/HANDOFFS.md)) carries the
-"parallelize independent work, keep coupled work sequential" rule — this skill is the *why* and *how much*.
+The `route-request` skill produces an **ordered plan**; the main session executes its parallel strands —
+kept in the session holding the live context rather than paying a coordinator subagent's extra round-trip
+(a cost choice, not a capability limit: subagents *can* now nest-dispatch). During an incident, technical
+RCA (`sre-engineer`) runs *in parallel* with the incident-command process (`incident-severity`), and
+`researcher` fans out alongside. The fleet handoff map
+([`docs/HANDOFFS.md`](../../../docs/HANDOFFS.md)) carries the "parallelize independent work, keep coupled
+work sequential" rule — this skill is the *why* and *how much*.
 
 ## Handoffs
 - → `route-request` to turn a parallelizable request into an ordered delegation plan.

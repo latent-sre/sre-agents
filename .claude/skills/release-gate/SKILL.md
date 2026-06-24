@@ -42,11 +42,11 @@ Blocking items: <the NOs>
 ```
 
 ## Notes
-- **Gate topology:** release-gate **absorbs** `merge-gate` as a precondition (it's the first line item
-  above), but `production-change-gate` is a **separate, later** gate that authorizes the prod action.
-  release-gate checks build **readiness** only and never grants prod authorization in-checklist — the
-  prod line item above is a *prerequisite pointer* to `production-change-gate`, not an approval; that
-  gate must still be cleared on its own and must not be skipped.
+- **Gate topology:** release-gate **absorbs** `merge-gate` as a precondition (first line item above),
+  but `production-change-gate` is a **separate, later** gate that authorizes the prod action. release-gate
+  checks build **readiness** only and never grants prod authorization in-checklist — the prod line item
+  is a *prerequisite pointer* to `production-change-gate`, not an approval; that gate must still be
+  cleared on its own and must not be skipped.
 - Back this with a GitHub **environment + required reviewers** so the deploy job literally pauses for
   approval (`github-actions-ci`).
 - A release you can't cleanly roll back does not pass this gate — fix the rollback first.

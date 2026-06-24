@@ -9,8 +9,8 @@ description: >-
 
 # Self-improvement loops
 
-Make output better by **checking it and acting on the check** — not by trying harder in one pass. Two
-shapes from Anthropic's *Building Effective Agents* and the Claude Agent SDK, adapted to this fleet.
+Make output better by **checking it and acting on the check** — not by trying harder in one pass. Shapes
+from Anthropic's *Building Effective Agents* and the Claude Agent SDK, adapted to this fleet.
 
 > **Start simple.** A single well-prompted pass handles most work. Add a loop only when (a) you can
 > *measure* quality against clear criteria and (b) iteration *demonstrably* improves the result. A loop
@@ -23,12 +23,12 @@ actionable feedback; the generator revises. Loop until the evaluator is satisfie
 *[sourced: Anthropic, "Building Effective Agents" — evaluator-optimizer workflow]*
 
 - **Use when** the criteria are articulable and feedback measurably helps (code review comments, a
-  rubric, a failing test, a security finding) — and the gap between "first draft" and "good" is real.
+  rubric, a failing test, a security finding) and the gap between "first draft" and "good" is real.
 - **In this fleet:** `sde-engineer` generates → `code-reviewer`/`security-reviewer` evaluate → fixes
   loop back. `test-engineer` raises coverage against the same diff. The **gates** are the formal
   evaluator checkpoint (`merge-gate`, `release-gate`).
-- **Separate the roles.** A fresh-context evaluator (or a different agent) catches more than self-
-  critique in the same context — bias toward a second lens for anything load-bearing.
+- **Separate the roles.** A fresh-context evaluator (or different agent) catches more than self-critique
+  in the same context — bias toward a second lens for anything load-bearing.
 
 ## Pattern 2 — The agent verify-loop (act → verify → repeat)
 
@@ -53,19 +53,19 @@ rules-based feedback over LLM-as-judge]*
 ## Pattern 3 — The unattended outer loop ("Ralph")
 
 Brute-force the verify-loop from *outside* the agent: a shell loop re-invokes a **fresh** coding-agent
-process each iteration against a **spec + a task backlog in files**, so durable state lives in the repo
-(spec, backlog, code, git history) — not in a context window that rots. Each pass: read the backlog, do
-the **next one item**, run the verifier, commit *only if it passes*, exit; the loop restarts clean.
+process each iteration against a **spec + task backlog in files**, so durable state lives in the repo
+(spec, backlog, code, git history) — not a context window that rots. Each pass: read the backlog, do the
+**next one item**, run the verifier, commit *only if it passes*, exit; the loop restarts clean.
 *[sourced: Geoffrey Huntley, "Ralph Wiggum as a software engineer"; mechanics = `context-engineering`
 (externalize state) + Pattern 2 (act → verify), run as an outer loop.]*
 
-- **Use when** the work is large, decomposable, and **test-backed** — greenfield building of ops tooling
+- **Use when** the work is large, decomposable, and **test-backed** — greenfield ops tooling
   (a CLI/API/SPA) against a spec where each unit verifies mechanically. **Not** for triage, review, or
   anything prod-facing.
 - **Why it works:** fresh context per iteration sidesteps context rot; the files are the memory. (Our
   `evals/run_evals.py` already uses fresh-process-per-trial for the same reason.)
 - **Why it's dangerous bare:** an outer loop with no hard verifier makes confident messes at machine
-  speed. The verifier *is* the safety system — it is not optional.
+  speed. The verifier *is* the safety system — not optional.
 
 **Non-negotiable guardrails (this is an ops repo):**
 1. **Code-building on a branch only.** Never point it at `release-engineer`/prod actions — no `cf push`,
@@ -76,10 +76,10 @@ the **next one item**, run the verifier, commit *only if it passes*, exit; the l
    verifier green). Watch token cost; an outer loop spends like a multi-agent fan-out.
 4. **A human clears `merge-gate` before merge.** The loop produces a diff on a branch, never a deploy.
 
-A reference scaffold that enforces all four rails lives at [`ralph-loop.sh`](../../../scripts/ralph-loop.sh)
-in the repo's scripts directory — it is an example you run yourself, deliberately **not** wired into CI or
-any agent. A loop that can change prod, or that commits unverified work, is not a Ralph loop — it's an
-incident generator.
+A reference scaffold enforcing all four rails lives at [`ralph-loop.sh`](../../../scripts/ralph-loop.sh)
+in the repo's scripts directory — an example you run yourself, deliberately **not** wired into CI or any
+agent. A loop that can change prod, or commits unverified work, is not a Ralph loop — it's an incident
+generator.
 
 ## Run the loop well
 - **Bound it.** Set a max-iterations budget up front (often 2–3). No convergence by then → stop and
@@ -88,9 +88,9 @@ incident generator.
 - **One change per turn, then re-verify** — so you know which change moved the signal (mirrors
   `debug-rca` and `rollback-mitigation`).
 - **Altitude sets depth.** The ladder skills decide how many lenses and iterations a task earns —
-  `sde-ladder` (senior tier)/`sre-ladder` (responder tier) for a quick check; the principal/elite tiers for multi-lens,
+  `sde-ladder` (senior)/`sre-ladder` (responder) for a quick check; principal/elite tiers for multi-lens,
   blast-radius-aware loops.
-- **Don't loop on prod.** Verify in lower envs; production changes still go through the gates with human
+- **Don't loop on prod.** Verify in lower envs; prod changes still go through the gates with human
   sign-off (`production-change-gate`). Read-only agents *recommend* the next iteration; they don't apply it.
 
 ## Output

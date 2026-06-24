@@ -12,8 +12,8 @@ description: >-
 
 Build the API as a **contract first**, then implement it. The contract is what every consumer (our SPAs,
 other teams, future you) reasons over — design it like a product, not an afterthought of the handler.
-Match the repo's existing framework and conventions before applying the defaults below. Our APIs ship as
-**PCF apps**; stay in the app lane (no API-gateway/cloud-managed infra — routing is `cf` routes).
+Match the repo's existing framework and conventions first. Our APIs ship as **PCF apps**; stay in the app
+lane (no API-gateway/cloud-managed infra — routing is `cf` routes).
 
 ## Contract-first
 - Author/maintain an **OpenAPI 3.1** spec and treat it as the source of truth; generate server stubs and
@@ -58,7 +58,7 @@ Return one consistent machine-readable shape, `application/problem+json`: `type`
 
 ## Framework & observability
 - Python is primary → **FastAPI** (pydantic validation + async + OpenAPI for free); Flask is fine for
-  something small; Go → `net/http`/chi. Use the language craft skill for the implementation.
+  small; Go → `net/http`/chi. Use the language craft skill for the implementation.
 - Emit **RED metrics + structured logs + trace propagation** (`instrument-service`) and expose a
   **health/readiness endpoint** so PCF and `pcf-deploy` can health-check the app.
 

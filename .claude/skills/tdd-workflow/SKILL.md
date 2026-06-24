@@ -19,7 +19,7 @@ A test that can't fail is worthless. Every test here must be able to go **red** 
 
 ## Regression-first for bug fixes (non-negotiable)
 Before fixing a bug, write the test that **reproduces it** and **fails on the current (broken) code**.
-Then fix the code and watch it go green. This proves the bug is real and guards against its return.
+Then fix and watch it go green. This proves the bug is real and guards against its return.
 
 ## What to test
 - **Behavior and contracts**, not implementation details — so tests survive refactors.
