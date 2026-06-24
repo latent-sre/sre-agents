@@ -35,6 +35,10 @@ pwsh scripts/sync-copilot.ps1     # Windows / PowerShell
 bash scripts/sync-copilot.sh      # macOS / Linux
 ```
 
+**Vendor it into an existing repo** — to embed the fleet as a subdirectory of another project (rather than
+using it standalone), see **[docs/INTEGRATION.md](docs/INTEGRATION.md)**: the scripts are location-robust,
+but `.claude/`, `CLAUDE.md`, `AGENTS.md`, and `.github/` must be surfaced at the host repo's root.
+
 ## Layout
 
 ```
@@ -46,7 +50,7 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 evals/                     behavioral evals (scenarios + graders) — routing, gates, security; --validate runs in CI
-docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · adr/ · FOLLOWUPS
+docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · INTEGRATION (vendor into another repo) · adr/ · FOLLOWUPS
 scripts/
   sync-copilot.ps1 / .sh   generate .github/agents (committed) + an optional gitignored .github/skills mirror
   validate_fleet.py        validate all skills/agents against the Agent Skills spec (the CI gate; pure stdlib)
