@@ -61,6 +61,9 @@ ALLOW = [
     "echo 'remember to git commit before deploy'",
     'rg "git reset --hard" docs/',
     "cat README | grep 'git config user.email'",
+    # a git READ on a later line of a multiline command stays allowed (write-verb list still gates;
+    # regression companion to the MULTILINE deny cases below)
+    "echo checking\ngit log --oneline -n 5",
     # interpreter version/encoding probes and 'install' as a path must NOT be blocked
     "python3 --version",
     "node --version",
@@ -218,6 +221,20 @@ DENY = [
     "  git push origin main",
     "{ git push; }",
     "x=1 git reset --hard",
+    # quoted global-option value with spaces must not let the write verb escape the anchor
+    # (regression: `_GIT_PRE`'s value matcher accepts a quoted path, not just a bare \S+ token)
+    'git -C "/tmp/repo space" reset --hard',
+    "git -C '/srv/my repo' push origin main",
+    'git --work-tree="/srv/my repo" add .',
+    'git -c "user.name=A B" commit -m x',
+    # MULTILINE: a state-changing verb on a LATER line of a multiline command must still be denied
+    # (regression: `^` anchors matched only the whole-string start without re.MULTILINE)
+    "echo hi\ngit push origin main",
+    "cd repo\n  git commit -m x",
+    "echo step 1\nrm -rf /tmp/cache",
+    "ls\n./deploy.sh",
+    # allowlisted triage helper must NOT smuggle a second-line mutation past the exemption
+    ".claude/skills/pcf-ops/scripts/triage.sh\nrm -rf /tmp/x",
     # interpreter eval bypasses: perl/ruby/node -e are peers of python -c
     "perl -e 'unlink \"x\"'",
     "ruby -e 'File.write(1,2)'",

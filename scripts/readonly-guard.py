@@ -56,11 +56,16 @@ _CMD = r"(?:^|[|;&]\s*)" + _WRAP
 # anchor `\bgit\s+(push|commit|…)` is bypassed by the idiomatic, non-adversarial `git -C repo …` form.
 # Matches a run of global options (those that take a value consume the following token) so the write-verb
 # and config-write rules can anchor AFTER it. `\S+` stays within one command (no separators inside a token).
+# A global-option VALUE: a quoted string (which may contain spaces — `git -C "/repo with space"`, common
+# on Windows / shared drives) or a bare whitespace-delimited token. A plain `\S+` would stop at the first
+# space inside a quoted path and let the trailing write verb escape the anchor.
+_VAL = r"(?:\"[^\"]*\"|'[^']*'|\S+)"
 _GIT_PRE = (
     r"(?:(?:"
-    r"-C\s+\S+|-c\s+\S+|"
-    r"--git-dir(?:=\S+|\s+\S+)|--work-tree(?:=\S+|\s+\S+)|--namespace(?:=\S+|\s+\S+)|"
-    r"--exec-path(?:=\S+)?|--config-env=\S+|"
+    r"-C\s+" + _VAL + r"|-c\s+" + _VAL + r"|"
+    r"--git-dir(?:=" + _VAL + r"|\s+" + _VAL + r")|--work-tree(?:=" + _VAL + r"|\s+" + _VAL + r")|"
+    r"--namespace(?:=" + _VAL + r"|\s+" + _VAL + r")|"
+    r"--exec-path(?:=" + _VAL + r")?|--config-env=" + _VAL + r"|"
     r"-p|--paginate|--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--no-optional-locks|"
     r"--(?:no-)?(?:glob|noglob|icase)-pathspecs"
     r")\s+)*"
@@ -243,7 +248,10 @@ _DENY_PATTERNS = [
     # `(?:\S*/)?` prefix closes the absolute-path form (`... | /bin/sh`), matching the script-file rules.
     r"\|\s*(sudo\s+)?(?:\S*/)?(sh|bash|zsh)\s*(\||$|;|&)",
 ]
-_DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE)
+# re.MULTILINE so the command-position anchor `^` matches at the start of EVERY line, not just the whole
+# string — otherwise a state-changing verb on a later line of a multiline Bash command (`echo hi\ngit
+# push`) would slip past every `(?:^|…)`-anchored rule. A newline is a command separator just like `;`.
+_DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE | re.MULTILINE)
 
 # Allowlist: the fleet's own bundled READ-ONLY triage helper, at its EXACT bundled path
 # `.claude/skills/pcf-ops/scripts/triage.{sh,ps1}` (the path pcf-ops/foundations.md documents).
@@ -283,7 +291,10 @@ def main() -> None:
         sys.exit(0)
 
     command = (data.get("tool_input") or {}).get("command", "") or ""
-    if _ALLOW_RE.match(command):
+    # The allowlist is a SINGLE-command exemption; require a single line so a multiline command that
+    # merely STARTS with the triage helper (`triage.sh\nrm -rf /`) can't ride the exemption past the
+    # (now MULTILINE) denylist. A legitimate triage invocation is always one line.
+    if "\n" not in command and "\r" not in command and _ALLOW_RE.match(command):
         sys.exit(0)  # bundled read-only triage helper — explicitly permitted
     if _DENY_RE.search(command):
         print(json.dumps({
