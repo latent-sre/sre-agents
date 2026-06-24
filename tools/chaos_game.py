@@ -23,7 +23,7 @@ def _enable_ansi_on_windows() -> bool:
         import ctypes
 
         kernel32 = ctypes.windll.kernel32
-        # 7 = STD_OUTPUT_HANDLE; 0x0004 = ENABLE_VIRTUAL_TERMINAL_PROCESSING
+        # -11 = STD_OUTPUT_HANDLE; 0x0004 = ENABLE_VIRTUAL_TERMINAL_PROCESSING
         handle = kernel32.GetStdHandle(-11)
         mode = ctypes.c_ulong()
         if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
