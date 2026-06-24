@@ -101,8 +101,14 @@ Copilot, then `python3 scripts/validate_fleet.py` to check it (or the upstream
 [scripts/readonly-guard.py](scripts/readonly-guard.py) as a `PreToolUse` hook in their frontmatter.
 The Copilot generator strips Claude-only hooks and withholds `runCommands` from generated read-only
 agents, so use `.github/agents/*.agent.md` when you want hard Copilot tool scoping. Verify the hook fires
-in your Claude Code environment (the one piece that can't be unit-tested offline); on systems where the
-interpreter is `python3`, adjust the hook command in the agent frontmatter.
+in your Claude Code environment (the one piece that can't be unit-tested offline).
+
+> **Hook shell:** the hook `command` (`"$(command -v python3 || command -v python)" -c …`) is **POSIX-shell
+> syntax** — it assumes Claude Code runs hooks through `bash`/`sh` (our Linux + on-prem reality; CI is
+> Linux-only). On a **Windows** checkout where Claude Code would invoke the hook via PowerShell, that
+> command does not parse — adjust the frontmatter to a PowerShell-equivalent (or a small wrapper) for that
+> environment. This only affects the *cooperative speed-bump*; the load-bearing controls (OS-level
+> least-privilege creds + branch protection / protected environments) do not depend on the hook shell.
 
 ## Built from (current as of mid-2026)
 

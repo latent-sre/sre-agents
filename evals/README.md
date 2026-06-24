@@ -15,6 +15,8 @@ Built on Anthropic's eval shape (["Demystifying evals for AI agents"](https://ww
 ## Run it
 
 ```bash
+python3 -m pip install -r requirements-dev.txt   # one-time: the eval harness needs PyYAML
+                                                 # (the fleet validator + guard tests are stdlib-only)
 python evals/run_evals.py --validate     # check the suite itself (no model) — this is what CI runs
 python evals/run_evals.py --list         # show scenarios
 python evals/run_evals.py --run          # invoke the fleet and grade (needs a Claude-enabled runner)
