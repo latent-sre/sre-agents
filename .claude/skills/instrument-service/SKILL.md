@@ -5,8 +5,6 @@ description: >-
   OpenTelemetry, plus the cardinality discipline that keeps metrics cheap. Use when adding monitoring to
   a service or improving its telemetry so it can actually be triaged. Emits via OTel so signals flow to
   our stack (Wavefront metrics, Splunk logs, Grafana dashboards); pairs with slo-error-budget.
-metadata:
-  domain: observability
 ---
 
 # Instrument a service
@@ -45,10 +43,10 @@ time series per value and melts the metrics backend.
 
 ## Where it lands (our stack)
 Emit via OTel → metrics to **Wavefront**, logs to **Splunk**, dashboards in **Grafana**, synthetics in
-**ThousandEyes**. Keeping the emit layer OTel keeps the backend swappable. Then define SLIs/SLOs and
-burn-rate alerts with **`slo-error-budget`** — and you'll actually be able to run the
-`wavefront-queries` / `splunk-triage` queries during an incident.
+**ThousandEyes**. An OTel emit layer keeps the backend swappable. Then define SLIs/SLOs and burn-rate
+alerts with **`slo-error-budget`** — so you can run the `wavefront-queries` / `splunk-triage` queries
+during an incident.
 
 ## Done
 Every critical journey emits RED; every constrained resource emits USE; traces propagate and correlate to
-logs; **no unbounded metric label exists**; and there's at least one SLI you can compute from what you emit.
+logs; **no unbounded metric label exists**; at least one SLI is computable from what you emit.

@@ -1,7 +1,6 @@
 # Bash craft
 
-Shell is for glue and orchestration. If a script grows real logic/data structures, recommend Python
-(see `references/python.md`) instead.
+Shell is for glue and orchestration. If a script grows real logic/data structures, recommend Python (`references/python.md`) instead.
 
 ## Always start with
 ```bash
@@ -13,10 +12,10 @@ shopt -s inherit_errexit 2>/dev/null || true   # bash>=4.4 only; best-effort on 
   expansion and surprises more than it helps; scope it to the read that needs it
   (`while IFS=',' read -r a b; do …`). Quoting every expansion is the real fix.
 - Trap cleanup: `tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT`.
-- **`set -e` is leakier than it looks** — it's suppressed inside `if`/`while`/`&&`/`||` conditions and
-  command substitutions `$(...)`. Add `shopt -s inherit_errexit` so `-e` reaches `$(...)` (bash>=4.4;
-  guard it as `shopt -s inherit_errexit 2>/dev/null || true` on RHEL7-era on-prem hosts), and use
-  `set -Eeuo pipefail` (the `-E`) so an `ERR` trap also fires inside functions/subshells.
+- **`set -e` is leakier than it looks** — suppressed inside `if`/`while`/`&&`/`||` conditions and
+  command substitutions `$(...)`. `shopt -s inherit_errexit` makes `-e` reach `$(...)` (bash>=4.4; guard
+  as `shopt -s inherit_errexit 2>/dev/null || true` on RHEL7-era on-prem hosts); the `-E` in
+  `set -Eeuo pipefail` makes an `ERR` trap also fire inside functions/subshells.
 - `((i++))` **returns non-zero when the result is 0**, which under `-e` exits the script — use
   `((i++)) || true` or `i=$((i+1))`.
 

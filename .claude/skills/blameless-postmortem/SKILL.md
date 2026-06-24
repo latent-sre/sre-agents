@@ -5,8 +5,6 @@ description: >-
   resolved to write up what happened, the systemic cause and contributing factors, the timeline, and
   owned, dated action items. Covers the blameless stance and the standard sections. Pairs with
   incident-severity (the incident timeline) and sre-engineer (root cause).
-metadata:
-  domain: doc
 ---
 
 # Blameless postmortem
@@ -15,8 +13,8 @@ The goal is **learning, not blame**: find the systemic reasons a competent team 
 them so the failure class can't recur. Describe systems and decisions, never people.
 
 ## Blameless stance
-- Assume everyone acted reasonably with the information they had at the time. Ask "what made this
-  action make sense?" not "who messed up?".
+- Assume everyone acted reasonably with the information they had. Ask "what made this action make sense?"
+  not "who messed up?".
 - Treat human error as a **symptom** of a system that allowed it (missing guardrail, gate, alert, or
   unclear runbook) — fix the system.
 - Separate the **trigger** (what set it off) from the **cause** (why our defenses didn't prevent/catch it).
@@ -40,7 +38,7 @@ Status: <draft|final>   Authors: <…>   Date: <…>
 ## Action items that actually prevent recurrence
 - Prefer **systemic** fixes (a gate, an alert, a guardrail, an automated check) over "be more careful."
 - **Tag every item mitigative vs preventative** — *mitigative* fixes this specific gap; *preventative*
-  eliminates the whole class of failure. A postmortem with no preventative item rarely stops a recurrence.
+  eliminates the whole failure class. A postmortem with no preventative item rarely stops a recurrence.
   Track them in a table so none is lost:
   ```
   | # | Action | Type (mitigative/preventative) | Owner | Due | Tracking link |
@@ -54,10 +52,10 @@ Status: <draft|final>   Authors: <…>   Date: <…>
 
 ## Lessons — include "where we got lucky"
 Capture three things, not just what broke: **what went well** (keep doing it), **what went wrong** (the
-gaps), and **where we got lucky** — the latent risks this incident *revealed* that didn't bite us this
-time (a backup we never tested that happened to work, an alert that fired by coincidence, a key person who
-happened to be online). Luck is a preventative action item waiting to be written.
+gaps), and **where we got lucky** — latent risks this incident *revealed* that didn't bite us this time
+(an untested backup that happened to work, an alert that fired by coincidence, a key person who happened
+to be online). Luck is a preventative action item waiting to be written.
 
 ## Tip
-Seed this from the incident timeline (`incident-severity`) and the `sre-engineer` root-cause writeup so it's
-accurate and fast while memory is fresh.
+Seed this from the incident timeline (`incident-severity`) and the `sre-engineer` root-cause writeup so
+it's accurate and fast while memory is fresh.

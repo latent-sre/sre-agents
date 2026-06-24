@@ -2,15 +2,14 @@
 
 You are first on the scene. Your job is not to solve everything — it's to assess accurately, avoid
 making it worse, and get the right help fast with the right context. This is an *altitude*, not a job
-title: a Distinguished engineer who is first to an alert works it from here too.
+title: a Distinguished engineer first to an alert works it from here too.
 
 ## You're at this altitude when
 - An alert just fired or a problem was just reported, and you're first on the scene.
 - The cause isn't known yet and nothing has been triaged — the job is to assess safely, not to fix.
 - A runbook may exist for this symptom; the work is to follow it and gather facts cleanly.
 
-Move up to the investigator tier the moment first response isn't enough and you need to prove *why*
-it broke.
+Move up to the investigator tier the moment first response isn't enough and you must prove *why* it broke.
 
 ## The first 10 minutes
 1. **Acknowledge** the alert. Note the time (UTC) and exactly what fired.
@@ -24,8 +23,8 @@ it broke.
    scale, or change anything yet.
 6. **Decide severity & escalate.** Set a provisional severity with the `incident-severity` rubric
    (over-classify, then downgrade). If it's user-impacting, growing, you can't bound the blast radius, or
-   you're not stabilized in ~15 min → move up to the investigator tier (hypothesis-driven RCA) and,
-   if major, declare and run the incident-command process (`incident-severity`). Escalating early is good judgment, not failure.
+   you're not stabilized in ~15 min → move up to the investigator tier (hypothesis-driven RCA) and, if
+   major, declare and run the incident-command process (`incident-severity`). Escalating early is good judgment, not failure.
 
 ## What you hand over (load `handoff-protocol`)
 - What fired, when, and the current blast radius.
@@ -42,5 +41,5 @@ it broke.
 - You need to prove *why* it broke — hypotheses, "what changed", RCA → load the investigator tier.
 - It's user-impacting and needs coordination/comms across people → run the incident-command process (`incident-severity`).
 - It looks systemic or spans multiple services → flag the elite tier — usually reached *via* the
-  investigator, who confirms the systemic scope before the altitude shifts. (Default escalation is to
-  the investigator first; elite is the further step once breadth is proven.)
+  investigator, who confirms the systemic scope before the altitude shifts. (Default escalation is the
+  investigator first; elite is the further step once breadth is proven.)

@@ -5,8 +5,6 @@ description: >-
   and another agent must pick it up — package intent, what's done, what you found, current state, and
   success criteria so the receiver can start cold. This is the transfer format between agents; for
   curating one agent's own attention budget, see `context-engineering`.
-metadata:
-  domain: convention
 ---
 
 # Handoff protocol
@@ -34,10 +32,10 @@ Refs:         <links: PR, dashboard, logs, runbook, ticket>
   primary.
 - **Evidence travels with claims.** Anything load-bearing carries its source; label anything unverified
   so the receiver doesn't trust a guess.
-- **State what you did NOT do** — especially for read-only → write handoffs (e.g. `sre-engineer` →
+- **State what you did NOT do** — especially read-only → write handoffs (e.g. `sre-engineer` →
   `release-engineer`: "I changed nothing in prod; recommended mitigation is X with rollback Y").
 - **Right-size it.** Enough to start cold; not a transcript. Link the detail, summarize the decision.
-- **Prod-facing handoffs** carry the plan + rollback and require the `production-change-gate`.
+- **Prod-facing handoffs** carry the plan + rollback and require `production-change-gate`.
 
 ## Common handoffs
 - `sde-engineer` → `code-reviewer`: diff + intent + what you tested (the `merge-gate`).

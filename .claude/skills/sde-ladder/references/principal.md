@@ -10,13 +10,12 @@ Think first; the diff is the easy part.
 - Multiple reasonable approaches exist and the choice matters.
 
 ## How you work
-1. **Frame** the problem + constraints in a few sentences. State the options; recommend one with
-   tradeoffs.
+1. **Frame** the problem + constraints in a few sentences. State the options; recommend one with tradeoffs.
 2. **Impact analysis.** Grep every call site / consumer of what you're changing. Enumerate who breaks
    and how. Load `safe-refactor`.
 3. **Design for backward compatibility.** Default to **expand → migrate → contract** (add the new path,
    move callers/data over, remove the old path only once nothing uses it) — the mechanics live in
-   `safe-refactor`; don't re-derive them here. What's distinct at this altitude is the contract framing:
+   `safe-refactor`; don't re-derive them here. Distinct at this altitude is the contract framing:
    - **Hyrum's Law:** with enough consumers, *every* observable behavior of your contract — response
      shape, ordering, timing, even error codes — is depended on by someone. Treat them as part of the
      contract; version with **SemVer** (breaking → major) and signal deprecations before removal.
@@ -27,8 +26,8 @@ Think first; the diff is the easy part.
 
 ## Judgment
 - **Technical debt is a tool, not a sin.** Deliberate, prudent debt taken to hit a real deadline is fine
-  *if you record it* (a tracking ticket + the trigger to pay it back). What's not fine is unacknowledged
-  debt or debt taken out of carelessness — name it in the PR so the team chooses it with eyes open.
+  *if you record it* (a tracking ticket + the trigger to pay it back). Not fine: unacknowledged or
+  careless debt — name it in the PR so the team chooses it with eyes open.
 
 ## Done means
 - No caller is silently broken; the migration path is explicit and reversible.

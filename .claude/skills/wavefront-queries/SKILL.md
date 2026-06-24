@@ -5,15 +5,12 @@ description: >-
   Operations for Applications (formerly Tanzu Observability by Wavefront). Use when querying metrics —
   latency percentiles, error ratios, saturation, rates — during RCA, or when designing metric alerts.
   Covers ts(), aggregation, rate/deriv, moving windows, and error-ratio patterns.
-metadata:
-  domain: observability
-  tool: wavefront-aria-operations-for-applications
 ---
 
 # Wavefront queries (WQL / `ts()`)
 
 Our metrics platform is **VMware Aria Operations for Applications** (formerly Tanzu Observability by
-Wavefront). The query language is WQL; the core function is `ts()`.
+Wavefront). Query language: WQL; core function: `ts()`.
 
 > **Fill in** our real metric names, point tags, and dashboards in
 > [references/metrics.md](references/metrics.md) so these snippets match what we emit.
@@ -73,5 +70,5 @@ ts(app.container.memory.usage) / ts(app.container.memory.limit) * 100   # mem % 
 - Overlay the metric with the deploy time (events) — a step change at deploy = the change is the cause.
 - For alerts, hand the finalized query to `sre-monitor` with a window + threshold + burn-rate
   (`slo-error-budget`); avoid alerting on a raw, unsmoothed series.
-- WQL specifics evolve — confirm a function against the current Aria Operations for Applications docs
-  (`researcher`) before relying on an unusual one.
+- WQL specifics evolve — confirm an unusual function against the current Aria Operations for Applications
+  docs (`researcher`) before relying on it.

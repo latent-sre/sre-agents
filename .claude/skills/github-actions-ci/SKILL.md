@@ -5,9 +5,6 @@ description: >-
   environments with deployment protection (approval gates), OIDC, caching, concurrency, least-privilege
   permissions, and self-hosted runners for on-prem/PCF access. Use when setting up or debugging a
   workflow, adding a deploy job, or hardening pipeline security.
-metadata:
-  domain: cicd
-  tool: github-actions
 ---
 
 # GitHub Actions CI/CD
@@ -39,20 +36,20 @@ jobs:
 ```
 
 ## Security (do this every time)
-The **2025 tj-actions/changed-files compromise** (a popular action's tags were repointed to credential-
+The **2025 tj-actions/changed-files compromise** (a popular action's tags repointed to credential-
 stealing code) is the cautionary tale — assume any action you don't pin can change under you.
 - **Least-privilege token:** set `permissions:` explicitly; default to `contents: read` and grant only
   what's needed. Avoid the broad default token.
 - **OIDC over long-lived secrets:** `permissions: { id-token: write }` lets a job mint a short-lived
   token from an OIDC-aware broker (a cloud IdP, Vault) at run time instead of storing static creds
-  (`id-token: write` only grants *requesting* the token). On our PCF stack this rarely means a cloud
-  IdP — deploy creds usually come from a self-hosted runner's internal store (CredHub auth is via UAA,
-  not GitHub OIDC — see the PCF deploy notes below).
-- **Pin third-party actions by full commit SHA** (tags are mutable), with the version in a trailing
-  comment so updates stay legible: `- uses: actions/checkout@<40-char-sha> # v4.2.2`.
+  (it only grants *requesting* the token). On our PCF stack this rarely means a cloud IdP — deploy creds
+  usually come from a self-hosted runner's internal store (CredHub auth is via UAA, not GitHub OIDC — see
+  the PCF deploy notes below).
+- **Pin third-party actions by full commit SHA** (tags are mutable), version in a trailing comment:
+  `- uses: actions/checkout@<40-char-sha> # v4.2.2`.
 - **No script injection:** never interpolate `${{ github.event.* }}` (PR title/body, branch name, etc.)
-  directly into a `run:` block — an attacker controls those strings and they execute in your shell.
-  Pass them through a quoted `env:` var instead and reference `"$VAR"`.
+  directly into a `run:` block — an attacker controls those strings and they execute in your shell. Pass
+  them through a quoted `env:` var and reference `"$VAR"`.
 - **Treat `pull_request_target` as dangerous:** it runs *your* workflow with repo secrets but can be
   triggered by untrusted fork PRs ("pwn request"). Don't check out + build fork code under it; prefer
   plain `pull_request` (no secrets) for untrusted contributions.
@@ -62,8 +59,8 @@ stealing code) is the cautionary tale — assume any action you don't pin can ch
   the two above) so these regress loudly.
 
 ## Supply-chain provenance (releasable artifacts)
-For artifacts you ship, attest where they came from: `actions/attest-build-provenance` plus an SBOM via
-`actions/attest-sbom`, and verify downstream with `gh attestation verify`. This lets a consumer prove the
+For artifacts you ship, attest provenance: `actions/attest-build-provenance` plus an SBOM via
+`actions/attest-sbom`, and verify downstream with `gh attestation verify`. Lets a consumer prove the
 artifact was built by your pipeline from your source, not swapped in.
 
 ## Make it fast & correct
@@ -77,15 +74,15 @@ artifact was built by your pipeline from your source, not swapped in.
 ## Self-hosted runners (on-prem / PCF)
 PCF foundations and on-prem services are usually not reachable from GitHub-hosted runners. Use
 **self-hosted runners** (in runner groups, scoped to the repos/environments that need them) for jobs
-that run `cf` against a foundation. Keep them patched and least-privileged; restrict which workflows
-can use them. Prefer **`--ephemeral`** runners (one job per runner, fresh each time) so a poisoned job
-can't persist and tamper with the next — and **never** attach self-hosted runners to public repos.
+that run `cf` against a foundation. Keep them patched and least-privileged; restrict which workflows can
+use them. Prefer **`--ephemeral`** runners (one job per runner, fresh each time) so a poisoned job can't
+persist and tamper with the next — and **never** attach self-hosted runners to public repos.
 
 ## Deploy to PCF from Actions (paste-ready)
-Use a self-hosted runner with a pinned cf CLI v8 already installed (or install from an internal,
-checksum-verified package). Authenticate from **environment** secrets, keep shell tracing off, and
-understand the residual risk: `cf auth` takes the password as an argument, so run it only on a locked-down
-or ephemeral runner.
+Use a self-hosted runner with a pinned cf CLI v8 installed (or installed from an internal,
+checksum-verified package). Authenticate from **environment** secrets, keep shell tracing off, and note
+the residual risk: `cf auth` takes the password as an argument, so run it only on a locked-down or
+ephemeral runner.
 ```yaml
 deploy-prod:
   runs-on: [self-hosted, pcf]          # runner group with foundation network access

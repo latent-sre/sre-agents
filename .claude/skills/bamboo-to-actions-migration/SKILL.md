@@ -4,9 +4,6 @@ description: >-
   Migrate a CI/CD pipeline from Atlassian Bamboo to GitHub Actions — concept mapping, a step-by-step
   migration approach, and the common gotchas. Use when porting a Bamboo plan or deployment project to
   Actions, or planning the team's move off Bamboo. Pairs with github-actions-ci.
-metadata:
-  domain: cicd
-  tool: github-actions
 # Manually-invoked prompt: this migration runs only a handful of times, so it's invoked with
 # /bamboo-to-actions-migration rather than auto-loaded — which keeps its description out of the
 # always-on skill listing. Future option: wire it into CI as a one-shot migration runner.
@@ -36,22 +33,21 @@ is trusted, then retire the Bamboo plan.
 
 ## Approach
 1. **Inventory** the Bamboo plan: triggers, stages/jobs/tasks, variables (which are secret), artifacts,
-   agent requirements (does it need on-prem/PCF network access → self-hosted runner), and deployment
-   environments + approvers.
+   agent requirements (on-prem/PCF network access → self-hosted runner), and deployment environments +
+   approvers.
 2. **Recreate build** first as a workflow: checkout → setup language → install → test → upload artifact.
    Get CI green before touching deploys. See `github-actions-ci`.
 3. **Port variables:** non-secret → repo/org **variables**; secret → **secrets** (environment-scoped for
    deploy). Never paste secret values into YAML.
 4. **Port deploy** as a separate job/reusable workflow targeting an **environment** with required
-   reviewers — that's the Bamboo "deployment approval" equivalent and your `release-gate`.
+   reviewers — the Bamboo "deployment approval" equivalent and your `release-gate`.
 5. **Map agents → runners.** Anything that runs `cf` against PCF needs a **self-hosted runner** with
    foundation access.
 6. **Run in parallel.** Trigger both pipelines on the same commits; diff outputs/artifacts until Actions
    matches Bamboo. Then flip the source of truth and disable the Bamboo trigger.
 
 ## Use the GitHub Actions Importer (don't hand-port blindly)
-The `gh actions-importer` extension converts Bamboo automatically — treat its output as a **draft**, not
-a finished workflow.
+The `gh actions-importer` extension converts Bamboo automatically — treat its output as a **draft**.
 ```bash
 gh extension install github/gh-actions-importer
 gh actions-importer audit    bamboo --output-dir tmp/audit       # inventory + % auto-convertible

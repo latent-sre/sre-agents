@@ -1,7 +1,6 @@
 # TypeScript craft
 
-Match the repo's existing tooling first; the
-defaults below apply when none is set.
+Match the repo's existing tooling first; defaults below apply when none is set.
 
 ## tsconfig (modern core)
 - **`strict: true`** (enables `noImplicitAny`, `strictNullChecks`, `strictFunctionTypes`, …). Add

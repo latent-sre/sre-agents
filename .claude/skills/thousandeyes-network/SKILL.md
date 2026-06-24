@@ -5,9 +5,6 @@ description: >-
   Cloud vs Enterprise agents, path visualization and BGP route monitoring, and reading synthetic/web
   results. Use during triage when the symptom looks external (reachability, latency from a region, DNS,
   a flaky dependency) or to design synthetic monitoring of a critical path.
-metadata:
-  domain: observability
-  tool: cisco-thousandeyes
 ---
 
 # Cisco ThousandEyes — network & synthetic checks
@@ -18,8 +15,7 @@ application-layer results. Use it to separate **network/path** problems from **a
 ## Agents
 - **Cloud Agents** — Cisco-hosted, public vantage points (test from "the internet").
 - **Enterprise Agents** — installed on **our** on-prem network / data centers; test the inside path
-  (us → dependency) and serve as a source for agent-to-agent tests. These matter most for our on-prem +
-  PCF apps.
+  (us → dependency) and source agent-to-agent tests. These matter most for our on-prem + PCF apps.
 
 ## Test types (pick by question)
 | Question | Test type |
@@ -35,7 +31,7 @@ application-layer results. Use it to separate **network/path** problems from **a
 1. **Path Visualization** — hop-by-hop loss/latency. Loss starting at a specific hop/AS points at the
    network, not your app. If the path is clean to your app, the problem is likely in the app (back to
    `pcf-ops`/`splunk-triage`).
-2. **BGP route visualization** — an AS-path change or withdrawn prefix near the incident start =
+2. **BGP route visualization** — an AS-path change or withdrawn prefix near incident start =
    routing/provider issue; escalate to network/provider, not a code fix.
 3. **Cloud vs Enterprise comparison** — fails from Cloud (outside) but fine from Enterprise (inside) →
    ingress/edge/DNS; fine outside but failing inside → internal path/dependency.
@@ -44,8 +40,8 @@ application-layer results. Use it to separate **network/path** problems from **a
 ## Designing checks (with `sre-monitor`)
 - Add a transaction/HTTP test for each **critical user journey** and a network test to each **key
   dependency**; alert on loss/latency/availability and link a runbook.
-- The current REST API can script tests/alerts (confirm the version against the ThousandEyes docs
-  before relying on it — `[unverified]`); hand automation to `release-engineer`/`sde-engineer`.
+- The current REST API can script tests/alerts (confirm the version against ThousandEyes docs before
+  relying on it — `[unverified]`); hand automation to `release-engineer`/`sde-engineer`.
 
 ## Concrete values
 Our enterprise agents, test inventory, critical-journey coverage, and BGP monitors live in

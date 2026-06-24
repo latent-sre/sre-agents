@@ -6,15 +6,13 @@ description: >-
   skills, which own prod incidents). Use when something is broken in dev or CI and the cause is not yet
   known. Covers reproduce → what changed → ranked parallel hypotheses → test one at a time (git bisect)
   → the causal chain → minimal fix + a regression test that would have caught it.
-metadata:
-  domain: method
 ---
 
 # Debug / root-cause analysis
 
 Find *why* something is broken — methodically, not by guessing. Reason about the system, not a single
-domino. This is the **build/test-time** counterpart to the incident RCA in `sre-ladder` (investigator tier)
-(prod) — same discipline, applied to failing tests, flaky builds, and runtime errors. `sde-engineer`
+domino. The **build/test-time** counterpart to the incident RCA in `sre-ladder` (investigator tier,
+prod) — same discipline, applied to failing tests, flaky builds, and runtime errors. `sde-engineer`
 and `test-engineer` load it when a defect's cause is unknown.
 
 ## Method
@@ -24,7 +22,7 @@ and `test-engineer` load it when a defect's cause is unknown.
    environment differences. Correlate against *when* the failure began.
 3. **Form hypotheses — several, up front.** List plausible causes and **rank by likelihood × cheapness-
    to-test**. Don't fixate on the first idea.
-4. **Test one hypothesis at a time.** Add targeted logging/instrumentation, narrow the inputs, inspect
+4. **Test one hypothesis at a time.** Add targeted logging/instrumentation, narrow inputs, inspect
    state, or **`git bisect`**. Falsify or confirm before moving on — no thematic wandering.
 5. **Isolate.** Binary-search the problem space (across commits, layers, inputs) until the cause is
    pinned to a specific line/condition.
@@ -35,7 +33,7 @@ and `test-engineer` load it when a defect's cause is unknown.
 
 ## Diagnostic toolkit
 - `git log` / `git diff` / **`git bisect`** — locate the introducing change.
-- Targeted logs/traces; re-run with verbose output; inspect the failing layer's inputs/outputs.
+- Targeted logs/traces; re-run verbose; inspect the failing layer's inputs/outputs.
 - Flaky tests: look for order-dependence, shared state, real clock/network/random, timing/races
   (run repeatedly, shuffle order, freeze the clock).
 - Distributed/runtime issues: **metrics → traces → logs** to go *that* → *where* → *why*.
@@ -43,7 +41,7 @@ and `test-engineer` load it when a defect's cause is unknown.
 ## Principles
 - **Evidence over intuition** — confirm each step against observed behavior; label anything unverified.
 - Distinguish **root cause** (the fix point) from **symptoms** (what you saw) and **contributing
-  factors**. Fix the cause; then verify the fix actually clears the original signal.
+  factors**. Fix the cause; then verify the fix clears the original signal.
 
 ## Output
 **Symptom → Reproduction → Investigation** (hypotheses tested + evidence) **→ Root cause** (`file:line`
@@ -64,6 +62,6 @@ fix). Note the contributing factor — the env difference — not just the proxi
 
 ## Handoffs
 - → `sde-engineer` for the code fix · → `test-engineer` for the regression test if it deserves focus.
-- If the symptom is in **production** (alert, user impact, degraded PCF app), escalate to `sre-engineer`
-  / the `sre-ladder` skills instead — that's incident RCA, not build-time debugging.
+- Symptom in **production** (alert, user impact, degraded PCF app) → escalate to `sre-engineer` /
+  the `sre-ladder` skills instead — that's incident RCA, not build-time debugging.
 - → `researcher` for an external library/version/bug-report fact you can't confirm from the repo.

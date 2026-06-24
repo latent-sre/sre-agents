@@ -6,8 +6,6 @@ description: >-
   releases). Use immediately before executing to confirm human approval, blast-radius assessment, a
   reversible backout plan, an authorized executor, comms, and monitoring. Enforces that prod changes
   need explicit human sign-off. (`release-gate` checks build readiness; this authorizes the action.)
-metadata:
-  domain: gate
 ---
 
 # Production change gate
@@ -48,6 +46,6 @@ Watching: <who, which signals>   Abort if: <criteria>
 ```
 
 ## Emergency exception
-During a declared incident, mitigation speed can outweigh full process — but **never skip a human
+During a declared incident, mitigation speed can outweigh full process — but **never skip human
 confirmation and a backout plan**. Record the emergency decision and who made it; reconcile the change
 record afterward.

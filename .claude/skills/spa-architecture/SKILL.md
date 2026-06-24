@@ -5,16 +5,14 @@ description: >-
   `api-design` backend. Use when standing up or extending a SPA: build/routing, server-state vs UI-state,
   a typed OpenAPI client, modern accessible styling, browser auth (OIDC+PKCE), web security
   (XSS/CORS/CSP/token storage), and building/serving the bundle on PCF. Pairs with `craft` (React).
-metadata:
-  domain: method
 ---
 
 # SPA architecture
 
-You're building a **GUI for an ops tool**: a single-page app in the browser talking to a JSON API. Keep
-it a **thin, well-structured client over a well-designed API** (`api-design`) — business rules and authz
-live on the server; the SPA renders state and collects intent. Match the repo's existing stack first.
-Component-level React patterns live in `craft` (React); this skill is the app around them.
+You're building a **GUI for an ops tool**: a single-page app talking to a JSON API. Keep it a **thin,
+well-structured client over a well-designed API** (`api-design`) — business rules and authz live on the
+server; the SPA renders state and collects intent. Match the repo's existing stack first. Component-level
+React patterns live in `craft` (React); this skill is the app around them.
 
 ## Stack & structure (defaults)
 - **Vite + React + TypeScript** (load `craft` (React), `craft` (TypeScript)). Organize by feature, not by
@@ -23,16 +21,16 @@ Component-level React patterns live in `craft` (React); this skill is the app ar
   initial bundle stays small.
 
 ## Styling & look (modern, accessible by default)
-Ops GUIs should look clean and current, not bespoke — **don't hand-roll a design system or pixel
-values.** Defaults when the repo sets none:
+Look clean and current, not bespoke — **don't hand-roll a design system or pixel values.** Defaults when
+the repo sets none:
 - **Styling:** utility-first **Tailwind CSS** (or CSS Modules) over runtime CSS-in-JS (`styled-
-  components`/Emotion add a runtime cost and fight Server Components). Drive everything from **design
+  components`/Emotion add runtime cost and fight Server Components). Drive everything from **design
   tokens / CSS variables** (color, spacing, radius, type scale) so theming and **dark mode** are one
   switch — most on-call work happens at night.
 - **Components:** build on an **accessible headless primitive library** — **shadcn/ui** (copy-in
   components on **Radix UI**), Radix Themes, or Mantine — so dialogs, menus, and comboboxes get focus
   management and ARIA for free (this *is* your a11y story below). Don't reinvent a modal.
-- **Look:** a consistent **spacing + type scale**, generous whitespace, one accent color, real
+- **Look:** consistent **spacing + type scale**, generous whitespace, one accent color, real
   empty/loading/**skeleton**/error states, and **lucide** (or similar) icons. Stay restrained — ops
   tools are read under stress; clarity and density beat decoration.
 - **Data-dense views:** ops tools are mostly tables — use a real table primitive (**TanStack Table**)
@@ -41,8 +39,8 @@ values.** Defaults when the repo sets none:
 
 ## Data: server-state vs UI-state (the load-bearing decision)
 - Treat **server data as a cache, not app state.** Use **TanStack Query** (or RTK Query) for fetching:
-  caching, background refetch, loading/error states, and mutations with invalidation. Don't hand-roll
-  fetch-in-`useEffect` + global store — it's the top source of stale-data and waterfall bugs.
+  caching, background refetch, loading/error states, mutations with invalidation. Don't hand-roll
+  fetch-in-`useEffect` + global store — the top source of stale-data and waterfall bugs.
 - Keep genuine **UI state** (modals, selection, form drafts) local with `useState`/context. See
   "you might not need an Effect" in `craft` (React).
 
@@ -70,10 +68,10 @@ the form.
   queries / prefetch). Show skeletons, not spinners-of-death.
 
 ## Build & serve on PCF
-Build hashed static assets (`vite build`). Serve them via the **`staticfile`/`nginx` buildpack** or
-co-serve from the API app; add the **SPA fallback** (rewrite unknown paths → `index.html`) so deep links
-and refresh work, and cache-bust on the hashed filenames. Ship with `pcf-deploy`. Capture client errors/
-RUM via `instrument-service`.
+Build hashed static assets (`vite build`). Serve via the **`staticfile`/`nginx` buildpack** or co-serve
+from the API app; add the **SPA fallback** (rewrite unknown paths → `index.html`) so deep links and
+refresh work, and cache-bust on the hashed filenames. Ship with `pcf-deploy`. Capture client errors/RUM
+via `instrument-service`.
 
 ## Testing
 **React Testing Library** + **MSW** (mock the API at the network layer) for components/flows; **Playwright**

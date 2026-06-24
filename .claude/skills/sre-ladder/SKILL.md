@@ -6,9 +6,6 @@ description: >-
   response — golden signals, read-only checks, work the runbook, decide severity, escalate), investigator
   (hypothesis-driven RCA — build a timeline, correlate "what changed", test hypotheses against evidence),
   or elite (systemic/distributed failure analysis and prevention). Read the one tier file for the method.
-metadata:
-  domain: ladder
-  track: sre
 ---
 
 # SRE ladder — pick your altitude

@@ -5,8 +5,6 @@ description: >-
   ops-focused team. Use when someone says "define an SLO", "what should we alert on", "are we within
   budget", or when turning a noisy threshold alert into a symptom/burn-rate alert. Covers SLI formulas,
   window/target choices, and multi-window burn-rate alerting on our stack.
-metadata:
-  domain: sre
 ---
 
 # SLOs & error budgets (pragmatic)
@@ -30,9 +28,9 @@ usually not your fault).
 ## SLO — the target over a window
 - Pick a **target** (e.g. 99.9%) over a **rolling window** (commonly 28 days).
 - **Error budget = 1 − SLO.** 99.9% over 28d ≈ **40 minutes** of allowed badness.
-- The budget is a *decision tool*: budget left → ship features; budget burned → freeze risky changes and
-  spend on reliability. This fits a non-Google, ops-focused team — it makes "how reliable is enough"
-  an explicit, shared call.
+- The budget is a *decision tool*: budget left → ship features; budget burned → freeze risky changes,
+  spend on reliability. Fits a non-Google, ops-focused team — makes "how reliable is enough" an
+  explicit, shared call.
 
 ## Burn-rate alerts (alert on symptoms, not causes)
 Alert when you're **burning budget too fast**, using multi-window/multi-burn to be both fast and
@@ -54,7 +52,7 @@ far less flapping than a static threshold.
 - Express the SLI as a WQL ratio (`wavefront-queries`) or a Splunk search; build the burn-rate
   conditions in Wavefront/Splunk alerts; route through Moogsoft (`moogsoft-correlation`); surface
   budget on a Grafana SLO row (`grafana-dashboards`). Every page links a runbook.
-- Hand the finalized definitions to `sre-monitor` to own as code.
+- Hand finalized definitions to `sre-monitor` to own as code.
 
 ## Don't
 - Don't set 99.99% because it sounds good — every nine multiplies cost; match the target to real user

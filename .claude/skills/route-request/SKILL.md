@@ -5,14 +5,12 @@ description: >-
   in the right order, with the gates that apply. Use at the start of any multi-step or ambiguous request
   to produce a delegation plan, or to decide whether a request even needs delegation. This is the fleet's
   routing logic — the main session loads it to plan multi-step work (there is no separate coordinator agent).
-metadata:
-  domain: routing
 ---
 
 # Route a request (selector)
 
-Classify intent → pick the minimum agents → sequence them → insert gates. If the whole request is one
-obvious specialist task, **say so and route directly** — don't manufacture ceremony.
+Classify intent → pick the minimum agents → sequence them → insert gates. If the request is one obvious
+specialist task, **say so and route directly** — don't manufacture ceremony.
 
 ## 1. Classify intent
 `build` · `review` · `operate/incident` · `release` · `document` · `research`. Note **urgency** (is
@@ -48,12 +46,12 @@ Plan:
 Parallelizable: <…>
 Risks / watch-for: <…>
 ```
-Each step names the **context to hand the agent** so it can start cold (`handoff-protocol`). For
-prod-facing or destructive steps, mark them and require explicit human confirmation. When the plan has
-independent strands (or wants multi-lens review/voting), load **`parallelization`** to decide whether to
-fan them out concurrently and whether the cost pays.
+Each step names the **context to hand the agent** so it can start cold (`handoff-protocol`). Mark
+prod-facing or destructive steps and require explicit human confirmation. When the plan has independent
+strands (or wants multi-lens review/voting), load **`parallelization`** to decide whether to fan them out
+concurrently and whether the cost pays.
 
 ## Guardrails
-- **Don't invent an agent** that isn't in the fleet — if none fits, say so (or have the main session do it).
-- **Stay a router.** If you find yourself doing the investigation or writing the code, stop and route it —
-  routing runs in the main session's context, not a separate one.
+- **Don't invent an agent** not in the fleet — if none fits, say so (or have the main session do it).
+- **Stay a router.** If you find yourself investigating or writing code, stop and route it — routing runs
+  in the main session's context, not a separate one.

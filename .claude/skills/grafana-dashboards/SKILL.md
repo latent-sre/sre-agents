@@ -5,9 +5,6 @@ description: >-
   sources, alerting, and dashboards-as-code. Use when building or improving a dashboard, deciding what
   to visualize, or wiring Grafana alerts. Built for the 3am on-call reader: top-down from SLO/health to
   drill-down.
-metadata:
-  domain: observability
-  tool: grafana
 ---
 
 # Grafana dashboards
@@ -23,7 +20,7 @@ A dashboard exists to answer a question fast under stress — not to show every 
 
 ## Panel hygiene
 - Title every panel as the **question it answers** ("p99 latency — checkout"). Set **units** (ms, %, req/s).
-- Sensible thresholds/colors tied to SLO (green/amber/red), not arbitrary.
+- Thresholds/colors tied to SLO (green/amber/red), not arbitrary.
 - Latency as percentiles, not averages (averages hide the tail). Error rate as a **ratio**, not raw count.
 - Default to a useful window (last 1–6h) and the org timezone; keep all panels on the same range.
 
@@ -43,8 +40,8 @@ A dashboard exists to answer a question fast under stress — not to show every 
 - Define **alert rules** (in alert-rule folders), not the legacy per-panel dashboard alerts. Rules are
   **Grafana-managed** (Grafana evaluates the query) or **datasource-managed** (delegated to a Prometheus/
   Mimir-style rule backend) — pick per where the data and evaluation live.
-- Prefer SLO/burn-rate alerts over static thresholds where possible. Link the **runbook** from each rule
-  via a `runbook_url` **annotation** (`runbook-template`).
+- Prefer SLO/burn-rate alerts over static thresholds. Link the **runbook** from each rule via a
+  `runbook_url` **annotation** (`runbook-template`).
 - Route notifications with **contact points** + **notification policies**; send to Moogsoft for
   correlation (`moogsoft-correlation`).
 

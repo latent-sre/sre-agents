@@ -5,9 +5,6 @@ description: >-
   investigating a degraded or crashing app on PCF — checking app state, instances, recent platform
   events, logs, routes, services, and env. Lists the safe read-only commands for an SRE and flags the
   state-changing commands that require human sign-off via release-engineer.
-metadata:
-  domain: ops
-  platform: pcf-tas
 compatibility: Requires the cf CLI v8 and access/auth to the target PCF foundation
 ---
 
@@ -27,16 +24,15 @@ We operate **our apps**; the **platform** (BOSH, Ops Manager, Diego cells, Gorou
 foundation capacity) is the platform team's. Fix app-side problems; **recognize and escalate**
 platform-side ones — don't try to debug BOSH.
 - **One app / route / instance affected ⇒ likely app-side** (yours).
-- **Many apps failing at once, or failing/evacuating cells ⇒ platform-side** — escalate to the platform
-  team with evidence (timeline + blast radius); don't keep digging.
+- **Many apps failing at once, or failing/evacuating cells ⇒ platform-side** — escalate with evidence; don't keep digging.
 
-**Escalation packet (hand the platform team a case they can act on, not a hunch):**
-- **Symptom + start time** (UTC) and the **trend** (growing / steady / recovering).
-- **Blast radius** showing it's *not* just us: which apps/routes/orgs/spaces and how many — and the same
+**Escalation packet (a case they can act on, not a hunch):**
+- **Symptom + start time** (UTC) and **trend** (growing / steady / recovering).
+- **Blast radius** showing it's *not* just us: which/how many apps/routes/orgs/spaces, and the same
   symptom across apps you don't own (`cf events`, the foundation-wide signal that tipped you off).
-- **Evidence our app is healthy:** `cf app <app>` (instances up), recent `cf events` (no app crashes/
-  OOM), `cf logs --recent` (clean), and that nothing changed our side (no recent deploy/config flip).
-- **What you already ruled out** app-side (deploy, config, dependency, capacity) so they don't repeat it.
+- **Evidence our app is healthy:** `cf app <app>` (instances up), recent `cf events` (no crashes/OOM),
+  `cf logs --recent` (clean), and nothing changed our side (no recent deploy/config flip).
+- **What you already ruled out** app-side (deploy, config, dependency, capacity).
 - **The platform signal** you saw: evacuating/failing Diego cells, foundation-wide 502s, cert/NTP, or
   `cf ssh`-to-`2222` timeouts (network path). Label anything `[unverified]`.
 
@@ -59,7 +55,7 @@ start time is your prime suspect. Cross-reference with the release pipeline + `g
 cf logs <app> --recent         # dump the recent buffer (start here)
 cf logs <app>                  # live tail (RTR = router access logs, APP = app stdout/stderr)
 ```
-RTR lines give status code + response time per request; APP lines give app logs. For history beyond the
+RTR lines give status code + response time per request; APP lines are app logs. For history beyond the
 buffer, go to Splunk (`splunk-triage`).
 
 ## Reading failures (exit codes, 502/503, health checks)
@@ -103,9 +99,9 @@ cf routes                      # routing: which routes map to which apps (blast 
 cf services / cf service <name># bound backing services + last operation status
 ```
 
-Treat `cf ssh` as privileged shell access, not normal read-only triage. Even a harmless-looking remote
-shell can mutate an app instance, so read-only agents should not use it; ask for explicit human approval
-and hand off if instance-shell inspection is truly needed.
+Treat `cf ssh` as privileged shell access, not read-only triage — even a harmless-looking remote shell
+can mutate an instance. Read-only agents should not use it; get explicit human approval and hand off if
+instance-shell inspection is truly needed.
 
 ## State-changing — NOT for sre-engineer (hand to release-engineer + human sign-off)
 `cf restart` / `cf restage` / `cf scale` / `cf push` / `cf map-route` / `cf unmap-route` /
@@ -115,11 +111,11 @@ Recommend them; let release-engineer execute.
 
 ## Tips
 - `CF_TRACE=true cf <cmd>` shows the raw CAPI request/response when a command behaves oddly.
-- App instances are ephemeral and numbered (`-i <n>`); a "fix" that only restarts an instance hides a
-  recurring cause — capture logs/events first.
-- Can't `cf ssh` (the connection to port `2222` times out)? That's the SSH proxy / network path, not
-  your app — a network/platform signal, not an app bug.
-- Diagnose a bound backing service without leaving your machine by **port-forwarding through the app
-  container**: `cf ssh APP -L 63306:db.host:3306` then connect a local client to `localhost:63306`. This
-  is read-only triage (a tunnel, not a change) — but reaching the DB through it still respects the
-  database's own access controls; don't run state-changing queries without the `production-change-gate`.
+- App instances are ephemeral and numbered (`-i <n>`); a "fix" that only restarts one hides a recurring
+  cause — capture logs/events first.
+- Can't `cf ssh` (connection to port `2222` times out)? That's the SSH proxy / network path, not your
+  app — a network/platform signal, not an app bug.
+- Diagnose a bound backing service via **port-forwarding through the app container**:
+  `cf ssh APP -L 63306:db.host:3306` then connect a local client to `localhost:63306`. This is read-only
+  triage (a tunnel, not a change) — but the DB still enforces its own access controls; don't run
+  state-changing queries without the `production-change-gate`.

@@ -5,8 +5,6 @@ description: >-
   testing, before declaring a change "done" or merging a PR. A pass/fail checklist covering tests,
   review, security, coverage, secrets, compatibility, and docs. Run it (or invoke /merge-gate) to verify
   readiness.
-metadata:
-  domain: gate
 ---
 
 # Merge gate
@@ -44,5 +42,5 @@ Waivers (if any): <item — approved by <human> — reason>
 
 ## Notes
 - This gate is a checklist by default. In GitHub it should be backed by **branch protection** (required
-  checks + required review) so it can't be skipped; in Claude Code it can be hardened with a hook.
+  checks + required review) so it can't be skipped; in Claude Code, hardened with a hook.
 - "Approved with nits" can merge if the nits are non-blocking and tracked. Critical/High cannot.

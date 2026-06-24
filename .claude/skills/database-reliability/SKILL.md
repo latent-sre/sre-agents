@@ -6,15 +6,13 @@ description: >-
   issues, and database-driven incidents. Covers online/reversible migrations, the expand→contract +
   backfill + dual-write pattern, EXPLAIN/index/N+1 tuning, connection-pool/lock/replication-lag triage,
   and tested backups with RPO/RTO. Pairs with pcf-ops, sre-engineer, and slo-error-budget.
-metadata:
-  domain: data
 ---
 
 # Database reliability
 
-Keep data **correct, durable, and fast**, and make schema change safe in production. Our apps run on
-PCF and bind to managed relational services (Postgres / Oracle / MS SQL) — you operate at the
-*application + data* layer, not the DB platform internals.
+Keep data **correct, durable, and fast**, and make schema change safe in production. Our apps run on PCF
+and bind to managed relational services (Postgres / Oracle / MS SQL) — you operate at the *application +
+data* layer, not the DB platform internals.
 
 > **Safety rule (non-negotiable):** read-only inspection is fine; any **state-changing or prod-facing**
 > action (running a migration, `UPDATE`/`DELETE`, killing a query, failover, scaling) needs explicit
@@ -59,11 +57,12 @@ When a DB-driven incident hits, check the cheap saturation signals first:
 Mitigate to stop pain first (kill a runaway query, add capacity, fail over) **with confirmation**, then
 diagnose. Pairs with `rollback-mitigation` for the deploy-side undo.
 
+
 ## Durability
-- Backups **exist, are monitored, and — crucially — restores are tested**. An untested backup is a
-  hope, not a recovery plan.
-- Know your **RPO** (how much data you can lose) and **RTO** (how fast you must be back). Verify
-  replication and failover; don't assume them.
+- Backups **exist, are monitored, and — crucially — restores are tested**. An untested backup is a hope,
+  not a recovery plan.
+- Know your **RPO** (data you can lose) and **RTO** (how fast you must be back). Verify replication and
+  failover; don't assume them.
 
 ## Least privilege & guardrails
 - Scoped DB credentials; never the admin role from the app.

@@ -7,16 +7,14 @@ description: >-
   the initial/update/resolution updates. Use the moment you must assign a severity, run the incident
   (who's doing what), or send a status update. Pairs with sre-ladder (responder tier) and
   blameless-postmortem.
-metadata:
-  domain: incident
 ---
 
 # Incident severity, command & communications
 
-The first consequential call in any incident is **"how bad is this, and who needs to know?"** This skill
-makes that call repeatable. **Over-classify, then downgrade** — declaring is cheap; under-declaring is
-expensive. Set a *provisional* severity in the first minutes from what you can see, and revise as the
-blast radius becomes clear.
+The first consequential call in any incident is **"how bad is this, and who needs to know?"**
+**Over-classify, then downgrade** — declaring is cheap; under-declaring is expensive. Set a
+*provisional* severity in the first minutes from what you can see, and revise as the blast radius
+becomes clear.
 
 ## Severity rubric (round up when unsure)
 
@@ -37,13 +35,13 @@ blast radius becomes clear.
   growing → declare and assign an incident commander (run the process below); don't keep digging solo (`sre-ladder`, responder tier).
 
 ## Running the incident (command)
-Once declared, someone owns the **response** — the **incident commander** (often the on-call lead). The IC
-runs the *process*, not the debugging, keeping the response organized so it moves toward mitigation.
+Once declared, someone owns the **response** — the **incident commander** (often the on-call lead), who
+runs the *process*, not the debugging, keeping the response moving toward mitigation.
 - **Coordinate, don't solo-debug.** The moment the IC is heads-down in logs, nobody is commanding.
-  Delegate technical RCA to `sre-engineer` and remediation to `release-engineer`; the IC keeps the response organized.
+  Delegate technical RCA to `sre-engineer` and remediation to `release-engineer`.
 - **Mitigate first.** User pain stops before root cause is found — push for the fastest safe, reversible
   mitigation (`rollback-mitigation`) and make that call explicit.
-- **One source of truth.** Keep a single running **timeline** (UTC) of what's known, what's been tried, and what's next.
+- **One source of truth.** Keep a single running **timeline** (UTC) of what's known, tried, and next.
 - **Assign roles:** Investigation lead (`sre-engineer`), Ops/remediation (`release-engineer`), Comms/scribe
   (the IC, or a delegate on a large SEV1). Confirm who owns what.
 - **Track every action** — each "someone should…" becomes an owned, tracked item.
@@ -63,10 +61,10 @@ Next update: <time>
 ```
 
 ## Communications cadence
-Update on the **fixed cadence for the severity above, even when there is no news** ("still investigating,
-next update by HH:MM") — silence reads as loss of control. Keep it honest and jargon-free: never overstate
-confidence or understate impact. For SEV1, the first external update should go out within the hour.
-For a large SEV1, split **Comms lead** and **Scribe** off from the IC; otherwise the IC owns both.
+Update on the **fixed cadence for the severity above, even with no news** ("still investigating, next
+update by HH:MM") — silence reads as loss of control. Keep it honest and jargon-free: never overstate
+confidence or understate impact. For SEV1, the first external update goes out within the hour. For a
+large SEV1, split **Comms lead** and **Scribe** off from the IC; otherwise the IC owns both.
 
 ### Templates
 - **Initial** — *What we know* (symptom + impact), *Severity*, *Scope* (who/what affected, since when),
@@ -79,8 +77,8 @@ For a large SEV1, split **Comms lead** and **Scribe** off from the IC; otherwise
 ## Downgrade & resolve
 Downgrade or resolve only when the **golden signals are back to baseline and stay there** for a
 sustained window (not just "the graph turned green" — a metastable system can re-break). Verify recovery
-via `sre-monitor`/the investigator before you call it, then send the **Resolution** update and schedule
-the postmortem (`blameless-postmortem`).
+via `sre-monitor`/the investigator first, then send the **Resolution** update and schedule the postmortem
+(`blameless-postmortem`).
 
 ## Pairs with
 - `sre-ladder` (responder tier) — uses this rubric to decide severity and escalate.
