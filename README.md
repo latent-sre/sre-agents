@@ -46,13 +46,15 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 evals/                     behavioral evals (scenarios + graders) — routing, gates, security; --validate runs in CI
-docs/                       ARCHITECTURE (why) · AGENT-CATALOG (per-agent roster) · HANDOFFS (collab map) · BRANCH-REVIEW
+docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · adr/ · FOLLOWUPS
 scripts/
-  sync-copilot.ps1 / .sh   generate .github/agents + .github/skills for Copilot-native tooling
-  validate-fleet.ps1       validate all skills/agents against the Agent Skills spec (CI-friendly)
+  sync-copilot.ps1 / .sh   generate .github/agents (committed) + an optional gitignored .github/skills mirror
+  validate_fleet.py        validate all skills/agents against the Agent Skills spec (the CI gate; pure stdlib)
+  validate-fleet.ps1       PowerShell equivalent for Windows-local use (not the CI gate)
   readonly-guard.py        PreToolUse hook: blocks state-changing + data-egress shell commands for read-only agents
 .github/
-  agents/  skills/         GENERATED (gitignored) — do not hand-edit; edit .claude/ and re-run sync
+  agents/                  GENERATED but COMMITTED + drift-gated in CI — edit .claude/ and re-run sync
+  skills/                  GENERATED, gitignored local mirror (Copilot reads .claude/skills/ directly)
 ```
 
 ## The fleet
@@ -92,15 +94,21 @@ protection / environment reviewers, or Claude Code hooks.
 Agents and skills are plain Markdown. Add a skill: create `.claude/skills/<name>/SKILL.md` (lowercase-
 hyphen `name` ≤64 chars matching the dir, `description` ≤1024 chars saying *what + when*). Add an agent:
 `.claude/agents/<name>.md` with `name`, `description`, `tools`, `model`. Re-run the sync script for
-Copilot, then `pwsh scripts/validate-fleet.ps1` to check it (or the upstream
+Copilot, then `python3 scripts/validate_fleet.py` to check it (or the upstream
 [`skills-ref`](https://github.com/agentskills/agentskills) validator).
 
 **Read-only enforcement:** Claude agents that keep `Bash` but must not change state wire
 [scripts/readonly-guard.py](scripts/readonly-guard.py) as a `PreToolUse` hook in their frontmatter.
 The Copilot generator strips Claude-only hooks and withholds `runCommands` from generated read-only
 agents, so use `.github/agents/*.agent.md` when you want hard Copilot tool scoping. Verify the hook fires
-in your Claude Code environment (the one piece that can't be unit-tested offline); on systems where the
-interpreter is `python3`, adjust the hook command in the agent frontmatter.
+in your Claude Code environment (the one piece that can't be unit-tested offline).
+
+> **Hook shell:** the hook `command` (`"$(command -v python3 || command -v python)" -c …`) is **POSIX-shell
+> syntax** — it assumes Claude Code runs hooks through `bash`/`sh` (our Linux + on-prem reality; CI is
+> Linux-only). On a **Windows** checkout where Claude Code would invoke the hook via PowerShell, that
+> command does not parse — adjust the frontmatter to a PowerShell-equivalent (or a small wrapper) for that
+> environment. This only affects the *cooperative speed-bump*; the load-bearing controls (OS-level
+> least-privilege creds + branch protection / protected environments) do not depend on the hook shell.
 
 ## Built from (current as of mid-2026)
 

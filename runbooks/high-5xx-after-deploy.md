@@ -24,11 +24,11 @@ Dashboard: `<grafana link>`.
    ```
 2. **Confirm the error spike and its start time (Splunk):**
    ```spl
-   index=<INDEX> error earliest=-2h
-   | where status>=500                       # status/error_type must be extracted fields — keep numeric
-   | timechart span=1m count                 # comparisons OUT of the keyword base search, or a non-extracted
-   | append [ search index=<INDEX> error earliest=-2h
-            | stats count by error_type | sort -count | head 5 ]   # field silently matches nothing → false all-clear
+   index=<INDEX> earliest=-2h                 # scope by index/sourcetype/host/time ONLY — no "error" keyword:
+   | where status>=500                        # it would drop 5xx access-log events with no "error" in their raw
+   | timechart span=1m count                  # text and false-clear the spike. status/error_type must be
+   | append [ search index=<INDEX> earliest=-2h | where status>=500   # extracted fields, else this silently
+            | stats count by error_type | sort -count | head 5 ]      # matches nothing → false all-clear
    ```
 3. **Error ratio (Wavefront):**
    ```

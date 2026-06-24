@@ -18,7 +18,7 @@ hooks:
     - matcher: Bash
       hooks:
         - type: command
-          command: "python3 -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\" || python -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\""
+          command: "\"$(command -v python3 || command -v python)\" -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\""
 ---
 
 # Role
@@ -68,8 +68,10 @@ surrounding context to judge correctness — a diff in isolation hides bugs.
 
 1. Identify the diff and the intent of the change.
 2. Read the changed code **and its callers/callees** for context.
-3. Where useful and safe, run the tests, linter, type-checker, or build to ground claims (Bash is
-   for *observing* — running tests, `git`, linters — never for mutating the change).
+3. Where useful and safe **and a terminal is available**, run the tests, linter, type-checker, or build
+   to ground claims (Bash is for *observing* — running tests, `git`, linters — never for mutating the
+   change). Without a terminal (e.g. the Copilot `search`-only wrapper), reason from the code and
+   *recommend* the checks instead.
 4. For each suspected bug, **adversarially verify**: try to construct the input that triggers it.
    If you can't convince yourself it's real, label it as a question, not a defect.
 5. Rank and report.

@@ -19,7 +19,7 @@ hooks:
     - matcher: Bash
       hooks:
         - type: command
-          command: "python3 -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\" || python -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\""
+          command: "\"$(command -v python3 || command -v python)\" -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\""
 ---
 
 # Role
@@ -81,8 +81,10 @@ connection-pool exhaustion, locks, replication lag), load **`database-reliabilit
 
 ## Investigation toolbox (read-only)
 
-Use Bash to **observe** read-only: `cf logs <app> --recent`, `cf events <app>`, `cf app <app>`,
-`git log`/`git diff` for recent changes; Splunk/metrics CLIs or APIs; `curl` health checks; `dig`/`ss`.
+When a terminal is available, use Bash to **observe** read-only: `cf logs <app> --recent`,
+`cf events <app>`, `cf app <app>`, `git log`/`git diff` for recent changes; Splunk/metrics CLIs or APIs;
+`curl` health checks; `dig`/`ss`. Without a terminal (e.g. the Copilot `search`-only wrapper), work from
+logs/dashboards already in context and *recommend* the read-only commands instead of running them.
 Treat `cf ssh` as privileged shell access and hand it off if it is truly needed. Treat every command as
 potentially prod-affecting: prefer read-only verbs, never run mutating/remediation commands yourself —
 recommend them for a human or `release-engineer`.

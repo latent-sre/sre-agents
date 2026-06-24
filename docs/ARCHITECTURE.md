@@ -3,7 +3,18 @@
 Design rationale + maps for the fleet. The cross-tool usage guide is [AGENTS.md](../AGENTS.md); this
 doc explains *why* it's shaped this way. Companion docs: [AGENT-CATALOG.md](AGENT-CATALOG.md) (a
 paragraph per agent) and [HANDOFFS.md](HANDOFFS.md) (the fleet-wide handoff map). Deferred strategic work
-surfaced by review is tracked in [FOLLOWUPS.md](FOLLOWUPS.md).
+surfaced by review is tracked in [FOLLOWUPS.md](FOLLOWUPS.md); how to adopt the fleet in tiers (what to
+turn on now vs. defer) is in [ADOPTION.md](ADOPTION.md).
+
+> **Surface-area review (2026-06-23).** A nine-scan gauntlet (5 independent + 2 devil's-advocate + 2
+> Anthropic-best-practice) re-examined whether **10 agents / ~38 skills** should be consolidated. Verdict:
+> **the counts are right-sized — keep them.** Eight of nine scans kept the 10 agents; the aggressive
+> "merge to 4" case was refuted because folding the read-only reviewers into a writer would destroy a
+> *mechanically enforced* guard posture and assemble the lethal trifecta. The real surface work is **fill
+> the placeholder content, tier adoption, and trim CI machinery** — not cut agents/skills. We also
+> explicitly **declined to add** new comms/FinOps lanes (the roster stays at 10). Acted on: ~5 skill
+> descriptions sharpened for cleaner auto-discovery, the `parallelization` orphan given an inbound path,
+> the Copilot SKILL-mirror un-committed, and CI consolidated to a single Python validator on Linux.
 
 ## Design principles
 1. **Agents are *who*, skills are *how*.** Thin, single-lane agents; reusable `SKILL.md` skills carry the
@@ -56,11 +67,13 @@ agent's **single PRIMARY skill** for discoverability (e.g. `code-reviewer → me
 the rest of their skills via **description-based auto-load** at runtime, so an absent or single-entry
 `skills:` block is expected — not a gap. (This field is Claude-only; the Copilot generator drops it.)
 
-## Skill discoverability budget (required Claude setting)
-The fleet ships 38 skills. For Claude Code to surface them for auto-load, [`.claude/settings.json`](../.claude/settings.json)
-sets **`skillListingBudgetFraction: 0.04`** — 4× the 1% default — so the skill listing isn't truncated.
-This is a **required setting** for the fleet to work as designed; without it, later skills fall off the
-listing and stop auto-loading. Two caveats: (1) it does **not** travel to VS Code/Copilot (Copilot has no
+## Skill discoverability budget (Claude setting)
+The fleet ships 38 skills (~3.9K tokens of descriptions). [`.claude/settings.json`](../.claude/settings.json)
+sets **`skillListingBudgetFraction: 0.04`** — 4× the 1% default. This is a deliberate **safety margin**, not
+a setting the fleet breaks without: at a 1M context the listing fits with ~10× headroom (it fits inside even
+the default 1%); at a 200K context the `0.04` override leaves ~2× headroom where the 1% default would not —
+so the override is load-bearing only on **smaller-context** models (see
+[adr/0002](adr/0002-skill-listing-sizing-and-observability-routing.md) for the measurement). Two caveats: (1) it does **not** travel to VS Code/Copilot (Copilot has no
 equivalent and reads skills its own way), so this tuning is Claude-specific; (2) for small-context
 deployments where 4% is still too much, fall back to **`skillOverrides: name-only`** to list skills by
 name only (cheaper than full descriptions) rather than dropping the budget back down.

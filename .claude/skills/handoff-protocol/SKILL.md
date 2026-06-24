@@ -1,10 +1,10 @@
 ---
 name: handoff-protocol
 description: >-
-  The shared convention for handing work between agents (or to a human) without losing context. Use
-  whenever work leaves your lane and another agent should pick it up — package intent, what's done, what
-  you found, current state, and success criteria so the receiver can start cold. Keeps the fleet from
-  sprawling or re-deriving context.
+  The agent-to-agent (or agent-to-human) HANDOFF PACKET convention. Use whenever work leaves your lane
+  and another agent must pick it up — package intent, what's done, what you found, current state, and
+  success criteria so the receiver can start cold. This is the transfer format between agents; for
+  curating one agent's own attention budget, see `context-engineering`.
 metadata:
   domain: convention
 ---

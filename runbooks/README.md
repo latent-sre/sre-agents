@@ -1,5 +1,12 @@
 # Runbooks
 
+> ⚠️ **All 3 runbooks below are TEMPLATES — not yet live.** They carry real structure but **placeholder
+> values** (`<APP>`, `<INDEX>`, `<DEP>`, `<team>`, metric/route names). **Fill them with real values
+> before linking them from any alert or using them on-call.** A half-placeholder runbook at 3am is
+> *worse than none* — it sends the responder down a path that dead-ends on `<INDEX>`. See
+> [`docs/ADOPTION.md`](../docs/ADOPTION.md#the-first-fill-in-jobs) for the fill-in order and
+> [`docs/FOLLOWUPS.md`](../docs/FOLLOWUPS.md) (this is the #1 priority).
+
 Starter operational runbooks for on-call, authored with the [`runbook-template`](../.claude/skills/runbook-template/)
 skill. Fill the placeholders before treating one as live. Each is trigger-anchored and ends at "resolved or escalate." Mitigations that change prod are
 **recommend-only here** — execute them through `release-engineer` after clearing the

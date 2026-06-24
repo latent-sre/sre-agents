@@ -1,10 +1,10 @@
 ---
 name: safe-refactor
 description: >-
-  Behavior-preserving refactoring and safe change across call sites. Use when restructuring existing
-  code, renaming/moving things, or changing a shared contract without altering behavior. Covers
-  characterization tests, call-site/impact analysis, small reversible steps, and the expand→contract
-  pattern for contract changes.
+  Behavior-PRESERVING change — restructure, rename, move, or alter a shared contract with NO change in
+  observable behavior. Use when reshaping existing code without adding behavior; contrast `tdd-workflow`,
+  which drives NEW behavior. Covers characterization tests to pin current behavior, call-site/impact
+  analysis, and small reversible steps.
 metadata:
   domain: practice
 ---

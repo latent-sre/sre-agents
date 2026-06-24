@@ -49,7 +49,9 @@ Parallelizable: <…>
 Risks / watch-for: <…>
 ```
 Each step names the **context to hand the agent** so it can start cold (`handoff-protocol`). For
-prod-facing or destructive steps, mark them and require explicit human confirmation.
+prod-facing or destructive steps, mark them and require explicit human confirmation. When the plan has
+independent strands (or wants multi-lens review/voting), load **`parallelization`** to decide whether to
+fan them out concurrently and whether the cost pays.
 
 ## Guardrails
 - **Don't invent an agent** that isn't in the fleet — if none fits, say so (or have the main session do it).

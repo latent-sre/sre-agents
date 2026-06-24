@@ -15,6 +15,8 @@ Built on Anthropic's eval shape (["Demystifying evals for AI agents"](https://ww
 ## Run it
 
 ```bash
+python3 -m pip install -r requirements-dev.txt   # one-time: the eval harness needs PyYAML
+                                                 # (the fleet validator + guard tests are stdlib-only)
 python evals/run_evals.py --validate     # check the suite itself (no model) — this is what CI runs
 python evals/run_evals.py --list         # show scenarios
 python evals/run_evals.py --run          # invoke the fleet and grade (needs a Claude-enabled runner)
@@ -84,7 +86,11 @@ write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 
 ## Discipline (how to add a scenario)
 
-1. **Eval before docs.** When writing/changing a skill, add ≥1 scenario that fails without it first.
+1. **Eval before docs — for skills with a *gradeable* outcome.** When writing/changing a skill whose
+   behavior is deterministic and checkable — a gate that must BLOCK, a guard that must DENY, a routing
+   decision, an injection it must refuse — add ≥1 scenario that fails without it first. For prose-quality
+   skills (e.g. `craft`, `api-design`, `runbook-template`) a keyword grader can't judge quality, so a
+   scenario is **optional**, not mandated — don't write a tautological eval just to satisfy a rule.
 2. Grade the **outcome**, not the trajectory — don't require a specific tool order.
 3. Keep graders deterministic where you can; if you need a judge, calibrate it against a few hand-graded
    cases before trusting it.

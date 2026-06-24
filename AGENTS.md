@@ -161,7 +161,7 @@ Authored once under `.claude/`, consumed by both tools:
 | Artifact | Claude Code reads | VS Code / Copilot reads |
 |---|---|---|
 | Agents | `.claude/agents/*.md` | `.claude/agents/` **and** `.github/agents/*.agent.md` |
-| Skills | `.claude/skills/*/SKILL.md` | `.claude/skills/`, `.github/skills/`, `.agents/skills/` |
+| Skills | `.claude/skills/*/SKILL.md` | `.claude/skills/` (Copilot reads these directly; `.github/skills/` is an optional, uncommitted local mirror) |
 | Project guide | `CLAUDE.md` (imports this file) | `AGENTS.md` |
 | Copilot conventions | (see AGENTS.md) | [`.github/copilot-instructions.md`](.github/copilot-instructions.md) |
 
@@ -169,7 +169,8 @@ Both tools read `.claude/` directly, so the fleet works in Copilot with **zero e
 Copilot-native tool scoping (`.agent.md` arrays, `handoffs`, `target`) run the generator:
 
 ```bash
-# from repo root — emits .github/agents/*.agent.md and mirrors skills to .github/skills/
+# from repo root — emits .github/agents/*.agent.md (committed, drift-gated); also writes an optional
+# .github/skills/ mirror that is gitignored (Copilot reads .claude/skills/ directly)
 pwsh scripts/sync-copilot.ps1      # Windows / PowerShell
 bash scripts/sync-copilot.sh       # macOS / Linux
 ```
@@ -177,11 +178,13 @@ bash scripts/sync-copilot.sh       # macOS / Linux
 The only non-portable seam is the agent `tools:` field (Claude uses `Read, Grep`; Copilot uses arrays
 like `['edit','search/codebase']`). Behavioral guardrails are written in each agent body (honored by
 both); the generator translates `tools` for Copilot and removes terminal access from read-only agents
-because Claude hooks are not portable.
+because Claude hooks are not portable. The translated names target **VS Code Copilot's** tool
+vocabulary (`search`/`edit`/`runCommands`); the github.com Copilot *coding agent* uses a different,
+incompatible vocabulary (a known upstream mismatch) and is out of scope for these wrappers.
 
 ## Validate & operate
 
-- **Validate the fleet:** `pwsh scripts/validate-fleet.ps1` checks every skill/agent against the
+- **Validate the fleet:** `python3 scripts/validate_fleet.py` (pure stdlib, the CI gate) checks every skill/agent against the
   Agent Skills spec (names, descriptions, referenced files). Run it before committing or in CI.
 - **Behavioral evals:** [`evals/`](evals/) holds scenario + grader pairs that check the fleet *behaves*
   (routing lands right, gates block, agents treat untrusted input as data). **What CI gates vs. what is
@@ -190,7 +193,9 @@ because Claude hooks are not portable.
   production-change-guard tests and the grader/probe unit tests. The **behavioral** runs
   (`run_evals.py --run`/`--ab`, discovery probing) need a Claude-enabled runner and are executed
   **manually or on a schedule — they are NOT a merge gate.** Add a scenario when you add/change a skill
-  (eval-before-docs); grade the outcome, not the path.
+  **whose outcome is gradeable** (a gate that must block, a guard that must deny, a routing/refusal
+  decision); grade the outcome, not the path. For prose-quality skills a keyword grader can't judge
+  quality, so a scenario is optional there — don't write a tautological eval to satisfy a rule.
 - **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency
   timeout), authored with the `runbook-template` skill; fill placeholders before treating them as live.
 - **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),

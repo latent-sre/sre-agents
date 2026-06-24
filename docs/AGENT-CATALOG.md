@@ -58,10 +58,13 @@ tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO
 [`databases.md`](databases.md). Pairs with `sde-engineer` on query/ORM usage and `sre-engineer` on
 DB-driven incidents.
 
-> **Agent *and* same-named skill — intentional, not a collision.** It earns an agent because it has a
-> distinct write-scope (writes migration files, never to a prod DB); the same-named skill is its method.
-> Agent = the lane; skill = the playbook. See [ARCHITECTURE.md](ARCHITECTURE.md) → *When is something an
-> agent vs. a skill?*
+> **Agent *and* same-named skill — intentional, not a collision.** It earns an agent because DBRE is a
+> recurring, *separable* lane with its own handoff edges (← `sde-engineer`/`sre-engineer`, →
+> `release-engineer`) — **not** because of a distinct tool-scope: its `tools` are identical to
+> `test-engineer`'s. The "never writes to a prod DB" rule is **behavioral and gate-enforced** (it hands
+> forward + rollback scripts to `release-engineer` under the `production-change-gate`), not a tool
+> restriction. Agent = the lane; skill = the playbook. See [ARCHITECTURE.md](ARCHITECTURE.md) → *When is
+> something an agent vs. a skill?*
 
 ---
 

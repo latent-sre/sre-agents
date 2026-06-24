@@ -7,14 +7,15 @@ Shell is for glue and orchestration. If a script grows real logic/data structure
 ```bash
 #!/usr/bin/env bash
 set -Eeuo pipefail
-shopt -s inherit_errexit
+shopt -s inherit_errexit 2>/dev/null || true   # bash>=4.4 only; best-effort on RHEL7-era on-prem hosts
 ```
 - **Set `IFS` locally where you split, not globally.** A global `IFS=$'\n\t'` changes *every* unquoted
   expansion and surprises more than it helps; scope it to the read that needs it
   (`while IFS=',' read -r a b; do …`). Quoting every expansion is the real fix.
 - Trap cleanup: `tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT`.
 - **`set -e` is leakier than it looks** — it's suppressed inside `if`/`while`/`&&`/`||` conditions and
-  command substitutions `$(...)`. Add `shopt -s inherit_errexit` so `-e` reaches `$(...)`, and use
+  command substitutions `$(...)`. Add `shopt -s inherit_errexit` so `-e` reaches `$(...)` (bash>=4.4;
+  guard it as `shopt -s inherit_errexit 2>/dev/null || true` on RHEL7-era on-prem hosts), and use
   `set -Eeuo pipefail` (the `-E`) so an `ERR` trap also fires inside functions/subshells.
 - `((i++))` **returns non-zero when the result is 0**, which under `-e` exits the script — use
   `((i++)) || true` or `i=$((i+1))`.

@@ -1,10 +1,10 @@
 ---
 name: triage-golden-signals
 description: >-
-  Read the four golden signals — latency, traffic, errors, saturation — plus RED and USE, to
-  characterize a problem before forming hypotheses: what each signal tells you and where to find it on
-  our stack. Load it for the signal-reading step at the start of triage. (The `sre-ladder` tiers set
-  your overall response depth; this is the signal read inside it.)
+  The SIGNAL-READ STEP performed inside an `sre-ladder` triage — read the four golden signals (latency,
+  traffic, errors, saturation) plus RED and USE to characterize a symptom before forming hypotheses:
+  what each signal tells you and where to find it on our stack. Not a general SRE/triage skill; load it
+  for the signal-reading moment only. (The `sre-ladder` tiers set depth; this is the signal read inside it.)
 metadata:
   domain: sre
 ---
