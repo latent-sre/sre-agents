@@ -3,9 +3,13 @@
 A portable fleet of **AI agents** and **Agent Skills** for application software development and site
 reliability work — authored once and runnable in **both Claude Code and VS Code / GitHub Copilot**.
 
-Built for an **application-operations** team on **on-prem servers + PCF (Tanzu Application Service)**,
-no Kubernetes, working primarily in **Python, Bash, and PowerShell**, with **Splunk, Grafana,
-Wavefront, Moogsoft, ThousandEyes**, deploying via **GitHub Actions** (migrating off Bamboo).
+Shipped with a default **stack profile** for an **application-operations** team on **on-prem servers +
+PCF (Tanzu Application Service)**, no Kubernetes, working primarily in **Python, Bash, and PowerShell**,
+with **Splunk, Grafana, Wavefront, Moogsoft, ThousandEyes**, deploying via **GitHub Actions** (migrating
+off Bamboo). The whole fleet is written to that one profile — **retarget it for your team by editing the
+single [Stack profile](AGENTS.md#stack-profile--the-one-block-to-edit-when-you-retarget-the-fleet) block
+in AGENTS.md**, then follow **[docs/CURATION.md](docs/CURATION.md)** for which skills are universal vs.
+stack-specific.
 
 > Full design + conventions: **[AGENTS.md](AGENTS.md)**. Claude Code entrypoint: **[CLAUDE.md](CLAUDE.md)**.
 
