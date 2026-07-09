@@ -8,8 +8,8 @@ you vendor the fleet into a subdirectory and have an LLM pass over it (see
 
 The fleet is **already clean of org-specific leakage** — there are no secrets, no real hostnames, and no
 internal index/foundation names. Every stack reference file under `.claude/skills/*/references/` is a
-**fill-in template** using `<placeholders>` (e.g. `<app_index>`, `api.sys.<PROD>.example.com`), and the one
-real org name (`latent-sre`, in `LICENSE`) is already genericized. So this is **not** a scrubbing job.
+**fill-in template** using `<placeholders>` (e.g. `<app_index>`, `api.sys.<PROD>.example.com`), and the
+`LICENSE` copyright holder is already genericized. So this is **not** a scrubbing job.
 
 The real decision is **portability vs. opinionation**: this fleet is deliberately built for *one* stack —
 **on-prem + PCF (Tanzu), no Kubernetes, Python/Bash/PowerShell, Splunk/Wavefront/Moogsoft/ThousandEyes/
