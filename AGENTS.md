@@ -5,12 +5,20 @@ reliability work. The definitions live once under [`.claude/`](.claude/) and are
 both Claude Code and VS Code / GitHub Copilot** (see [Portability](#portability)). This file
 (`AGENTS.md`) is the cross-tool source of truth; [CLAUDE.md](CLAUDE.md) imports it for Claude Code.
 
-> **Scope:** We work on the **application operations** side — not infrastructure/platform internals.
-> Our runtime is **on-prem servers + PCF (VMware Tanzu Application Service)**. **No Kubernetes.**
-> Primary languages: **Python, Bash, PowerShell**. We optimize for *operations* maturity, pragmatic
-> over aspirational; we are deliberately not modeling Google-scale SRE.
+## Stack profile — *the one block to edit when you retarget the fleet*
 
-## Environment (bake this into every recommendation)
+> **This section is the fleet's single stack-definition point.** Every agent and skill is written to
+> the profile below; to adapt the fleet to a different team, edit **here** (and the per-skill
+> `references/` fill-in files), not each agent body. The default profile is an on-prem PCF shop;
+> [`docs/CURATION.md`](docs/CURATION.md) is the step-by-step guide for swapping it (which skills are
+> universal, which are stack-specific, and how to genericize the prose).
+
+**Default profile — scope:** We work on the **application operations** side — not infrastructure/platform
+internals. Our runtime is **on-prem servers + PCF (VMware Tanzu Application Service)**. **No Kubernetes.**
+Primary languages: **Python, Bash, PowerShell**. We optimize for *operations* maturity, pragmatic over
+aspirational; we are deliberately not modeling Google-scale SRE.
+
+**Default profile — tooling** (bake the active profile into every recommendation):
 
 | Concern | What we use | Current product name to cite |
 |---|---|---|
@@ -22,14 +30,16 @@ both Claude Code and VS Code / GitHub Copilot** (see [Portability](#portability)
 | Network / synthetics | **ThousandEyes** | Cisco ThousandEyes |
 | CI/CD | **GitHub + GitHub Actions** | migrating **off Bamboo** → Actions |
 
-Do **not** suggest Kubernetes, cloud-managed services, or infra-layer fixes. Stay in the app/ops lane;
-hand platform-internal problems to the platform team.
+**Default profile — stay-in-lane rule:** Do **not** suggest Kubernetes, cloud-managed services, or
+infra-layer fixes. Stay in the app/ops lane; hand platform-internal problems to the platform team.
+*(A team on a different runtime edits this rule to match — e.g. a Kubernetes shop would invert it.)*
 
-**Know the boundary.** We own our apps up to the platform edge; we do **not** operate the platform
-itself — **BOSH, Ops Manager, Diego cells, Gorouter, CredHub/UAA, and foundation upgrades** belong to the
-platform/infrastructure team. When a problem is platform-side (e.g. many apps failing at once, failing
-cells, Gorouter-wide 5xx), our job is to **recognize it and escalate with evidence** — timestamps, blast
-radius, and `cf` output showing our app is healthy — not to operate BOSH ourselves.
+**Default profile — know the boundary.** We own our apps up to the platform edge; we do **not** operate
+the platform itself — **BOSH, Ops Manager, Diego cells, Gorouter, CredHub/UAA, and foundation upgrades**
+belong to the platform/infrastructure team. When a problem is platform-side (e.g. many apps failing at
+once, failing cells, Gorouter-wide 5xx), our job is to **recognize it and escalate with evidence** —
+timestamps, blast radius, and `cf` output showing our app is healthy — not to operate BOSH ourselves.
+*(The boundary is the principle; the named components are this profile's — restate them for your platform.)*
 
 ## The roster (agents)
 

@@ -3,9 +3,13 @@
 A portable fleet of **AI agents** and **Agent Skills** for application software development and site
 reliability work — authored once and runnable in **both Claude Code and VS Code / GitHub Copilot**.
 
-Built for an **application-operations** team on **on-prem servers + PCF (Tanzu Application Service)**,
-no Kubernetes, working primarily in **Python, Bash, and PowerShell**, with **Splunk, Grafana,
-Wavefront, Moogsoft, ThousandEyes**, deploying via **GitHub Actions** (migrating off Bamboo).
+Shipped with a default **stack profile** for an **application-operations** team on **on-prem servers +
+PCF (Tanzu Application Service)**, no Kubernetes, working primarily in **Python, Bash, and PowerShell**,
+with **Splunk, Grafana, Wavefront, Moogsoft, ThousandEyes**, deploying via **GitHub Actions** (migrating
+off Bamboo). The whole fleet is written to that one profile — **retarget it for your team by editing the
+single [Stack profile](AGENTS.md#stack-profile--the-one-block-to-edit-when-you-retarget-the-fleet) block
+in AGENTS.md**, then follow **[docs/CURATION.md](docs/CURATION.md)** for which skills are universal vs.
+stack-specific.
 
 > Full design + conventions: **[AGENTS.md](AGENTS.md)**. Claude Code entrypoint: **[CLAUDE.md](CLAUDE.md)**.
 
@@ -35,6 +39,12 @@ pwsh scripts/sync-copilot.ps1     # Windows / PowerShell
 bash scripts/sync-copilot.sh      # macOS / Linux
 ```
 
+**Vendor it into an existing repo** — to embed the fleet as a subdirectory of another project (rather than
+using it standalone), see **[docs/INTEGRATION.md](docs/INTEGRATION.md)**: the scripts are location-robust,
+but `.claude/`, `CLAUDE.md`, `AGENTS.md`, and `.github/` must be surfaced at the host repo's root.
+For **what to keep, genericize, or drop** when adapting the fleet to a different team or stack, see
+**[docs/CURATION.md](docs/CURATION.md)** (it doubles as the review checklist for an LLM adaptation pass).
+
 ## Layout
 
 ```
@@ -46,7 +56,7 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 evals/                     behavioral evals (scenarios + graders) — routing, gates, security; --validate runs in CI
-docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · adr/ · FOLLOWUPS
+docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · INTEGRATION (vendor into another repo) · CURATION (keep/genericize/drop) · adr/ · FOLLOWUPS
 scripts/
   sync-copilot.ps1 / .sh   generate .github/agents (committed) + an optional gitignored .github/skills mirror
   validate_fleet.py        validate all skills/agents against the Agent Skills spec (the CI gate; pure stdlib)
