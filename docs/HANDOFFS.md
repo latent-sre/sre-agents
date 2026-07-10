@@ -143,6 +143,25 @@ make the decision. It absorbs expensive fact-finding and returns a brief, keepin
 
 ---
 
+## Fleet maintenance (prompt-engineer)
+
+```
+  any agent / main session ──("this skill never triggers" / "agent ignored the instruction" /
+                              "write a new agent/skill")──▶ prompt-engineer
+        │                                                        │ (eval-first: baseline → minimal
+        │                                                        │  edit → retest; prompt-craft or
+        │                                                        │  agent-architecture by altitude)
+        ▼                                                        ▼
+  security-reviewer ◀── artifact ingests untrusted input   sde-engineer ◀── helper/validator code
+  code-reviewer     ◀── gate/guard wording changed (behavioral delta must be flagged)
+```
+
+`prompt-engineer` edits **prompt artifacts and eval scenarios only** — it never weakens a gate, guard,
+or read-only posture while "clarifying wording"; substantive gate/guard changes route through
+`code-reviewer`, and `model:`/roster changes update the validators + docs in the same commit.
+
+---
+
 ## The knowledge loop (how operational maturity compounds)
 
 Incidents and postmortems feed **`runbook-author`**, who keeps runbooks current and linked to the alerts

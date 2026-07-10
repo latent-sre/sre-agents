@@ -31,6 +31,7 @@ something on fire?).
 | "set up monitoring / noisy alert / define SLO" | `sre-monitor` | → `runbook-author` for alert runbooks |
 | "ship / release / deploy / roll back / move off Bamboo" | `release-engineer` | **`release-gate`** + **`production-change-gate`** for prod |
 | "write/update a runbook / document this" | `runbook-author` | — |
+| "write/tune an agent, skill, or prompt / skill never triggers / agent ignores instruction" | `prompt-engineer` (loads **`prompt-craft`** for one artifact, **`agent-architecture`** for roster/orchestration design) | → `security-reviewer` if the artifact ingests untrusted input; → `code-reviewer` for gate/guard wording changes |
 | any agent is missing a fact | `researcher` | → back to the requester |
 
 ## 3. Insert gates (pass/fail checkpoints, not agents)

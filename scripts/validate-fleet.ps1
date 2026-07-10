@@ -128,6 +128,7 @@ foreach ($a in $agentFiles) {
 # changes cost/behavior, so assert it structurally in CI.
 $modelPolicy = @{
     'sde-engineer'         = 'opus'
+    'prompt-engineer'      = 'opus'
     'code-reviewer'        = 'opus'
     'security-reviewer'    = 'opus'
     'sre-engineer'         = 'opus'
