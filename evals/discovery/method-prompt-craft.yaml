@@ -4,3 +4,4 @@ prompt: |
   I wrote a SKILL.md for our deploy checklist but it fires on almost every request,
   even unrelated ones. How should I rewrite its description so it only triggers when
   someone is actually deploying?
+note: "Baseline 2026-07-09: 3/3 hit, 0 misroute (--run --match method --trials 3)."
