@@ -37,10 +37,11 @@ Model choice follows the **nature of the work, not the seniority of the role** (
 skills). The rule: **`opus` for open-ended reasoning under ambiguity where a wrong call is expensive and
 hard to catch; `sonnet` for structured work that follows a defined method, checklist, or template.**
 
-- **`opus` (5):** `sde-engineer` (design/write code), `code-reviewer` (find the bug that has no test),
+- **`opus` (6):** `sde-engineer` (design/write code), `code-reviewer` (find the bug that has no test),
   `security-reviewer` (adversarial threat reasoning), `sre-engineer` (hypothesis-driven RCA),
-  `database-reliability` (schema-safety judgment on irreversible data). These hinge on getting an
-  open-ended judgment *right*.
+  `database-reliability` (schema-safety judgment on irreversible data), `prompt-engineer` (diagnosing
+  ambiguous prompt/agent failures — a wrong call ships a subtly broken artifact the whole fleet runs on).
+  These hinge on getting an open-ended judgment *right*.
 - **`sonnet` (5):** `release-engineer`, `researcher`, `runbook-author`, `sre-monitor`, `test-engineer`.
   Each runs a **defined procedure** — a deploy/rollback playbook, a source-and-cite loop, a runbook
   template, alert/SLO config, or a test plan. (Routing and the incident lifecycle are now the

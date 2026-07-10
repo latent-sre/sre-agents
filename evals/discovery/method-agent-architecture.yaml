@@ -1,0 +1,7 @@
+id: discover-method-agent-architecture
+expected: agent-architecture
+prompt: |
+  We're thinking of splitting our one big ops assistant into several subagents with
+  handoffs. How do we decide what deserves to be its own agent versus a skill, and
+  what orchestration shape should the fleet use?
+note: "Baseline 2026-07-09: 3/3 hit, 0 misroute (--run --match method --trials 3)."

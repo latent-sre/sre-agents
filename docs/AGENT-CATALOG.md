@@ -1,6 +1,6 @@
 # Agent catalog
 
-Narrative descriptions of the 10 subagents in [`.claude/agents/`](../.claude/agents/) and the skills
+Narrative descriptions of the 11 subagents in [`.claude/agents/`](../.claude/agents/) and the skills
 each leans on. The terse roster table is in [`AGENTS.md`](../AGENTS.md); the collaboration map is in
 [`HANDOFFS.md`](HANDOFFS.md); the *why* is in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
@@ -8,7 +8,7 @@ each leans on. The terse roster table is in [`AGENTS.md`](../AGENTS.md); the col
 > `researcher`. The three that keep `Bash` for observation are further constrained by
 > `scripts/readonly-guard.py`, which blocks state-changing shell. The writers
 > (`sde-engineer`, `test-engineer`, `database-reliability`, `sre-monitor`, `release-engineer`,
-> `runbook-author`) edit files; prod-facing execution still needs human sign-off via the gates.
+> `runbook-author`, `prompt-engineer`) edit files; prod-facing execution still needs human sign-off via the gates.
 >
 > **Routing and incident-command are *skills*, not agents** — `route-request` and `incident-severity`
 > run in the main session (a coordinator subagent would double-pay the routing round-trip and discard
@@ -122,6 +122,21 @@ Evidence-first fact-finding: official docs, specs/RFCs, vendor APIs, library beh
 differences, error-code meanings, and "how does X work / where is it" in-repo questions. Returns
 concise **cited** answers, labels uncertainty, and **hands back** — it never edits code or systems.
 Loads `context-engineering` — it's the fleet's context-offload, returning a brief instead of a transcript.
+
+### prompt-engineer · `opus` · writes prompt artifacts
+Owns the artifacts other agents run on: agent definitions, SKILL.md files, system prompts, tool
+descriptions, and eval/grader prompts — including this fleet's own files and any LLM-facing text in
+the ops tooling the team builds. Treats a prompt as a spec: reproduce the failure, diagnose its form
+(trigger / shape / omission / pressure-violation), make the minimal edit, retest fresh. **Scales by
+skill, not clones**: `prompt-craft` for a single artifact, `agent-architecture` for roster/orchestration
+design; also loads `tool-design`, `context-engineering`, `agent-security`, and `self-improve-loop` as
+the failure demands. Hands helper code to `sde-engineer`, gate/guard wording changes to `code-reviewer`,
+and injection surfaces to `security-reviewer`.
+
+> **Why it's an agent (the `agent-architecture` test):** a recurring, *separable* lane with its own
+> handoff edges (← any agent reporting a misbehaving artifact; → `security-reviewer` / `sde-engineer` /
+> `code-reviewer`) — the fleet's own maintenance is a domain, not an altitude. Its two skills stay
+> skills because they're methods, not lanes.
 
 ---
 

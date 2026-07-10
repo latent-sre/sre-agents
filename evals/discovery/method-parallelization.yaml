@@ -8,4 +8,8 @@ prompt: |
 # fan-out question from general knowledge WITHOUT loading the skill in either condition.
 # So the listed description isn't driving discovery here (loading isn't required for a
 # correct answer). Kept as an honest "skill not pulled" datapoint, not a pass/fail gate.
-note: "A/B 2026-06: A 0/3, B 0/3 (answered without the skill in both)."
+# Re-run 2026-07-09: 1/3 hit, 2 no-route, 0 misroute — still non-invocation, never a
+# wrong pick. Inbound paths were added since (route-request, context-engineering,
+# agent-architecture, HANDOFFS; see docs/ARCHITECTURE.md), so the roster-size review
+# declined to fold it: a fold can't fix a no-route, and there is no misroute to fix.
+note: "A/B 2026-06: A 0/3, B 0/3 (answered without the skill). Re-run 2026-07-09: 1/3 hit, 2 no-route, 0 misroute — no fold (non-invocation, not misroute)."

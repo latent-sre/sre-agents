@@ -37,10 +37,17 @@ branch; they are the next-order improvements that move the fleet from "structura
   review settled the count question: **keep 10 agents / ~38 skills** (do not consolidate the roster). The
   remaining work is *not* deletion: (a) **description-sharpening** *(in progress)* — sharpen the ~4 weak
   skill descriptions (`handoff-protocol`, `triage-golden-signals`, `safe-refactor` overlap) for cleaner
-  auto-discovery; (b) **machinery cuts** — consider consolidating the 3 gates toward 2 (build-ready vs.
-  authorized-to-act) and weigh the ongoing cost of the `.github/` mirror and the over-built CI machinery.
-  *Why: better auto-routing and lower maintenance — but on artifacts, not on agent/skill counts, which the
-  review validated.*
+  auto-discovery; (b) **machinery cuts** — ~~consolidate the 3 gates toward 2~~ **gates: RESOLVED
+  2026-07-09 — keep all 3** (a three-reviewer roster-size review confirmed `merge-gate`/`release-gate`/
+  `production-change-gate` fire at distinct pipeline stages, are cleared by different agents, and
+  `production-change-gate` is referenced by 40+ files and anchors `scripts/production-change-guard.py`;
+  folding saves ~1 listing entry against ~10× budget headroom and blurs the security-boundary story). The
+  **live** machinery work is the real cost the count-defense misses: per-agent *maintenance amplification*
+  — each agent lives in ~8 places (`.claude/agents/`, the committed `.github/agents/` mirror, the AGENTS.md
+  table, an AGENT-CATALOG paragraph, a HANDOFFS diagram, README, and matching model tables in **both**
+  validators). Collapse that triple-listing toward one generated source and re-weigh the `.github/` mirror.
+  *Why: better auto-routing and lower maintenance — but on artifacts and machinery, not on agent/skill
+  counts, which the review validated.*
 
 - [ ] **(Optional) Generate a github.com Copilot *coding-agent* wrapper variant.** The committed
   `.github/agents/*.agent.md` target **VS Code Copilot** (the `search`/`edit`/`runCommands` toolset

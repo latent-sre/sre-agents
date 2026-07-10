@@ -204,6 +204,7 @@ def main():
     # ---- Model policy ----
     model_policy = {
         'sde-engineer':         'opus',
+        'prompt-engineer':      'opus',
         'code-reviewer':        'opus',
         'security-reviewer':    'opus',
         'sre-engineer':         'opus',
