@@ -65,14 +65,15 @@ list: agents pick up the rest of their skills via **description-based auto-load*
 or single-entry `skills:` block is expected — not a gap. (This field is Claude-only.)
 
 ## Skill discoverability budget (Claude setting)
-The fleet ships 40 skills (~4.1K tokens of descriptions). [`.claude/settings.json`](../.claude/settings.json)
-sets **`skillListingBudgetFraction: 0.04`** — 4× the 1% default. This is a deliberate **safety margin**, not
-a setting the fleet breaks without: at a 1M context the listing fits with ~10× headroom (it fits inside even
-the default 1%); at a 200K context the `0.04` override leaves ~2× headroom where the 1% default would not —
-so the override is load-bearing only on **smaller-context** models. Two caveats: (1) it does **not** travel to VS Code/Copilot (Copilot has no
-equivalent and reads skills its own way), so this tuning is Claude-specific; (2) for small-context
-deployments where 4% is still too much, fall back to **`skillOverrides: name-only`** to list skills by
-name only (cheaper than full descriptions) rather than dropping the budget back down.
+The fleet ships 40 skills (~4.1K tokens of descriptions), and [`.claude/settings.json`](../.claude/settings.json)
+leaves **`skillListingBudgetFraction` at the 1% default** — the listing fits comfortably at the context sizes
+this fleet targets (at 1M with ~10× headroom, and it still fits at 200K). If you run the fleet on a
+**smaller-context** model and the skill listing gets truncated, raise it with
+**`skillListingBudgetFraction: 0.04`** (4× the default) — the fleet previously shipped that override as a
+safety margin. Two caveats: (1) the setting does **not** travel to VS Code/Copilot (Copilot has no equivalent
+and reads skills its own way), so this tuning is Claude-specific; (2) as an alternative on very tight budgets,
+fall back to **`skillOverrides: name-only`** to list skills by name only (cheaper than full descriptions)
+rather than dropping the budget.
 
 ## Roster (model · mutates? · guard)
 | Agent | Lane | Model | Mutates? | Read-only guard |
