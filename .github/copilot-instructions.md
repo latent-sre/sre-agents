@@ -24,4 +24,4 @@ design rationale in [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md).
 - **Never fabricate** test results, citations, command/query output, or system state — label anything unverified.
 - Lead with the conclusion, then evidence, then hand-offs. Blameless language for incidents.
 
-For Copilot-native `.github/agents/*.agent.md` + `.github/skills/`, run `scripts/sync-copilot.ps1` (or `.sh`).
+For Copilot-native `.github/agents/*.agent.md`, run `bash scripts/sync-copilot.sh` (skills are read from `.claude/skills/` directly).

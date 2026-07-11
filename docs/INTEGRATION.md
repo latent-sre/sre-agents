@@ -100,7 +100,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 scripts/validate_fleet.py
-      - run: python3 scripts/test_model_policy_parity.py
       - run: python3 scripts/test_readonly_guard.py
       - run: python3 scripts/test_production_change_guard.py
       - run: python3 scripts/test_guard_cf_parity.py

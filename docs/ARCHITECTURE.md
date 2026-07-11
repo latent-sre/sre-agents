@@ -15,6 +15,9 @@ turn on now vs. defer) is in [ADOPTION.md](ADOPTION.md).
 > explicitly **declined to add** new comms/FinOps lanes (the roster stays at 10). Acted on: ~5 skill
 > descriptions sharpened for cleaner auto-discovery, the `parallelization` orphan given an inbound path,
 > the Copilot SKILL-mirror un-committed, and CI consolidated to a single Python validator on Linux.
+> *(Dated record — since then, 2026-07-08: the `prompt-engineer` lane landed (one `opus` agent +
+> `prompt-craft`/`agent-architecture` skills), re-validated by review 2026-07-09 and 2026-07-10. The
+> current roster is whatever `.claude/agents/` and `.claude/skills/` contain; CI checks doc coverage.)*
 
 ## Design principles
 1. **Agents are *who*, skills are *how*.** Thin, single-lane agents; reusable `SKILL.md` skills carry the
@@ -68,7 +71,7 @@ the rest of their skills via **description-based auto-load** at runtime, so an a
 `skills:` block is expected — not a gap. (This field is Claude-only; the Copilot generator drops it.)
 
 ## Skill discoverability budget (Claude setting)
-The fleet ships 38 skills (~3.9K tokens of descriptions). [`.claude/settings.json`](../.claude/settings.json)
+The fleet ships 40 skills (~4.1K tokens of descriptions). [`.claude/settings.json`](../.claude/settings.json)
 sets **`skillListingBudgetFraction: 0.04`** — 4× the 1% default. This is a deliberate **safety margin**, not
 a setting the fleet breaks without: at a 1M context the listing fits with ~10× headroom (it fits inside even
 the default 1%); at a 200K context the `0.04` override leaves ~2× headroom where the 1% default would not —
@@ -91,6 +94,7 @@ name only (cheaper than full descriptions) rather than dropping the budget back 
 | release-engineer | CI/CD + PCF deploy | sonnet | infra/CI (prod = gated) | — |
 | runbook-author | runbooks | sonnet | docs | — |
 | researcher | cited fact-finding | sonnet | no | n/a (no Bash) |
+| prompt-engineer | LLM-facing artifacts (agents/skills/prompts/evals) | opus | prompt artifacts | — |
 
 ## Handoff map
 ```mermaid
@@ -113,6 +117,7 @@ flowchart TD
   SRE --> RB[runbook-author]
   REL --> RB
   SDE & SRE & REL -. ask facts .-> RES[researcher]
+  U -. fleet maintenance .-> PE[prompt-engineer]
 ```
 
 ## Gates (workflow control)
