@@ -1,10 +1,8 @@
 ---
 name: grafana-dashboards
 description: >-
-  Designing and reviewing Grafana dashboards for service health — layout, panels, variables, data
-  sources, alerting, and dashboards-as-code. Use when building or improving a dashboard, deciding what
-  to visualize, or wiring Grafana alerts. Built for the 3am on-call reader: top-down from SLO/health to
-  drill-down.
+  Use when creating or reviewing Grafana dashboards, panels, variables, data sources,
+  dashboard-as-code, or Grafana alerts. Do not use for querying raw metrics or defining an SLO policy.
 ---
 
 # Grafana dashboards

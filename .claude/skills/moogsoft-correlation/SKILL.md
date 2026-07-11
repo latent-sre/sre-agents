@@ -1,11 +1,8 @@
 ---
 name: moogsoft-correlation
 description: >-
-  Cut through an alert storm and find the single real problem — alert correlation and noise reduction
-  with Moogsoft. Use when many alerts are firing at once across services (find the underlying Situation),
-  when tuning clustering/dedup, or when reducing pager fatigue. Covers how events become deduplicated
-  alerts and cluster into Situations. On-prem Moogsoft v9.x (the cloud product is rebranded Dell APEX
-  AIOps Incident Management); uses v9.x terminology.
+  Use for a Moogsoft alert storm, Situation, event deduplication, clustering, correlation, routing, or
+  noise-reduction problem. Do not use for a single noisy threshold alert outside Moogsoft.
 ---
 
 # Moogsoft / Dell APEX AIOps — correlation & noise reduction

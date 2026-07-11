@@ -1,11 +1,8 @@
 ---
 name: sde-ladder
 description: >-
-  Set your engineering altitude for a coding task, then load the matching tier — match depth to the
-  task's ambiguity and blast radius. Use at the start of any SDE work to decide how much rigor it needs:
-  senior (a scoped, well-defined change inside one component), principal (cross-cutting design, a
-  contract/schema change, a migration, real blast radius), or distinguished (org-wide/high-ambiguity
-  architecture, build-vs-buy, a standard others follow). Read the one tier file for the full method.
+  Use at the start of SDE work to choose senior, principal, or distinguished depth from ambiguity and
+  blast radius. Do not use to supply language conventions or execute the implementation itself.
 ---
 
 # SDE ladder — pick your altitude

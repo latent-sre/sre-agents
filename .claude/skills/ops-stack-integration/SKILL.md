@@ -1,12 +1,9 @@
 ---
 name: ops-stack-integration
 description: >-
-  Build tools that call our platform + observability stack safely — the integration layer most ops
-  tooling is made of. Use when writing code that talks to PCF/cf (CAPI V3), Splunk, Wavefront, Moogsoft,
-  ThousandEyes, or Grafana: auth and secret handling on PCF, timeouts + retries with backoff, honoring
-  rate limits, following pagination, idempotent state changes, caching, and treating every response as
-  untrusted data. Pairs with api-design (what you expose) and craft (Python); hand secrets/auth to
-  security-reviewer.
+  Use when code calls PCF/CAPI, Splunk, Wavefront, Moogsoft, ThousandEyes, or Grafana and must handle
+  authentication, timeouts, retries, rate limits, pagination, or safe writes. Do not use for read-only
+  incident queries.
 ---
 
 # Ops-stack integration

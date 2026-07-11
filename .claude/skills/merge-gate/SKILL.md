@@ -1,10 +1,8 @@
 ---
 name: merge-gate
 description: >-
-  Quality gate that must pass before a code change merges. Use as the checkpoint after code review and
-  testing, before declaring a change "done" or merging a PR. A pass/fail checklist covering tests,
-  review, security, coverage, secrets, compatibility, and docs. Run it (or invoke /merge-gate) to verify
-  readiness.
+  Use after review and testing, immediately before merging a code change, to issue a merge-gate PASS or
+  BLOCKED verdict. Do not use to authorize a deployment or production action.
 ---
 
 # Merge gate

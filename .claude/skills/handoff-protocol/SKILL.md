@@ -1,10 +1,8 @@
 ---
 name: handoff-protocol
 description: >-
-  The agent-to-agent (or agent-to-human) HANDOFF PACKET convention. Use whenever work leaves your lane
-  and another agent must pick it up — package intent, what's done, what you found, current state, and
-  success criteria so the receiver can start cold. This is the transfer format between agents; for
-  curating one agent's own attention budget, see `context-engineering`.
+  Use when work leaves one agent or human and another must continue cold with intent, evidence, state,
+  and success criteria. Do not use for managing one agent's private context budget.
 ---
 
 # Handoff protocol

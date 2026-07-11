@@ -1,10 +1,9 @@
 ---
 name: self-improve-loop
 description: >-
-  The EVALUATOR-OPTIMIZER pattern (generate → evaluate → refine) from Anthropic's agent patterns. Use
-  when output QUALITY IS MEASURABLE and iteration demonstrably improves it — a draft to harden, a tunable
-  prompt/output to grind up — including the unattended outer ("Ralph") loop. Prefers deterministic checks
-  (tests, linters, gates) over LLM-as-judge. For diagnosing a known-broken thing, use `debug-rca`/`tdd-workflow`.
+  Use when an output can be iteratively generated, evaluated, and revised against a measurable verifier,
+  including bounded unattended iteration. Do not use to diagnose an unknown failure or compensate for
+  missing success criteria.
 ---
 
 # Self-improvement loops

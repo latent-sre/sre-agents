@@ -1,13 +1,9 @@
 ---
 name: agent-architecture
 description: >-
-  Design or restructure a multi-agent system: decide what should be an agent vs a skill, decompose
-  work into lanes, choose the orchestration shape (orchestrator-workers, pipeline, fan-out,
-  judge/adversarial verification), and define handoff contracts, tool authority, and context/token
-  budgets. Use when adding/splitting/merging agents in a roster (including this fleet), designing an
-  agent-based ops tool, or diagnosing cross-agent failures — context poisoning, telephone-game
-  information loss, duplicated work, runaway loops. For single-artifact wording use `prompt-craft`;
-  for fan-out cost mechanics use `parallelization`.
+  Use when designing or restructuring a multi-agent system, deciding agent-versus-skill boundaries,
+  orchestration, authority, handoffs, or diagnosing cross-agent failures. Do not use for wording one
+  prompt or designing one callable tool.
 ---
 
 # Agent architecture

@@ -1,10 +1,9 @@
 ---
 name: github-actions-ci
 description: >-
-  Authoring and fixing GitHub Actions CI/CD pipelines for this team — reusable workflows, matrix builds,
-  environments with deployment protection (approval gates), OIDC, caching, concurrency, least-privilege
-  permissions, and self-hosted runners for on-prem/PCF access. Use when setting up or debugging a
-  workflow, adding a deploy job, or hardening pipeline security.
+  Use when creating, fixing, or securing GitHub Actions YAML, jobs, permissions, runners, caching,
+  environments, or deployment automation. Do not use merely because an application test happens to
+  fail in CI.
 ---
 
 # GitHub Actions CI/CD

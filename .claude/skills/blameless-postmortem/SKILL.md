@@ -1,10 +1,9 @@
 ---
 name: blameless-postmortem
 description: >-
-  Structure and principles for a blameless postmortem after an incident. Use after an incident is
-  resolved to write up what happened, the systemic cause and contributing factors, the timeline, and
-  owned, dated action items. Covers the blameless stance and the standard sections. Pairs with
-  incident-severity (the incident timeline) and sre-engineer (root cause).
+  Use after an incident is resolved to write a blameless postmortem with impact, timeline, systemic
+  causes, contributing factors, and owned actions. Do not use to command or communicate during a live
+  incident.
 ---
 
 # Blameless postmortem

@@ -1,10 +1,8 @@
 ---
 name: pcf-deploy
 description: >-
-  Deploy applications to PCF / Tanzu Application Service safely with the cf CLI (v8) — manifests,
-  blue-green via route mapping, the rolling/canary strategies, env changes + restage, and scaling. Use
-  when shipping to PCF or designing the deploy step of a pipeline. State-changing: prod deploys require
-  human confirmation. Pairs with release-gate and rollback-mitigation.
+  Use when a human directs a PCF/TAS application deployment, route cutover, rolling or canary strategy,
+  restage, or scaling change with cf CLI v8. Do not use for read-only triage.
 compatibility: Requires the cf CLI v8 and authorized access to the target PCF foundation/space
 # Claude-specific: a deploy is deliberately human-initiated. The model won't auto-invoke this
 # playbook as an action; a human runs `/pcf-deploy` (or release-engineer applies it under human

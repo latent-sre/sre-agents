@@ -1,10 +1,8 @@
 ---
 name: pcf-ops
 description: >-
-  Read-only PCF / Tanzu Application Service triage with the cf CLI (v8 / CAPI V3). Use when
-  investigating a degraded or crashing app on PCF — checking app state, instances, recent platform
-  events, logs, routes, services, and env. Lists the safe read-only commands for an SRE and flags the
-  state-changing commands that require human sign-off via release-engineer.
+  Use when read-only cf CLI or CAPI checks are needed for a degraded, crashing, misrouted, or unhealthy
+  PCF/TAS application. Do not use to restart, restage, scale, deploy, or mutate routes.
 compatibility: Requires the cf CLI v8 and access/auth to the target PCF foundation
 ---
 

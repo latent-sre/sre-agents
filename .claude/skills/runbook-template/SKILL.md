@@ -1,10 +1,8 @@
 ---
 name: runbook-template
 description: >-
-  The standard operational runbook structure and authoring rules — written for the stressed 3am on-call
-  reader. Use when creating or updating a runbook/playbook for an alert, task, or failure mode. Provides
-  the required sections (trigger, procedure, verification, rollback, escalation) and a fill-in template
-  in assets/. Pairs with the runbook-author agent.
+  Use when creating or updating an operational runbook, playbook, or SOP for an alert, recurring task,
+  or failure mode. Do not use for design decisions or retrospective incident analysis.
 ---
 
 # Runbook template & rules

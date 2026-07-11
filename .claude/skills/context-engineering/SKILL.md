@@ -1,11 +1,8 @@
 ---
 name: context-engineering
 description: >-
-  Curate what enters the model's limited attention budget at each step — the discipline behind this
-  fleet's progressive-disclosure design. Use when an agent's context is filling up, a task spans many
-  files/logs/turns, or output quality is degrading as the transcript grows ("context rot"). Covers
-  just-in-time retrieval, compaction, sub-agent context isolation, structured note-taking, and the
-  least-context principle. From Anthropic's "Effective context engineering for AI agents."
+  Use when an agent's context is bloated, spans many files, logs, or turns, or output quality is
+  degrading from context rot. Do not use merely because a task has independent parallel strands.
 ---
 
 # Context engineering

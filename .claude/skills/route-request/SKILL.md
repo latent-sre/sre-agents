@@ -1,10 +1,8 @@
 ---
 name: route-request
 description: >-
-  The routing/selector decision table — classify an SRE/SDE request and route it to the right agent(s)
-  in the right order, with the gates that apply. Use at the start of any multi-step or ambiguous request
-  to produce a delegation plan, or to decide whether a request even needs delegation. This is the fleet's
-  routing logic — the main session loads it to plan multi-step work (there is no separate coordinator agent).
+  Use at the start of an ambiguous, multi-step, or multi-lane SRE/SDE request to choose agents,
+  sequence, parallel strands, and gates. Do not use for one obvious specialist task.
 ---
 
 # Route a request (selector)

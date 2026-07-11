@@ -1,10 +1,9 @@
 ---
 name: spa-architecture
 description: >-
-  Architecture for a single-page-app GUI over our ops-tool APIs — the browser client on top of an
-  `api-design` backend. Use when standing up or extending a SPA: build/routing, server-state vs UI-state,
-  a typed OpenAPI client, modern accessible styling, browser auth (OIDC+PKCE), web security
-  (XSS/CORS/CSP/token storage), and building/serving the bundle on PCF. Pairs with `craft` (React).
+  Use when creating or extending a React single-page application over an ops API, including routing,
+  state, typed clients, browser authentication, accessibility, or PCF serving. Do not use for backend
+  API contracts.
 ---
 
 # SPA architecture

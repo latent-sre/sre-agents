@@ -1,10 +1,8 @@
 ---
 name: instrument-service
 description: >-
-  Instrument a service for observability — RED/USE metrics, traces, and structured logs with
-  OpenTelemetry, plus the cardinality discipline that keeps metrics cheap. Use when adding monitoring to
-  a service or improving its telemetry so it can actually be triaged. Emits via OTel so signals flow to
-  our stack (Wavefront metrics, Splunk logs, Grafana dashboards); pairs with slo-error-budget.
+  Use when adding or reviewing code that emits service metrics, traces, or structured logs, especially
+  with OpenTelemetry. Do not use for dashboards, querying existing telemetry, or choosing SLO targets.
 ---
 
 # Instrument a service

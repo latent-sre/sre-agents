@@ -1,10 +1,8 @@
 ---
 name: safe-refactor
 description: >-
-  Behavior-PRESERVING change — restructure, rename, move, or alter a shared contract with NO change in
-  observable behavior. Use when reshaping existing code without adding behavior; contrast `tdd-workflow`,
-  which drives NEW behavior. Covers characterization tests to pin current behavior, call-site/impact
-  analysis, and small reversible steps.
+  Use when restructuring, renaming, moving, or migrating code or a shared contract without changing
+  observable behavior. Do not use when the requested change intentionally adds or alters behavior.
 ---
 
 # Safe refactor

@@ -1,11 +1,9 @@
 ---
 name: ops-cli
 description: >-
-  Design a command-line ops tool that's safe under stress and scriptable in CI — the most common shape of
-  ops tooling. Use when building or improving a CLI run by humans and pipelines: framework choice,
-  meaningful exit codes, human-vs-JSON output, stdout/stderr discipline, --dry-run and confirm-before-
-  destruct, config/secret precedence, idempotency, and testing. Pairs with craft (Python/Bash/
-  PowerShell) and ops-stack-integration.
+  Use when building or improving an operations CLI for humans or automation, including exit codes,
+  streams, JSON output, dry runs, confirmation, and idempotency. Do not use for HTTP APIs or browser
+  interfaces.
 ---
 
 # Ops CLI

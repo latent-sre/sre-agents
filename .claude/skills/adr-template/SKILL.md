@@ -1,10 +1,9 @@
 ---
 name: adr-template
 description: >-
-  Architecture Decision Record (ADR) and lightweight RFC/design-doc templates and practices. Use when
-  capturing a significant or hard-to-reverse technical decision, writing a design doc/RFC before
-  non-trivial work, or recording why an approach was chosen over alternatives. Provides the Nygard ADR
-  format, an RFC skeleton, and MADR guidance. Pairs with sde-ladder (principal and distinguished tiers).
+  Use when writing an ADR, RFC, or design document for a significant, hard-to-reverse technical
+  decision, or recording why one option won. Do not use for operational runbooks or incident
+  postmortems.
 ---
 
 # ADR & design-doc templates

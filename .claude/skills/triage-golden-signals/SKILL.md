@@ -1,10 +1,9 @@
 ---
 name: triage-golden-signals
 description: >-
-  The SIGNAL-READ STEP performed inside an `sre-ladder` triage — read the four golden signals (latency,
-  traffic, errors, saturation) plus RED and USE to characterize a symptom before forming hypotheses:
-  what each signal tells you and where to find it on our stack. Not a general SRE/triage skill; load it
-  for the signal-reading moment only. (The `sre-ladder` tiers set depth; this is the signal read inside it.)
+  Use when interpreting latency, traffic, errors, saturation, RED, or USE signals to characterize a
+  service symptom before hypotheses. Do not use to choose incident depth or perform tool-specific
+  queries.
 ---
 
 # Golden signals — read the system in 60 seconds

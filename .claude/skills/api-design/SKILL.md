@@ -1,11 +1,9 @@
 ---
 name: api-design
 description: >-
-  Design and build the HTTP API layer that fronts our ops tools — the backend our SPA GUIs and other
-  services call. Use when adding or changing a REST/JSON endpoint, designing a service contract, or
-  wrapping an ops capability (cf/Splunk/Wavefront/an internal script) behind an API. Covers contract-first
-  OpenAPI, resource modeling, HTTP semantics + status codes, RFC 9457 problem+json errors, versioning
-  (expand→contract), cursor pagination, idempotency keys, authN/Z, rate limiting, and PCF health checks.
+  Use when adding or changing a REST/JSON endpoint, OpenAPI contract, HTTP resource model, pagination,
+  errors, versioning, or API authorization. Do not use for an LLM-callable tool interface or
+  browser-only design.
 ---
 
 # API design

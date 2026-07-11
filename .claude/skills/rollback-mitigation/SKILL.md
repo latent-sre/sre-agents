@@ -1,10 +1,8 @@
 ---
 name: rollback-mitigation
 description: >-
-  The fast, safe mitigation playbook for a production incident on PCF — stop user pain first, before
-  root cause. Use when an incident needs immediate mitigation: pick the fastest reversible action
-  (route remap, revision rollback, restart, scale, flag flip) for the situation. State-changing: all of
-  these require human confirmation; sre-engineer recommends, release-engineer executes.
+  Use during a production incident when immediate, reversible PCF mitigation is needed, such as route
+  remap, revision rollback, restart, scale, or flag change. Do not use for routine planned deployment.
 ---
 
 # Rollback & mitigation playbook (PCF)

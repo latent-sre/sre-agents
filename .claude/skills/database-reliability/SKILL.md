@@ -1,11 +1,9 @@
 ---
 name: database-reliability
 description: >-
-  Make schema change safe, keep queries fast, and keep data durable — for the relational DBs our PCF
-  apps bind to (Postgres, Oracle, MS SQL). Use for schema/migration changes, slow-query and DB-saturation
-  issues, and database-driven incidents. Covers online/reversible migrations, the expand→contract +
-  backfill + dual-write pattern, EXPLAIN/index/N+1 tuning, connection-pool/lock/replication-lag triage,
-  and tested backups with RPO/RTO. Pairs with pcf-ops, sre-engineer, and slo-error-budget.
+  Use for relational database schema changes, slow queries, connection or lock saturation,
+  replication lag, durability, backup, RPO, or RTO concerns. Do not use for database-platform
+  operations owned by infrastructure teams.
 ---
 
 # Database reliability

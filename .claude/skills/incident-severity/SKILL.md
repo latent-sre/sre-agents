@@ -1,12 +1,8 @@
 ---
 name: incident-severity
 description: >-
-  Severity rubric, communications cadence, and the incident-command process for running a live incident —
-  classify SEV1–SEV4 by user impact × scope × trend; decide what each level triggers (declare, paging,
-  comms cadence, postmortem); assign roles, keep the authoritative timeline, drive to mitigation, and send
-  the initial/update/resolution updates. Use the moment you must assign a severity, run the incident
-  (who's doing what), or send a status update. Pairs with sre-ladder (responder tier) and
-  blameless-postmortem.
+  Use during a live incident to assign SEV1–SEV4, establish command roles, maintain status and timeline,
+  or send incident updates. Do not use after resolution solely to write the postmortem.
 ---
 
 # Incident severity, command & communications

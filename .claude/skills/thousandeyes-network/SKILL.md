@@ -1,10 +1,9 @@
 ---
 name: thousandeyes-network
 description: >-
-  Using Cisco ThousandEyes to answer "is it the network, DNS, routing, or the app?" — test types,
-  Cloud vs Enterprise agents, path visualization and BGP route monitoring, and reading synthetic/web
-  results. Use during triage when the symptom looks external (reachability, latency from a region, DNS,
-  a flaky dependency) or to design synthetic monitoring of a critical path.
+  Use when ThousandEyes must distinguish network, DNS, routing, regional reachability, dependency, or
+  application-path failures, or when designing synthetic checks. Do not use for application-internal
+  logs or metrics.
 ---
 
 # Cisco ThousandEyes — network & synthetic checks

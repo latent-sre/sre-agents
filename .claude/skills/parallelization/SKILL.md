@@ -1,11 +1,9 @@
 ---
 name: parallelization
 description: >-
-  Run INDEPENDENT strands CONCURRENTLY — sectioning, voting, multi-agent fan-out — and know WHEN the
-  ~15× cost pays. Use when a task splits into independent strands (research, multi-lens review, surveying
-  many files/services) or when diverse takes improve a judgment. Covers when to parallelize vs stay
-  sequential, fan-out economics, and right-sizing. Distinct from `context-engineering` (one agent's
-  attention budget). From Anthropic's "Building Effective Agents" and multi-agent research system.
+  Use when independent task strands can run concurrently, repeated attempts can vote, or multi-lens
+  review benefits from isolated agents. Do not use for tightly coupled steps that depend on prior
+  results.
 ---
 
 # Parallelization

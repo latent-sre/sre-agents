@@ -1,11 +1,8 @@
 ---
 name: agent-security
 description: >-
-  Defend agents against prompt injection and the "lethal trifecta" — the security layer for agentic
-  work, distinct from code security. Use when an agent reads untrusted content (webhook/PR/issue
-  comments, CI logs, scraped pages, user files), when designing tool/MCP integrations, or when reviewing
-  an agent definition's blast radius. Covers treating tool output as data not instructions, breaking the
-  trifecta, the Rule of Two, and least-privilege/human-in-the-loop gates.
+  Use when an agent reads untrusted content, calls tools, handles secrets, or needs a prompt-injection
+  and blast-radius review. Do not use as a substitute for application code security review.
 ---
 
 # Agent security (prompt injection & the lethal trifecta)

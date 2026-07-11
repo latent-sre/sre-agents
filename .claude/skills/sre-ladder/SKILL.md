@@ -1,11 +1,8 @@
 ---
 name: sre-ladder
 description: >-
-  Set your SRE altitude for an alert or incident, then load the matching tier — match response depth to
-  the situation. Use at the start of any detection/triage/investigation work: responder (safe first
-  response — golden signals, read-only checks, work the runbook, decide severity, escalate), investigator
-  (hypothesis-driven RCA — build a timeline, correlate "what changed", test hypotheses against evidence),
-  or elite (systemic/distributed failure analysis and prevention). Read the one tier file for the method.
+  Use at the start of operational detection, triage, or incident investigation to choose responder,
+  investigator, or elite depth. Do not use for a single log, metric, network, or PCF query.
 ---
 
 # SRE ladder — pick your altitude

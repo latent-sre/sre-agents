@@ -1,10 +1,8 @@
 ---
 name: wavefront-queries
 description: >-
-  Wavefront Query Language (WQL) patterns for metrics investigation and alerting on VMware Aria
-  Operations for Applications (formerly Tanzu Observability by Wavefront). Use when querying metrics —
-  latency percentiles, error ratios, saturation, rates — during RCA, or when designing metric alerts.
-  Covers ts(), aggregation, rate/deriv, moving windows, and error-ratio patterns.
+  Use when writing or debugging Wavefront WQL queries for latency percentiles, rates, error ratios,
+  saturation, aggregation, or metric alerts. Do not use for Splunk logs or Grafana dashboard layout.
 ---
 
 # Wavefront queries (WQL / `ts()`)

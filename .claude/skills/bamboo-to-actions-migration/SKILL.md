@@ -1,9 +1,8 @@
 ---
 name: bamboo-to-actions-migration
 description: >-
-  Migrate a CI/CD pipeline from Atlassian Bamboo to GitHub Actions — concept mapping, a step-by-step
-  migration approach, and the common gotchas. Use when porting a Bamboo plan or deployment project to
-  Actions, or planning the team's move off Bamboo. Pairs with github-actions-ci.
+  Use when migrating a Bamboo build plan or deployment project to GitHub Actions, including importer
+  output and parity planning. Do not use for routine GitHub Actions authoring after migration.
 # Manually-invoked prompt: this migration runs only a handful of times, so it's invoked with
 # /bamboo-to-actions-migration rather than auto-loaded — which keeps its description out of the
 # always-on skill listing. Future option: wire it into CI as a one-shot migration runner.

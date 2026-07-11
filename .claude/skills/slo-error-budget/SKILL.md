@@ -1,10 +1,8 @@
 ---
 name: slo-error-budget
 description: >-
-  Define SLIs, set SLOs with error budgets, and design burn-rate alerts — pragmatically, for an
-  ops-focused team. Use when someone says "define an SLO", "what should we alert on", "are we within
-  budget", or when turning a noisy threshold alert into a symptom/burn-rate alert. Covers SLI formulas,
-  window/target choices, and multi-window burn-rate alerting on our stack.
+  Use when defining an SLI or SLO, calculating error budget, choosing target windows, or designing
+  burn-rate alerts. Do not use for dashboard layout, telemetry emission, or raw metric queries.
 ---
 
 # SLOs & error budgets (pragmatic)

@@ -1,12 +1,9 @@
 ---
 name: prompt-craft
 description: >-
-  Author and optimize a single LLM-facing artifact — a system prompt, an agent definition, a
-  SKILL.md, a tool description, or a grader prompt. Use when creating one, or when one misbehaves:
-  a skill that never triggers or fires too often, an agent that ignores an instruction, output with
-  the wrong shape. Covers the eval-first loop, trigger-only descriptions, and matching the fix's
-  form to the failure. For roster/orchestration-level design use `agent-architecture`; for tools an
-  agent calls use `tool-design`.
+  Use when creating or fixing one LLM-facing prompt, agent definition, skill, tool description, or
+  grader, especially for mis-triggering or wrong output shape. Do not use for multi-agent roster
+  architecture.
 ---
 
 # Prompt craft

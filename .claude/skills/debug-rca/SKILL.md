@@ -1,11 +1,9 @@
 ---
 name: debug-rca
 description: >-
-  Hypothesis-driven root-cause analysis for **non-production** failures — failing tests, flaky builds,
-  runtime errors, and "it works on my machine" bugs (the build/test-time sibling of the `sre-ladder`
-  skills, which own prod incidents). Use when something is broken in dev or CI and the cause is not yet
-  known. Covers reproduce → what changed → ranked parallel hypotheses → test one at a time (git bisect)
-  → the causal chain → minimal fix + a regression test that would have caught it.
+  Use when a non-production test, build, runtime, or environment failure has an unknown cause and needs
+  root-cause analysis. Do not use for production incidents or known fixes that only need
+  implementation.
 ---
 
 # Debug / root-cause analysis

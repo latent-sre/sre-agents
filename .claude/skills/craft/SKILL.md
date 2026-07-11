@@ -1,11 +1,9 @@
 ---
 name: craft
 description: >-
-  Idiomatic, production-grade coding conventions for this team's languages — load the file for the
-  language you're writing or reviewing. Use whenever writing, reviewing, or refactoring code in Python,
-  Bash, PowerShell, Go, TypeScript, or React: typing/linting/testing, error handling, operational
-  safety, concurrency, and the per-language pitfalls a reviewer would flag. Read the one language file
-  you need; match the repo's existing tooling first.
+  Use when writing, reviewing, or refactoring Python, Bash, PowerShell, Go, TypeScript, or React code
+  and language-specific conventions are needed. Do not use for general engineering process or
+  architecture decisions.
 ---
 
 # Craft — pick the language

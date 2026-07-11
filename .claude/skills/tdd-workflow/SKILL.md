@@ -1,10 +1,8 @@
 ---
 name: tdd-workflow
 description: >-
-  Test-driven and regression-first workflow — write the failing test before the code, then make it
-  pass. Use when implementing a feature test-first, and ALWAYS after a bug fix (add the test that fails
-  without the fix). Covers red-green-refactor and what to test (behavior not internals) — the *method*;
-  the per-language frameworks/tooling (pytest, Pester, bats, Vitest) live in `craft`.
+  Use when implementing new behavior test-first or adding a regression test before a bug fix, with a
+  failing test required first. Do not use for behavior-preserving refactoring alone.
 ---
 
 # Test-driven & regression-first workflow
