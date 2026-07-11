@@ -49,7 +49,7 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 evals/                     behavioral evals (scenarios + graders) — routing, gates, security; run locally
-docs/                       HANDOFFS (collab map) · INTEGRATION (vendor into another repo) · RESEARCH (sources)
+docs/                       INTEGRATION (vendor into another repo) · RESEARCH (sources)
 scripts/
   validate_fleet.py        validate all skills/agents against the Agent Skills spec (pure stdlib)
   readonly-guard.py        PreToolUse hook: blocks state-changing + data-egress shell commands for read-only agents

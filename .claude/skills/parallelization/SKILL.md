@@ -44,9 +44,36 @@ The `route-request` skill produces an **ordered plan**; the main session execute
 kept in the session holding the live context rather than paying a coordinator subagent's extra round-trip
 (a cost choice, not a capability limit: subagents *can* now nest-dispatch). During an incident, technical
 RCA (`sre-engineer`) runs *in parallel* with the incident-command process (`incident-severity`), and
-`researcher` fans out alongside. The fleet handoff map
-([`docs/HANDOFFS.md`](../../../docs/HANDOFFS.md)) carries the "parallelize independent work, keep coupled
-work sequential" rule — this skill is the *why* and *how much*.
+`researcher` fans out alongside.
+
+### Worked example — "ship feature X with tests and a runbook"
+A feature ship is a **sequential spine with one parallel burst**:
+
+```
+ research (unknown API?) ─┐
+                          ▼
+              build feature X  (sde-engineer)         ── SEQUENTIAL (coupled; never fan out coding)
+                          │  produces a diff
+                          ▼
+   ┌──────────── on the finished diff (sectioning) ───────────┐
+   │  code-reviewer  ∥  security-reviewer  ∥  test-engineer   │ ── PARALLEL (independent lenses)
+   └───────────────────────────┬──────────────────────────────┘
+                               ▼  main session merges findings → one fix list
+                       sde-engineer applies fixes → re-verify   (evaluator-optimizer loop)
+                               ▼
+                          [merge-gate] ─▶ human release owner ─▶ pcf-deploy ─▶ runbook-author
+```
+
+- **Sequential** because coupled: the build (each edit depends on the last — *don't* fan out coding),
+  and the gates (pass/fail checkpoints; prod needs human sign-off).
+- **Parallel** because independent: three review lenses on the *same* diff, plus `researcher` up front if
+  an API/spec is unknown. That's 3–4 strands — the right-sized band, run as fan-out **inside the main
+  session**, not a multi-agent swarm.
+- **Each strand** gets an isolated context, a bounded mandate, and returns a **short summary**
+  (`context-engineering`); the main session does a **merge pass** (dedupe/reconcile) before routing one
+  consolidated fix list back (`self-improve-loop`).
+- **`runbook-author` is downstream-gated**, not parallel with the build — it documents the *final*
+  shipped behavior and real ops steps.
 
 ## Handoffs
 - → `route-request` to turn a parallelizable request into an ordered delegation plan.

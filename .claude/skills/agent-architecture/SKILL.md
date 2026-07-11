@@ -66,7 +66,7 @@ waste · runaway loops with no dry-out condition · missing return contracts.
 ## Deliverable
 
 A roster delta or design: each agent's lane, trigger description, tool authority, `model:` tier
-(update the policy tables in both validators), handoff edges (update `docs/HANDOFFS.md`),
+(update the policy tables in both validators), handoff edges (each agent's own body lists them),
 context budget, and failure handling. Capture roster-shaping decisions
 with `adr-template`. Hand wording to `prompt-craft`, implementation to `sde-engineer`, and
 injection surfaces to `agent-security`.

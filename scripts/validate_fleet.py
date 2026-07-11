@@ -239,7 +239,6 @@ def main():
     roster_docs = [
         'AGENTS.md',
         'README.md',
-        os.path.join('docs', 'HANDOFFS.md'),
         os.path.join('.claude', 'skills', 'route-request', 'SKILL.md'),
     ]
     agent_names = [a[:-3] for a in agent_files]
