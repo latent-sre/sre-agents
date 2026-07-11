@@ -13,6 +13,9 @@ description: >-
 Match response depth to the situation; escalate a tier the moment the current one isn't enough. Load
 **only** the tier that matches.
 
+Every tier starts from the same signal read — the four golden signals, RED/USE, and "what changed?":
+→ [`references/golden-signals.md`](references/golden-signals.md).
+
 - **Responder** *(first on scene, any seniority)* — read the golden signals, run safe read-only checks,
   work the linked runbook, decide severity, escalate well; do no harm. → [`references/responder.md`](references/responder.md)
 - **Investigator** — own the hunt for the actual cause: timeline, "what changed", a differential of

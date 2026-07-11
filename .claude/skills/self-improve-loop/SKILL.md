@@ -42,7 +42,7 @@ rules-based feedback over LLM-as-judge]*
 1. **Deterministic checks** — tests, linters/type-checks, schema/`EXPLAIN` validation, a gate
    checklist, the `readonly-guard`. Fast, reliable, no judgment risk. **Default to these.**
 2. **Observed signal** — run it and read the result: the failing assertion clears, golden signals
-   (`triage-golden-signals`) return to baseline, the `cf` health check passes.
+   (the golden-signals reference in `sre-ladder`) return to baseline, the `cf` health check passes.
 3. **LLM-as-judge** — a reasoning review (`code-reviewer`, `security-reviewer`) for the things rules
    can't encode (design, intent, subtle correctness). Use it *after* the cheap checks, not instead.
 

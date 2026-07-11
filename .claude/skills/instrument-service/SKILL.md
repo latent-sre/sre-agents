@@ -21,7 +21,7 @@ standards** — so the data lands in our stack (Wavefront / Splunk / Grafana) an
 4. **RED per route** (request-driven services): request count, error count, and a latency **histogram**
    — split **success vs error** latency. Bounded labels only (method, route template, status class).
 5. **USE per resource** (pools/queues/CPU/memory): utilization, saturation, errors — this is what catches
-   the "saturation → latency → errors" cascade in `triage-golden-signals`.
+   the "saturation → latency → errors" cascade in the `sre-ladder` golden-signals reference.
 6. **Traces** — propagate W3C trace context across services. To keep all error/slow traces, run a
    **Collector tail-sampling processor** with explicit policies (status=error, latency threshold) — note
    it buffers spans until the trace completes, so it carries memory/latency cost; size it deliberately.

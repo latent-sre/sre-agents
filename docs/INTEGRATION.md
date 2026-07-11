@@ -105,8 +105,6 @@ jobs:
       - uses: actions/checkout@v4
       - run: python3 scripts/validate_fleet.py
       - run: python3 scripts/test_readonly_guard.py
-      - run: python3 scripts/test_production_change_guard.py
-      - run: python3 scripts/test_guard_cf_parity.py
       - run: |
           python3 -m pip install --quiet -r requirements-dev.txt
           python3 evals/run_evals.py --validate
@@ -141,8 +139,8 @@ If the host repo already has any of these, you must merge rather than overwrite:
 
 - All Python/Bash/PowerShell under `scripts/`, `evals/`, and the skills' bundled helpers resolve their own
   paths and run from any working directory.
-- The `PreToolUse` hook commands in agent frontmatter use `scripts/readonly-guard.py` /
-  `scripts/production-change-guard.py` **relative to the repo root Claude Code runs in**. If you surface
+- The `PreToolUse` hook commands in agent frontmatter use `scripts/readonly-guard.py`
+  **relative to the repo root Claude Code runs in**. If you surface
   `.claude/` at the host root via symlink (Strategy A), these resolve against the host root — so also ensure
   `scripts/` is reachable from the host root, or update the hook `command` paths to point at
   `tools/sre-agents/scripts/...`. (Copy strategy: same consideration.) Verify the hook actually fires in

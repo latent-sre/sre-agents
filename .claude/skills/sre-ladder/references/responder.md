@@ -15,8 +15,8 @@ Move up to the investigator tier the moment first response isn't enough and you 
 1. **Acknowledge** the alert. Note the time (UTC) and exactly what fired.
 2. **Confirm it's real.** Actual user impact, or a flapping alert? Check the symptom from the user's
    side (a synthetic / ThousandEyes test, a health endpoint).
-3. **Read the golden signals** (load `triage-golden-signals`): latency, traffic, errors, saturation.
-   Is it getting worse?
+3. **Read the golden signals** ([`golden-signals.md`](golden-signals.md)): latency, traffic, errors,
+   saturation. Is it getting worse?
 4. **Work the runbook.** If the alert links a runbook, follow it step by step — that's why it exists.
 5. **Safe, read-only checks only** (load `pcf-ops`): `cf app <app>`, `cf events <app>`,
    `cf logs <app> --recent`; check recent deploys (`git log`, the release pipeline). Do **not** restart,

@@ -1,0 +1,7 @@
+id: discover-method-agent-authoring-roster
+expected: agent-authoring
+prompt: |
+  We're thinking of splitting our one big ops assistant into several subagents with
+  handoffs. How do we decide what deserves to be its own agent versus a skill, and
+  what orchestration shape should the fleet use?
+note: "Baseline 2026-07-09 (as prompt-craft / agent-architecture): 3/3 hit, 0 misroute. Merged into agent-authoring 2026-07-11 — the two probes now verify the SINGLE merged description still triggers from BOTH altitudes; re-baseline with --run --match method --trials 3."

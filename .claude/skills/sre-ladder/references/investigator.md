@@ -13,7 +13,7 @@ it's a systemic/distributed failure mode needing prevention design.
 
 ## The investigation loop
 1. **Characterize precisely.** Exact start time, blast radius (which apps/routes/spaces, % of traffic),
-   and trend. Frame it with `triage-golden-signals`.
+   and trend. Frame it with [`golden-signals.md`](golden-signals.md).
 2. **Build a timeline (UTC).** Lay "what changed" against "when it broke": deploys/releases, config &
    feature-flag flips, PCF platform events (`cf events`), dependency incidents, traffic shifts,
    cert/credential expiries.

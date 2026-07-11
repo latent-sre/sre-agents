@@ -70,7 +70,7 @@ cf scale checkout -m 2G -k 2G     # vertical: memory/disk (causes restart)
 
 ## Verify every deploy
 After cutover, check `cf app checkout` (all instances healthy) and the golden signals in Wavefront/
-Grafana (`triage-golden-signals`) before declaring success. Define abort criteria up front; if they
+Grafana (the golden-signals reference in `sre-ladder`) before declaring success. Define abort criteria up front; if they
 trip, roll back — that's success, not failure.
 
 ## Tip

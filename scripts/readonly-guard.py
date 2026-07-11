@@ -45,8 +45,8 @@ non-error path). See https://code.claude.com/docs/en/hooks
 Cross-platform: pure Python stdlib, no jq. The agent hook frontmatter invokes this via
 `"$(command -v python3 || command -v python)" -c ...` — it SELECTS the interpreter once (python3,
 else python on Windows) and runs the guard a single time, so the guard's exit code propagates
-unchanged. (The older `python3 ... || python ...` form re-ran on any non-zero exit, which turned a
-deny into a fall-through on a python3-only host for the exit-2-blocking production-change-guard.)
+unchanged. (The older `python3 ... || python ...` form re-ran the guard on any non-zero exit, which
+turns a deny into a fall-through.)
 """
 import json
 import re

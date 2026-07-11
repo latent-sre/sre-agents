@@ -168,7 +168,7 @@ def main():
             if leaf in ('references', 'assets', 'scripts'):
                 continue
             # Resolve against the skill's own bundle first, then fall back to the repo root: a SKILL.md
-            # may legitimately reference a SHARED repo-root script (e.g. scripts/production-change-guard.py).
+            # may legitimately reference a SHARED repo-root script (e.g. scripts/readonly-guard.py).
             if not os.path.exists(os.path.join(dfull, rel)) and not os.path.exists(os.path.join(ROOT, rel)):
                 issues.append("skill '%s': references missing file '%s'" % (name_dir, rel))
 
@@ -231,7 +231,7 @@ def main():
             )
 
     # ---- Roster coverage (docs that enumerate the roster must name every agent) ----
-    # The 2026-07-08 prompt-engineer addition silently missed README.md and docs/ARCHITECTURE.md;
+    # A past agent addition silently missed README.md and the roster docs;
     # this check makes that class of drift a CI failure instead. Two rules:
     #   1. Every agent name appears in each roster-enumerating doc below.
     #   2. Any literal "N agents" / "N skills" count in a CURRENT-STATE doc matches the tree
@@ -239,9 +239,6 @@ def main():
     roster_docs = [
         'AGENTS.md',
         'README.md',
-        os.path.join('docs', 'AGENT-CATALOG.md'),
-        os.path.join('docs', 'HANDOFFS.md'),
-        os.path.join('docs', 'ARCHITECTURE.md'),
         os.path.join('.claude', 'skills', 'route-request', 'SKILL.md'),
     ]
     agent_names = [a[:-3] for a in agent_files]
@@ -259,7 +256,7 @@ def main():
                     "doc from roster_docs in this script if it no longer enumerates the roster)."
                     % (rel, base)
                 )
-    count_docs = ['README.md', os.path.join('docs', 'ARCHITECTURE.md'), 'AGENTS.md', 'CLAUDE.md']
+    count_docs = ['README.md', 'AGENTS.md', 'CLAUDE.md']
     count_re = re.compile(r'\b(\d+)\s+(agents|skills)\b')
     actual = {'agents': len(agent_files), 'skills': skill_count}
     for doc in count_docs:

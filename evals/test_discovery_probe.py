@@ -89,12 +89,12 @@ def test_empty_and_blank_lines() -> None:
 
 def test_mixed_skill_and_agent() -> None:
     blob = "\n".join([
-        _line({"content": [{"type": "tool_use", "name": "Skill", "input": {"skill": "triage-golden-signals"}}]}),
+        _line({"content": [{"type": "tool_use", "name": "Skill", "input": {"skill": "sre-ladder"}}]}),
         _line({"content": [{"type": "tool_use", "name": "Task", "input": {"subagent_type": "sre-engineer"}}]}),
         "non-json fallback \"skill\":\"wavefront-queries\"",
     ])
     out = dp._invocations_from_stream(blob)
-    check(out["skill"] == ["triage-golden-signals", "wavefront-queries"], "mixed: both skills captured")
+    check(out["skill"] == ["sre-ladder", "wavefront-queries"], "mixed: both skills captured")
     check(out["agent"] == ["sre-engineer"], "mixed: agent captured")
 
 

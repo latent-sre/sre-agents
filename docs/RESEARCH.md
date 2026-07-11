@@ -20,36 +20,6 @@ per the `researcher` agent's rules).
 **Implication:** one source under `.claude/` is read natively by both tools → author once, generate
 Copilot-native `.github/` files only for hard tool scoping.
 
-## Stack — current product names (verify before quoting)
-| We say | Current name / fact | Source |
-|---|---|---|
-| PCF | VMware **Tanzu Application Service** (Broadcom); `cf` CLI v8 / CAPI V3 | techdocs.broadcom.com (Tanzu Platform for Cloud Foundry) |
-| Wavefront | **VMware Aria Operations for Applications** (WQL, `ts()`) | https://docs.wavefront.com/query_language_reference.html |
-| Moogsoft | **Dell APEX AIOps Incident Management** (on-prem v9.x) | https://docs.moogsoft.com/ |
-| Splunk / ThousandEyes | **Cisco** Splunk (SPL) / Cisco ThousandEyes (API v7; Enterprise vs Cloud agents) | docs.thousandeyes.com |
-
-## PCF specifics we verified (and what we dropped)
-**Verified against Cloud Foundry docs and baked into `pcf-ops`:**
-- Gorouter **502** keep-alive race: if app keep-alive idle timeout `< 90s` it can close a connection as
-  Gorouter reuses it → 502; set the app's keep-alive `> 90s`. — https://docs.cloudfoundry.org/adminguide/routing-keepalive.html
-- Health-check **types** `port`/`process`/`http`; **default liveness = port, readiness = process**;
-  liveness fail → restart, readiness fail → removed from route pool. — https://docs.cloudfoundry.org/devguide/deploy-apps/healthchecks.html
-- Gorouter **502** clock skew: a Diego cell's TLS cert looking not-yet-valid from time drift
-  (`x509: certificate ... is not yet valid`) is surfaced by CF as a **502** (`ExpiredOrNotYetValidCertFailure`),
-  not a 503 — a platform-side NTP issue. — CF router error docs; Broadcom KB 297999. *(re-verified 2026-06-24)*
-- `Exited with status 137` = OOM (SIGKILL). (Standard container behavior.)
-
-**Dropped as unverified** (a sibling branch asserted them; we could not confirm, so they are NOT in our
-skills): "health-check invocation-timeout default 1s", "Gorouter `max_attempts=3`". *(The sibling's
-"503 = clock skew / `x509 not-yet-valid`" was re-checked 2026-06-24: the scenario is real but CF returns
-a **502**, now corrected in `pcf-ops` — see the verified list above.)*
-
-## Prior branches mined (provenance for upgrades)
-Tier-1 and batch-2 content was adapted (and re-verified) from three earlier attempts on this repo:
-- `origin/claude/vscode-sre-sde-agents-eu1uvu` — best PCF/stack content (502/503, Actions Importer, cf deploy job, SPL/WQL, language footguns).
-- `origin/claude/elite-agent-architecture-n0q56b` — DBRE agent, OTel instrument-service, incident doctrine, researcher rigor.
-- `origin/claude/great-shannon-98cxyn` — ADR/RFC templates, docs-first structure, current language tooling.
-
 ## Knowledge sources (broader grounding)
 `anthropics/anthropic-cookbook` (agent/skill/eval patterns) · `ComposioHQ/awesome-claude-skills`
 (community skills) · `affaan-m/ecc` (harness-native operator system; skill-first + per-language rules +

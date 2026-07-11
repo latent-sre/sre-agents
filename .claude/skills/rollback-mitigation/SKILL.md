@@ -28,7 +28,7 @@ sign-off; in a major incident the incident commander (on-call lead running `inci
 ## Rules
 1. **Reversible first.** Prefer an action you can undo in seconds (route remap, flag flip) over one you
    can't. Blue-green route remap is the gold standard — instant and reversible.
-2. **One change at a time**, then observe. Watch the golden signals (`triage-golden-signals`) for 1–2
+2. **One change at a time**, then observe. Watch the golden signals (`sre-ladder`) for 1–2
    minutes before the next action — so you know what worked.
 3. **Restart is a stopgap, not a fix.** If a restart "fixes" it, the cause is still there (leak, poison
    input, dependency) — capture `cf events`/logs first, then keep investigating (`sre-ladder`, investigator tier).

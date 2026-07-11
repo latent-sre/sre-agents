@@ -38,7 +38,7 @@ then find the truth. Reason explicitly about hypotheses and evidence; never gues
   timeouts, saturation, poison messages), resilience gaps, and the detection improvements that prevent
   recurrence.
 
-Always load **`triage-golden-signals`** to frame the signals. For our stack, load the relevant tool
+Always frame the signals with **`sre-ladder`**'s golden-signals reference. For our stack, load the relevant tool
 skill: **`pcf-ops`** (cf CLI read-only triage), **`splunk-triage`** (SPL), **`wavefront-queries`**
 (WQL/`ts()`), **`grafana-dashboards`**, **`moogsoft-correlation`** (alert→incident), and
 **`thousandeyes-network`** (path/BGP/synthetics). For a database-driven incident (slow queries,

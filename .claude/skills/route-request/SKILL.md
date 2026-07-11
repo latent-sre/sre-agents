@@ -31,7 +31,7 @@ something on fire?).
 | "set up monitoring / noisy alert / define SLO" | `sre-monitor` | → `runbook-author` for alert runbooks |
 | "ship / release / deploy / roll back / move off Bamboo" | a human release owner (**`pcf-deploy`** / **`bamboo-to-actions-migration`** / **`rollback-mitigation`**) | **`release-gate`** + **`production-change-gate`** for prod |
 | "write/update a runbook / document this" | `runbook-author` | — |
-| "write/tune an agent, skill, or prompt / skill never triggers / agent ignores instruction" | `prompt-engineer` (loads **`prompt-craft`** for one artifact, **`agent-architecture`** for roster/orchestration design) | → `security-reviewer` if the artifact ingests untrusted input; → `code-reviewer` for gate/guard wording changes |
+| "write/tune an agent, skill, or prompt / skill never triggers / agent ignores instruction" | `prompt-engineer` (loads **`agent-authoring`** — artifact tier for one artifact, roster tier for lane/orchestration design) | → `security-reviewer` if the artifact ingests untrusted input; → `code-reviewer` for gate/guard wording changes |
 | any agent is missing a fact | `researcher` | → back to the requester |
 
 ## 3. Insert gates (pass/fail checkpoints, not agents)
@@ -49,8 +49,9 @@ Risks / watch-for: <…>
 ```
 Each step names the **context to hand the agent** so it can start cold (`handoff-protocol`). Mark
 prod-facing or destructive steps and require explicit human confirmation. When the plan has independent
-strands (or wants multi-lens review/voting), load **`parallelization`** to decide whether to fan them out
-concurrently and whether the cost pays.
+strands (or wants multi-lens review/voting), read
+[`references/fan-out.md`](references/fan-out.md) — fan out independent strands, keep tightly-coupled work
+(especially coding) sequential, and weigh the cost: multi-agent fan-out runs ~15× a normal chat's tokens.
 
 ## Guardrails
 - **Don't invent an agent** not in the fleet — if none fits, say so (or have the main session do it).

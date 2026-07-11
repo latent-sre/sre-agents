@@ -62,4 +62,6 @@ bigger model or a longer prompt.
 ## Handoffs
 - → `researcher` to offload expensive fact-finding and get back a brief.
 - → `handoff-protocol` to package the minimal context a receiving agent needs to start cold.
-- → `parallelization` when isolated sub-agents are the right way to cover breadth without bloating one window.
+- → `route-request` (its fan-out reference) when isolated sub-agents are the right way to cover breadth
+  without bloating one window.
+- → `agent-authoring` (roster tier) when the fix is a lane/orchestration problem, not a context one.
