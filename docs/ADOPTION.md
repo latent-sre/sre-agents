@@ -32,7 +32,6 @@ helper ships with them). Adopt these first.
 | Agent | Value it delivers today |
 |---|---|
 | `sre-engineer` | Hypothesis-driven triage + RCA across the stack; read-only, guard-enforced. |
-| `release-engineer` | Actions CI + PCF deploy/rollback through the release gate — safe ship/backout. |
 | `sde-engineer` | Designs, writes, refactors, and fixes code (Py/Bash/PS/Go/TS) to spec. |
 | `code-reviewer` | Catches the bug that has no test; read-only `merge-gate` enforcement. |
 | `runbook-author` | Turns incidents into trigger-anchored runbooks (template ready to fill). |

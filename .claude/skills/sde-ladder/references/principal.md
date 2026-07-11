@@ -36,5 +36,5 @@ Think first; the diff is the easy part.
 
 ## Escalate / hand off
 - Org-wide pattern, build-vs-buy, or a decision other teams must live with → the distinguished tier.
-- Deploy sequencing / flags in prod → `release-engineer` (clear the `release-gate`).
+- Deploy sequencing / flags in prod → a human release owner (clear the `release-gate`).
 - New operational steps → `runbook-author`.

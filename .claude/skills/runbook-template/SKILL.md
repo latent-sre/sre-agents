@@ -58,7 +58,7 @@ Owner · Last reviewed · Severity
 
 ## Tip
 Link every paging alert to its runbook (`sre-monitor`). If a step is fully mechanical, recommend
-automating it (`sde-engineer`/`release-engineer`) along the **Crawl → Walk → Run** path: document the
+automating it (`sde-engineer`/a human release owner) along the **Crawl → Walk → Run** path: document the
 manual steps (crawl), wrap them in a checked script the on-call runs by hand (walk), then trigger it
 automatically once proven (run). Data-drive the alert→runbook link so saved searches/alerts surface the
 right runbook automatically — each tool in our stack has a mechanism:

@@ -70,7 +70,7 @@ reason or is flaky, load `debug-rca` to find the cause before changing it.
 
 - ← from `sde-engineer` / `code-reviewer`: add or strengthen tests for a change.
 - → `sde-engineer`: if a test reveals a real bug, hand off the failing case + diagnosis to fix the code.
-- → `release-engineer`: to wire new test suites/gates into CI.
+- → a human release owner: to wire new test suites/gates into CI (`github-actions-ci`).
 - → `researcher`: for testing-framework specifics or how to test a tricky integration.
 
 ## Guardrails

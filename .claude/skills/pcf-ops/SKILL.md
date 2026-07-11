@@ -4,7 +4,7 @@ description: >-
   Read-only PCF / Tanzu Application Service triage with the cf CLI (v8 / CAPI V3). Use when
   investigating a degraded or crashing app on PCF — checking app state, instances, recent platform
   events, logs, routes, services, and env. Lists the safe read-only commands for an SRE and flags the
-  state-changing commands that require human sign-off via release-engineer.
+  state-changing commands that require human sign-off via a human release owner.
 compatibility: Requires the cf CLI v8 and access/auth to the target PCF foundation
 ---
 
@@ -12,7 +12,7 @@ compatibility: Requires the cf CLI v8 and access/auth to the target PCF foundati
 
 Our apps run on PCF (VMware Tanzu Application Service). cf CLI v8 talks to CAPI V3. **As `sre-engineer`
 you observe only** — every command below is read-only. State-changing commands are listed last and
-belong to `release-engineer` with human sign-off.
+belong to a human release owner with human sign-off.
 
 > **Helpers:** `scripts/triage.sh <app>` (Bash) and `scripts/triage.ps1 -App <app>` (PowerShell)
 > run a one-shot read-only summary (target → app → events → recent logs). Record our foundations,
@@ -103,11 +103,11 @@ Treat `cf ssh` as privileged shell access, not read-only triage — even a harml
 can mutate an instance. Read-only agents should not use it; get explicit human approval and hand off if
 instance-shell inspection is truly needed.
 
-## State-changing — NOT for sre-engineer (hand to release-engineer + human sign-off)
+## State-changing — NOT for sre-engineer (hand to a human release owner + human sign-off)
 `cf restart` / `cf restage` / `cf scale` / `cf push` / `cf map-route` / `cf unmap-route` /
 `cf set-env` / `cf stop` / `cf delete` / `cf cancel-deployment` / `cf continue-deployment` / `cf ssh`.
 These are mitigations/deploys or privileged shell access — see `rollback-mitigation` and `pcf-deploy`.
-Recommend them; let release-engineer execute.
+Recommend them; let a human release owner execute.
 
 ## Tips
 - `CF_TRACE=true cf <cmd>` shows the raw CAPI request/response when a command behaves oddly.

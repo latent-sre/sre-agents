@@ -1,19 +1,18 @@
 # Agent catalog
 
-Narrative descriptions of the 11 subagents in [`.claude/agents/`](../.claude/agents/) and the skills
+Narrative descriptions of the subagents in [`.claude/agents/`](../.claude/agents/) and the skills
 each leans on. The terse roster table is in [`AGENTS.md`](../AGENTS.md); the collaboration map is in
 [`HANDOFFS.md`](HANDOFFS.md); the *why* is in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 > **Read-only agents** (no Edit/Write): `code-reviewer`, `security-reviewer`, `sre-engineer`,
 > `researcher`. The three that keep `Bash` for observation are further constrained by
 > `scripts/readonly-guard.py`, which blocks state-changing shell. The writers
-> (`sde-engineer`, `test-engineer`, `database-reliability`, `sre-monitor`, `release-engineer`,
-> `runbook-author`, `prompt-engineer`) edit files; prod-facing execution still needs human sign-off via the gates.
+> (`sde-engineer`, `test-engineer`, `sre-monitor`, `runbook-author`, `prompt-engineer`) edit files;
+> prod-facing execution still needs human sign-off via the gates.
 >
 > **Routing and incident-command are *skills*, not agents** — `route-request` and `incident-severity`
 > run in the main session (a coordinator subagent would double-pay the routing round-trip and discard
-> the main session's live context — cost, not a capability limit; see [ARCHITECTURE.md](ARCHITECTURE.md)
-> and [adr/0001](adr/0001-routing-and-incident-command-as-skills.md)).
+> the main session's live context — cost, not a capability limit; see [ARCHITECTURE.md](ARCHITECTURE.md)).
 
 ---
 
@@ -49,23 +48,11 @@ Designs and writes tests that actually catch bugs, raising meaningful coverage a
 PowerShell, TypeScript/React, and Go. Tests behavior and contracts, not internals. Loads `tdd-workflow`
 and the language `craft` skills. Edits **test code only** — hands real fixes to `sde-engineer`.
 
-### database-reliability · `opus` · writes migrations (prod gated)
-The DBRE for our **on-prem databases**. Designs safe, reversible schema migrations and tunes query
-performance; **writes** migration files and analysis but does **not** execute changes against a
-production database — it hands the forward + rollback scripts to `release-engineer` to run under the
-`production-change-gate`. Owns expand→contract migrations (loads `safe-refactor`), `EXPLAIN`/index/N+1
-tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO). Loads the
-`database-reliability` skill for the engine-specific playbook; records engine/version specifics in
-[`databases.md`](databases.md). Pairs with `sde-engineer` on query/ORM usage and `sre-engineer` on
-DB-driven incidents.
-
-> **Agent *and* same-named skill — intentional, not a collision.** It earns an agent because DBRE is a
-> recurring, *separable* lane with its own handoff edges (← `sde-engineer`/`sre-engineer`, →
-> `release-engineer`) — **not** because of a distinct tool-scope: its `tools` are identical to
-> `test-engineer`'s. The "never writes to a prod DB" rule is **behavioral and gate-enforced** (it hands
-> forward + rollback scripts to `release-engineer` under the `production-change-gate`), not a tool
-> restriction. Agent = the lane; skill = the playbook. See [ARCHITECTURE.md](ARCHITECTURE.md) → *When is
-> something an agent vs. a skill?*
+> **Database reliability is a *skill*, not an agent.** DBRE work — safe, reversible schema migrations,
+> `EXPLAIN`/index/N+1 tuning, connection-pool/lock/replication-lag triage, tested backups (RPO/RTO) — is
+> carried by the `database-reliability` skill, loaded by `sde-engineer` (schema/query work) and
+> `sre-engineer` (DB-driven incidents). Migration scripts still hand off forward + rollback to a human
+> release owner under the `production-change-gate`.
 
 ---
 
@@ -93,21 +80,17 @@ and SLO configs. Skills: `slo-error-budget`, `wavefront-queries`, `grafana-dashb
 
 ---
 
-## Ship & docs lane
+## Docs lane
 
-### release-engineer · `sonnet` · writes CI/infra (prod gated)
-CI/CD, builds, deploys, rollbacks on our stack: GitHub Actions pipelines, Bamboo→Actions migration,
-versioning/changelogs, PCF deploys via `cf` CLI (blue-green/rolling/canary), feature flags, and
-rollbacks. **Executes** deploy/release actions — anything irreversible or prod-facing needs explicit
-human confirmation (`release-gate` → `production-change-gate`). The hand-off target for fast incident
-mitigation. Skills: `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`,
-`rollback-mitigation`, `release-gate`.
+> **Ship/deploy is skill-driven, not an agent.** With no `release-engineer` agent, CI/CD and PCF
+> deploys/rollbacks are human-run using the kept playbooks — `github-actions-ci`, `pcf-deploy`,
+> `bamboo-to-actions-migration`, `rollback-mitigation`, `release-gate` — gated by `production-change-gate`
+> and the `production-change-guard.py` hook wired onto whatever runs `cf`.
 
 ### runbook-author · `sonnet` · writes docs
 Creates/updates operational runbooks — the step-by-step procedures on-call follows for an alert or
 failure mode. Produces precise, copy-pasteable, verified procedures and keeps existing runbooks current.
-Consumes findings from `sre-engineer` and `release-engineer`. Skills: `runbook-template`,
-`blameless-postmortem`.
+Consumes findings from `sre-engineer`. Skills: `runbook-template`, `blameless-postmortem`.
 
 ---
 
@@ -115,7 +98,7 @@ Consumes findings from `sre-engineer` and `release-engineer`. Skills: `runbook-t
 
 > **Routing is a skill, not an agent.** Multi-step/ambiguous requests are planned in the main session via
 > `route-request` (with `parallelization` for what to fan out vs. keep sequential) — there is no
-> `coordinator` agent (see [adr/0001](adr/0001-routing-and-incident-command-as-skills.md)).
+> `coordinator` agent (see [ARCHITECTURE.md](ARCHITECTURE.md)).
 
 ### researcher · `sonnet` · read-only (no Bash)
 Evidence-first fact-finding: official docs, specs/RFCs, vendor APIs, library behavior, version
@@ -158,5 +141,3 @@ Tailored to a pragmatic, on-prem/PCF, ops-heavy team — listed by value. Add on
 
 > **Deliberately *not* separate agents:** seniority tiers — they're `sde-ladder`/`sre-ladder` skills loaded by the
 > single `sde-engineer`/`sre-engineer`, not cloned junior/senior/principal agents (see [ARCHITECTURE.md](ARCHITECTURE.md) → *Design principles* #2).
-> *(Database depth, by contrast, earned its own agent — `database-reliability` — because DBRE work is a
-> recurring, separable responsibility, not just an altitude.)*

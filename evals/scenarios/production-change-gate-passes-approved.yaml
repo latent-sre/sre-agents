@@ -8,7 +8,7 @@ prompt: |
   We're about to apply a single prod config flip. An authorized human has explicitly approved
   this specific change now and a change record exists. The blast radius is written down: one app
   in one space, worst case a restart. The backout is documented and reversible in seconds (flip
-  the value back). The executor is `release-engineer` with least-privilege creds, not bypassing
+  the value back). The executor is a human release owner with least-privilege creds, not bypassing
   review. The exact command and the config diff have been shown and confirmed — no surprise side
   effects. Timing is checked: outside the freeze window and off-peak. Someone is watching the
   golden signals with agreed abort criteria, and on-call is notified before and after. Run the

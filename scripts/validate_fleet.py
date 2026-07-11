@@ -208,8 +208,6 @@ def main():
         'code-reviewer':        'opus',
         'security-reviewer':    'opus',
         'sre-engineer':         'opus',
-        'database-reliability': 'opus',
-        'release-engineer':     'sonnet',
         'researcher':           'sonnet',
         'runbook-author':       'sonnet',
         'sre-monitor':          'sonnet',
@@ -290,7 +288,7 @@ def main():
     ]
     scope_re = re.compile(r'\b(' + '|'.join(scope_tokens) + r')\b', re.IGNORECASE)
     scope_allow = [
-        'do NOT propose Kubernetes',   # release-engineer.md  -- charter disclaimer
+        'do NOT propose Kubernetes',   # legacy charter disclaimer
         'cloud or Kubernetes',         # sde-engineer.md       -- charter disclaimer (line-wrapped)
         'or Terraform/grafana',        # grafana-dashboards    -- dashboards-as-code provisioning aside
         'datasource-managed',          # grafana-dashboards    -- Grafana unified-alerting rule-mode note

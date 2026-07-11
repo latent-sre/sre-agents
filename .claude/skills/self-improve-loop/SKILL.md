@@ -68,7 +68,7 @@ process each iteration against a **spec + task backlog in files**, so durable st
   speed. The verifier *is* the safety system — not optional.
 
 **Non-negotiable guardrails (this is an ops repo):**
-1. **Code-building on a branch only.** Never point it at `release-engineer`/prod actions — no `cf push`,
+1. **Code-building on a branch only.** Never point it at deploys/prod actions — no `cf push`,
    route remap, scale, or migration in a loop. The `readonly-guard` + `production-change-gate` lines hold.
 2. **A hard verify gate every iteration.** Tests/evals/linters must pass or the iteration is rejected and
    **not committed** (`tdd-workflow`; Pattern 2's deterministic checks first). No verifier → don't run it.

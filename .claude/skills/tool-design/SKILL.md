@@ -40,7 +40,7 @@ name/description/defaults. Repeat — `self-improve-loop` applied to a tool. *[s
 
 ## In this fleet
 Reach for this when exposing `cf`/Splunk/Wavefront/ThousandEyes capability or an MCP server to an agent,
-or building automation `release-engineer`/`sre-monitor` will drive. Pair with `agent-security`: gate and
+or building automation a human release owner/`sre-monitor` will drive. Pair with `agent-security`: gate and
 allowlist anything that touches prod or sends data out; keep secrets out of tool inputs/outputs.
 
 ## Handoffs

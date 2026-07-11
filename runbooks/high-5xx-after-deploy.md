@@ -38,7 +38,7 @@ Dashboard: `<grafana link>`.
    Errors predate the deploy or no deploy → not this runbook → `sre-engineer`.
 
 ## Procedure
-> State changes are **recommend-only**; hand to `release-engineer`, clear `production-change-gate`, confirm.
+> State changes are **recommend-only**; hand to a human release owner, clear `production-change-gate`, confirm.
 1. **Roll back the release — fastest reversible mitigation** (pick by what's available):
    - **Named blue-green**, previous app still exists → remap the prod route back to it (instant, reversible).
    - **Revisions enabled** → `cf revisions <APP>` to find the last good `<n>`, then `cf rollback <APP> --version <n>`.

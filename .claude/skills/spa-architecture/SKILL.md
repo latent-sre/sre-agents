@@ -86,4 +86,4 @@ SPA fallback works on refresh/deep-link on PCF · RTL/MSW green, critical e2e co
 ## Handoffs
 - ← `api-design` for the contract this client consumes (build them together).
 - → `security-reviewer` (auth/token storage/CSP/CORS), `test-engineer` (e2e depth),
-  `release-engineer` to deploy the bundle on PCF, `sre-monitor` to dashboard client errors/RUM.
+  a human release owner to deploy the bundle on PCF, `sre-monitor` to dashboard client errors/RUM.

@@ -20,11 +20,10 @@ The portability is real, not aspirational — it rides two current open standard
 - **Agent Skills (`SKILL.md`)** — an open standard ([agentskills.io](https://agentskills.io), published
   by Anthropic Dec 2025, adopted by 30+ tools). Both VS Code/Copilot and Claude Code read skills from
   `.claude/skills/` directly.
-- **Agents** — VS Code/Copilot custom agents read `.claude/agents/` **and** `.github/agents/*.agent.md`;
-  Claude Code reads `.claude/agents/`.
+- **Agents** — VS Code/Copilot custom agents and Claude Code both read `.claude/agents/` directly.
 
-So a single source under `.claude/` is read natively by both. An optional generator emits Copilot-native
-`.github/` files for hard tool-scoping. `AGENTS.md` is the cross-tool project guide.
+So a single source under `.claude/` is read natively by both, with no build step. `AGENTS.md` is the
+cross-tool project guide.
 
 ## Quick start
 
@@ -33,14 +32,11 @@ So a single source under `.claude/` is read natively by both. An optional genera
 - Invoke a skill directly: `/release-gate`, `/pcf-ops`, `/merge-gate`.
 
 **VS Code / GitHub Copilot** — open the repo; pick a custom agent from the Chat agents dropdown (skills
-load automatically or via `/`). For Copilot-native files:
-```bash
-bash scripts/sync-copilot.sh      # macOS / Linux / Windows (Git Bash)
-```
+load automatically or via `/`). Both tools read `.claude/` directly — no build step.
 
 **Vendor it into an existing repo** — to embed the fleet as a subdirectory of another project (rather than
 using it standalone), see **[docs/INTEGRATION.md](docs/INTEGRATION.md)**: the scripts are location-robust,
-but `.claude/`, `CLAUDE.md`, `AGENTS.md`, and `.github/` must be surfaced at the host repo's root.
+but `.claude/`, `CLAUDE.md`, and `AGENTS.md` must be surfaced at the host repo's root.
 For **what to keep, genericize, or drop** when adapting the fleet to a different team or stack, see
 **[docs/CURATION.md](docs/CURATION.md)** (it doubles as the review checklist for an LLM adaptation pass).
 
@@ -54,22 +50,18 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
   skills/                  the skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
-evals/                     behavioral evals (scenarios + graders) — routing, gates, security; --validate runs in CI
-docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · INTEGRATION (vendor into another repo) · CURATION (keep/genericize/drop) · adr/ · FOLLOWUPS
+evals/                     behavioral evals (scenarios + graders) — routing, gates, security; run locally
+docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · INTEGRATION (vendor into another repo) · CURATION (keep/genericize/drop) · FOLLOWUPS
 scripts/
-  sync-copilot.sh          generate .github/agents wrappers (committed, drift-gated)
-  validate_fleet.py        validate all skills/agents against the Agent Skills spec (the CI gate; pure stdlib)
+  validate_fleet.py        validate all skills/agents against the Agent Skills spec (pure stdlib)
   readonly-guard.py        PreToolUse hook: blocks state-changing + data-egress shell commands for read-only agents
-.github/
-  agents/                  GENERATED but COMMITTED + drift-gated in CI — edit .claude/ and re-run sync
 ```
 
 ## The fleet
 
 **Agents (who):** `sde-engineer` · `code-reviewer` · `security-reviewer` · `test-engineer` ·
-`sre-engineer` · `sre-monitor` · `release-engineer` · `runbook-author` · `database-reliability` ·
-`researcher` · `prompt-engineer`. (Routing and incident-command are **skills** — `route-request`,
-`incident-severity` — not agents.)
+`sre-engineer` · `sre-monitor` · `runbook-author` · `researcher` · `prompt-engineer`. (Routing and
+incident-command are **skills** — `route-request`, `incident-severity` — not agents.)
 
 **Seniority/experience is carried by skills, not separate agents** — one `sde-engineer` and one
 `sre-engineer` scale altitude by loading a ladder skill (one skill per track, three tier files):
@@ -102,15 +94,15 @@ protection / environment reviewers, or Claude Code hooks.
 
 Agents and skills are plain Markdown. Add a skill: create `.claude/skills/<name>/SKILL.md` (lowercase-
 hyphen `name` ≤64 chars matching the dir, `description` ≤1024 chars saying *what + when*). Add an agent:
-`.claude/agents/<name>.md` with `name`, `description`, `tools`, `model`. Re-run the sync script for
-Copilot, then `python3 scripts/validate_fleet.py` to check it (or the upstream
+`.claude/agents/<name>.md` with `name`, `description`, `tools`, `model`. Then run
+`python3 scripts/validate_fleet.py` to check it (or the upstream
 [`skills-ref`](https://github.com/agentskills/agentskills) validator).
 
 **Read-only enforcement:** Claude agents that keep `Bash` but must not change state wire
 [scripts/readonly-guard.py](scripts/readonly-guard.py) as a `PreToolUse` hook in their frontmatter.
-The Copilot generator strips Claude-only hooks and withholds `runCommands` from generated read-only
-agents, so use `.github/agents/*.agent.md` when you want hard Copilot tool scoping. Verify the hook fires
-in your Claude Code environment (the one piece that can't be unit-tested offline).
+Under Copilot, where Claude hooks don't apply, enforce the same read-only posture via the agent's `tools`
+scoping instead. Verify the hook fires in your Claude Code environment (the one piece that can't be
+unit-tested offline).
 
 > **Hook shell:** the hook `command` (`"$(command -v python3 || command -v python)" -c …`) is **POSIX-shell
 > syntax** — it assumes Claude Code runs hooks through `bash`/`sh` (our Linux + on-prem reality; CI is

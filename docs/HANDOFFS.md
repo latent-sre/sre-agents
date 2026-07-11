@@ -6,7 +6,7 @@ session loads to emit an *ordered plan* (see [ARCHITECTURE.md](ARCHITECTURE.md) 
 *Subagent dispatch* note), then it routes between agents. They stay skills on **cost, not capability**:
 even though Claude Code now supports nested subagent dispatch, a coordinator subagent would double-pay
 the routing round-trip and discard the main session's live context the work needs (see
-[adr/0001](adr/0001-routing-and-incident-command-as-skills.md)). Each agent's body lists its own handoff
+[ARCHITECTURE.md](ARCHITECTURE.md)). Each agent's body lists its own handoff
 targets; this is the fleet-wide picture. Package context with `handoff-protocol`.
 
 ## Principles
@@ -29,14 +29,14 @@ targets; this is the fleet-wide picture. Package context with `handoff-protocol`
    request ───────▶ /route-request (main session) ──(plan)──┐
       │  (single obvious task: route directly)              │
       ▼                                                     ▼
-  sde-engineer ──(load sde-ladder by altitude)──▶ code-reviewer ──▶ [merge-gate] ──▶ release-engineer
+  sde-engineer ──(load sde-ladder by altitude)──▶ code-reviewer ──▶ [merge-gate] ──▶ human release owner
    │   │   │   ▲                                        │                                  │
    │   │   │   └────────── fix findings ───────────────┘                          [release-gate]
    │   │   │                                                                               │
    │   │   └─▶ security-reviewer (auth / secrets / input / crypto / deps)         [production-change-gate]
    │   ├─▶ test-engineer        (coverage thin / dedicated test focus)                     │
-   │   └─▶ database-reliability (schema/migration; writes fwd+rollback scripts)            ▼
-   │            └─▶ release-engineer runs the migration under [production-change-gate]
+   │   └─▶ (load database-reliability skill: schema/migration fwd+rollback scripts)        ▼
+   │            └─▶ a human release owner runs the migration under [production-change-gate]
    └─▶ researcher (unknown API/spec/lib)                                    pcf-deploy ──▶ runbook-author
                                                                                        (if new ops steps)
 ```
@@ -45,12 +45,13 @@ targets; this is the fleet-wide picture. Package context with `handoff-protocol`
 - **sde-engineer → code-reviewer:** every non-trivial change before merge (this *is* the `merge-gate`).
 - **sde-engineer → security-reviewer:** auth, crypto, input handling, deserialization, dependency changes.
 - **sde-engineer ⇄ test-engineer:** hand off when coverage is thin; test-engineer hands a *real bug* back.
-- **sde-engineer → database-reliability:** for schema changes / migrations / slow queries. DBRE designs
-  and **writes** the expand→contract migration + rollback, then hands those scripts to `release-engineer`
-  to **execute under `production-change-gate`** — DBRE does not touch a prod database itself.
+- **sde-engineer loads the `database-reliability` skill:** for schema changes / migrations / slow
+  queries — designs and **writes** the expand→contract migration + rollback, then a human release owner
+  **executes them under `production-change-gate`** (no agent touches a prod database itself).
 - **code-reviewer → sde-engineer:** apply fixes. **→ security-reviewer:** when depth is needed.
-- **release-engineer:** owns CI/Actions + PCF deploy; **prod is gated** (`release-gate` →
-  `production-change-gate`) and needs explicit human sign-off.
+- **Ship/deploy (human release owner):** CI/Actions + PCF deploy run the `github-actions-ci` /
+  `pcf-deploy` / `release-gate` playbooks; **prod is gated** (`release-gate` → `production-change-gate`)
+  and needs explicit human sign-off.
 - **→ runbook-author:** when a change introduces new operational steps.
 
 ### Worked example — "ship feature X with tests and a runbook" (where to parallelize)
@@ -70,7 +71,7 @@ The flow above is a **sequential spine** with **one parallel burst**. The main s
                                ▼  main session merges findings → one fix list
                        sde-engineer applies fixes  → re-verify   (evaluator-optimizer loop)
                                ▼
-                          [merge-gate] ─▶ release-engineer ([release-gate] → [production-change-gate] → pcf-deploy)
+                          [merge-gate] ─▶ human release owner ([release-gate] → [production-change-gate] → pcf-deploy)
                                ▼
                          runbook-author    (after final behavior + deploy steps are known)
 ```
@@ -94,9 +95,9 @@ The flow above is a **sequential spine** with **one parallel burst**. The main s
 ```
   alert / "X is broken/slow" ─▶ sre-engineer ──(Sev1/Sev2)──▶ incident-command (incident-severity)
                                   │  │  │                          │ (process, severity, comms, timeline)
-        researcher ◀─────────────┘  │  └─▶ release-engineer       ├─▶ main session runs strands:
+        researcher ◀─────────────┘  │  └─▶ release owner          ├─▶ main session runs strands:
         (unknown error / CVE,        │      (rollback-mitigation;   │    sre-engineer ∥ researcher ∥
-         KEV first)                   │       deploy = cause)        │    release-engineer ∥ sde-engineer
+         KEV first)                   │       deploy = cause)        │    release owner ∥ sde-engineer
                                       ▼                              ▼
                               sde-engineer                    runbook-author  ◀── capture what was learned
                               (durable root-cause fix)              ▲
@@ -111,11 +112,11 @@ The flow above is a **sequential spine** with **one parallel burst**. The main s
 - **sre-engineer + incident-command (`incident-severity`):** declare/run a major incident; technical RCA
   and process/comms run *in parallel*. `incident-severity` sizes severity, assigns roles, and owns the
   timeline + comms cadence — loaded in the main session.
-- **sre-engineer → release-engineer:** to execute a mitigation (`rollback-mitigation`) — **with human
+- **sre-engineer → human release owner:** to execute a mitigation (`rollback-mitigation`) — **with human
   confirmation**.
-- **sre-engineer → database-reliability:** when the incident is DB-driven (slow queries, lock/connection-
-  pool saturation, replication lag) — DBRE diagnoses and recommends; prod changes still go via
-  `release-engineer` under `production-change-gate`.
+- **sre-engineer loads the `database-reliability` skill:** when the incident is DB-driven (slow queries,
+  lock/connection-pool saturation, replication lag) — diagnose and recommend; prod changes still go
+  through a human release owner under `production-change-gate`.
 - **sre-engineer → sde-engineer:** to implement the confirmed root-cause fix.
 - **incident → runbook-author:** capture the procedure the incident exposed (with `blameless-postmortem`).
 - **→ sre-monitor:** close the detection gap so the failure class can't recur silently.

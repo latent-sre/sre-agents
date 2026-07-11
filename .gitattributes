@@ -1,8 +1,7 @@
-# Line-ending policy. The Copilot generators (scripts/sync-copilot.sh / .ps1) must read identical
-# source bytes on every OS — CRLF in the .claude/ sources breaks the Bash frontmatter parser (it keeps
-# the trailing \r, so the `--- ` fence never matches and frontmatter is copied untranslated). Force LF
-# for the text the fleet is authored in so both generators produce equivalent output. The Bash script
-# also strips \r defensively for already-CRLF working copies.
+# Line-ending policy: force LF for the text the fleet is authored in, so the pure-stdlib Python
+# validator and the Bash guard hooks (readonly-guard.py / production-change-guard.py, invoked via
+# POSIX shell) read identical bytes on every OS. CRLF breaks POSIX-shell hooks and the line-oriented
+# frontmatter parser (a trailing \r stops the `--- ` fence from matching).
 *.md   text eol=lf
 *.py   text eol=lf
 *.sh   text eol=lf

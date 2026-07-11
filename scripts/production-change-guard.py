@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""PreToolUse speed-bump for the prod executor (release-engineer).
+"""PreToolUse speed-bump for whatever agent runs prod `cf` commands.
 
-`release-engineer` is the fleet's unavoidable lethal-trifecta holder: it carries prod
+The prod executor is the fleet's unavoidable lethal-trifecta holder: it carries prod
 credentials, ingests untrusted content (CI logs, PR/issue text, webhook comments), AND can
 act externally (deploy/scale/restart prod via `cf`). The REAL control for that combination
 is the HARD human gate — the production-change-gate, enforced in GitHub via branch
 protection + protected environments with required reviewers — plus treating all log/PR/CI
 text as DATA, never instructions.
 
-This hook is the local SPEED-BUMP, not that control. Wired into release-engineer via its
-`hooks: PreToolUse` frontmatter, it intercepts the pending Bash tool call (same stdin-JSON
+This hook is the local SPEED-BUMP, not that control. Wired via the `hooks: PreToolUse`
+frontmatter of whatever agent runs `cf`, it intercepts the pending Bash tool call (same stdin-JSON
 contract as readonly-guard.py: read tool input, exit 0 to allow, exit 2 + stderr to block).
 It DETECTS state-changing `cf` commands and BLOCKS them UNLESS an explicit clearance signal
 is present — so a prod-mutating `cf` command can't fire from an un-cleared session by

@@ -1,10 +1,14 @@
 # Embedding the fleet in another repo (as a subdirectory)
 
 This guide explains how to drop this fleet into an existing repository as a **subdirectory** (a vendored
-folder) while keeping the agents, skills, and CI working. It is written for the "prep this side" case: the
+folder) while keeping the agents and skills working. It is written for the "prep this side" case: the
 content here is self-contained and portable; the only thing you must reconcile on the host side is the
-handful of **root-magic files** that Claude Code, VS Code/Copilot, and GitHub Actions only read from the
-**repo root**.
+handful of **root-magic files** that Claude Code and VS Code/Copilot only read from the **repo root**.
+
+> **Note (2026-07-11):** this fleet no longer ships a CI workflow (`.github/workflows/validate.yml`) or
+> Copilot-native `.github/agents/*.agent.md` wrappers — both tools read `.claude/` directly. The CI and
+> Copilot-wrapper sections below are kept as **illustrative templates** if you choose to add your own; run
+> `python3 scripts/validate_fleet.py` locally to validate.
 
 ## TL;DR
 

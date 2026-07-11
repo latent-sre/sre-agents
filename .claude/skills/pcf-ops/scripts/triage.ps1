@@ -40,6 +40,6 @@ Write-Section "done (read-only)"
 Next steps:
   - Correlate the first event/error timestamp with your last deploy (release pipeline / git log).
   - Logs older than the buffer -> splunk-triage (SPL). Metrics over time -> wavefront-queries (ts()).
-  - To MITIGATE (restart/scale/rollback/route remap) hand off to release-engineer; clear the
+  - To MITIGATE (restart/scale/rollback/route remap) hand off to a human release owner; clear the
     production-change-gate for prod. Do not mutate from here.
 "@
