@@ -61,7 +61,7 @@ targets it routes to when work leaves its lane.
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
 | [`runbook-author`](.claude/agents/runbook-author.md) | Create/update operational runbooks | docs | `runbook-template`, `blameless-postmortem` |
 | [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | `context-engineering` |
-| [`prompt-engineer`](.claude/agents/prompt-engineer.md) | Author/optimize LLM-facing artifacts — agent definitions, skills, prompts, tool descriptions, evals (incl. this fleet) | prompt artifacts | `prompt-craft`, `agent-architecture`, `tool-design`, `agent-security` |
+| [`prompt-engineer`](.claude/agents/prompt-engineer.md) | Author/optimize LLM-facing artifacts — agent definitions, skills, prompts, tool descriptions, evals (incl. this fleet) | prompt artifacts | `agent-authoring`, `tool-design`, `agent-security` |
 
 **Read-only agents** (no Edit/Write): `code-reviewer`, `security-reviewer`, `sre-engineer`, `researcher`.
 They report, recommend, and hand off. The three that keep `Bash` for observation (`code-reviewer`,

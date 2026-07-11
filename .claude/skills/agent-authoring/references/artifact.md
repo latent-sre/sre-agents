@@ -1,15 +1,4 @@
----
-name: prompt-craft
-description: >-
-  Author and optimize a single LLM-facing artifact — a system prompt, an agent definition, a
-  SKILL.md, a tool description, or a grader prompt. Use when creating one, or when one misbehaves:
-  a skill that never triggers or fires too often, an agent that ignores an instruction, output with
-  the wrong shape. Covers the eval-first loop, trigger-only descriptions, and matching the fix's
-  form to the failure. For roster/orchestration-level design use `agent-architecture`; for tools an
-  agent calls use `tool-design`.
----
-
-# Prompt craft
+# Artifact altitude — author and optimize one LLM-facing artifact
 
 A prompt is a spec. Edit it like code: reproduce the failure, make the minimal fix, verify, and
 know which *form* of fix the failure calls for. *[sourced: Anthropic prompt/skill authoring
@@ -73,7 +62,7 @@ prod via `production-change-gate` + branch protection.)*
 
 ## Handoffs
 
-- → `agent-architecture` when the fix is really a lane/roster/orchestration problem, not one artifact.
+- → [`roster.md`](roster.md) when the fix is really a lane/roster/orchestration problem, not one artifact.
 - → `agent-security` before shipping anything that ingests untrusted content.
 - → `self-improve-loop` to run the generate→evaluate→refine iteration on a measurable artifact.
 - → `sde-engineer` for validator/eval-harness code changes.

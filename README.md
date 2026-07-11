@@ -70,8 +70,8 @@ incident-command are **skills** — `route-request`, `incident-severity` — not
 - *Ladders* (2) · *Craft* (`craft` — one skill, six language files: Python/Bash/PowerShell/Go/TypeScript/React;
   plus `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`) · *Data* (`database-reliability`)
 - *Build ops tooling*: `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`
-- *Agent-system methods (Anthropic patterns)*: `context-engineering`, `tool-design`,
-  `agent-security`, `prompt-craft`, `agent-architecture`
+- *Agent-system methods (Anthropic patterns)*: `agent-authoring` (one skill, two tiers: artifact ·
+  roster) · `context-engineering` · `tool-design` · `agent-security`
 - *Observe/investigate (your stack)*: `pcf-ops`, `splunk-triage`,
   `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`, `thousandeyes-network`, `slo-error-budget`,
   `instrument-service`
@@ -99,7 +99,7 @@ hyphen `name` ≤64 chars matching the dir, `description` ≤1024 chars saying *
 **Agent or skill?** An **agent** exists when it needs a distinct tool-scope, a distinct guard posture, or
 is a recurring, separable domain lane with its own handoff edges. Everything else — altitude, method,
 checklist, playbook — is a **skill**. The full decision rule (and the roster-design method around it)
-lives in the [`agent-architecture`](.claude/skills/agent-architecture/SKILL.md) skill.
+lives in the [`agent-authoring`](.claude/skills/agent-authoring/SKILL.md) skill, roster tier.
 
 **The `skills:` frontmatter convention.** Only some agents declare a `skills:` block, and that is **by
 design**. When present it names the agent's *single primary* skill for discoverability

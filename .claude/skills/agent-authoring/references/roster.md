@@ -1,16 +1,4 @@
----
-name: agent-architecture
-description: >-
-  Design or restructure a multi-agent system: decide what should be an agent vs a skill, decompose
-  work into lanes, choose the orchestration shape (orchestrator-workers, pipeline, fan-out,
-  judge/adversarial verification), and define handoff contracts, tool authority, and context/token
-  budgets. Use when adding/splitting/merging agents in a roster (including this fleet), designing an
-  agent-based ops tool, or diagnosing cross-agent failures — context poisoning, telephone-game
-  information loss, duplicated work, runaway loops. For single-artifact wording use `prompt-craft`;
-  for fan-out cost mechanics see `route-request`'s fan-out reference.
----
-
-# Agent architecture
+# Roster altitude — design the agent system, not one artifact
 
 Multi-agent is an architecture decision with real costs — tokens, latency, and information loss at
 every handoff — justified only when one context genuinely can't hold the work, stages need isolation,
@@ -50,7 +38,7 @@ justification in the agent's own file (or an ADR if it reshapes the roster).
   drop constraints at every hop. (`researcher`'s cited-brief contract is the model.)
 - **Tools are authority.** The `tools:` list encodes the mandate — reviewers can't edit,
   researchers can't write. Enforce roles at the harness layer, not with prose.
-- **Descriptions route; keep them trigger-only** (see `prompt-craft`).
+- **Descriptions route; keep them trigger-only** (see [`artifact.md`](artifact.md)).
 - **Budget explicitly.** Tokens, latency, and strand count per task; right-size the fan-out: 1 agent
   for a lookup, 2–4 for a comparison or multi-lens review, more only for genuinely decomposable work.
 - **Design the failure path.** Decide up front what happens when a worker returns garbage, nothing,
@@ -67,6 +55,6 @@ waste · runaway loops with no dry-out condition · missing return contracts.
 
 A roster delta or design: each agent's lane, trigger description, tool authority, `model:` tier
 (update the policy tables in both validators), handoff edges (each agent's own body lists them),
-context budget, and failure handling. Capture roster-shaping decisions
-with `adr-template`. Hand wording to `prompt-craft`, implementation to `sde-engineer`, and
+context budget, and failure handling. Capture roster-shaping decisions with `adr-template`. Hand
+single-artifact wording to [`artifact.md`](artifact.md), implementation to `sde-engineer`, and
 injection surfaces to `agent-security`.
