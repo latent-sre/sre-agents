@@ -92,7 +92,8 @@ protection / environment reviewers, or Claude Code hooks.
 
 Agents and skills are plain Markdown. Add a skill: create `.claude/skills/<name>/SKILL.md` (lowercase-
 hyphen `name` ≤64 chars matching the dir, `description` ≤1024 chars saying *what + when*). Add an agent:
-`.claude/agents/<name>.md` with `name`, `description`, `tools`, `model`. Then run
+`.claude/agents/<name>.md` with `name`, `description`, and `tools` (no `model:` — agents inherit the
+session's model). Then run
 `python3 scripts/validate_fleet.py` to check it (or the upstream
 [`skills-ref`](https://github.com/agentskills/agentskills) validator).
 
@@ -127,8 +128,8 @@ unit-tested offline).
 ## Validate & operate
 
 - **Validate the fleet:** `python3 scripts/validate_fleet.py` (pure stdlib) checks every skill/agent
-  against the Agent Skills spec (names, descriptions, referenced files) and enforces the `model:` policy
-  and roster-doc coverage. Run it before committing.
+  against the Agent Skills spec (names, descriptions, referenced files) and enforces roster-doc
+  coverage. Run it before committing.
 - **Evals:** [`evals/`](evals/) holds scenario + grader pairs that check the fleet *behaves* (routing
   lands right, gates block, agents treat untrusted input as data). The **structural** checks run locally
   and offline — `run_evals.py --validate`, `discovery_probe.py --validate`, the read-only-guard tests,
@@ -138,6 +139,10 @@ unit-tested offline).
   must block, a guard that must deny, a routing/refusal decision) — grade the outcome, not the path. For
   prose-quality skills a keyword grader can't judge quality, so don't write a tautological eval to
   satisfy a rule.
+- **Delegation canary:** `AGENTS.md` and agent `description`s are delegation-load-bearing. After editing
+  either, re-run `python evals/discovery_probe.py --run --agents --match sre-engineer` in a throwaway
+  worktree. The 2026-07 AGENTS.md trim dropped incident delegation from 9/9 to 3/9 while every
+  structural check stayed green — only this probe caught it.
 - **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency timeout),
   authored with the `runbook-template` skill. **Fill the placeholders before treating them as live.**
 - **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),

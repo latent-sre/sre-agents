@@ -10,7 +10,6 @@ description: >-
   Investigates and recommends mitigation; does NOT deploy fixes or change prod. For incident
   process/comms, load `incident-severity`.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
-model: opus
 color: orange
 hooks:
   PreToolUse:

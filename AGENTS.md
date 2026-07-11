@@ -53,8 +53,8 @@ timestamps, blast radius, and `cf` output showing our app is healthy — not to 
 ## The roster (agents)
 
 Agents are **who** does the work; [skills](#skills) are **how**. Each agent loads the skills relevant
-to its lane on demand. Each agent's own file is the detail — lane, `model:`, tools, and the handoff
-targets it routes to when work leaves its lane.
+to its lane on demand. Each agent's own file is the detail — lane, tools, and the handoff targets it
+routes to when work leaves its lane. Agents are not pinned to a model; they inherit the session's.
 
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
