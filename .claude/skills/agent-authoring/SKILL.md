@@ -1,14 +1,13 @@
 ---
 name: agent-authoring
 description: >-
-  Author or fix anything an LLM consumes — an agent definition, a SKILL.md, a system prompt, a tool
-  description, a grader — and design the roster they live in. Use when writing one ("write me an
-  agent/skill/prompt"), when one misbehaves (a skill that never triggers or fires too often, an agent
-  that ignores an instruction, output with the wrong shape), or when the question is structural
-  (should this be an agent or a skill, split/merge lanes, orchestration shape, handoff contracts,
-  cross-agent failures like context poisoning or duplicated work). Two altitudes — read
-  `references/artifact.md` for a single artifact, `references/roster.md` for the roster/orchestration.
-  For tools an agent calls use `tool-design`; for injection surfaces use `agent-security`.
+  Use when creating or fixing anything an LLM consumes — a prompt, an agent definition, a SKILL.md, a
+  tool description, or a grader — or when designing the roster of agents they live in. Triggers:
+  "write me an agent/skill/prompt", "my skill never triggers", "it fires on almost every request",
+  "how do I rewrite this description", "the model keeps ignoring this instruction", "the output is the
+  wrong shape", "should this be an agent or a skill", "should we split this into subagents", "what
+  orchestration shape", "our agents duplicate work / lose context between handoffs". For tools an agent
+  calls use `tool-design`; for injection surfaces use `agent-security`.
 ---
 
 # Agent authoring — pick your altitude

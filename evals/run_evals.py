@@ -106,6 +106,10 @@ def run_agent(prompt: str, target: str) -> str:
     proc = subprocess.run(
         [claude, "-p", hint + prompt],
         capture_output=True, text=True, timeout=300, check=False,
+        # Decode as UTF-8 explicitly: text=True alone uses the locale codec, which on Windows is
+        # cp1252 and dies on the em-dashes/box-drawing the fleet emits. The reader thread then
+        # raises, stdout comes back None, and the grader fails with a confusing AttributeError.
+        encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         return f"[runner error rc={proc.returncode}] {proc.stderr.strip()}"
