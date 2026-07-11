@@ -54,10 +54,8 @@ see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom 
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | `agent-security` |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
-| [`database-reliability`](.claude/agents/database-reliability.md) | Safe schema migrations, query perf, durability (on-prem DBs) | code (migrations) | `database-reliability`, `safe-refactor`, `production-change-gate` |
 | [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder`, `triage-golden-signals`, `database-reliability`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
-| [`release-engineer`](.claude/agents/release-engineer.md) | CI/CD, deploys, rollbacks (Actions + PCF) | infra/CI | `github-actions-ci`, `pcf-deploy`, `bamboo-to-actions-migration`, `rollback-mitigation`, `release-gate` |
 | [`runbook-author`](.claude/agents/runbook-author.md) | Create/update operational runbooks | docs | `runbook-template`, `blameless-postmortem` |
 | [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | `context-engineering` |
 | [`prompt-engineer`](.claude/agents/prompt-engineer.md) | Author/optimize LLM-facing artifacts — agent definitions, skills, prompts, tool descriptions, evals (incl. this fleet) | prompt artifacts | `prompt-craft`, `agent-architecture`, `tool-design`, `agent-security` |
@@ -75,7 +73,7 @@ is a fast speed-bump on top of that, not a substitute for it.
 > request) and `incident-severity` (running a live incident) run in the **main session's** context. The
 > durable reason is cost, not capability: a coordinator *subagent* would double-pay the routing
 > round-trip and discard the main session's live context that the work actually needs — true even now
-> that Claude Code supports nested subagent dispatch. See [`docs/adr/0001-routing-and-incident-command-as-skills.md`](docs/adr/0001-routing-and-incident-command-as-skills.md).
+> that Claude Code supports nested subagent dispatch.
 
 > **Seniority/experience is carried by skills, not separate agents.** There is *one* `sde-engineer`
 > and *one* `sre-engineer`. They scale altitude by loading a **ladder skill** — pick the tier that
@@ -144,10 +142,10 @@ Gates are portable Markdown checklists by default. In Claude Code they can be **
 
 ### Typical flows
 - **Ship a feature:** `sde-engineer` → `code-reviewer` (+`security-reviewer` if sensitive) →
-  `test-engineer` → `merge-gate` → `release-engineer` (`release-gate` → `pcf-deploy`) →
+  `test-engineer` → `merge-gate`, then a human release owner runs `release-gate` → `pcf-deploy` →
   `runbook-author` if new ops steps.
 - **Production incident:** `sre-engineer` (triage + RCA) + `incident-severity` (severity, roles, comms, timeline);
-  `release-engineer` executes mitigation (`rollback-mitigation`); `sde-engineer` fixes root cause;
+  a human release owner executes mitigation (`rollback-mitigation`); `sde-engineer` fixes root cause;
   `runbook-author` captures it; `sre-monitor` closes the detection gap.
 - **Reliability hardening:** `sre-monitor` defines SLOs/alerts → `runbook-author` links runbooks.
 
@@ -173,43 +171,31 @@ Gates are portable Markdown checklists by default. In Claude Code they can be **
 
 ## Portability
 
-Authored once under `.claude/`, consumed by both tools:
+Authored once under `.claude/`, consumed by both tools with **zero extra steps** — Claude Code and
+VS Code / Copilot both read `.claude/agents/` and `.claude/skills/` directly:
 
-| Artifact | Claude Code reads | VS Code / Copilot reads |
-|---|---|---|
-| Agents | `.claude/agents/*.md` | `.claude/agents/` **and** `.github/agents/*.agent.md` |
-| Skills | `.claude/skills/*/SKILL.md` | `.claude/skills/` (Copilot reads these directly) |
-| Project guide | `CLAUDE.md` (imports this file) | `AGENTS.md` |
-| Copilot conventions | (see AGENTS.md) | [`.github/copilot-instructions.md`](.github/copilot-instructions.md) |
+| Artifact | Read by both tools |
+|---|---|
+| Agents | `.claude/agents/*.md` |
+| Skills | `.claude/skills/*/SKILL.md` |
+| Project guide | `CLAUDE.md` (Claude Code, imports this file) · `AGENTS.md` (other tools) |
 
-Both tools read `.claude/` directly, so the fleet works in Copilot with **zero extra steps**. For
-Copilot-native tool scoping (the `tools:` field translated to `.agent.md`'s array form — the generator
-translates *only* `tools:`, not `handoffs`/`target`) run the generator:
-
-```bash
-# from repo root — emits .github/agents/*.agent.md (committed, drift-gated); skills are not
-# mirrored (Copilot reads .claude/skills/ directly)
-bash scripts/sync-copilot.sh       # macOS / Linux / Windows (Git Bash)
-```
-
-The only non-portable seam is the agent `tools:` field (Claude uses `Read, Grep`; Copilot uses arrays
-like `['edit','search/codebase']`). Behavioral guardrails are written in each agent body (honored by
-both); the generator translates `tools` for Copilot and removes terminal access from read-only agents
-because Claude hooks are not portable. The translated names target **VS Code Copilot's** tool
-vocabulary (`search`/`edit`/`runCommands`); the github.com Copilot *coding agent* uses a different,
-incompatible vocabulary (a known upstream mismatch) and is out of scope for these wrappers.
+The one non-portable seam is the agent `tools:` field (Claude uses `Read, Grep`; Copilot expects arrays
+like `['edit','search/codebase']`), plus Claude-only `PreToolUse` hooks that don't cross to Copilot — so
+a read-only agent's guard is enforced by hooks under Claude Code and must be enforced by tool scoping
+under Copilot. Behavioral guardrails are written in each agent body and honored by both tools.
 
 ## Validate & operate
 
-- **Validate the fleet:** `python3 scripts/validate_fleet.py` (pure stdlib, the CI gate) checks every skill/agent against the
-  Agent Skills spec (names, descriptions, referenced files). Run it before committing or in CI.
+- **Validate the fleet:** `python3 scripts/validate_fleet.py` (pure stdlib) checks every skill/agent against the
+  Agent Skills spec (names, descriptions, referenced files). Run it before committing.
 - **Behavioral evals:** [`evals/`](evals/) holds scenario + grader pairs that check the fleet *behaves*
-  (routing lands right, gates block, agents treat untrusted input as data). **What CI gates vs. what is
-  manual:** CI enforces **structure only** — `python evals/run_evals.py --validate` and
-  `python evals/discovery_probe.py --validate` lint the suite, plus the read-only-guard and
-  production-change-guard tests and the grader/probe unit tests. The **behavioral** runs
-  (`run_evals.py --run`/`--ab`, discovery probing) need a Claude-enabled runner and are executed
-  **manually or on a schedule — they are NOT a merge gate.** Add a scenario when you add/change a skill
+  (routing lands right, gates block, agents treat untrusted input as data). **Structural vs. behavioral:**
+  the structural checks — `python evals/run_evals.py --validate` and
+  `python evals/discovery_probe.py --validate` (suite lint), plus the read-only-guard and
+  production-change-guard tests and the grader/probe unit tests — run locally (this fleet ships no CI
+  workflow). The **behavioral** runs (`run_evals.py --run`/`--ab`, discovery probing) need a
+  Claude-enabled runner and are executed **manually or on a schedule.** Add a scenario when you add/change a skill
   **whose outcome is gradeable** (a gate that must block, a guard that must deny, a routing/refusal
   decision); grade the outcome, not the path. For prose-quality skills a keyword grader can't judge
   quality, so a scenario is optional there — don't write a tautological eval to satisfy a rule.
@@ -226,6 +212,6 @@ incompatible vocabulary (a known upstream mismatch) and is out of scope for thes
 - **Claude Code:** describe the task; it routes via each agent's `description`. For multi-step or
   ambiguous work, invoke `/route-request` first (or let it route). Invoke a skill directly with `/skill-name`.
 - **VS Code / Copilot:** pick a custom agent from the Chat agents dropdown (or `/agents`); skills load
-  automatically or via `/` in chat. Run the generator first if you want `.github/agents` wrappers.
+  automatically or via `/` in chat (both read `.claude/` directly).
 - Agents and skills are plain Markdown — edit frontmatter (`tools`, `model`, `description`) or the body
   to tune behavior. Drop project-specific commands/links into the relevant skill.

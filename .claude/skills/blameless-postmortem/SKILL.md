@@ -47,7 +47,7 @@ Status: <draft|final>   Authors: <…>   Date: <…>
   ```
 - Each item is **owned, dated, tracked** — an un-owned action item is a wish. Route them:
   resilience/code → `sde-engineer`; detection/SLO → `sre-monitor`; deploy/rollback safety →
-  `release-engineer`; runbook → `runbook-author`.
+  a human release owner; runbook → `runbook-author`.
 - Be honest about what you don't know; mark unconfirmed causes as hypotheses with how you'd confirm.
 
 ## Lessons — include "where we got lucky"

@@ -81,4 +81,4 @@ notifications, release naming, **masked variables**, **artifact-expiry settings*
 - **Approvals:** Bamboo manual stages → environment required reviewers (not an `if:` you can bypass).
 - **Parallelism:** stages were sequential by default; Actions jobs are parallel by default — add
   `needs:` to preserve ordering.
-- Prod-deploy execution stays with `release-engineer` (+ `production-change-gate`).
+- Prod-deploy execution stays with a human release owner (+ `production-change-gate`).

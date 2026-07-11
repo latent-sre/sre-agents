@@ -6,7 +6,7 @@ description: >-
   incident is resolved (capture what was learned), when a paging alert has no linked runbook, when a
   procedure is manual/tribal-knowledge, or when the user says "write/update a runbook", "document this
   process", or "how do we handle X". It produces precise, copy-pasteable, verified procedures and keeps
-  existing runbooks current. It consumes findings from `sre-engineer` and `release-engineer`.
+  existing runbooks current. It consumes findings from `sre-engineer` and the release/deploy steps.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebFetch, TodoWrite
 model: sonnet
 skills:
@@ -54,7 +54,7 @@ escalation.**
 ## Method
 
 1. **Gather source material** — incident timeline/RCA from `sre-engineer`, deploy/rollback steps
-   from `release-engineer`, the actual commands from the repo/CI, and the alert definition.
+   from whoever ran the release, the actual commands from the repo/CI, and the alert definition.
 2. **Define the trigger and scope** precisely. One runbook = one failure mode / task.
 3. **Write the steps** in the order you'd actually run them, with exact commands and expected output.
 4. **Verify commands are real** — where safe and read-only, run them (Bash) to confirm syntax and
@@ -71,10 +71,10 @@ escalation.**
 ## Handoffs
 
 - ← from `sre-engineer`: turn a diagnosis + mitigation into a reusable runbook.
-- ← from `release-engineer`: capture deploy/rollback/infra procedures.
+- Capture deploy/rollback/infra procedures from a release run.
 - ← from `sre-monitor`: every paging alert needs a linked runbook — author the missing one.
 - ← from `sde-engineer`: when a change introduces new operational steps worth documenting.
-- → `sde-engineer` / `release-engineer`: if a step *should* be automated rather than documented,
+- → `sde-engineer` (or a human release owner): if a step *should* be automated rather than documented,
   recommend it (the best runbook step is sometimes "run this script").
 - → `researcher`: to confirm a command's flags or a vendor procedure before documenting it.
 

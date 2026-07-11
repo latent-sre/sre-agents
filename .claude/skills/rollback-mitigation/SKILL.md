@@ -4,13 +4,13 @@ description: >-
   The fast, safe mitigation playbook for a production incident on PCF — stop user pain first, before
   root cause. Use when an incident needs immediate mitigation: pick the fastest reversible action
   (route remap, revision rollback, restart, scale, flag flip) for the situation. State-changing: all of
-  these require human confirmation; sre-engineer recommends, release-engineer executes.
+  these require human confirmation; sre-engineer recommends, a human release owner executes.
 ---
 
 # Rollback & mitigation playbook (PCF)
 
 **Mitigate before you fully understand.** Stopping user pain comes before root cause. Pick the
-**fastest safe, reversible** action. `sre-engineer` recommends; `release-engineer` executes with human
+**fastest safe, reversible** action. `sre-engineer` recommends; a human release owner executes with human
 sign-off; in a major incident the incident commander (on-call lead running `incident-severity`) owns the decision.
 
 ## Choose the mitigation (fastest-safe-first)
@@ -37,5 +37,5 @@ sign-off; in a major incident the incident commander (on-call lead running `inci
    human sign-off (`production-change-gate`), then run.
 
 ## After mitigation
-User pain stopped ≠ incident over. Hand to `sre-engineer` for root cause and `release-engineer` for the
+User pain stopped ≠ incident over. Hand to `sre-engineer` for root cause and a human release owner for the
 fix forward; capture the procedure with `runbook-author`.

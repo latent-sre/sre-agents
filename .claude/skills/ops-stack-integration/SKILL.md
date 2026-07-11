@@ -36,7 +36,7 @@ first (`craft` (Python): `httpx`/`requests`).
 ## Per-integration notes (cite current product names)
 - **PCF / cf (CAPI V3, cf CLI v8):** prefer the `cf` CLI for one-shot ops; for programmatic work hit
   CAPI V3 JSON with a **UAA** token; page via `pagination.next.href`. **State-changing writes**
-  (restart/scale/route) are gated — human sign-off via `release-engineer`/`production-change-gate`.
+  (restart/scale/route) are gated — human sign-off via a human release owner/`production-change-gate`.
 - **Splunk (SPL):** create a **search job**, then *poll* it to completion and page results — don't block
   on a synchronous all-time search; bound the time range. Send via HEC.
 - **Wavefront (Aria Operations for Applications, WQL):** query `ts()` via the API with an API token;
@@ -62,4 +62,4 @@ and state-checked · responses parsed defensively · failures are loud and name 
 ## Handoffs
 - → `api-design` (expose the result as an HTTP layer) · `ops-cli` (expose it as a CLI) · `tool-design`
   (if an agent will drive it).
-- → `security-reviewer` (auth/secrets/scopes) · `release-engineer` for any gated cf/platform write.
+- → `security-reviewer` (auth/secrets/scopes) · a human release owner for any gated cf/platform write.

@@ -16,7 +16,7 @@ data* layer, not the DB platform internals.
 
 > **Safety rule (non-negotiable):** read-only inspection is fine; any **state-changing or prod-facing**
 > action (running a migration, `UPDATE`/`DELETE`, killing a query, failover, scaling) needs explicit
-> human confirmation and goes through `release-engineer` under `production-change-gate`. Show the plan
+> human confirmation and goes through a human release owner under `production-change-gate`. Show the plan
 > **and** the rollback before acting.
 
 ## Migrations must be safe and reversible

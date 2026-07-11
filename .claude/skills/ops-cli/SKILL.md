@@ -33,7 +33,7 @@ Typer CLI with `--json`, a real `--dry-run`, exit codes, and stdout/stderr disci
   dry-run computes the plan and calls nothing — prove it in a test with a spy (`craft` (Python)).
 - **Confirm destructive actions** unless `--yes`/`--force`; print the plan + what will change first.
 - **Idempotent and re-runnable** — re-running converges, doesn't double-apply. State-changing
-  cf/platform actions stay gated (human sign-off via `release-engineer`).
+  cf/platform actions stay gated (human sign-off via a human release owner).
 
 ## Config & secrets
 - **Precedence: flag > env > config file > default.** **Secrets come from env / service binding, never a
@@ -56,4 +56,4 @@ exit codes + dry-run covered by tests.
 ## Handoffs
 - → `ops-stack-integration` for the cf/Splunk/Wavefront calls it makes · `api-design`/`spa-architecture`
   if the same capability should also be an API/GUI.
-- → `security-reviewer` (secret handling) · `test-engineer` (coverage) · `release-engineer` to ship it.
+- → `security-reviewer` (secret handling) · `test-engineer` (coverage) · a human release owner to ship it.

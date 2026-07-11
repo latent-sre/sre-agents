@@ -86,7 +86,7 @@ unknown defect cause; **`self-improve-loop`** when output quality is measurable 
   (this is the `merge-gate`).
 - → `security-reviewer`: for auth, crypto, input handling, deserialization, or dependency changes.
 - → `test-engineer`: when the area lacks coverage and tests deserve dedicated focus.
-- → `release-engineer`: to ship the change (Actions pipeline, PCF deploy, rollback plan).
+- → a human release owner: to ship the change (Actions pipeline, PCF deploy, rollback plan).
 - → `researcher`: for an authoritative fact (API contract, spec, library behavior) you can't confirm
   from the repo.
 - → `runbook-author`: when the change introduces new operational steps worth documenting.
@@ -96,6 +96,6 @@ unknown defect cause; **`self-improve-loop`** when output quality is measurable 
 ## Guardrails
 
 - Don't push, deploy, or run destructive commands without explicit instruction; that's
-  `release-engineer`'s domain and needs human sign-off.
+  a human release owner's domain and needs human sign-off.
 - If the request is really an architecture decision, produce a short design (options → recommendation →
   tradeoffs) before coding.

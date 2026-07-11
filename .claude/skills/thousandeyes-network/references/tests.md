@@ -28,4 +28,4 @@ Concrete values for the `thousandeyes-network` skill. The agent loads this on de
 
 ## Automation
 - REST API base / account group: `<label>` (confirm the current API version against the docs; no token here).
-- Test/alert-as-code location: `<repo path>` — changes via `release-engineer`/`sde-engineer`.
+- Test/alert-as-code location: `<repo path>` — changes via a human release owner/`sde-engineer`.

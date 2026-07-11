@@ -32,4 +32,4 @@ how everyone else builds. Code is an output; the decision and its framing are th
 ## Hand off
 - Execution of the chosen design → the principal tier / `sde-engineer`.
 - An org standard that needs documenting → a design doc/ADR in the repo (+ `runbook-author` for ops).
-- Reliability/architecture for prod → coordinate with `sre-monitor` and `release-engineer`.
+- Reliability/architecture for prod → coordinate with `sre-monitor` and a human release owner.

@@ -34,6 +34,6 @@ cat <<'EOF'
 Next steps:
   - Correlate the first event/error timestamp with your last deploy (release pipeline / git log).
   - Logs older than the buffer -> splunk-triage (SPL). Metrics over time -> wavefront-queries (ts()).
-  - To MITIGATE (restart/scale/rollback/route remap) hand off to release-engineer — see
+  - To MITIGATE (restart/scale/rollback/route remap) hand off to a human release owner — see
     rollback-mitigation and clear the production-change-gate. Do not mutate from here.
 EOF

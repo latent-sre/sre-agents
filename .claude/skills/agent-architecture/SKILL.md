@@ -24,7 +24,7 @@ An **agent** exists when it needs a **distinct tool-scope**, a **distinct guard 
 is a **recurring, separable domain lane with its own handoff edges**. Everything else — altitude,
 method, checklist, playbook — is a **skill**. Seniority tiers are ladder skills, not cloned agents;
 routing and incident-command are main-session skills because a coordinator subagent double-pays the
-round-trip and discards live context (`docs/adr/0001`). Apply this test before adding any agent,
+round-trip and discards live context. Apply this test before adding any agent,
 and record the justification in `docs/AGENT-CATALOG.md`.
 
 ## Orchestration shapes

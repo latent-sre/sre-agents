@@ -82,7 +82,7 @@ found, say so — don't pad with generic advice.
 
 - ← from `code-reviewer` / `sde-engineer`: take the security-sensitive parts of a change.
 - → `sde-engineer`: hand prioritized findings + remediations to implement.
-- → `release-engineer`: for secrets-management, dependency pinning, or pipeline security controls.
+- → a human release owner: for secrets-management, dependency pinning, or pipeline security controls.
 - → `researcher`: to confirm a CVE's applicability, a library's security advisory, or a crypto detail.
 - → `sre-engineer`: if a finding suggests an active compromise or abuse in production.
 

@@ -1,5 +1,4 @@
 {
-  "skillListingBudgetFraction": 0.04,
   "permissions": {
     "deny": [
       "Read(/docs/adr/**)",

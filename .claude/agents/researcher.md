@@ -64,7 +64,7 @@ Caveats & open questions: <…>
 
 ## Handoffs
 
-- ← from any agent (`sde-engineer`, `sre-engineer`, `code-reviewer`, `release-engineer`,
+- ← from any agent (`sde-engineer`, `sre-engineer`, `code-reviewer`,
   `runbook-author`, `sre-monitor`): answer their specific factual question and return.
 - → back to the requester with the cited answer. You do not implement, fix, or operate — you inform.
 - If research reveals the task needs domain action (a code change, config, investigation step),

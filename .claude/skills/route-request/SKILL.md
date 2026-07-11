@@ -25,11 +25,11 @@ something on fire?).
 | "is this secure / auth / secrets / deps" | `security-reviewer` | → `sde-engineer` to fix |
 | "write tests / add coverage" | `test-engineer` | → `sde-engineer` if it reveals a bug |
 | "failing test / flaky build / bug, cause unknown" | `sde-engineer` (or `test-engineer`) + **`debug-rca`** skill | → `sde-engineer` for the fix; → `sre-engineer` if it's actually a prod incident |
-| "DB schema/migration / slow query / DB incident" | `database-reliability` (loads the **`database-reliability`** skill; pairs with `sde-engineer` on query/ORM code) | → `code-reviewer` → **`merge-gate`**; prod migration → `release-engineer` runs it under **`production-change-gate`** |
-| "X is broken / slow / erroring / alerting" | `sre-engineer` (`sre-ladder` by depth) | → run the incident-command process (`incident-severity`) if major; → `release-engineer` to mitigate |
+| "DB schema/migration / slow query / DB incident" | `sde-engineer` (loads the **`database-reliability`** skill for schema/query/ORM work) | → `code-reviewer` → **`merge-gate`**; prod migration → a human release owner runs it under **`production-change-gate`** |
+| "X is broken / slow / erroring / alerting" | `sre-engineer` (`sre-ladder` by depth) | → run the incident-command process (`incident-severity`) if major; → a human release owner to mitigate |
 | "run the incident / comms / who's doing what" | load **`incident-severity`** (severity, roles, comms, timeline) | ⇄ `sre-engineer` (technical RCA) in parallel |
 | "set up monitoring / noisy alert / define SLO" | `sre-monitor` | → `runbook-author` for alert runbooks |
-| "ship / release / deploy / roll back / move off Bamboo" | `release-engineer` | **`release-gate`** + **`production-change-gate`** for prod |
+| "ship / release / deploy / roll back / move off Bamboo" | a human release owner (**`pcf-deploy`** / **`bamboo-to-actions-migration`** / **`rollback-mitigation`**) | **`release-gate`** + **`production-change-gate`** for prod |
 | "write/update a runbook / document this" | `runbook-author` | — |
 | "write/tune an agent, skill, or prompt / skill never triggers / agent ignores instruction" | `prompt-engineer` (loads **`prompt-craft`** for one artifact, **`agent-architecture`** for roster/orchestration design) | → `security-reviewer` if the artifact ingests untrusted input; → `code-reviewer` for gate/guard wording changes |
 | any agent is missing a fact | `researcher` | → back to the requester |

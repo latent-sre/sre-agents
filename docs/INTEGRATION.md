@@ -1,19 +1,23 @@
 # Embedding the fleet in another repo (as a subdirectory)
 
 This guide explains how to drop this fleet into an existing repository as a **subdirectory** (a vendored
-folder) while keeping the agents, skills, and CI working. It is written for the "prep this side" case: the
+folder) while keeping the agents and skills working. It is written for the "prep this side" case: the
 content here is self-contained and portable; the only thing you must reconcile on the host side is the
-handful of **root-magic files** that Claude Code, VS Code/Copilot, and GitHub Actions only read from the
-**repo root**.
+handful of **root-magic files** that Claude Code and VS Code/Copilot only read from the **repo root**.
+
+> **Note (2026-07-11):** this fleet no longer ships a CI workflow (`.github/workflows/validate.yml`) or
+> Copilot-native `.github/agents/*.agent.md` wrappers — both tools read `.claude/` directly. The CI and
+> Copilot-wrapper sections below are kept as **illustrative templates** if you choose to add your own; run
+> `python3 scripts/validate_fleet.py` locally to validate.
 
 ## TL;DR
 
 - **The scripts are already location-robust.** `scripts/validate_fleet.py` resolves its root from
-  `__file__`; `scripts/sync-copilot.sh` resolves from `BASH_SOURCE`. They run correctly from any working
-  directory and at any nesting depth — no edits needed.
+  `__file__`. It runs correctly from any working directory and at any nesting depth — no edits needed.
 - **The discovery files are NOT location-robust** — by design, the tools only look at the repo root:
   - Claude Code reads `./.claude/agents`, `./.claude/skills`, and `./CLAUDE.md` from the **repo root**.
-  - VS Code/Copilot reads `./.claude/` and `./.github/agents/*.agent.md` from the **repo root**.
+  - VS Code/Copilot reads `./.claude/` from the **repo root** (this fleet does not ship `.github/agents/*.agent.md`
+    wrappers — if you want them, provide your own in the host repo).
   - GitHub Actions only runs workflows in `./.github/workflows/` at the **repo root**.
 - So: vendor the whole tree under a subdirectory for storage, then **surface** the root-magic files to the
   host root (symlink or copy). Pick one of the two strategies below.
@@ -115,12 +119,10 @@ jobs:
 
 Notes:
 - `working-directory` does **not** apply to `uses:` steps, only `run:` steps — that's fine here.
-- The **Copilot drift gate** from the original workflow (`git status --porcelain .github/agents/`) needs
-  care when nested: `scripts/sync-copilot.sh` writes wrappers to `tools/sre-agents/.github/agents/`
-  (relative to the vendored root), but Copilot actually reads the **host-root** `.github/agents/`. If you
-  rely on the generated `.agent.md` wrappers, decide which `.github/agents/` is authoritative and point the
-  drift check at it. If you only use Claude Code (or Copilot reading `.claude/` directly), you can drop the
-  drift gate entirely.
+- This fleet does **not** ship a `scripts/sync-copilot.sh` or `.github/agents/*.agent.md` wrappers — both
+  Claude Code and Copilot read `.claude/` directly. If the host repo adds its own `.agent.md` wrappers and
+  a drift gate, point the drift check at the host-root `.github/agents/` (not the vendored copy). If you
+  only use `.claude/`-based discovery you can skip the drift gate entirely.
 - The `tools/chaos_game.py` smoke-compile step from the original workflow is repo-demo scaffolding; keep it
   only if you vendor `tools/`.
 

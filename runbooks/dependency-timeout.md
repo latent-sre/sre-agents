@@ -34,7 +34,7 @@ Latency SLO burn + timeout/upstream errors for `<APP>`; ThousandEyes alert on `<
    (pool exhaustion / bad config) → `sre-engineer` + `sde-engineer`.
 
 ## Procedure
-> State changes are **recommend-only**; hand to `release-engineer`, clear `production-change-gate`, confirm.
+> State changes are **recommend-only**; hand to a human release owner, clear `production-change-gate`, confirm.
 1. **Reduce blast radius / degrade gracefully:** if `<APP>` supports it, fail over to a healthy
    `<DEP>` instance/region, serve cached/stale data, or disable the non-critical feature that needs
    `<DEP>` (feature flag).

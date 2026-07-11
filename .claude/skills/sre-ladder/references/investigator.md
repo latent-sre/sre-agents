@@ -42,6 +42,6 @@ it's a systemic/distributed failure mode needing prevention design.
 
 ## Hand off
 - Major incident → run the incident-command process (`incident-severity`: severity, roles, comms, timeline) while you keep investigating.
-- Mitigation → `release-engineer` (`rollback-mitigation`). Durable code fix → `sde-engineer`.
+- Mitigation → a human release owner (`rollback-mitigation`). Durable code fix → `sde-engineer`.
 - Capture → `runbook-author`; close the detection gap → `sre-monitor`.
 - Systemic/distributed failure needing prevention design → the elite tier.

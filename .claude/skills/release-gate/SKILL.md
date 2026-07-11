@@ -9,7 +9,7 @@ description: >-
 
 # Release gate
 
-A release proceeds only when **all** of these pass. Owned by `release-engineer`. For a prod target, also
+A release proceeds only when **all** of these pass. Owned by a human release owner. For a prod target, also
 clear **`production-change-gate`**.
 
 ## Checklist

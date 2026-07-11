@@ -54,10 +54,10 @@ def test_agent_task_nesting() -> None:
     check(out["agent"] == ["sre-engineer"], "Task subagent_type parsed as agent")
     # 'Agent' name also accepted.
     blob2 = _line({"type": "x", "input": {}, "content": [
-        {"type": "tool_use", "name": "Agent", "input": {"subagent_type": "release-engineer"}}
+        {"type": "tool_use", "name": "Agent", "input": {"subagent_type": "sre-engineer"}}
     ]})
     out2 = dp._invocations_from_stream(blob2)
-    check(out2["agent"] == ["release-engineer"], "Agent tool_use parsed as agent")
+    check(out2["agent"] == ["sre-engineer"], "Agent tool_use parsed as agent")
 
 
 def test_regex_fallback_on_malformed() -> None:

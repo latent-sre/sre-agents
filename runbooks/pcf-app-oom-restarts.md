@@ -38,7 +38,7 @@ shows instances cycling. Dashboard: `<grafana/wavefront link>`.
    - **Not OOM** (crashes for another reason) → escalate to `sre-engineer` using `sre-ladder` investigator tier.
 
 ## Procedure
-> All state changes below are **recommend-only**; hand to `release-engineer`, clear
+> All state changes below are **recommend-only**; hand to a human release owner, clear
 > `production-change-gate`, and confirm before executing.
 1. **If a recent deploy caused it — roll back** (fastest, reversible). Pick by what's available:
    - **Named blue-green** and the previous app still exists → remap the prod route back to it (instant,

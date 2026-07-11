@@ -33,13 +33,13 @@ Refs:         <links: PR, dashboard, logs, runbook, ticket>
 - **Evidence travels with claims.** Anything load-bearing carries its source; label anything unverified
   so the receiver doesn't trust a guess.
 - **State what you did NOT do** — especially read-only → write handoffs (e.g. `sre-engineer` →
-  `release-engineer`: "I changed nothing in prod; recommended mitigation is X with rollback Y").
+  a human release owner: "I changed nothing in prod; recommended mitigation is X with rollback Y").
 - **Right-size it.** Enough to start cold; not a transcript. Link the detail, summarize the decision.
 - **Prod-facing handoffs** carry the plan + rollback and require `production-change-gate`.
 
 ## Common handoffs
 - `sde-engineer` → `code-reviewer`: diff + intent + what you tested (the `merge-gate`).
 - `sre-engineer` → incident command (`incident-severity`): symptom, severity, blast radius, timeline so far.
-- `sre-engineer` → `release-engineer`: recommended mitigation + exact rollback (you don't execute).
+- `sre-engineer` → a human release owner: recommended mitigation + exact rollback (you don't execute).
 - `*` → `researcher`: the precise question + what decision it informs.
 - `*` → `runbook-author`: the procedure/diagnosis to capture, with verified commands.

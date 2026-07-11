@@ -69,6 +69,6 @@ pagination capped · health endpoint present · tests cover the contract and the
 
 ## Handoffs
 - → `spa-architecture` to build/refresh the GUI client against this contract.
-- → `security-reviewer` (auth/input/CORS), `database-reliability` (queries/indexes behind it),
+- → `security-reviewer` (auth/input/CORS), the `database-reliability` skill (queries/indexes behind it),
   `test-engineer` (contract + error-path coverage), `tool-design` if an agent will drive the API,
-  `release-engineer` to ship it on PCF.
+  a human release owner to ship it on PCF.

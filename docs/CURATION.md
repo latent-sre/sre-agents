@@ -77,7 +77,7 @@ For Mode B, these assert "we are an on-prem PCF, no-Kubernetes shop" and will re
 - `README.md` — the "Built for an application-operations team on on-prem + PCF, no Kubernetes…" blurb.
 - `CLAUDE.md` — inherits the framing via the `@AGENTS.md` import; check the Claude-specifics section for
   PCF/`cf` mentions (e.g. the `pcf-deploy` hook example).
-- Most **agent bodies** (`sre-engineer`, `sre-monitor`, `release-engineer`, `database-reliability`) name the
+- Most **agent bodies** (`sre-engineer`, `sre-monitor`) name the
   stack tools in their lane descriptions; their *behavioral* guidance is generic.
 - `runbooks/` — the three starters (PCF OOM, 5xx-after-deploy, dependency timeout) use Splunk SPL and PCF
   verbs. Keep as same-stack examples, or replace with your platform's equivalents.
@@ -110,8 +110,8 @@ agents are worse) while making the swap a single-file edit.
    >     or delete it — and update `AGENTS.md`'s skill list, `README.md`, and any agent that references it.
    > (c) Genericize the **Tier 3** framing to describe our environment; replace the PCF/no-K8s assertions.
    > (d) Fill in every `.claude/skills/*/references/*.md` with our real (non-secret) values.
-   > After changes, run `python3 scripts/validate_fleet.py` and `bash scripts/sync-copilot.sh`, and fix any
-   > drift. Report what you kept, swapped, and dropped, with file:line evidence.
+   > After changes, run `python3 scripts/validate_fleet.py` and fix any issues. Report what you kept,
+   > swapped, and dropped, with file:line evidence.
 
 4. Validate: `python3 scripts/validate_fleet.py` (CI gate) + re-run the Copilot sync.
 

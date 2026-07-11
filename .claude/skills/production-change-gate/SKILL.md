@@ -12,7 +12,7 @@ description: >-
 
 Any action that touches production must clear this gate **before execution**. This is the embodiment of
 our **"prod-facing actions require explicit human confirmation"** rule. `sre-engineer`/`sde-engineer`
-*recommend*; `release-engineer` *executes*; a human *approves*.
+*recommend*; a human release owner *executes*; a human *approves*.
 
 > **How it layers with `release-gate`:** `release-gate` checks whether a *build/release* is **ready** to
 > ship (artifact, migrations, flags, rollback). This gate authorizes the **prod change itself** — and

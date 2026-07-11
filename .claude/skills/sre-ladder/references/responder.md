@@ -32,7 +32,7 @@ Move up to the investigator tier the moment first response isn't enough and you 
 - What you have **not** touched. If you changed anything, say exactly what.
 
 ## Do no harm
-- Never run a mutating/remediation command in prod on your own. Recommend it; let `release-engineer`
+- Never run a mutating/remediation command in prod on your own. Recommend it; let a human release owner
   execute with sign-off.
 - If a runbook step is destructive, stop and confirm with someone senior.
 - When unsure, escalate. The speed of the *right* escalation beats a risky guess.

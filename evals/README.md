@@ -78,8 +78,8 @@ write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 > **Important limitation — measures delegation propensity, not routing quality.** Headless `claude -p`
 > often answers a request *inline* instead of delegating, so a low agent score is **not** a fleet
 > routing fault. The 2026-06 baseline was **4/12**: `security-reviewer` and `sre-engineer` routed
-> 2/2 (investigative/review work naturally spins up a subagent), while `database-reliability`,
-> `release-engineer`, and `runbook-author` were handled inline (`saw: none`) and `sde-engineer`
+> 2/2 (investigative/review work naturally spins up a subagent), while `runbook-author` (and the
+> since-removed `database-reliability` / `release-engineer` agents) were handled inline (`saw: none`) and `sde-engineer`
 > delegated to the built-in `Explore` agent. The authoritative test of *routing correctness* is the
 > `route-request` skill's decision (see `run_evals.py`'s `route-request-*` scenario), not headless
 > delegation. These scenarios are kept as a working capability + a documented baseline, not a gate.

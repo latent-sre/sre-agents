@@ -117,5 +117,5 @@ JWTs). Always clear `release-gate` + `production-change-gate` first.
 - Validate locally where possible (`act`, or `gh workflow run` + `gh run watch`).
 - Reproduce a failing run from logs before editing blindly; most failures are env/permission/secret,
   not YAML syntax.
-- The actual deploy step is prod-facing → it belongs to `release-engineer` and clears `release-gate` +
+- The actual deploy step is prod-facing → it belongs to a human release owner and clears `release-gate` +
   `production-change-gate`.

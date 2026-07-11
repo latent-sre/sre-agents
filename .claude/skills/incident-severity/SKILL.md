@@ -38,11 +38,11 @@ becomes clear.
 Once declared, someone owns the **response** — the **incident commander** (often the on-call lead), who
 runs the *process*, not the debugging, keeping the response moving toward mitigation.
 - **Coordinate, don't solo-debug.** The moment the IC is heads-down in logs, nobody is commanding.
-  Delegate technical RCA to `sre-engineer` and remediation to `release-engineer`.
+  Delegate technical RCA to `sre-engineer` and remediation to a human release owner.
 - **Mitigate first.** User pain stops before root cause is found — push for the fastest safe, reversible
   mitigation (`rollback-mitigation`) and make that call explicit.
 - **One source of truth.** Keep a single running **timeline** (UTC) of what's known, tried, and next.
-- **Assign roles:** Investigation lead (`sre-engineer`), Ops/remediation (`release-engineer`), Comms/scribe
+- **Assign roles:** Investigation lead (`sre-engineer`), Ops/remediation (a human release owner), Comms/scribe
   (the IC, or a delegate on a large SEV1). Confirm who owns what.
 - **Track every action** — each "someone should…" becomes an owned, tracked item.
 - **Resolve & close.** Confirm impact has ended (verify via `sre-monitor`/the investigator), send the
