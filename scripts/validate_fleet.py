@@ -11,7 +11,7 @@ Checks, per the spec at https://agentskills.io/specification :
             chars, lowercase a-z/0-9/hyphen with no leading/trailing/consecutive hyphen; `description`
             present, non-empty, <= 1024 chars; referenced files (references/ assets/ scripts/) exist.
   Agents  - frontmatter present; `name` valid charset and matches the filename; `description` present;
-            read-only Bash agents declare the readonly-guard.py hook; model: matches the model policy.
+            read-only Bash agents declare the readonly-guard.py hook.
   Scope   - no agent/skill *promotes* off-charter tooling (Kubernetes/IaC/Prometheus); our runtime is
             on-prem + PCF and observability is Wavefront/Splunk/Grafana. Charter disclaimers and
             portability/equivalence notes are allowlisted below.
@@ -200,35 +200,6 @@ def main():
             body = read_raw(afull)
             if not re.search(r'readonly-guard\.py', body):
                 issues.append("agent '%s': read-only Bash agent is missing readonly-guard.py hook" % a)
-
-    # ---- Model policy ----
-    model_policy = {
-        'sde-engineer':         'opus',
-        'prompt-engineer':      'opus',
-        'code-reviewer':        'opus',
-        'security-reviewer':    'opus',
-        'sre-engineer':         'opus',
-        'researcher':           'sonnet',
-        'runbook-author':       'sonnet',
-        'sre-monitor':          'sonnet',
-        'test-engineer':        'sonnet',
-    }
-    for a in agent_files:
-        base = a[:-3]
-        if base not in model_policy:
-            issues.append(
-                "model-policy: agent '%s' is not listed in the documented model policy "
-                "(model_policy in this script) -- add it with its intended model." % base
-            )
-            continue
-        fm = get_frontmatter(os.path.join(agents_dir, a))
-        model = get_field(fm, 'model') if fm is not None else None
-        expected = model_policy[base]
-        if model != expected:
-            issues.append(
-                "model-policy: agent '%s' has model '%s' but policy requires '%s' "
-                "(see CLAUDE.md model policy)." % (base, model, expected)
-            )
 
     # ---- Roster coverage (docs that enumerate the roster must name every agent) ----
     # A past agent addition silently missed README.md and the roster docs;

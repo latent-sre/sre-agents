@@ -54,7 +54,6 @@ prod via `production-change-gate` + branch protection.)*
 - Frontmatter rules: `name` = dir/filename, charset `[a-z0-9-]`, description ≤1024 chars —
   enforced by `scripts/validate_fleet.py` (CI gate). Keep descriptions lean: every skill
   description loads into the listing budget each session.
-- `model:` changes must update the policy table in `scripts/validate_fleet.py` in the same commit.
 - Add an eval scenario under `evals/` only when the outcome is gradeable (gate blocks, route lands,
   refusal happens) — no tautological evals for prose-quality skills.
 - House style: trigger-style descriptions, `[verified]/[sourced]/[unverified]` labels, lead with

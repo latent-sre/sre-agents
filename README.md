@@ -92,7 +92,8 @@ protection / environment reviewers, or Claude Code hooks.
 
 Agents and skills are plain Markdown. Add a skill: create `.claude/skills/<name>/SKILL.md` (lowercase-
 hyphen `name` ≤64 chars matching the dir, `description` ≤1024 chars saying *what + when*). Add an agent:
-`.claude/agents/<name>.md` with `name`, `description`, `tools`, `model`. Then run
+`.claude/agents/<name>.md` with `name`, `description`, and `tools` (no `model:` — agents inherit the
+session's model). Then run
 `python3 scripts/validate_fleet.py` to check it (or the upstream
 [`skills-ref`](https://github.com/agentskills/agentskills) validator).
 
@@ -127,8 +128,8 @@ unit-tested offline).
 ## Validate & operate
 
 - **Validate the fleet:** `python3 scripts/validate_fleet.py` (pure stdlib) checks every skill/agent
-  against the Agent Skills spec (names, descriptions, referenced files) and enforces the `model:` policy
-  and roster-doc coverage. Run it before committing.
+  against the Agent Skills spec (names, descriptions, referenced files) and enforces roster-doc
+  coverage. Run it before committing.
 - **Evals:** [`evals/`](evals/) holds scenario + grader pairs that check the fleet *behaves* (routing
   lands right, gates block, agents treat untrusted input as data). The **structural** checks run locally
   and offline — `run_evals.py --validate`, `discovery_probe.py --validate`, the read-only-guard tests,

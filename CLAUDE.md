@@ -27,24 +27,17 @@ This repo's full guide lives in [AGENTS.md](AGENTS.md) (the cross-tool source of
   limit no longer applies, but that cost argument still holds; re-promoting an orchestration agent should be
   gated on an A/B that beats the skill.
 
-### Model policy (the `model:` frontmatter)
+### No pinned models
 
-Model choice follows the **nature of the work, not the seniority of the role** (seniority is the ladder
-skills). The rule: **`opus` for open-ended reasoning under ambiguity where a wrong call is expensive and
-hard to catch; `sonnet` for structured work that follows a defined method, checklist, or template.**
+Agents declare **no `model:` frontmatter** — they inherit whatever model the session is running. Pick the
+model once (`/model`, or your Copilot setting) and the whole fleet follows it. Nothing to keep in sync,
+and no policy table to update when the model lineup changes.
 
-- **`opus` (5):** `sde-engineer` (design/write code), `code-reviewer` (find the bug that has no test),
-  `security-reviewer` (adversarial threat reasoning), `sre-engineer` (hypothesis-driven RCA),
-  `prompt-engineer` (diagnosing ambiguous prompt/agent failures — a wrong call ships a subtly broken
-  artifact the whole fleet runs on). These hinge on getting an open-ended judgment *right*.
-- **`sonnet` (4):** `researcher`, `runbook-author`, `sre-monitor`, `test-engineer`.
-  Each runs a **defined procedure** — a source-and-cite loop, a runbook template, alert/SLO config, or a
-  test plan. (Routing and the incident lifecycle are the `sonnet`-class skills `route-request` /
-  `incident-severity`, run in the main session.)
-- **Tuning:** `model:` is Claude-specific frontmatter (Copilot ignores it and uses its own selection).
-  Change it per agent as your team sees fit — but it is an **enforced** policy, not a free-for-all:
-  `scripts/validate_fleet.py` is the source of truth and **fails validation** on any agent whose `model:`
-  doesn't match its table, so edit the table in the same commit.
+If you later want a specific agent on a specific model, add `model:` to that one agent's frontmatter —
+it's a Claude-only field (Copilot ignores it and uses its own selection). Prefer a stronger session model
+over per-agent pins: the agents that most reward it (`sde-engineer`, `code-reviewer`, `security-reviewer`,
+`sre-engineer`, `prompt-engineer` — open-ended judgment where a wrong call is expensive and hard to catch)
+are the ones you'd pin anyway.
 
 ## VS Code / Copilot
 

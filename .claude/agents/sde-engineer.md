@@ -10,7 +10,6 @@ description: >-
   off to `code-reviewer` before declaring done, `security-reviewer` for sensitive changes, and
   `test-engineer` when coverage is thin.
 tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, WebSearch, WebFetch
-model: opus
 color: blue
 ---
 

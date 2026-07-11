@@ -9,7 +9,6 @@ description: >-
   "is this correct", or before a release. It is READ-ONLY: it reports findings and suggested fixes
   but does not edit code itself. For security-specific depth, also use `security-reviewer`.
 tools: Read, Grep, Glob, Bash, TodoWrite
-model: opus
 skills:
   - merge-gate
 color: yellow

@@ -8,7 +8,6 @@ description: >-
   isn't certain from the current context — before guessing an API contract, a config key, a CLI flag,
   or "did this change between versions". It is READ-ONLY and does not modify code or systems.
 tools: Read, Grep, Glob, WebSearch, WebFetch, TodoWrite
-model: sonnet
 color: purple
 ---
 

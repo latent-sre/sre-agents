@@ -10,7 +10,6 @@ description: >-
   detection gap. It owns observability-as-code (alert rules, dashboard JSON, SLO configs). For an
   active, unknown-cause incident, hand off to `sre-engineer`.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
-model: sonnet
 color: cyan
 ---
 

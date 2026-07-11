@@ -8,7 +8,6 @@ description: >-
   tests (it CAN edit test files) but focuses on the test surface, handing feature/code changes to
   `sde-engineer`. Complements `code-reviewer` (which judges existing tests).
 tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
-model: sonnet
 skills:
   - tdd-workflow
 color: green
