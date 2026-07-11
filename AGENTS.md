@@ -4,8 +4,8 @@ A portable roster of **AI agents and Agent Skills** for application software dev
 reliability work. The definitions live once under [`.claude/`](.claude/) and are read **natively by
 both Claude Code and VS Code / GitHub Copilot**. [CLAUDE.md](CLAUDE.md) imports this file for Claude Code.
 
-**Route work to the fleet — don't do it all in the main session.** Describe the task and it routes by
-each agent's `description`; for multi-step or ambiguous work load `route-request` first to produce a
+**Route work to the fleet — don't do it all in the main session.** Describe the task and it routes based on
+each agent's `description`; for multi-step or ambiguous work invoke `/route-request` first to produce a
 delegation plan. A production incident goes to `sre-engineer`, a diff to `code-reviewer`, code to
 `sde-engineer` — delegate to the specialist rather than answering inline. Invoke a skill directly with
 `/skill-name`.
