@@ -159,7 +159,12 @@ def run_trial(prompt: str, settings: str | None, timeout: int) -> dict[str, list
     if settings:
         cmd += ["--settings", settings]
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
+        # encoding/errors: text=True alone decodes with the locale codec (cp1252 on Windows), which
+        # dies on non-latin-1 bytes in the model's output and yields stdout=None. Force UTF-8.
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, check=False,
+            encoding="utf-8", errors="replace",
+        )
     except subprocess.TimeoutExpired as e:
         # A delegation may have been emitted BEFORE the (slow-subagent) timeout — parse the
         # partial trace rather than scoring a real routing decision as a miss.
