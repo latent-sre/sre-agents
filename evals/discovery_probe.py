@@ -106,11 +106,18 @@ def validate(scenarios: list[dict]) -> list[str]:
         kind, _ = scenario_target(s)
         exists = agent_exists if kind == "agent" else skill_exists
         noun = "agent" if kind == "agent" else "skill"
-        targets = [s.get("expected_agent") if kind == "agent" else s.get("expected"),
-                   *(s.get("also_acceptable") or [])]
-        for t in targets:
-            if t and not exists(t):
-                problems.append(f"{where}: target '{t}' is not a known {noun}")
+        primary = s.get("expected_agent") if kind == "agent" else s.get("expected")
+        if primary and not exists(primary):
+            problems.append(f"{where}: target '{primary}' is not a known {noun}")
+        # also_acceptable: for a SKILL scenario an AGENT is a legitimate alternate -- discovery_rate()
+        # already counts agent delegations as routing targets there (invoked = skills + agents), and
+        # delegating to the agent that OWNS the skill is the roster working, not a misroute. Validating
+        # skills-only here was stricter than the executor and rejected a correct alternate.
+        for t in (s.get("also_acceptable") or []):
+            ok = exists(t) or (kind == "skill" and agent_exists(t))
+            if not ok:
+                extra = " or agent" if kind == "skill" else ""
+                problems.append(f"{where}: also_acceptable '{t}' is not a known {noun}{extra}")
     return problems
 
 

@@ -1,6 +1,12 @@
 id: discover-obs-slo-error-budget
 expected: slo-error-budget
+# sre-monitor OWNS this lane ("this alert is too noisy", "define an SLO" are verbatim in its
+# description) and loads slo-error-budget as its primary skill. Delegating there is the roster
+# working as designed, not a misroute -- grade the outcome, not the path. Measured 2026-07-11:
+# 0/2 hit, 2 MISROUTE -> sre-monitor, every time.
+also_acceptable: [sre-monitor]
 prompt: |
   This CPU threshold alert is too noisy and nobody trusts it. I'd rather alert on whether
   users are actually being hurt, and know whether we're still within budget for the month.
   How do I set that up?
+note: "2026-07-11: 0/2 hit, 2 MISROUTE->sre-monitor before also_acceptable; 3/3 hit, 0 misroute after. The fleet was right — sre-monitor owns this lane and loads the skill itself."
