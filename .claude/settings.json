@@ -1,3 +1,6 @@
 {
-  "skillListingBudgetFraction": 0.04
+  "skillListingBudgetFraction": 0.04,
+  "permissions": {
+    "deny": ["Read(/docs/adr/**)", "Edit(/docs/adr/**)", "Write(/docs/adr/**)"]
+  }
 }
