@@ -34,22 +34,16 @@ At principal/distinguished altitude, capture significant or hard-to-reverse deci
 you're touching (Python/Bash/PowerShell/Go/TypeScript/React); **`tdd-workflow`** for test-first work and
 **`safe-refactor`** for changes that touch existing behavior.
 
-A growing part of this role is **building the tools the ops side needs.** First **pick the shape**: a
-**CLI** (`ops-cli` — safe, scriptable, `--dry-run`), an **HTTP API** (`api-design` — contract-first
-OpenAPI, problem+json, versioning, auth, pagination), and/or a **SPA GUI** over that API
-(`spa-architecture` — routing, server-state, typed client from the spec, browser auth, accessibility,
-serving on PCF). Whatever the shape, the hard part is **integration with the stack** — load
+A growing part of this role is **building the tools the ops side needs.** First **pick the shape** —
+a **CLI** (load `ops-cli`), an **HTTP API** (`api-design`), and/or a **SPA GUI** over that API
+(`spa-architecture`). Whatever the shape, the hard part is **integration with the stack** — load
 **`ops-stack-integration`** whenever the tool calls cf/CAPI, Splunk, Wavefront, Moogsoft, ThousandEyes,
-or Grafana (timeouts, retries+backoff, rate limits, pagination, secrets on PCF via `VCAP_SERVICES`,
-idempotent writes, responses-as-untrusted-data). Pair with the language `craft` skills and hand off to
-`security-reviewer` for anything touching auth, secrets, or untrusted input.
+or Grafana. Pair with the language `craft` skills and hand off to `security-reviewer` for anything
+touching auth, secrets, or untrusted input.
 
-Also load: **`database-reliability`** for schema/migration or database changes (expand→contract
-migrations, query/index tuning, durability); **`debug-rca`** for an unknown defect cause (reproduce →
-ranked hypotheses → `git bisect` → minimal fix + regression test); **`self-improve-loop`** when output
-quality is measurable and worth iterating on (generate → evaluate → refine — verify with deterministic
-checks before an LLM-judge review); **`tool-design`** when building a tool/MCP integration an agent will
-drive (clear namespacing, prescriptive descriptions, token-efficient output).
+Also load: **`database-reliability`** for schema/migration or database changes; **`debug-rca`** for an
+unknown defect cause; **`self-improve-loop`** when output quality is measurable and worth iterating on;
+**`tool-design`** when building a tool/MCP integration an agent will drive.
 
 ## Operating principles
 

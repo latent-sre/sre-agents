@@ -18,8 +18,8 @@ stack-specific.
 The portability is real, not aspirational — it rides two current open standards:
 
 - **Agent Skills (`SKILL.md`)** — an open standard ([agentskills.io](https://agentskills.io), published
-  by Anthropic Dec 2025, adopted by 30+ tools). VS Code/Copilot reads skills from `.claude/skills/` **and**
-  `.github/skills/`; Claude Code reads `.claude/skills/`.
+  by Anthropic Dec 2025, adopted by 30+ tools). Both VS Code/Copilot and Claude Code read skills from
+  `.claude/skills/` directly.
 - **Agents** — VS Code/Copilot custom agents read `.claude/agents/` **and** `.github/agents/*.agent.md`;
   Claude Code reads `.claude/agents/`.
 
@@ -35,8 +35,7 @@ So a single source under `.claude/` is read natively by both. An optional genera
 **VS Code / GitHub Copilot** — open the repo; pick a custom agent from the Chat agents dropdown (skills
 load automatically or via `/`). For Copilot-native files:
 ```bash
-pwsh scripts/sync-copilot.ps1     # Windows / PowerShell
-bash scripts/sync-copilot.sh      # macOS / Linux
+bash scripts/sync-copilot.sh      # macOS / Linux / Windows (Git Bash)
 ```
 
 **Vendor it into an existing repo** — to embed the fleet as a subdirectory of another project (rather than
@@ -51,38 +50,38 @@ For **what to keep, genericize, or drop** when adapting the fleet to a different
 AGENTS.md                  cross-tool source of truth (roster, conventions, routing, portability)
 CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude specifics)
 .claude/
-  agents/                  10 agents — read by Claude Code AND VS Code/Copilot
-  skills/                  38 skills (SKILL.md open standard) — read by both tools
+  agents/                  the agent roster — read by Claude Code AND VS Code/Copilot
+  skills/                  the skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 evals/                     behavioral evals (scenarios + graders) — routing, gates, security; --validate runs in CI
 docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · INTEGRATION (vendor into another repo) · CURATION (keep/genericize/drop) · adr/ · FOLLOWUPS
 scripts/
-  sync-copilot.ps1 / .sh   generate .github/agents (committed) + an optional gitignored .github/skills mirror
+  sync-copilot.sh          generate .github/agents wrappers (committed, drift-gated)
   validate_fleet.py        validate all skills/agents against the Agent Skills spec (the CI gate; pure stdlib)
-  validate-fleet.ps1       PowerShell equivalent for Windows-local use (not the CI gate)
   readonly-guard.py        PreToolUse hook: blocks state-changing + data-egress shell commands for read-only agents
 .github/
   agents/                  GENERATED but COMMITTED + drift-gated in CI — edit .claude/ and re-run sync
-  skills/                  GENERATED, gitignored local mirror (Copilot reads .claude/skills/ directly)
 ```
 
 ## The fleet
 
 **Agents (who):** `sde-engineer` · `code-reviewer` · `security-reviewer` · `test-engineer` ·
 `sre-engineer` · `sre-monitor` · `release-engineer` · `runbook-author` · `database-reliability` ·
-`researcher`. (Routing and incident-command are **skills** — `route-request`, `incident-severity` — not agents.)
+`researcher` · `prompt-engineer`. (Routing and incident-command are **skills** — `route-request`,
+`incident-severity` — not agents.)
 
 **Seniority/experience is carried by skills, not separate agents** — one `sde-engineer` and one
 `sre-engineer` scale altitude by loading a ladder skill (one skill per track, three tier files):
 - SDE — `sde-ladder`: senior → principal → distinguished
 - SRE — `sre-ladder`: responder (new hire) → investigator (experienced) → elite
 
-**Skills (how) — 38 total:**
+**Skills (how):**
 - *Ladders* (2) · *Craft* (`craft` — one skill, six language files: Python/Bash/PowerShell/Go/TypeScript/React;
   plus `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`) · *Data* (`database-reliability`)
 - *Build ops tooling*: `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`
-- *Agent-system methods (Anthropic patterns)*: `context-engineering`, `parallelization`, `tool-design`, `agent-security`
+- *Agent-system methods (Anthropic patterns)*: `context-engineering`, `parallelization`, `tool-design`,
+  `agent-security`, `prompt-craft`, `agent-architecture`
 - *Observe/investigate (your stack)*: `triage-golden-signals`, `pcf-ops`, `splunk-triage`,
   `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`, `thousandeyes-network`, `slo-error-budget`,
   `instrument-service`

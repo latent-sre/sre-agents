@@ -1,6 +1,6 @@
 # Fleet evals
 
-Behavioral evals for the agents + skills — the layer above `scripts/validate-fleet.ps1`
+Behavioral evals for the agents + skills — the layer above `scripts/validate_fleet.py`
 (which only checks structure/spec). These check that the fleet *behaves*: that a request routes
 to the right place, a gate blocks what it should, and an agent treats untrusted content as data.
 

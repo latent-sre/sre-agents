@@ -2,9 +2,9 @@
 """Validate the agent + skill fleet against the Agent Skills open standard and Claude Code's
 subagent rules. Exits non-zero on any failure (CI-friendly).
 
-Pure-stdlib Python port of scripts/validate-fleet.ps1 (no pip deps; YAML frontmatter is parsed by
-hand, matching the .ps1's line-oriented behavior rather than a real YAML parser, on purpose, so the
-two scripts agree verdict-for-verdict).
+Pure stdlib (no pip deps). YAML frontmatter is parsed by hand, line-oriented rather than via a real
+YAML parser, on purpose — the fleet's frontmatter is deliberately simple and this keeps the CI gate
+dependency-free. Runs the same on every platform (`python`/`python3`); this is the only validator.
 
 Checks, per the spec at https://agentskills.io/specification :
   Skills  - SKILL.md present; YAML frontmatter present; `name` matches the parent directory, <= 64
@@ -220,7 +220,7 @@ def main():
         if base not in model_policy:
             issues.append(
                 "model-policy: agent '%s' is not listed in the documented model policy "
-                "(validate-fleet.ps1 $modelPolicy) -- add it with its intended model." % base
+                "(model_policy in this script) -- add it with its intended model." % base
             )
             continue
         fm = get_frontmatter(os.path.join(agents_dir, a))
@@ -231,6 +231,56 @@ def main():
                 "model-policy: agent '%s' has model '%s' but policy requires '%s' "
                 "(see CLAUDE.md model policy)." % (base, model, expected)
             )
+
+    # ---- Roster coverage (docs that enumerate the roster must name every agent) ----
+    # The 2026-07-08 prompt-engineer addition silently missed README.md and docs/ARCHITECTURE.md;
+    # this check makes that class of drift a CI failure instead. Two rules:
+    #   1. Every agent name appears in each roster-enumerating doc below.
+    #   2. Any literal "N agents" / "N skills" count in a CURRENT-STATE doc matches the tree
+    #      (blockquote lines are skipped — dated review records live in '>' banners).
+    roster_docs = [
+        'AGENTS.md',
+        'README.md',
+        os.path.join('docs', 'AGENT-CATALOG.md'),
+        os.path.join('docs', 'HANDOFFS.md'),
+        os.path.join('docs', 'ARCHITECTURE.md'),
+        os.path.join('.claude', 'skills', 'route-request', 'SKILL.md'),
+    ]
+    agent_names = [a[:-3] for a in agent_files]
+    for doc in roster_docs:
+        p = os.path.join(ROOT, doc)
+        rel = doc.replace('\\', '/')
+        if not os.path.exists(p):
+            issues.append("roster-coverage: expected doc '%s' is missing" % rel)
+            continue
+        text = read_raw(p)
+        for base in agent_names:
+            if base not in text:
+                issues.append(
+                    "roster-coverage: '%s' never mentions agent '%s' -- update it (or drop the "
+                    "doc from roster_docs in this script if it no longer enumerates the roster)."
+                    % (rel, base)
+                )
+    count_docs = ['README.md', os.path.join('docs', 'ARCHITECTURE.md'), 'AGENTS.md', 'CLAUDE.md']
+    count_re = re.compile(r'\b(\d+)\s+(agents|skills)\b')
+    actual = {'agents': len(agent_files), 'skills': skill_count}
+    for doc in count_docs:
+        p = os.path.join(ROOT, doc)
+        if not os.path.exists(p):
+            continue
+        rel = doc.replace('\\', '/')
+        n = 0
+        for ln in read_lines(p):
+            n += 1
+            if ln.lstrip().startswith('>'):
+                continue  # dated review-record banners keep their historical counts
+            for m in count_re.finditer(ln):
+                if int(m.group(1)) != actual[m.group(2)]:
+                    issues.append(
+                        "roster-coverage: '%s' line %d says '%s' but the tree has %d %s -- "
+                        "fix the count or drop it (count-free phrasing preferred)."
+                        % (rel, n, m.group(0), actual[m.group(2)], m.group(2))
+                    )
 
     # ---- Scope guard ----
     scope_tokens = [
@@ -273,7 +323,7 @@ def main():
             issues.append(
                 "scope '%s' line %d: off-charter tooling '%s' - repo is PCF / no-K8s "
                 "(Wavefront/Splunk/Grafana). Rewrite for our stack, or allowlist the line in "
-                "validate-fleet.ps1 if it is a deliberate disclaimer/portability note."
+                "scope_allow in this script if it is a deliberate disclaimer/portability note."
                 % (rel, n, m.group(1))
             )
 

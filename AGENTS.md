@@ -97,27 +97,33 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 - *investigator* *(experienced)* — hypothesis-driven RCA, "what changed" correlation, test hypotheses against evidence.
 - *elite* — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
 
+Each skill's *what + when* lives in its frontmatter `description` — the listing every session already
+loads — so the categories below carry **names only**; the annotated human-readable catalog is
+[`docs/CURATION.md`](docs/CURATION.md).
+
 **Craft:** `craft` *(one skill, six language files: Python · Bash · PowerShell · Go · TypeScript · React)* ·
-`tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop` *(generate→evaluate→refine: evaluator-optimizer + the act→verify loop)*
+`tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop`
 
-**Build the ops side's tooling (pick the shape, then wire it to the stack):** `ops-cli` *(the most common shape: a CLI that's safe under stress and scriptable in CI — exit codes, human-vs-`--json` output, `--dry-run`, idempotency)* · `api-design` *(contract-first OpenAPI, resource modeling, problem+json errors, versioning, pagination, authN/Z — the HTTP layer that fronts ops tools)* · `spa-architecture` *(SPA GUI over that API: build/routing, server-state, typed client from the spec, modern accessible styling, browser auth, serving the bundle on PCF)* · `ops-stack-integration` *(the hard ops-specific part — calling cf/CAPI, Splunk, Wavefront, Moogsoft, ThousandEyes, Grafana safely: timeouts, retries+backoff, rate limits, pagination, secrets on PCF, idempotent writes)*. These turn the fleet's read-only/automation capabilities into usable software; pair with the language `craft` skills.
+**Build the ops side's tooling (pick the shape — CLI, HTTP API, and/or SPA GUI — then wire it to the
+stack):** `ops-cli` · `api-design` · `spa-architecture` · `ops-stack-integration`. These turn the
+fleet's read-only/automation capabilities into usable software; pair with the language `craft` skills.
 
-**Agent-system methods (Anthropic agent patterns):** `context-engineering` *(curate the attention budget; JIT retrieval, compaction, sub-agent isolation)* · `parallelization` *(sectioning/voting & multi-agent fan-out — and when the ~15× cost pays)* · `tool-design` *(tools an agent uses well: namespacing, prescriptive descriptions, token efficiency)* · `agent-security` *(prompt injection & the lethal trifecta — treat tool/log/webhook output as data, not instructions)* · `prompt-craft` *(author/optimize a single LLM-facing artifact: eval-first loop, trigger-only descriptions, match the fix's form to the failure)* · `agent-architecture` *(design/restructure a multi-agent system: agent-vs-skill rule, orchestration shapes, handoff contracts, failure modes)*. Pairs with `self-improve-loop`.
+**Agent-system methods (Anthropic agent patterns):** `context-engineering` · `parallelization` ·
+`tool-design` · `agent-security` · `prompt-craft` · `agent-architecture`. Pairs with `self-improve-loop`.
 
-**Data:** `database-reliability` — safe (online/reversible, expand→contract) schema migrations, query/
-index tuning, connection-pool/lock/replication-lag triage, and tested backups (RPO/RTO).
+**Data:** `database-reliability`
 
 **Observe & investigate (your stack):** `triage-golden-signals` · `pcf-ops` · `splunk-triage` ·
 `wavefront-queries` · `grafana-dashboards` · `moogsoft-correlation` · `thousandeyes-network` ·
-`slo-error-budget` · `instrument-service` *(emit telemetry: RED/USE, OTel, cardinality)*
+`slo-error-budget` · `instrument-service`
 
 **Ship (your stack):** `github-actions-ci` · `bamboo-to-actions-migration` · `pcf-deploy` · `rollback-mitigation`
 
 **Selectors & gates:** `route-request` · `merge-gate` · `release-gate` · `production-change-gate`
 
-**Incident process:** `incident-severity` *(SEV1–4 rubric + comms cadence)* · `blameless-postmortem`
+**Incident process:** `incident-severity` · `blameless-postmortem`
 
-**Docs & conventions:** `runbook-template` · `blameless-postmortem` · `handoff-protocol` · `adr-template` *(ADR/RFC decision capture)*
+**Docs & conventions:** `runbook-template` · `blameless-postmortem` · `handoff-protocol` · `adr-template`
 
 ## Routing & gates (selectors that control the workflow)
 
@@ -172,7 +178,7 @@ Authored once under `.claude/`, consumed by both tools:
 | Artifact | Claude Code reads | VS Code / Copilot reads |
 |---|---|---|
 | Agents | `.claude/agents/*.md` | `.claude/agents/` **and** `.github/agents/*.agent.md` |
-| Skills | `.claude/skills/*/SKILL.md` | `.claude/skills/` (Copilot reads these directly; `.github/skills/` is an optional, uncommitted local mirror) |
+| Skills | `.claude/skills/*/SKILL.md` | `.claude/skills/` (Copilot reads these directly) |
 | Project guide | `CLAUDE.md` (imports this file) | `AGENTS.md` |
 | Copilot conventions | (see AGENTS.md) | [`.github/copilot-instructions.md`](.github/copilot-instructions.md) |
 
@@ -181,10 +187,9 @@ Copilot-native tool scoping (the `tools:` field translated to `.agent.md`'s arra
 translates *only* `tools:`, not `handoffs`/`target`) run the generator:
 
 ```bash
-# from repo root — emits .github/agents/*.agent.md (committed, drift-gated); also writes an optional
-# .github/skills/ mirror that is gitignored (Copilot reads .claude/skills/ directly)
-pwsh scripts/sync-copilot.ps1      # Windows / PowerShell
-bash scripts/sync-copilot.sh       # macOS / Linux
+# from repo root — emits .github/agents/*.agent.md (committed, drift-gated); skills are not
+# mirrored (Copilot reads .claude/skills/ directly)
+bash scripts/sync-copilot.sh       # macOS / Linux / Windows (Git Bash)
 ```
 
 The only non-portable seam is the agent `tools:` field (Claude uses `Read, Grep`; Copilot uses arrays

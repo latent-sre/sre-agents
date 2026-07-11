@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 #
-# Generate VS Code / GitHub Copilot native artifacts from the canonical .claude/ definitions.
+# Generate VS Code / GitHub Copilot native agent wrappers from the canonical .claude/ definitions.
 #
 # Both Claude Code and VS Code/Copilot read `.claude/agents` and `.claude/skills` directly, so the fleet
 # already works in Copilot with no build step. Run this only when you want Copilot-NATIVE files:
 #   * .github/agents/<name>.agent.md  — from .claude/agents/<name>.md, with `tools:` translated to
 #     Copilot's vocabulary and the Claude-only `model:`, `color:`, `skills:`, `hooks:` keys dropped
 #     (Copilot picks its model and still auto-loads skills by description). Body copied verbatim.
-#   * .github/skills/                 — a mirror of .claude/skills/ (identical SKILL.md open standard).
+# (Skills are NOT mirrored: Copilot reads .claude/skills/ directly. The former optional
+# .github/skills/ mirror was removed 2026-07-10 — its rm-rf regeneration was a data hazard.)
 #
 # The tool translation is conservative. Claude-only hooks are not portable to Copilot, so generated
 # read-only agents do not receive runCommands; writer agents keep terminal access. Idempotent.
@@ -17,9 +18,7 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd "$here/.." && pwd)"
 claude_agents="$root/.claude/agents"
-claude_skills="$root/.claude/skills"
 gh_agents="$root/.github/agents"
-gh_skills="$root/.github/skills"
 
 # Map Claude tool names -> Copilot tool/toolset names, preserving read-only vs. write intent.
 #
@@ -73,12 +72,5 @@ for f in "$claude_agents"/*.md; do
     agent_count=$((agent_count + 1))
 done
 
-# Mirror skills (clean first to drop anything deleted upstream).
-rm -rf "$gh_skills"
-mkdir -p "$gh_skills"
-cp -R "$claude_skills/." "$gh_skills/"
-skill_count="$(find "$gh_skills" -name SKILL.md -type f | wc -l | tr -d ' ')"
-
 echo "Generated $agent_count Copilot agents -> .github/agents/"
-echo "Mirrored  $skill_count skills         -> .github/skills/"
-echo "Done. (Both tools also read .claude/ directly, so this is optional polish.)"
+echo "Done. (Skills are not mirrored — Copilot reads .claude/skills/ directly.)"

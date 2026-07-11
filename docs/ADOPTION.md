@@ -7,6 +7,9 @@ methodology" to "live in our environment."
 
 ## Verdict of the surface-area review
 
+*(Dated record of the 2026-06-23 review; the `prompt-engineer` lane — one agent, two skills — was
+added 2026-07-08 and validated by the 2026-07-09/-10 reviews, so literal counts below are historical.)*
+
 A 9-scan review gauntlet (5 independent + 2 devil's-advocate + 2 Anthropic-best-practice) asked
 whether the fleet's **10 agents / ~38 skills** should be consolidated. The answer is **keep the
 counts**: 8/9 scans said keep 10 agents, 7/9 said keep ~38 skills — they are right-sized. The lone

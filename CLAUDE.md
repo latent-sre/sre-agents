@@ -50,8 +50,8 @@ hard to catch; `sonnet` for structured work that follows a defined method, check
   model* — prod actions run only through `release-gate` + `production-change-gate` with explicit human
   sign-off, and it executes *pre-approved plans* rather than inventing them. Bump it to `opus` if your team
   wants extra reasoning headroom on rollback-under-pressure calls — a one-line frontmatter change, but
-  update the model-policy table in [`scripts/validate_fleet.py`](scripts/validate_fleet.py) (and
-  `scripts/validate-fleet.ps1`) in the **same commit**, or CI fails.
+  update the model-policy table in [`scripts/validate_fleet.py`](scripts/validate_fleet.py) in the
+  **same commit**, or CI fails.
 - **Tuning:** `model:` is Claude-specific frontmatter (Copilot ignores it and uses its own selection).
   Change it per agent as your team sees fit — but it is an **enforced** policy, not a free-for-all:
   `scripts/validate_fleet.py` is the source of truth and **fails CI** on any agent whose `model:` doesn't
@@ -60,6 +60,6 @@ hard to catch; `sonnet` for structured work that follows a defined method, check
 ## VS Code / Copilot
 
 Both tools read `.claude/` directly, so the fleet works in Copilot as-is. For Copilot-native
-`.github/agents/*.agent.md` (translated tool scoping; the `.github/skills/` mirror is optional and gitignored), run
-`pwsh scripts/sync-copilot.ps1` (or `bash scripts/sync-copilot.sh`). Those outputs are generated —
-edit definitions under `.claude/` and re-run; don't hand-edit `.github/`.
+`.github/agents/*.agent.md` (translated tool scoping), run `bash scripts/sync-copilot.sh` (Git Bash
+on Windows). Those outputs are generated — edit definitions under `.claude/` and re-run; don't
+hand-edit `.github/`.

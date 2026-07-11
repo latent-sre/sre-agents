@@ -12,9 +12,10 @@ permissions:
 jobs:
   # Single Linux job: structural fleet validation (Python), guard tests, eval-suite STRUCTURE
   # validation, the error-budget helper smoke test, and Copilot agent-wrapper drift detection.
-  # The validator is pure-stdlib Python (scripts/validate_fleet.py), so one platform covers it —
-  # the former Windows leg (PowerShell validator + .ps1 generator) was retired: validate-fleet.ps1
-  # and sync-copilot.ps1 remain as on-demand Windows-local equivalents, not CI gates.
+  # The validator is pure-stdlib Python (scripts/validate_fleet.py), so one platform covers it.
+  # The PowerShell mirrors (validate-fleet.ps1, sync-copilot.ps1) were deleted 2026-07-10: Python
+  # is a hard local dependency anyway (the guard hooks shell to it), and Windows runs the same
+  # scripts via `python`/Git Bash — one implementation, no parity gate needed.
   validate:
     runs-on: ubuntu-latest
 
@@ -24,9 +25,6 @@ jobs:
 
       - name: Validate agent and skill metadata
         run: python3 scripts/validate_fleet.py
-
-      - name: Check model-policy table parity (Python validator vs PowerShell mirror)
-        run: python3 scripts/test_model_policy_parity.py
 
       - name: Smoke-compile repo tools (tools/ is outside the fleet validator scope)
         run: python3 -m py_compile tools/chaos_game.py
@@ -55,8 +53,9 @@ jobs:
         run: python3 .claude/skills/slo-error-budget/scripts/error_budget.py --slo 99.9 --window-days 28 --bad-minutes 10
 
       # Copilot drift gate — only the .agent.md wrappers are committed (they carry real tool-
-      # translation). The SKILL.md mirror under .github/skills/ is an optional, gitignored local
-      # artifact (Copilot reads .claude/skills/ directly), so it is not generated-and-gated here.
+      # translation). No SKILL.md mirror is generated: Copilot reads .claude/skills/ directly
+      # (the former optional .github/skills/ mirror was removed 2026-07-10 — its rm-rf regeneration
+      # was a data hazard with no consumer).
       - name: Verify Copilot agent wrappers are in sync (drift gate)
         run: |
           bash scripts/sync-copilot.sh
