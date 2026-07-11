@@ -139,6 +139,10 @@ unit-tested offline).
   must block, a guard that must deny, a routing/refusal decision) — grade the outcome, not the path. For
   prose-quality skills a keyword grader can't judge quality, so don't write a tautological eval to
   satisfy a rule.
+- **Delegation canary:** `AGENTS.md` and agent `description`s are delegation-load-bearing. After editing
+  either, re-run `python evals/discovery_probe.py --run --agents --match sre-engineer` in a throwaway
+  worktree. The 2026-07 AGENTS.md trim dropped incident delegation from 9/9 to 3/9 while every
+  structural check stayed green — only this probe caught it.
 - **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency timeout),
   authored with the `runbook-template` skill. **Fill the placeholders before treating them as live.**
 - **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),
