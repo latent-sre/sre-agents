@@ -2,8 +2,12 @@
 
 A portable roster of **AI agents and Agent Skills** for application software development and site
 reliability work. The definitions live once under [`.claude/`](.claude/) and are read **natively by
-both Claude Code and VS Code / GitHub Copilot** (see [Portability](#portability)). This file
-(`AGENTS.md`) is the cross-tool source of truth; [CLAUDE.md](CLAUDE.md) imports it for Claude Code.
+both Claude Code and VS Code / GitHub Copilot**. [CLAUDE.md](CLAUDE.md) imports this file for Claude Code.
+
+**This file is loaded into every session — it carries only what an agent needs *while working*:** the
+stack profile, who's on the roster, how routing and gates work, and the shared conventions. Repo
+mechanics (portability, validation, evals, how to add an agent or skill) live in
+[README.md](README.md), which costs nothing at runtime.
 
 ## Stack profile — *the one block to edit when you retarget the fleet*
 
@@ -78,66 +82,14 @@ is a fast speed-bump on top of that, not a substitute for it.
 > and *one* `sre-engineer`. They scale altitude by loading a **ladder skill** — pick the tier that
 > matches the task's ambiguity and blast radius.
 
-### When is something an agent vs. a skill?
-
-**Decision rule:** an **agent** exists when it needs a **distinct tool-scope**, a **distinct guard
-posture**, **OR** is a **recurring, separable domain lane with its own handoff edges**; everything else
-is a **skill**. The first two are mechanical (the harness enforces them); the third is editorial — a lane
-worth routing to on its own. `prompt-engineer` is the lane case: its `tools:` overlap `sde-engineer`'s and
-it carries no read-only guard, but fleet maintenance is a recurring, separable domain with its own handoff
-edges. Seniority tiers, by contrast, share their agent's tool-scope *and* its lane, so they are ladder
-*skills*, not cloned agents. A method that is not a separable lane — e.g. `database-reliability` — stays a
-**skill** loaded by whichever agent needs it.
-
-### The `skills:` frontmatter convention
-
-Only some agents declare a `skills:` block, and that is **by design**. When present, it names the agent's
-**single primary skill** for discoverability (`code-reviewer → merge-gate`, `test-engineer → tdd-workflow`).
-It is **not** an exhaustive preload list — agents pick up the rest via description-based auto-load at
-runtime, so an absent or single-entry `skills:` block is expected, not a gap. (Claude-only field.)
-
 ## Skills
 
 A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md` (open
-[Agent Skills](https://agentskills.io) standard). Both tools auto-load a skill when a task matches its
-`description`; you can also invoke one directly as `/skill-name`.
-
-**`sde-ladder` — pick the SDE altitude (one skill, three tier files):**
-- *senior* — scoped, well-defined changes inside one component; match patterns, test, ship.
-- *principal* — cross-cutting design, blast-radius & call-site analysis, expand/contract migrations, API contracts.
-- *distinguished* — org-wide technical strategy, build-vs-buy, standards, high-ambiguity multi-system architecture.
-
-**`sre-ladder` — pick the SRE altitude (one skill, three tier files):**
-- *responder* *(new hire)* — golden-signals triage, safe read-only checks, work the runbook, escalate well.
-- *investigator* *(experienced)* — hypothesis-driven RCA, "what changed" correlation, test hypotheses against evidence.
-- *elite* — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
-
-Each skill's *what + when* lives in its frontmatter `description` — the listing every session already
-loads — so the categories below carry **names only**. To read a skill, open its `SKILL.md`.
-
-**Craft:** `craft` *(one skill, six language files: Python · Bash · PowerShell · Go · TypeScript · React)* ·
-`tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop`
-
-**Build the ops side's tooling (pick the shape — CLI, HTTP API, and/or SPA GUI — then wire it to the
-stack):** `ops-cli` · `api-design` · `spa-architecture` · `ops-stack-integration`. These turn the
-fleet's read-only/automation capabilities into usable software; pair with the language `craft` skills.
-
-**Agent-system methods (Anthropic agent patterns):** `context-engineering` · `parallelization` ·
-`tool-design` · `agent-security` · `prompt-craft` · `agent-architecture`. Pairs with `self-improve-loop`.
-
-**Data:** `database-reliability`
-
-**Observe & investigate (your stack):** `pcf-ops` · `splunk-triage` ·
-`wavefront-queries` · `grafana-dashboards` · `moogsoft-correlation` · `thousandeyes-network` ·
-`slo-error-budget` · `instrument-service`
-
-**Ship (your stack):** `github-actions-ci` · `bamboo-to-actions-migration` · `pcf-deploy` · `rollback-mitigation`
-
-**Selectors & gates:** `route-request` · `merge-gate` · `release-gate` · `production-change-gate`
-
-**Incident process:** `incident-severity` · `blameless-postmortem`
-
-**Docs & conventions:** `runbook-template` · `blameless-postmortem` · `handoff-protocol` · `adr-template`
+[Agent Skills](https://agentskills.io) standard). **You already have the full skill listing in
+context** — each skill's *what + when* is its frontmatter `description`, so match the task against
+those and load the one you need. You can also invoke one directly as `/skill-name`. The
+`sde-ladder`/`sre-ladder` skills set your **altitude**: load the tier that matches the task's ambiguity
+and blast radius. (The roster of skills by category is in [README.md](README.md#the-fleet).)
 
 ## Routing & gates (selectors that control the workflow)
 
@@ -151,10 +103,8 @@ fleet's read-only/automation capabilities into usable software; pair with the la
 - `production-change-gate` — change-management checkpoint for prod-facing actions: approval, blast
   radius, backout plan, comms. Maps to our (non-Google) ops/change-management reality.
 
-Gates are portable Markdown checklists by default. In Claude Code they can be **hardened with hooks**
-(e.g. block the `pcf-deploy` skill unless `release-gate` passed) — see
-[`scripts/`](scripts/) and CLAUDE.md. Copilot enforcement is via the agent body + generated tool scoping
-(read-only generated agents do not receive terminal access).
+Gates are checklists an agent runs; the load-bearing enforcement for prod is GitHub branch protection +
+protected environments, not the checklist.
 
 ### Typical flows
 - **Ship a feature:** `sde-engineer` → `code-reviewer` (+`security-reviewer` if sensitive) →
@@ -185,49 +135,7 @@ Gates are portable Markdown checklists by default. In Claude Code they can be **
 - **Lead with the conclusion**, then evidence, then next steps / recommended hand-offs.
 - **Blameless** language for all incident/operations work.
 
-## Portability
+---
 
-Authored once under `.claude/`, consumed by both tools with **zero extra steps** — Claude Code and
-VS Code / Copilot both read `.claude/agents/` and `.claude/skills/` directly:
-
-| Artifact | Read by both tools |
-|---|---|
-| Agents | `.claude/agents/*.md` |
-| Skills | `.claude/skills/*/SKILL.md` |
-| Project guide | `CLAUDE.md` (Claude Code, imports this file) · `AGENTS.md` (other tools) |
-
-The one non-portable seam is the agent `tools:` field (Claude uses `Read, Grep`; Copilot expects arrays
-like `['edit','search/codebase']`), plus Claude-only `PreToolUse` hooks that don't cross to Copilot — so
-a read-only agent's guard is enforced by hooks under Claude Code and must be enforced by tool scoping
-under Copilot. Behavioral guardrails are written in each agent body and honored by both tools.
-
-## Validate & operate
-
-- **Validate the fleet:** `python3 scripts/validate_fleet.py` (pure stdlib) checks every skill/agent against the
-  Agent Skills spec (names, descriptions, referenced files). Run it before committing.
-- **Behavioral evals:** [`evals/`](evals/) holds scenario + grader pairs that check the fleet *behaves*
-  (routing lands right, gates block, agents treat untrusted input as data). **Structural vs. behavioral:**
-  the structural checks — `python evals/run_evals.py --validate` and
-  `python evals/discovery_probe.py --validate` (suite lint), plus the read-only-guard tests and the
-  grader/probe unit tests — run locally (this fleet ships no CI
-  workflow). The **behavioral** runs (`run_evals.py --run`/`--ab`, discovery probing) need a
-  Claude-enabled runner and are executed **manually or on a schedule.** Add a scenario when you add/change a skill
-  **whose outcome is gradeable** (a gate that must block, a guard that must deny, a routing/refusal
-  decision); grade the outcome, not the path. For prose-quality skills a keyword grader can't judge
-  quality, so a scenario is optional there — don't write a tautological eval to satisfy a rule.
-- **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency
-  timeout), authored with the `runbook-template` skill; fill placeholders before treating them as live.
-- **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),
-  `slo-error-budget/scripts/error_budget.py` (budget/burn calculator), starter templates under each
-  skill's `assets/` (`api-design`, `ops-cli`, `pcf-deploy`, `github-actions-ci`), and `references/` fill-in files
-  (`pcf-ops`, `splunk-triage`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`,
-  `thousandeyes-network`) for your concrete index/metric/foundation/dashboard/test values.
-
-## Using it
-
-- **Claude Code:** describe the task; it routes via each agent's `description`. For multi-step or
-  ambiguous work, invoke `/route-request` first (or let it route). Invoke a skill directly with `/skill-name`.
-- **VS Code / Copilot:** pick a custom agent from the Chat agents dropdown (or `/agents`); skills load
-  automatically or via `/` in chat (both read `.claude/` directly).
-- Agents and skills are plain Markdown — edit frontmatter (`tools`, `model`, `description`) or the body
-  to tune behavior. Drop project-specific commands/links into the relevant skill.
+*Working on the fleet itself rather than with it? Portability, validation, evals, and how to add an
+agent or skill are in [README.md](README.md).*

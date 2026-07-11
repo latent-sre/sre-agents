@@ -41,7 +41,7 @@ but `.claude/`, `CLAUDE.md`, and `AGENTS.md` must be surfaced at the host repo's
 ## Layout
 
 ```
-AGENTS.md                  cross-tool source of truth (roster, conventions, routing, portability)
+AGENTS.md                  what an agent needs while working (stack profile, roster, conventions, routing/gates)
 CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude specifics)
 .claude/
   agents/                  the agent roster — read by Claude Code AND VS Code/Copilot
@@ -96,6 +96,21 @@ hyphen `name` ≤64 chars matching the dir, `description` ≤1024 chars saying *
 `python3 scripts/validate_fleet.py` to check it (or the upstream
 [`skills-ref`](https://github.com/agentskills/agentskills) validator).
 
+**Agent or skill?** An **agent** exists when it needs a distinct tool-scope, a distinct guard posture, or
+is a recurring, separable domain lane with its own handoff edges. Everything else — altitude, method,
+checklist, playbook — is a **skill**. The full decision rule (and the roster-design method around it)
+lives in the [`agent-architecture`](.claude/skills/agent-architecture/SKILL.md) skill.
+
+**The `skills:` frontmatter convention.** Only some agents declare a `skills:` block, and that is **by
+design**. When present it names the agent's *single primary* skill for discoverability
+(`code-reviewer → merge-gate`, `test-engineer → tdd-workflow`). It is **not** an exhaustive preload list —
+agents pick up the rest via description-based auto-load at runtime, so an absent or single-entry block is
+expected, not a gap. (Claude-only field.)
+
+**The one non-portable seam** is the agent `tools:` field: Claude uses `Read, Grep`; Copilot expects
+arrays like `['edit','search/codebase']`. Claude-only `PreToolUse` hooks don't cross to Copilot either.
+Behavioral guardrails are written in each agent body and honored by both tools.
+
 **Read-only enforcement:** Claude agents that keep `Bash` but must not change state wire
 [scripts/readonly-guard.py](scripts/readonly-guard.py) as a `PreToolUse` hook in their frontmatter.
 Under Copilot, where Claude hooks don't apply, enforce the same read-only posture via the agent's `tools`
@@ -108,6 +123,28 @@ unit-tested offline).
 > command does not parse — adjust the frontmatter to a PowerShell-equivalent (or a small wrapper) for that
 > environment. This only affects the *cooperative speed-bump*; the load-bearing controls (OS-level
 > least-privilege creds + branch protection / protected environments) do not depend on the hook shell.
+
+## Validate & operate
+
+- **Validate the fleet:** `python3 scripts/validate_fleet.py` (pure stdlib) checks every skill/agent
+  against the Agent Skills spec (names, descriptions, referenced files) and enforces the `model:` policy
+  and roster-doc coverage. Run it before committing.
+- **Evals:** [`evals/`](evals/) holds scenario + grader pairs that check the fleet *behaves* (routing
+  lands right, gates block, agents treat untrusted input as data). The **structural** checks run locally
+  and offline — `run_evals.py --validate`, `discovery_probe.py --validate`, the read-only-guard tests,
+  and the grader/probe unit tests. The **behavioral** runs (`run_evals.py --run`/`--ab`, discovery
+  probing) need a Claude-enabled runner and are executed manually or on a schedule. This fleet ships no
+  CI workflow. Add a scenario when you add or change a skill **whose outcome is gradeable** (a gate that
+  must block, a guard that must deny, a routing/refusal decision) — grade the outcome, not the path. For
+  prose-quality skills a keyword grader can't judge quality, so don't write a tautological eval to
+  satisfy a rule.
+- **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency timeout),
+  authored with the `runbook-template` skill. **Fill the placeholders before treating them as live.**
+- **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),
+  `slo-error-budget/scripts/error_budget.py` (budget/burn calculator), starter templates under each
+  skill's `assets/` (`api-design`, `ops-cli`, `pcf-deploy`, `github-actions-ci`), and `references/`
+  fill-in files (`pcf-ops`, `splunk-triage`, `wavefront-queries`, `grafana-dashboards`,
+  `moogsoft-correlation`, `thousandeyes-network`) for your concrete index/metric/foundation values.
 
 ## Built from (current as of mid-2026)
 
