@@ -1,6 +1,6 @@
 # Line-ending policy: force LF for the text the fleet is authored in, so the pure-stdlib Python
-# validator and the Bash guard hooks (readonly-guard.py / production-change-guard.py, invoked via
-# POSIX shell) read identical bytes on every OS. CRLF breaks POSIX-shell hooks and the line-oriented
+# validator and the readonly-guard.py hook (invoked via POSIX shell) read identical bytes on every
+# OS. CRLF breaks POSIX-shell hooks and the line-oriented
 # frontmatter parser (a trailing \r stops the `--- ` fence from matching).
 *.md   text eol=lf
 *.py   text eol=lf

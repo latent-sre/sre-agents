@@ -9,9 +9,9 @@ both Claude Code and VS Code / GitHub Copilot** (see [Portability](#portability)
 
 > **This section is the fleet's single stack-definition point.** Every agent and skill is written to
 > the profile below; to adapt the fleet to a different team, edit **here** (and the per-skill
-> `references/` fill-in files), not each agent body. The default profile is an on-prem PCF shop;
-> [`docs/CURATION.md`](docs/CURATION.md) is the step-by-step guide for swapping it (which skills are
-> universal, which are stack-specific, and how to genericize the prose).
+> `references/` fill-in files), not each agent body. The default profile is an on-prem PCF shop —
+> retargeting it means rewriting this block, then the stack-specific skills (`pcf-*`, `splunk-*`,
+> `wavefront-*`, `grafana-*`, `moogsoft-*`, `thousandeyes-*`, `*-deploy`) that name those tools.
 
 **Default profile — scope:** We work on the **application operations** side — not infrastructure/platform
 internals. Our runtime is **on-prem servers + PCF (VMware Tanzu Application Service)**. **No Kubernetes.**
@@ -44,9 +44,8 @@ timestamps, blast radius, and `cf` output showing our app is healthy — not to 
 ## The roster (agents)
 
 Agents are **who** does the work; [skills](#skills) are **how**. Each agent loads the skills relevant
-to its lane on demand. For a paragraph on each agent (lane · `model:` · writes? · skills · handoffs)
-see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom see
-[`docs/HANDOFFS.md`](docs/HANDOFFS.md).
+to its lane on demand. Each agent's own file is the detail (lane · `model:` · tools · skills); for
+who-hands-off-to-whom see [`docs/HANDOFFS.md`](docs/HANDOFFS.md).
 
 | Agent | Lane | Writes? | Leans on (skills) |
 |---|---|---|---|
@@ -54,7 +53,7 @@ see [`docs/AGENT-CATALOG.md`](docs/AGENT-CATALOG.md); for who-hands-off-to-whom 
 | [`code-reviewer`](.claude/agents/code-reviewer.md) | Correctness/quality review of a diff | no | `merge-gate` |
 | [`security-reviewer`](.claude/agents/security-reviewer.md) | Security review (authz, injection, secrets, supply chain) | no | `agent-security` |
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
-| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder`, `triage-golden-signals`, `database-reliability`, stack skills |
+| [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder`, `database-reliability`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
 | [`runbook-author`](.claude/agents/runbook-author.md) | Create/update operational runbooks | docs | `runbook-template`, `blameless-postmortem` |
 | [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | `context-engineering` |
@@ -79,6 +78,24 @@ is a fast speed-bump on top of that, not a substitute for it.
 > and *one* `sre-engineer`. They scale altitude by loading a **ladder skill** — pick the tier that
 > matches the task's ambiguity and blast radius.
 
+### When is something an agent vs. a skill?
+
+**Decision rule:** an **agent** exists when it needs a **distinct tool-scope**, a **distinct guard
+posture**, **OR** is a **recurring, separable domain lane with its own handoff edges**; everything else
+is a **skill**. The first two are mechanical (the harness enforces them); the third is editorial — a lane
+worth routing to on its own. `prompt-engineer` is the lane case: its `tools:` overlap `sde-engineer`'s and
+it carries no read-only guard, but fleet maintenance is a recurring, separable domain with its own handoff
+edges. Seniority tiers, by contrast, share their agent's tool-scope *and* its lane, so they are ladder
+*skills*, not cloned agents. A method that is not a separable lane — e.g. `database-reliability` — stays a
+**skill** loaded by whichever agent needs it.
+
+### The `skills:` frontmatter convention
+
+Only some agents declare a `skills:` block, and that is **by design**. When present, it names the agent's
+**single primary skill** for discoverability (`code-reviewer → merge-gate`, `test-engineer → tdd-workflow`).
+It is **not** an exhaustive preload list — agents pick up the rest via description-based auto-load at
+runtime, so an absent or single-entry `skills:` block is expected, not a gap. (Claude-only field.)
+
 ## Skills
 
 A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md` (open
@@ -96,8 +113,7 @@ A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md`
 - *elite* — systemic failure analysis, distributed-failure modes, resilience & detection-gap strategy.
 
 Each skill's *what + when* lives in its frontmatter `description` — the listing every session already
-loads — so the categories below carry **names only**; the annotated human-readable catalog is
-[`docs/CURATION.md`](docs/CURATION.md).
+loads — so the categories below carry **names only**. To read a skill, open its `SKILL.md`.
 
 **Craft:** `craft` *(one skill, six language files: Python · Bash · PowerShell · Go · TypeScript · React)* ·
 `tdd-workflow` · `safe-refactor` · `debug-rca` · `self-improve-loop`
@@ -111,7 +127,7 @@ fleet's read-only/automation capabilities into usable software; pair with the la
 
 **Data:** `database-reliability`
 
-**Observe & investigate (your stack):** `triage-golden-signals` · `pcf-ops` · `splunk-triage` ·
+**Observe & investigate (your stack):** `pcf-ops` · `splunk-triage` ·
 `wavefront-queries` · `grafana-dashboards` · `moogsoft-correlation` · `thousandeyes-network` ·
 `slo-error-budget` · `instrument-service`
 
@@ -192,8 +208,8 @@ under Copilot. Behavioral guardrails are written in each agent body and honored 
 - **Behavioral evals:** [`evals/`](evals/) holds scenario + grader pairs that check the fleet *behaves*
   (routing lands right, gates block, agents treat untrusted input as data). **Structural vs. behavioral:**
   the structural checks — `python evals/run_evals.py --validate` and
-  `python evals/discovery_probe.py --validate` (suite lint), plus the read-only-guard and
-  production-change-guard tests and the grader/probe unit tests — run locally (this fleet ships no CI
+  `python evals/discovery_probe.py --validate` (suite lint), plus the read-only-guard tests and the
+  grader/probe unit tests — run locally (this fleet ships no CI
   workflow). The **behavioral** runs (`run_evals.py --run`/`--ab`, discovery probing) need a
   Claude-enabled runner and are executed **manually or on a schedule.** Add a scenario when you add/change a skill
   **whose outcome is gradeable** (a gate that must block, a guard that must deny, a routing/refusal

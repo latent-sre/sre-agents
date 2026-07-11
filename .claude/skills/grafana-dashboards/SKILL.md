@@ -15,7 +15,7 @@ A dashboard exists to answer a question fast under stress — not to show every 
 1. **Health / SLO row** — current SLO status + error-budget burn (see `slo-error-budget`). The first
    thing on-call should see: are we in trouble?
 2. **Golden signals row** — latency (p50/p95/p99), traffic, error rate, saturation
-   (`triage-golden-signals`). One row, consistent time range.
+   (the golden-signals reference in `sre-ladder`). One row, consistent time range.
 3. **Drill-down rows** — per-dependency, per-instance, per-route breakdowns to localize a problem.
 
 ## Panel hygiene

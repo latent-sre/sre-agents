@@ -17,12 +17,9 @@ This repo's full guide lives in [AGENTS.md](AGENTS.md) (the cross-tool source of
   enforcement for prod changes is GitHub branch protection + protected environments** (our own
   `github-actions-ci` pattern: required reviews, required status checks, environment reviewers) — that is
   the security boundary, **provided GitHub's *Allow administrators to bypass protection rules* is disabled**
-  (it is ON by default). As an *auditable speed-bump* in Claude Code, the `production-change-guard.py`
-  `PreToolUse` hook ([scripts/production-change-guard.py](scripts/production-change-guard.py)) blocks
-  state-changing `cf` commands unless the gate sentinel (`PCF_GATE_CLEARED=1` or a `.gate-cleared` file)
-  is set — wire it onto whatever agent runs `cf`. Treat that hook as a checklist-forcing convenience for a
-  cooperative agent, **not** a security control — a determined path around a local denylist exists; branch
-  protection + environments do not depend on the agent cooperating.
+  (it is ON by default). Don't reach for a local `PreToolUse` denylist to enforce prod safety: it only
+  works if the agent cooperates, so it buys a speed-bump while reading like a control. Branch protection
+  and protected environments don't depend on the agent cooperating.
 - **Subagent dispatch:** an orchestration *agent* would double-pay the routing round-trip and discard the
   main session's live context that the work needs — pure overhead. Routing and incident-command therefore
   live as **skills** (`route-request`, `incident-severity`) that run in the main session, not as agents.

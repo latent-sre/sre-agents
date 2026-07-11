@@ -2,11 +2,10 @@
 
 A "handoff" here means: a specialist finishes, returns a **structured summary**, and names **who picks
 up next**. Routing and incident-command are **skills** (`route-request`, `incident-severity`) the main
-session loads to emit an *ordered plan* (see [ARCHITECTURE.md](ARCHITECTURE.md) and [CLAUDE.md](../CLAUDE.md)'s
-*Subagent dispatch* note), then it routes between agents. They stay skills on **cost, not capability**:
+session loads to emit an *ordered plan* (see [CLAUDE.md](../CLAUDE.md)'s *Subagent dispatch* note), then
+it routes between agents. They stay skills on **cost, not capability**:
 even though Claude Code now supports nested subagent dispatch, a coordinator subagent would double-pay
-the routing round-trip and discard the main session's live context the work needs (see
-[ARCHITECTURE.md](ARCHITECTURE.md)). Each agent's body lists its own handoff
+the routing round-trip and discard the main session's live context the work needs. Each agent's body lists its own handoff
 targets; this is the fleet-wide picture. Package context with `handoff-protocol`.
 
 ## Principles
@@ -107,7 +106,7 @@ The flow above is a **sequential spine** with **one parallel burst**. The main s
 ```
 
 - **sre-engineer** loads `sre-ladder` by depth (responder → investigator → elite) and
-  `triage-golden-signals` to frame the signals; it **investigates and recommends**, it does **not**
+  `sre-ladder`'s golden-signals reference to frame the signals; it **investigates and recommends**, it does **not**
   change prod.
 - **sre-engineer + incident-command (`incident-severity`):** declare/run a major incident; technical RCA
   and process/comms run *in parallel*. `incident-severity` sizes severity, assigns roles, and owns the

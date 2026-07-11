@@ -51,9 +51,9 @@ Break any one leg and the injection can't complete. *[sourced: Simon Willison, "
     `restart`/`delete`). You can't break that leg, so its containment is the
     **HARD human gate**: the `production-change-gate`, enforced in GitHub via **branch protection +
     protected environments with required reviewers** — which holds **only if GitHub's *Allow
-    administrators to bypass protection rules* is disabled** (it is ON by default). A local `PreToolUse`
-    speed-bump (`scripts/production-change-guard.py`) blocks state-changing `cf` unless a human cleared
-    the gate (`PCF_GATE_CLEARED=1` or a `.gate-cleared` sentinel) — a speed-bump, not the control.
+    administrators to bypass protection rules* is disabled** (it is ON by default). Don't substitute a
+    local `PreToolUse` denylist on `cf`: it only holds while the agent cooperates, so it reads as a
+    control without being one.
   - **`sde-engineer`, `sre-monitor`, `runbook-author`** each hold `Write`+`Edit`+`Bash`+`WebFetch` with
     **no PreToolUse hook**. Containment is not a broken leg but (a) **human review of every write** before
     it merges/ships (`merge-gate` / PR review) and (b) treating **all fetched/log/PR text as DATA, never

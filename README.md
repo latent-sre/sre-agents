@@ -8,8 +8,8 @@ PCF (Tanzu Application Service)**, no Kubernetes, working primarily in **Python,
 with **Splunk, Grafana, Wavefront, Moogsoft, ThousandEyes**, deploying via **GitHub Actions** (migrating
 off Bamboo). The whole fleet is written to that one profile — **retarget it for your team by editing the
 single [Stack profile](AGENTS.md#stack-profile--the-one-block-to-edit-when-you-retarget-the-fleet) block
-in AGENTS.md**, then follow **[docs/CURATION.md](docs/CURATION.md)** for which skills are universal vs.
-stack-specific.
+in AGENTS.md**, then rewriting the stack-specific skills (`pcf-*`, `splunk-*`, `wavefront-*`, `grafana-*`,
+`moogsoft-*`, `thousandeyes-*`, `*-deploy`) that name those tools by hand.
 
 > Full design + conventions: **[AGENTS.md](AGENTS.md)**. Claude Code entrypoint: **[CLAUDE.md](CLAUDE.md)**.
 
@@ -37,8 +37,6 @@ load automatically or via `/`). Both tools read `.claude/` directly — no build
 **Vendor it into an existing repo** — to embed the fleet as a subdirectory of another project (rather than
 using it standalone), see **[docs/INTEGRATION.md](docs/INTEGRATION.md)**: the scripts are location-robust,
 but `.claude/`, `CLAUDE.md`, and `AGENTS.md` must be surfaced at the host repo's root.
-For **what to keep, genericize, or drop** when adapting the fleet to a different team or stack, see
-**[docs/CURATION.md](docs/CURATION.md)** (it doubles as the review checklist for an LLM adaptation pass).
 
 ## Layout
 
@@ -51,7 +49,7 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
 runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 evals/                     behavioral evals (scenarios + graders) — routing, gates, security; run locally
-docs/                       ARCHITECTURE (why) · AGENT-CATALOG (roster) · HANDOFFS (collab map) · ADOPTION · INTEGRATION (vendor into another repo) · CURATION (keep/genericize/drop) · FOLLOWUPS
+docs/                       HANDOFFS (collab map) · INTEGRATION (vendor into another repo) · RESEARCH (sources)
 scripts/
   validate_fleet.py        validate all skills/agents against the Agent Skills spec (pure stdlib)
   readonly-guard.py        PreToolUse hook: blocks state-changing + data-egress shell commands for read-only agents
@@ -74,7 +72,7 @@ incident-command are **skills** — `route-request`, `incident-severity` — not
 - *Build ops tooling*: `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`
 - *Agent-system methods (Anthropic patterns)*: `context-engineering`, `parallelization`, `tool-design`,
   `agent-security`, `prompt-craft`, `agent-architecture`
-- *Observe/investigate (your stack)*: `triage-golden-signals`, `pcf-ops`, `splunk-triage`,
+- *Observe/investigate (your stack)*: `pcf-ops`, `splunk-triage`,
   `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`, `thousandeyes-network`, `slo-error-budget`,
   `instrument-service`
 - *Ship (your stack)*: `github-actions-ci`, `bamboo-to-actions-migration`, `pcf-deploy`, `rollback-mitigation`

@@ -1,16 +1,8 @@
----
-name: triage-golden-signals
-description: >-
-  The SIGNAL-READ STEP performed inside an `sre-ladder` triage — read the four golden signals (latency,
-  traffic, errors, saturation) plus RED and USE to characterize a symptom before forming hypotheses:
-  what each signal tells you and where to find it on our stack. Not a general SRE/triage skill; load it
-  for the signal-reading moment only. (The `sre-ladder` tiers set depth; this is the signal read inside it.)
----
-
 # Golden signals — read the system in 60 seconds
 
-Before hypotheses, characterize the symptom with a standard signal set. Pull these from Wavefront
-(`wavefront-queries`), Grafana (`grafana-dashboards`), Splunk (`splunk-triage`), and `pcf-ops`.
+The signal-read step every tier starts from. Before hypotheses, characterize the symptom with a
+standard signal set. Pull these from Wavefront (`wavefront-queries`), Grafana (`grafana-dashboards`),
+Splunk (`splunk-triage`), and `pcf-ops`.
 
 ## The four golden signals (Google SRE)
 | Signal | Question | Where (our stack) |
@@ -33,7 +25,7 @@ Most incidents follow a change. Before deep hypotheses, line up **what changed**
 - **dependency** incident or vendor status-page event
 - **cert / credential / secret expiry** (failures starting at a round timestamp)
 - **DB migration** or data change
-A change whose timestamp matches the impact-start is your prime suspect → hand to `sre-ladder` (investigator tier).
+A change whose timestamp matches the impact-start is your prime suspect → move up to the investigator tier.
 
 ## How to read them
 1. **Errors + latency up together** → app or a downstream dependency is failing/slow.
@@ -46,4 +38,4 @@ A change whose timestamp matches the impact-start is your prime suspect → hand
 
 ## Pin it down
 Always establish: **exact start time**, **blast radius** (which apps/routes/spaces, % of traffic), and
-**trend** (worsening/stable/recovering). Hand that to `sre-ladder` (investigator tier) to drive RCA.
+**trend** (worsening/stable/recovering). That triple is what the investigator tier drives RCA from.

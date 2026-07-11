@@ -24,8 +24,8 @@ An **agent** exists when it needs a **distinct tool-scope**, a **distinct guard 
 is a **recurring, separable domain lane with its own handoff edges**. Everything else — altitude,
 method, checklist, playbook — is a **skill**. Seniority tiers are ladder skills, not cloned agents;
 routing and incident-command are main-session skills because a coordinator subagent double-pays the
-round-trip and discards live context. Apply this test before adding any agent,
-and record the justification in `docs/AGENT-CATALOG.md`.
+round-trip and discards live context. Apply this test before adding any agent, and record the
+justification in the agent's own file (or an ADR if it reshapes the roster).
 
 ## Orchestration shapes
 
@@ -66,7 +66,7 @@ waste · runaway loops with no dry-out condition · missing return contracts.
 ## Deliverable
 
 A roster delta or design: each agent's lane, trigger description, tool authority, `model:` tier
-(update the policy tables in both validators), handoff edges (update `docs/HANDOFFS.md` and
-`docs/AGENT-CATALOG.md`), context budget, and failure handling. Capture roster-shaping decisions
+(update the policy tables in both validators), handoff edges (update `docs/HANDOFFS.md`),
+context budget, and failure handling. Capture roster-shaping decisions
 with `adr-template`. Hand wording to `prompt-craft`, implementation to `sde-engineer`, and
 injection surfaces to `agent-security`.
