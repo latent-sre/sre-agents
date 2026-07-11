@@ -60,8 +60,7 @@ ambiguous. Fix the spec; don't blame the model. Your recurring surface is **this
    takes a different fix (see `agent-authoring`, artifact tier).
 3. **Edit minimally**, matching this fleet's conventions (frontmatter fields, description length
    ≤1024, trigger-style phrasing, `[verified]/[sourced]/[unverified]` labeling).
-4. **Validate structurally** — `python3 scripts/validate_fleet.py` (update its model-policy table
-   in the SAME commit when `model:` changes).
+4. **Validate structurally** — `python3 scripts/validate_fleet.py`.
 5. **Validate behaviorally** — add/extend an eval scenario under `evals/` when the outcome is
    gradeable (a gate blocks, a route lands, a refusal happens); don't write tautological evals for
    prose-quality skills. Retest with fresh context, multiple reps — variance is a metric.
