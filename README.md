@@ -70,7 +70,7 @@ incident-command are **skills** — `route-request`, `incident-severity` — not
 - *Ladders* (2) · *Craft* (`craft` — one skill, six language files: Python/Bash/PowerShell/Go/TypeScript/React;
   plus `tdd-workflow`, `safe-refactor`, `debug-rca`, `self-improve-loop`) · *Data* (`database-reliability`)
 - *Build ops tooling*: `ops-cli`, `api-design`, `spa-architecture`, `ops-stack-integration`
-- *Agent-system methods (Anthropic patterns)*: `context-engineering`, `parallelization`, `tool-design`,
+- *Agent-system methods (Anthropic patterns)*: `context-engineering`, `tool-design`,
   `agent-security`, `prompt-craft`, `agent-architecture`
 - *Observe/investigate (your stack)*: `pcf-ops`, `splunk-triage`,
   `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation`, `thousandeyes-network`, `slo-error-budget`,

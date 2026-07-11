@@ -1,5 +1,5 @@
-id: parallelization-fanout-decision
-target: parallelization
+id: route-request-fanout-decision
+target: route-request
 # Task: decide what to fan out vs keep sequential, and acknowledge the cost — fan out
 # INDEPENDENT strands, keep TIGHTLY-COUPLED work serial, and note that fan-out isn't
 # free. Outcome graded: the response makes the independent/coupled split and names the

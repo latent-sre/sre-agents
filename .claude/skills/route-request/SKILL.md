@@ -49,8 +49,9 @@ Risks / watch-for: <…>
 ```
 Each step names the **context to hand the agent** so it can start cold (`handoff-protocol`). Mark
 prod-facing or destructive steps and require explicit human confirmation. When the plan has independent
-strands (or wants multi-lens review/voting), load **`parallelization`** to decide whether to fan them out
-concurrently and whether the cost pays.
+strands (or wants multi-lens review/voting), read
+[`references/fan-out.md`](references/fan-out.md) — fan out independent strands, keep tightly-coupled work
+(especially coding) sequential, and weigh the cost: multi-agent fan-out runs ~15× a normal chat's tokens.
 
 ## Guardrails
 - **Don't invent an agent** not in the fleet — if none fits, say so (or have the main session do it).

@@ -7,16 +7,16 @@ description: >-
   budgets. Use when adding/splitting/merging agents in a roster (including this fleet), designing an
   agent-based ops tool, or diagnosing cross-agent failures — context poisoning, telephone-game
   information loss, duplicated work, runaway loops. For single-artifact wording use `prompt-craft`;
-  for fan-out cost mechanics use `parallelization`.
+  for fan-out cost mechanics see `route-request`'s fan-out reference.
 ---
 
 # Agent architecture
 
 Multi-agent is an architecture decision with real costs — tokens, latency, and information loss at
-every handoff — justified only when one context genuinely can't hold the work, stages need
-isolation, independent perspectives reduce error, or parallelism pays (see `parallelization` for
-the ~15× cost math). Default to fewer agents with better skills. *[sourced: Anthropic "Building
-effective agents", "How we built our multi-agent research system"]*
+every handoff — justified only when one context genuinely can't hold the work, stages need isolation,
+independent perspectives reduce error, or parallelism pays. Fan-out runs **~15× the tokens of a normal
+chat** (single agents already run ~4×), so default to fewer agents with better skills.
+*[sourced: Anthropic "Building effective agents", "How we built our multi-agent research system"]*
 
 ## Agent vs. skill (this fleet's decision rule)
 
@@ -51,8 +51,8 @@ justification in the agent's own file (or an ADR if it reshapes the roster).
 - **Tools are authority.** The `tools:` list encodes the mandate — reviewers can't edit,
   researchers can't write. Enforce roles at the harness layer, not with prose.
 - **Descriptions route; keep them trigger-only** (see `prompt-craft`).
-- **Budget explicitly.** Tokens, latency, and strand count per task; right-size the fan-out (1
-  lookup / 2–4 lenses / more only for genuinely decomposable work — see `parallelization`).
+- **Budget explicitly.** Tokens, latency, and strand count per task; right-size the fan-out: 1 agent
+  for a lookup, 2–4 for a comparison or multi-lens review, more only for genuinely decomposable work.
 - **Design the failure path.** Decide up front what happens when a worker returns garbage, nothing,
   or half the contract — and where untrusted content could enter (`agent-security`).
 
