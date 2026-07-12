@@ -89,8 +89,13 @@ lookups to `researcher` — a real capability trade, so it is called out here ra
 Two consequences worth knowing before you use these agents:
 - **They cannot run test suites or builds** (`pytest`, `npm test`, `go test`, `make`, local scripts).
   That is intentional: running the suite executes the code *under review* — the diff's own
-  `conftest.py`, its npm lifecycle scripts. Test evidence comes from CI or from `test-engineer`;
-  `merge-gate` says so explicitly. A reviewer's unobserved "tests pass" is `[unverified]`.
+  `conftest.py`, its npm lifecycle scripts. Test evidence comes from **CI**, which is the execution
+  boundary. **Delegation is not isolation:** do not route an untrusted diff to `test-engineer` to run
+  it instead — `test-engineer` has *unguarded* `Bash` plus `Write`/`Edit`, so that is the same
+  arbitrary execution with more privilege. It runs suites for code **the team authored**; it is not a
+  sandbox. We have **no credential-less isolated runner** for agent-initiated test execution today —
+  building one is the open gap, and until it exists, untrusted-diff test evidence comes from CI or not
+  at all. A reviewer's unobserved "tests pass" is `[unverified]`.
 - **Nothing is exempt by path.** There is no allowlist. A path-based exemption cannot pin a *mutable*
   file's contents — a reviewer sits in a checkout of untrusted code, so any PR could rewrite the
   exempted script. If a helper ever needs an exemption, pin its **content hash**, not its path.

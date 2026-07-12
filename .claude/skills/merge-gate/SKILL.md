@@ -13,14 +13,23 @@ A change merges only when **all** of these pass. Any **NO** blocks the merge —
 recorded waiver from a human owner.
 
 ## Checklist
-- [ ] **Builds & CI green** — compile/lint/format and the full test suite pass in CI. Attach the
-      evidence (CI link, or run output from a non-read-only agent such as `test-engineer`), not just a
-      tick — an asserted "green" is `[unverified]`.
-      > The **read-only agents cannot supply this themselves**: `code-reviewer`, `security-reviewer`,
-      > and `sre-engineer` are blocked from running test suites and builds, because doing so executes
-      > the code under review (`conftest.py`, npm lifecycle scripts). Take the evidence from CI or from
-      > `test-engineer` — do not ask a reviewer to run the suite, and do not accept a reviewer's
-      > second-hand "tests pass" as `[verified]`.
+- [ ] **Builds & CI green** — compile/lint/format and the full test suite pass **in CI**. Attach the
+      **CI run link**, not just a tick — an asserted "green" is `[unverified]`.
+      > **CI is the execution boundary, and for untrusted code it is the ONLY one.** Running a suite
+      > executes the code under test (`conftest.py`, npm lifecycle scripts, `go test` compiles the
+      > tree). For a diff from outside the team — a fork PR, an external contributor, a dependency
+      > bump — that is arbitrary code chosen by its author, so it must run in CI's ephemeral,
+      > credential-scoped runner. Not on a developer's box, and not inside an agent.
+      >
+      > **Do not launder this through `test-engineer`.** The read-only agents (`code-reviewer`,
+      > `security-reviewer`, `sre-engineer`) are blocked from running suites — but `test-engineer` has
+      > **unguarded `Bash` plus `Write`/`Edit`**, so asking *it* to run an untrusted suite is strictly
+      > *worse* than letting the reviewer do it: same arbitrary execution, more privilege. Delegation
+      > is not isolation. `test-engineer` runs suites for code **the team authored**; it is not a
+      > sandbox and must not be used as one.
+      >
+      > We do **not** currently have a credential-less isolated runner for agent-initiated test
+      > execution. Until we do, untrusted-diff test evidence comes from CI or it does not exist.
 - [ ] **Behavior tested** — the change's new/changed lines are covered; new behavior has tests; any bug
       fix has a regression test that fails without the fix (`tdd-workflow`). Show that it ran.
 - [ ] **Reviewed** — `code-reviewer` ran; all Critical/High findings are resolved (not just acknowledged).

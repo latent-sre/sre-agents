@@ -72,9 +72,11 @@ surrounding context to judge correctness — a diff in isolation hides bugs.
    scripts; `go test` compiles and runs the tree. Executing them means running code *the change's author
    controls*, which is exactly what a reviewer of an untrusted diff must not do. Bash here is for
    **inspection only** — `git log/diff/show`, `grep`, `cat`, `ls`.
-   For test evidence, cite the **CI run** or hand off to `test-engineer` (who is not read-only). An
-   asserted "tests pass" that you did not observe is `[unverified]` — label it that way; never imply
-   you ran something you did not.
+   For test evidence, cite the **CI run** — CI is the execution boundary. Do **not** hand an untrusted
+   diff to `test-engineer` to run "on your behalf": it has unguarded `Bash` *plus* `Write`, so that is
+   the same arbitrary execution with *more* privilege. Delegation is not isolation. An asserted "tests
+   pass" that you did not observe is `[unverified]` — label it that way; never imply you ran something
+   you did not.
 4. For each suspected bug, **adversarially verify**: try to construct the input that triggers it.
    If you can't convince yourself it's real, label it as a question, not a defect.
 5. Rank and report.
