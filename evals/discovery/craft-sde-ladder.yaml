@@ -1,0 +1,9 @@
+id: discover-craft-sde-ladder
+expected: sde-ladder
+# The owning agent legitimately covers this lane and loads the skill itself — delegating
+# there is the roster working, not a misroute. Grade the outcome, not the path.
+also_acceptable: [sde-engineer]
+prompt: |
+  This change touches three services and alters an API contract other teams call. How much design
+  work does something like this actually need before I start coding?
+note: "2026-07-11 FIRST baseline (n=2): 0 hit / 0 misroute / 2 no-route. saw: none. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."

@@ -1,0 +1,6 @@
+id: discover-sel-route-request
+expected: route-request
+prompt: |
+  I need a new ops dashboard built, reviewed, tested and deployed to prod. Work out who does what,
+  in what order, and where the checkpoints are.
+note: "2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: route-request. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."

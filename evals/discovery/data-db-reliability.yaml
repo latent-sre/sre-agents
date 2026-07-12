@@ -1,0 +1,9 @@
+id: discover-data-db-reliability
+expected: database-reliability
+# The owning agent legitimately covers this lane and loads the skill itself — delegating
+# there is the roster working, not a misroute. Grade the outcome, not the path.
+also_acceptable: [sde-engineer]
+prompt: |
+  We need to drop a column from the prod orders table, and the app still references it in one place.
+  How do we sequence that safely?
+note: "2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: database-reliability. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."
