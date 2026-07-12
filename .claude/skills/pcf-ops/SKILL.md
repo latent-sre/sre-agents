@@ -70,13 +70,48 @@ buffer, go to Splunk (`splunk-triage`).
 ## Reading failures (exit codes, 502/503, health checks)
 
 **App crashes — exit codes (`cf events` / `cf app`):**
-- `Exited with status 137` = **OOM** — the container exceeded its memory quota and was killed. Mitigate
-  with `cf scale -m` or tune the app/JVM heap (can also happen during cell evacuation).
+- `Exited with status 137` = **SIGKILL** (128+9). **Not proof of OOM** — OOM is the most common cause
+  on CF, but the number alone doesn't say so, and treating it as proof sends you to `cf scale -m` for
+  a crash that was never about memory.
+  **Corroborate before you call it OOM.** Diego only appends the literal **`(out of memory)`** suffix
+  to the crash string when *Garden reported an OOM event on the container* — so it's that **suffix**,
+  not the 137, that is the platform's OOM signal:
+  ```
+  APP/PROC/WEB: Exited with status 137 (out of memory)     <- OOM, corroborated
+  APP/PROC/WEB: Exited with status 137                     <- SIGKILL. Cause NOT established.
+  ```
+  Check `cf events <app>` (`app.crash` → `exit_description`) and `cf logs <app> --recent`, and confirm
+  memory trending to the quota before the crash (`cf app`, or `/v3/apps/<guid>/processes/web/stats` →
+  `usage.mem` vs `mem_quota`).
+  > **The suffix can be missing on a real OOM.** On foundations where Garden uses **containerd**, OOM
+  > events are not reported in the container info, so a genuine memory kill surfaces as a *bare* 137.
+  > *Absence of the annotation does not disprove OOM* — fall back to the memory metrics.
+  > *[sourced: cloudfoundry/executor `run_step.go`; garden-runc-release issue #112]*
 - The app must listen on the platform-assigned **`$PORT`** (never a hardcoded port), or health checks
   fail and it crash-loops. A "1 starting / 1 down / 1 failing" pattern right after a push is usually
   memory or a `$PORT` mistake.
 
-**Gorouter 502 vs 503 — app-side or platform-side?**
+**Gorouter 5xx — read `X-Cf-RouterError`, don't infer from the status code.**
+
+The status code **under-determines** the cause. Gorouter sets an **`X-Cf-RouterError`** response header
+naming the actual reason — get it first (`curl -sS -D- -o /dev/null https://<route>/`), then reason:
+
+| `X-Cf-RouterError` | Status | Means |
+|---|---|---|
+| `unknown_route` | **404** | route not in the router's table (note: **not a 5xx at all**) |
+| `no_endpoints` | **503** | route exists, no healthy backends |
+| `endpoint_failure` | **502** | backend reached, request failed (dial/read/timeout); often carries detail, e.g. `endpoint_failure (context deadline exceeded)` |
+| `Connection Limit Reached` | 503 | backend connection limit |
+| `route_service_unsupported` | 502 | route-service misconfiguration |
+
+That two of the documented values map to **404** is itself the proof: you cannot read the cause off
+502-vs-503. *[sourced: CF "Troubleshooting router error responses"; gorouter `handlers/lookup.go`,
+`proxy/round_tripper/error_handler.go`]*
+
+Rough shape once you have the header — **502 = a backend was reached and the request failed**
+(Gorouter retries up to 3 attempts); **503 = there was nothing healthy to route to** (or a TLS identity
+mismatch). Then:
+
 - **502 Bad Gateway** — Gorouter reached a backend but the response/connection failed: app crashed
   mid-request, exceeded the router timeout, or the **keep-alive race** — if the app's keep-alive idle
   timeout is **< 90s**, it can close a connection just as Gorouter reuses it → 502. Fix: set the app
