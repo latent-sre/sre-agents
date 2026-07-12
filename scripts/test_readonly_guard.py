@@ -8,10 +8,43 @@ and asserts each command is DENIED or ALLOWED. Pure stdlib; no network, no Claud
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 GUARD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "readonly-guard.py")
+
+
+def find_sh():
+    """Absolute path to a POSIX sh, or None.
+
+    The launcher cases below used to spawn a bare `["sh", hook]`. subprocess does NOT go through a
+    shell, so that resolves `sh` against the Windows PATH only -- and Git for Windows puts sh.exe in
+    `Git\\bin` and `Git\\usr\\bin`, NEITHER of which is on PATH (only `Git\\cmd` is). The whole test
+    run therefore died with `FileNotFoundError: [WinError 2]` BEFORE the corpus was exercised, on the
+    one platform where the guard had already been found silently dead once. Claude Code itself finds
+    Git Bash to run the hook, so the guard was live in a real session -- only the TEST was broken,
+    which is worse: it meant the fail-closed property was never actually verified on Windows.
+
+    So: try PATH first, then the locations Git for Windows really installs sh.exe -- including one
+    derived from git.exe, which IS on PATH (Git\\cmd\\git.exe -> ../bin/sh.exe).
+    """
+    found = shutil.which("sh")
+    if found:
+        return found
+    candidates = [
+        r"C:\Program Files\Git\bin\sh.exe",
+        r"C:\Program Files\Git\usr\bin\sh.exe",
+        r"C:\Program Files (x86)\Git\bin\sh.exe",
+    ]
+    git = shutil.which("git")
+    if git:
+        # .../Git/cmd/git.exe -> .../Git/bin/sh.exe and .../Git/usr/bin/sh.exe
+        git_root = os.path.dirname(os.path.dirname(os.path.abspath(git)))
+        candidates.insert(0, os.path.join(git_root, "bin", "sh.exe"))
+        candidates.insert(1, os.path.join(git_root, "usr", "bin", "sh.exe"))
+    return next((c for c in candidates if os.path.isfile(c)), None)
 
 # Commands a read-only agent legitimately runs for observation — must PASS THROUGH.
 ALLOW = [
@@ -435,12 +468,18 @@ def main() -> int:
     # never ran, emitted no decision -- and Claude Code let the command through. Read-only agents had
     # NO guard, silently. Testing the script is not testing the hook. These three cases test the hook.
     hook = os.path.join(os.path.dirname(GUARD), "readonly-guard-hook.sh")
+    sh = find_sh()
     if not os.path.isfile(hook):
         failures.append("  launcher missing: scripts/readonly-guard-hook.sh")
+    elif sh is None:
+        # Do NOT silently skip. These three cases are the only ones that test the FAIL-CLOSED
+        # property, and skipping them is how the guard stayed dead on Windows the first time.
+        failures.append("  LAUNCHER: no POSIX sh found — cannot verify the hook actually runs. "
+                        "Install Git for Windows (ships sh.exe) or a POSIX shell.")
     else:
         def via_hook(cmd, env=None):
             payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd}})
-            p = subprocess.run(["sh", hook], input=payload, capture_output=True, text=True,
+            p = subprocess.run([sh, hook], input=payload, capture_output=True, text=True,
                                env=env, encoding="utf-8", errors="replace")
             out = (p.stdout or "").strip()
             if not out:
@@ -456,9 +495,14 @@ def main() -> int:
             failures.append("  LAUNCHER: a read-only command was denied through the hook")
         # FAIL CLOSED: with no usable interpreter the hook must DENY, never fall open. This is the
         # exact failure that disabled the guard on Windows -- a guard that cannot run must not allow.
-        broke = dict(os.environ, PATH="/usr/bin")   # sh present, no python/python3/py
-        if via_hook("rm -rf /", env=broke) != "deny":
-            failures.append("  LAUNCHER: FELL OPEN with no working Python -- it must fail CLOSED")
+        # PATH is pointed at an EMPTY dir (not a POSIX-only path like /usr/bin, which does not exist
+        # on Windows and made this case meaningless there): the launcher is invoked by absolute path,
+        # so only its INTERNAL python3/python/py lookup is starved -- which is exactly the condition
+        # under test. The launcher's body is pure shell builtins, so it still runs with an empty PATH.
+        with tempfile.TemporaryDirectory() as empty:
+            broke = dict(os.environ, PATH=empty)
+            if via_hook("rm -rf /", env=broke) != "deny":
+                failures.append("  LAUNCHER: FELL OPEN with no working Python -- it must fail CLOSED")
 
     total = len(ALLOW) + len(DENY) + 1 + 3
     if failures:
