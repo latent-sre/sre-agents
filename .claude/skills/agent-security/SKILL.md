@@ -65,25 +65,25 @@ Break any one leg and the injection can't complete. *[sourced: Simon Willison, "
     administrators to bypass protection rules* is disabled** (it is ON by default). Don't substitute a
     local `PreToolUse` denylist on `cf`: it only holds while the agent cooperates, so it reads as a
     control without being one.
-  - **`sde-engineer`, `sre-monitor`, `runbook-author`, `prompt-engineer`** are write-capable with
-    `Write`+`Edit`+`Bash`(+`WebSearch`/`WebFetch`) and **no PreToolUse hook**. Containment is not a broken
-    leg but (a) **human review of every write** before it merges/ships (`merge-gate` / PR review) and
-    (b) treating **all fetched/log/PR text as DATA, never instructions** (`handoff-protocol` carries the
-    untrusted taint). Leg-3 reach is the local repo + a PR, not prod — but a poisoned `WebFetch`/log line
-    steering a file write is a real injection surface, so keep their writes human-reviewed and never
-    auto-merged. `prompt-engineer` additionally holds `WebFetch`, so its network-egress leg is bounded by
-    the **outbound allowlist**, not the Bash guard.
+  - **`sde-engineer`, `sre-monitor`, `runbook-author`, `prompt-engineer`** are write-capable
+    (`Write`+`Edit`+`Bash`) with **no PreToolUse hook**, and **all four also hold `WebFetch`** (all but
+    `runbook-author` also `WebSearch`) — so their network-egress leg is bounded by the **outbound
+    allowlist**, not the Bash guard. Containment is not a broken leg but (a) **human review of every write**
+    before it merges/ships (`merge-gate` / PR review) and (b) treating **all fetched/log/PR text as DATA,
+    never instructions** (`handoff-protocol` carries the untrusted taint). Leg-3 reach is the local repo +
+    a PR, not prod — but a poisoned `WebFetch`/log line steering a file write is a real injection surface,
+    so keep their writes human-reviewed and never auto-merged.
   - **`test-engineer`** holds `Write`+`Edit`+`Bash` (no `WebFetch`) and **no
     PreToolUse hook**. Lacking `WebFetch` narrows leg 2 but doesn't close it: `Bash` still ingests
     untrusted **test output, DB/query results, and logs** — as do migration files authored with the
     `database-reliability` skill (the forward/rollback scripts a human release owner later runs under the `production-change-gate`).
     Same containment — human review of every write + treat all tool/log output as DATA.
-  - **`code-reviewer`, `security-reviewer`, `sre-engineer`** are read-only (no `Write`/`Edit`) but keep
-    `Bash` for observation and `WebSearch` for lookups. Two legs are contained by controls, not removed:
-    leg-3 `Bash` egress by the `readonly-guard` **speed-bump** (incomplete, see above) + OS least-privilege,
-    and leg-3 `WebSearch` by the **outbound allowlist**. They deliberately **do NOT hold `WebFetch`** — that
-    would add an un-inspected exfil path the Bash-only guard can't see (see the `matcher` note above); they
-    delegate real fetches to `researcher`.
+  - **`code-reviewer`, `security-reviewer`, `sre-engineer`** are read-only (no `Write`/`Edit`) and keep
+    `Bash` for observation — its leg-3 egress contained by the `readonly-guard` **speed-bump** (incomplete,
+    see above) + OS least-privilege. `security-reviewer` and `sre-engineer` also hold `WebSearch` (bounded
+    by the outbound allowlist); **`code-reviewer` holds neither `WebSearch` nor `WebFetch`, so `Bash` is its
+    only egress**. None hold `WebFetch` — it would add an un-inspected exfil path the Bash-only guard can't
+    see (see the `matcher` note above); they delegate real fetches to `researcher`.
   - **`researcher`** is read-only (no `Bash`, no `Write`) yet holds the **full trifecta**: leg 1 (repo
     `Read`/`Grep`), leg 2 (`WebSearch`/`WebFetch` of untrusted pages), leg 3 (`WebFetch` of an arbitrary
     URL). It has **no PreToolUse hook** — and none would help, since the guard only matches `Bash`. But

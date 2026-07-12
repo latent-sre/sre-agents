@@ -105,9 +105,10 @@ lives in the [`agent-authoring`](.claude/skills/agent-authoring/SKILL.md) skill,
 design**. When present it names the agent's *single primary* skill to **preload**: Claude Code injects
 that skill's **full content** (not just its description) into the agent up front — an always-on token
 cost — so an agent names only the one skill it always needs (`code-reviewer → merge-gate`,
-`test-engineer → tdd-workflow`). Every *other* skill loads **on demand** via the `Skill` tool, so an
-absent or single-entry block is expected, not a gap. Note `skills:` preloads content; it does **not**
-grant invocation — that's the `Skill` tool in `tools:`. (Claude-only field.)
+`test-engineer → tdd-workflow`, `runbook-author → runbook-template`). Every *other* skill loads **on
+demand** via the `Skill` tool, so an absent or single-entry block is expected, not a gap. Note `skills:`
+preloads content; it does **not** grant invocation — that's the `Skill` tool in `tools:`.
+*[sourced: https://code.claude.com/docs/en/sub-agents]* (Claude-only field.)
 
 **The one non-portable seam** is the agent `tools:` field: Claude uses `Read, Grep`; Copilot expects
 arrays like `['edit','search/codebase']`. Claude-only `PreToolUse` hooks don't cross to Copilot either.

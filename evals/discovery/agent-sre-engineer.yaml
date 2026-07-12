@@ -11,6 +11,6 @@ prompt: |
 # (validate_fleet, eval --validate, guard tests) passed the whole time. Only running this probe found
 # it. Cause: the trim deleted the fleet's only explicit "route work to the fleet" instruction and
 # replaced the header with language priming the session to act as the worker ("what an agent needs
-# while working"). Restoring an explicit routing directive returned it to 14/15.
+# while working"). Restoring an explicit routing directive returned it to 14/15 [unverified: same A/B run].
 # LESSON: AGENTS.md is delegation-load-bearing. Re-run this probe after ANY edit to it.
 note: "2026-06: 2/2 delegated. 2026-07-11 A/B (n=9 each, isolated worktrees): main 9/9 · post-trim 3/9 (REGRESSION) · post-fix 14/15. [unverified: manual runs; no committed transcript/seed/model-id]"

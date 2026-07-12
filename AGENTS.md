@@ -79,9 +79,10 @@ is a fast speed-bump on top of that, not a substitute for it.
 
 > **Routing and incident-command are *skills*, not agents.** `route-request` (planning a multi-step
 > request) and `incident-severity` (running a live incident) run in the **main session's** context. The
-> durable reason is cost, not capability: a coordinator *subagent* would double-pay the routing
-> round-trip and discard the main session's live context that the work actually needs — true even now
-> that Claude Code supports nested subagent dispatch.
+> durable reason is **cost, not capability**: routing is a *low-context* task, so a coordinator *subagent*
+> would only add a round-trip — the main session pays to spin one up, waits, then acts on its answer — for
+> a decision it can make inline. (Not context-loss: routing needs little context, so that's not the
+> disqualifier — the extra hop is.) True even now that Claude Code supports nested subagent dispatch.
 
 > **Seniority/experience is carried by skills, not separate agents.** There is *one* `sde-engineer`
 > and *one* `sre-engineer`. They scale altitude by loading a **ladder skill** — pick the tier that

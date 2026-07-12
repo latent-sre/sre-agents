@@ -11,8 +11,8 @@ chat** (single agents already run ~4×), so default to fewer agents with better 
 An **agent** exists when it needs a **distinct tool-scope**, a **distinct guard posture**, **or**
 is a **recurring, separable domain lane with its own handoff edges**. Everything else — altitude,
 method, checklist, playbook — is a **skill**. Seniority tiers are ladder skills, not cloned agents;
-routing and incident-command are main-session skills because a coordinator subagent double-pays the
-round-trip and discards live context. Apply this test before adding any agent, and record the
+routing and incident-command are main-session skills because a coordinator subagent only adds a
+round-trip for a low-context decision the main session can make inline. Apply this test before adding any agent, and record the
 justification in the agent's own file (or an ADR if it reshapes the roster).
 
 ## Orchestration shapes
