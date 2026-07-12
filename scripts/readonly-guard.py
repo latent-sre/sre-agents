@@ -75,13 +75,24 @@ _WRAP = (
 # Command-position anchor: the start of a command. Kept in lockstep with _GIT_CMD (below) so every
 # _CMD-anchored rule catches the same positions the git rule does — otherwise a mutation is caught in one
 # form and missed in another. A command starts at: string start (modulo indentation), after a
-# separator/pipe (`|;&`, so `&&`/`||` too), after a subshell/brace opener (`(` `{`), or after find's
-# `-exec`/`-execdir`/`-ok`/`-okdir` (which run the following token as a command). Then, optionally: leading
-# `VAR=val` assignments, a sudo/wrapper prefix (_WRAP), and an absolute/relative path to the binary
-# (`(?:\S*/)?`, so `/bin/rm` anchors like bare `rm`). `\s*` sits OUTSIDE the alternation so indentation
-# after `^` is consumed (a bare `^` + wrapper would miss `\n  rm`).
+# separator/pipe (`|;&`, so `&&`/`||` too), after a subshell/brace opener (`(` `{`) that is itself in
+# command position (start-of-line or after separator/whitespace — NOT inside a quoted argument like
+# `grep "{ rm x }"`), or after find's `-exec`/`-execdir`/`-ok`/`-okdir` (which run the following token as
+# a command; require a preceding whitespace so `grep "-exec rm"` — where `-exec` sits inside quotes — is
+# not treated as an anchor). Then, optionally: leading `VAR=val` assignments, a sudo/wrapper prefix
+# (_WRAP), and an absolute/relative path to the binary (`(?:\S*/)?`, so `/bin/rm` anchors like bare `rm`).
+# `\s*` sits OUTSIDE the alternation so indentation after `^` is consumed (a bare `^` + wrapper would miss
+# `\n  rm`). Residual (accepted, matching the cooperative-agent posture): a mutation crafted with no
+# whitespace before a `(`/`{` in mid-token (`foo(rm x)`) is not classified — bash wouldn't parse it as a
+# subshell anyway.
 _CMD = (
-    r"(?:^|[|;&(){}]|-exec(?:dir)?\b|-ok(?:dir)?\b)\s*"
+    r"(?:"
+      r"^"
+      r"|[|;&]"
+      r"|(?:(?<=^)|(?<=[|;&\s]))[(){}]"
+      r"|(?<=\s)-exec(?:dir)?\b"
+      r"|(?<=\s)-ok(?:dir)?\b"
+    r")\s*"
     r"(?:\w+=\S+\s+)*"
     + _WRAP
     + r"(?:\S*/)?"
@@ -117,11 +128,16 @@ _GIT_PRE = (
 #   - after a sudo/env-style wrapper; and `(?:\S*/)?` re-admits an absolute/relative path to the binary.
 # The trailing write-verb list still gates it, so a git READ in any of these positions (`(git log)`)
 # stays allowed. Residual (accepted — matches the guard's cooperative-agent / non-sandbox posture and
-# the rest of the denylist): a git write hidden after a shell *keyword* (`...; do git push`) or a
-# literal `(git push)` inside a quoted grep argument is not perfectly classified; the load-bearing
-# control is OS-level least-privilege creds + a network allowlist, not this regex.
+# the rest of the denylist): a git write hidden after a shell *keyword* (`...; do git push`) is not
+# perfectly classified; the load-bearing control is OS-level least-privilege creds + a network allowlist,
+# not this regex. The `(` / `{` anchors require command position (start-of-line or after separator/
+# whitespace) so `grep "(git push)" file` — the verb sitting inside a quoted argument — stays allowed.
 _GIT_CMD = (
-    r"(?:^|[|;&(){}])\s*"
+    r"(?:"
+      r"^"
+      r"|[|;&]"
+      r"|(?:(?<=^)|(?<=[|;&\s]))[(){}]"
+    r")\s*"
     r"(?:\w+=\S+\s+)*"
     + _WRAP
     + r"(?:\S*/)?git\s+"

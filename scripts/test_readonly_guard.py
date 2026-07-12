@@ -112,6 +112,19 @@ ALLOW = [
     "Get-Help Remove-Item",                  # cmdlet name as an ARGUMENT to a read
     'grep "do rm" file.txt',                 # 'do'/'rm' as search text (keyword-prefix anchor needs real position)
     "echo done",                             # 'done' must not match the `do` keyword wrapper
+    # `-exec` / `-ok` / `(` / `{` in command-start positions catch real mutations
+    # (`find … -exec rm {} \;`, `(rm x)`, `{ rm x; }`) — but the same tokens can occur inside
+    # QUOTED ARGUMENTS to a read (`grep "-exec rm" docs/`, `echo "{ rm -rf x; }"`), and the guard
+    # must not treat those as anchors. The `_CMD`/`_GIT_CMD` anchors require whitespace/separator
+    # before `-exec`/`-ok`/`(`/`{` so a quoted-argument mention stays allowed.
+    'grep "-exec rm" docs/',
+    'grep "-ok rm" file',
+    'echo "{ rm -rf x; }"',
+    'grep -rn "{ rm -rf x; }" .',
+    'echo "( rm x )"',
+    'grep "(git push)" file',
+    'echo "{ git commit }"',
+    'grep -rn "( git reset )" .',
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
