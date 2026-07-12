@@ -1,0 +1,24 @@
+id: route-request-active-technical-investigation
+target: route-request
+# Task: active diagnosis belongs to sre-engineer even though incident coordination
+# may be happening in parallel.
+prompt: |
+  The checkout incident is still active. Incident command already has severity,
+  roles, communications, and the timeline covered. We need someone to investigate
+  why HTTP 503s began after the latest release, inspect the evidence, and determine
+  what changed. Who owns this technical investigation?
+
+  Start the response with exactly `Primary owner: <agent-or-skill-id>`, then explain.
+success_criteria:
+  - Routes active technical investigation to sre-engineer
+  - Keeps the task focused on diagnosis and root-cause evidence
+graders:
+  - type: regex
+    pattern: '^Primary owner:\s*sre-engineer\s*$'
+  - type: contains_any
+    of:
+      - "investigation"
+      - "diagnosis"
+      - "root cause"
+      - "evidence"
+      - "what changed"

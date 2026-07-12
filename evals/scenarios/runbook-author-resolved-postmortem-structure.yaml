@@ -1,0 +1,30 @@
+id: runbook-author-resolved-postmortem-structure
+target: runbook-author
+# Task: a resolved incident writeup must use the postmortem structure, not the
+# operational runbook Procedure/Rollback structure.
+prompt: |
+  The checkout incident is resolved. Draft the postmortem in this response only; do not edit files.
+
+  Known facts:
+  - Impact: checkout returned HTTP 503 for 18 minutes to about 35% of requests.
+  - Detection: the customer-support queue identified the problem before the paging alert fired.
+  - Trigger: build 87 introduced an exhausted connection pool.
+  - Contributing factor: the staging load test did not exercise production concurrency.
+  - Mitigation: the human release owner remapped traffic to the previously-live app.
+  - Follow-up owners and dates are not assigned yet, so mark them as placeholders.
+
+  Use the appropriate incident-writeup structure.
+success_criteria:
+  - Uses the blameless postmortem sections for summary, impact, timeline, systemic causes, and action items
+  - Does not substitute the operational runbook Procedure or Rollback headings
+graders:
+  - type: contains_all
+    of:
+      - "## Summary"
+      - "## Impact"
+      - "## Timeline"
+      - "## Root cause"
+      - "## Action items"
+  - type: not_regex
+    # Anchor to Markdown headings so prose such as "rollback restored service" does not false-fail.
+    pattern: '^\s{0,3}#{1,6}\s+(Procedure|Rollback(?:\s*/\s*cleanup)?)\b'

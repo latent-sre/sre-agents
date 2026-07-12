@@ -30,9 +30,18 @@ something on fire?).
 | "run the incident / comms / who's doing what" | load **`incident-severity`** (severity, roles, comms, timeline) | ⇄ `sre-engineer` (technical RCA) in parallel |
 | "set up monitoring / noisy alert / define SLO" | `sre-monitor` | → `runbook-author` for alert runbooks |
 | "ship / release / deploy / roll back / move off Bamboo" | a human release owner (**`pcf-deploy`** / **`bamboo-to-actions-migration`** / **`rollback-mitigation`**) | **`release-gate`** + **`production-change-gate`** for prod |
-| "write/update a runbook / document this" | `runbook-author` | — |
+| "write/update an operational runbook or procedure, or a resolved-incident postmortem/writeup" | `runbook-author` (preloads **`runbook-template`**; invokes **`blameless-postmortem`** for incident writeups) | — |
 | "write/tune an agent, skill, or prompt / skill never triggers / agent ignores instruction" | `prompt-engineer` (loads **`agent-authoring`** — artifact tier for one artifact, roster tier for lane/orchestration design) | → `security-reviewer` if the artifact ingests untrusted input; → `code-reviewer` for gate/guard wording changes |
 | any agent is missing a fact | `researcher` | → back to the requester |
+
+### Incident phase boundary (who owns it *when*)
+An incident hands off through three phases. Route by the phase you are in, not by the word "incident":
+- **Active — coordination** (severity, roles, comms cadence, the authoritative timeline) → **`incident-severity`**
+- **Active — technical investigation** (what is broken, why, what changed) → **`sre-engineer`**
+- **Resolved — the retrospective artifact** (the written postmortem, the runbook it produced) → **`runbook-author`**
+
+A request for a live major-incident response **playbook** is coordination and routes to
+`incident-severity`; a request to document a stable operational procedure routes to `runbook-author`.
 
 ## 3. Insert gates (pass/fail checkpoints, not agents)
 - Before merge → **`merge-gate`**.
