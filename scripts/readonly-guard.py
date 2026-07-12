@@ -42,11 +42,16 @@ COOPERATIVE agent actually emits; we intentionally do not try to out-parse an ad
 Decision is returned as a permissionDecision JSON on stdout with exit 0 (the documented
 non-error path). See https://code.claude.com/docs/en/hooks
 
-Cross-platform: pure Python stdlib, no jq. The agent hook frontmatter invokes this via
-`"$(command -v python3 || command -v python)" -c ...` — it SELECTS the interpreter once (python3,
-else python on Windows) and runs the guard a single time, so the guard's exit code propagates
-unchanged. (The older `python3 ... || python ...` form re-ran the guard on any non-zero exit, which
-turns a deny into a fall-through.)
+Cross-platform: pure Python stdlib, no jq. Agents invoke this through
+`scripts/readonly-guard-hook.sh`, NOT directly — read that file before changing the wiring.
+
+The hook USED to be an inline `"$(command -v python3 || command -v python)" -c ...`, on the belief
+that it "selects python3, else python on Windows". That belief was WRONG and it silently DISABLED THE
+GUARD on Windows: `command -v python3` SUCCEEDS there — it resolves the Microsoft Store *alias stub*
+(on by default in Win 10/11) — so the `|| python` fallback never fired, the stub exited non-zero, this
+script never ran, no decision was emitted, and Claude Code let the command through. Read-only agents
+had no guard at all, and nothing said so. The launcher now (1) picks an interpreter that WORKS rather
+than one that merely RESOLVES, and (2) FAILS CLOSED — if it cannot start, it denies.
 """
 import json
 import re

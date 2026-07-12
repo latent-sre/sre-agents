@@ -363,12 +363,44 @@ def main() -> int:
     if subprocess.run([sys.executable, GUARD], input=other, capture_output=True, text=True).stdout.strip():
         failures.append("  guard emitted a decision for a non-Bash tool (should stay silent)")
 
-    total = len(ALLOW) + len(DENY) + 1
+    # ---- THE LAUNCHER (scripts/readonly-guard-hook.sh) -- what agents actually invoke ----
+    # Everything above tests the guard SCRIPT. It all passed while the guard was DEAD on Windows:
+    # the old inline hook ran `command -v python3 || command -v python`, python3 RESOLVED to the
+    # Microsoft Store alias stub (so the fallback never fired), the stub exited non-zero, the guard
+    # never ran, emitted no decision -- and Claude Code let the command through. Read-only agents had
+    # NO guard, silently. Testing the script is not testing the hook. These three cases test the hook.
+    hook = os.path.join(os.path.dirname(GUARD), "readonly-guard-hook.sh")
+    if not os.path.isfile(hook):
+        failures.append("  launcher missing: scripts/readonly-guard-hook.sh")
+    else:
+        def via_hook(cmd, env=None):
+            payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd}})
+            p = subprocess.run(["sh", hook], input=payload, capture_output=True, text=True,
+                               env=env, encoding="utf-8", errors="replace")
+            out = (p.stdout or "").strip()
+            if not out:
+                return "allow"
+            try:
+                return json.loads(out)["hookSpecificOutput"]["permissionDecision"]
+            except Exception:
+                return f"malformed:{out[:40]}"
+
+        if via_hook("rm -rf /important") != "deny":
+            failures.append("  LAUNCHER: a state-changing command was not denied through the hook")
+        if via_hook("cf app checkout") != "allow":
+            failures.append("  LAUNCHER: a read-only command was denied through the hook")
+        # FAIL CLOSED: with no usable interpreter the hook must DENY, never fall open. This is the
+        # exact failure that disabled the guard on Windows -- a guard that cannot run must not allow.
+        broke = dict(os.environ, PATH="/usr/bin")   # sh present, no python/python3/py
+        if via_hook("rm -rf /", env=broke) != "deny":
+            failures.append("  LAUNCHER: FELL OPEN with no working Python -- it must fail CLOSED")
+
+    total = len(ALLOW) + len(DENY) + 1 + 3
     if failures:
         print(f"FAIL — {len(failures)}/{total} case(s) wrong:")
         print("\n".join(failures))
         return 1
-    print(f"PASS — {total} cases ({len(ALLOW)} allow, {len(DENY)} deny, 1 non-Bash).")
+    print(f"PASS — {total} cases ({len(ALLOW)} allow, {len(DENY)} deny, 1 non-Bash, 3 launcher).")
     return 0
 
 

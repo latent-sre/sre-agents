@@ -198,8 +198,10 @@ def main():
         tools = get_field(fm, 'tools')
         if tools and re.search(r'\bBash\b', tools) and not re.search(r'\b(Write|Edit)\b', tools):
             body = read_raw(afull)
-            if not re.search(r'readonly-guard\.py', body):
-                issues.append("agent '%s': read-only Bash agent is missing readonly-guard.py hook" % a)
+            # The hook is wired via scripts/readonly-guard-hook.sh (which launches readonly-guard.py).
+            # Accept either spelling; what matters is that a read-only Bash agent declares the guard.
+            if not re.search(r'readonly-guard(-hook\.sh|\.py)', body):
+                issues.append("agent '%s': read-only Bash agent is missing the readonly-guard hook" % a)
         # An explicit `tools:` list that omits `Skill` is the DOCUMENTED way to stop a subagent
         # invoking skills at all: "To prevent a subagent from invoking skills entirely, omit `Skill`
         # from the tools list" -- https://code.claude.com/docs/en/sub-agents. Every agent body here

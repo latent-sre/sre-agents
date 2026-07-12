@@ -113,17 +113,20 @@ arrays like `['edit','search/codebase']`. Claude-only `PreToolUse` hooks don't c
 Behavioral guardrails are written in each agent body and honored by both tools.
 
 **Read-only enforcement:** Claude agents that keep `Bash` but must not change state wire
-[scripts/readonly-guard.py](scripts/readonly-guard.py) as a `PreToolUse` hook in their frontmatter.
-Under Copilot, where Claude hooks don't apply, enforce the same read-only posture via the agent's `tools`
-scoping instead. Verify the hook fires in your Claude Code environment (the one piece that can't be
-unit-tested offline).
+[scripts/readonly-guard-hook.sh](scripts/readonly-guard-hook.sh) as a `PreToolUse` hook in their
+frontmatter; it launches [scripts/readonly-guard.py](scripts/readonly-guard.py). Under Copilot, where
+Claude hooks don't apply, enforce the same read-only posture via the agent's `tools` scoping instead.
 
-> **Hook shell:** the hook `command` (`"$(command -v python3 || command -v python)" -c …`) is **POSIX-shell
-> syntax** — it assumes Claude Code runs hooks through `bash`/`sh` (our Linux + on-prem reality; CI is
-> Linux-only). On a **Windows** checkout where Claude Code would invoke the hook via PowerShell, that
-> command does not parse — adjust the frontmatter to a PowerShell-equivalent (or a small wrapper) for that
-> environment. This only affects the *cooperative speed-bump*; the load-bearing controls (OS-level
-> least-privilege creds + branch protection / protected environments) do not depend on the hook shell.
+> **The guard was silently dead on Windows (fixed 2026-07-11).** The hook used to be an inline
+> `"$(command -v python3 || command -v python)" -c …`. On Windows `command -v python3` **succeeds** —
+> it resolves the **Microsoft Store alias stub** (on by default in Win 10/11) — so the `|| python`
+> fallback never fired, the stub exited non-zero, the guard never ran, **no decision was emitted, and
+> Claude Code let the command through.** Read-only agents had **no guard**, silently. The launcher now
+> picks an interpreter that *works* (not one that merely *resolves*) and **fails CLOSED** — if it can't
+> start, it denies. `scripts/test_readonly_guard.py` exercises the **launcher**, not just the script
+> (3 cases: deny / allow / fail-closed), because testing the script never tested the wiring — that is
+> precisely how this shipped. Note the guard is a *cooperative speed-bump*: the load-bearing controls
+> are OS-level least-privilege credentials + branch protection / protected environments.
 
 ## Validate & operate
 
