@@ -11,7 +11,8 @@ expected_agent: sre-engineer
 # agents could reach ZERO skills; the fleet's whole premise is "agents load skills on demand". Nothing
 # caught it: validate_fleet only checked that skills EXIST, never that an agent could REACH one, and
 # every other probe here measures the MAIN session, which always has Skill. It passed 39/39 behavioral
-# scenarios and every structural check while its agents could not load a single skill.
+# scenarios [unverified: manual run; no committed transcript/seed] and every structural check while its
+# agents could not load a single skill.
 #
 # A validator CANNOT replace this: it checks the DECLARATION, not the CAPABILITY.
 agent_must_reach_skill: true

@@ -45,7 +45,7 @@ python evals/discovery_probe.py --ab  --match method  # A=listed vs B=name-only,
 (`B == A` ⇒ name-only is safe; `B << A` ⇒ it hurts) — it forces `name-only` on the expected
 skills of the selected scenarios, so scope it with `--match`. This is the harness behind the
 2026-06 Tier-1 decision: with `--match method` (the four `domain=method` skills) at
-`skillListingBudgetFraction: 0.04` discovery was **6/12 → 6/12** between conditions — no discovery loss, and no measurable gain — so the
+`skillListingBudgetFraction: 0.04` discovery was **6/12 → 6/12** *[unverified: manual run; no committed artifact]* between conditions — no discovery loss, and no measurable gain — so the
 "demote the meta-skills" idea was declined. Like `--run` in `run_evals.py`, the model-driven
 modes are **not** a CI gate; only `--validate` is.
 
@@ -77,7 +77,7 @@ write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 
 > **Important limitation — measures delegation propensity, not routing quality.** Headless `claude -p`
 > often answers a request *inline* instead of delegating, so a low agent score is **not** a fleet
-> routing fault. The 2026-06 baseline was **4/12**: `security-reviewer` and `sre-engineer` routed
+> routing fault. The 2026-06 baseline was **4/12** *[unverified: manual run; no committed artifact]*: `security-reviewer` and `sre-engineer` routed
 > 2/2 (investigative/review work naturally spins up a subagent), while `runbook-author` (and the
 > since-removed `database-reliability` / `release-engineer` agents) were handled inline (`saw: none`) and `sde-engineer`
 > delegated to the built-in `Explore` agent. The authoritative test of *routing correctness* is the
