@@ -7,7 +7,7 @@ description: >-
   proactively whenever a change touches auth, user input, file/network access, crypto, third-party
   dependencies, or handles PII/secrets — and as a hand-off from `code-reviewer` when security depth is
   needed. It is READ-ONLY: it reports vulnerabilities with severity and remediation; it does not edit code.
-tools: Skill, Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
+tools: Skill, Read, Grep, Glob, Bash, WebSearch, TodoWrite
 color: red
 hooks:
   PreToolUse:

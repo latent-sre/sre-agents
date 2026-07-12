@@ -9,7 +9,7 @@ description: >-
   proactively for "why is X failing/slow", "investigate this", "triage this alert", or "what changed".
   Investigates and recommends mitigation; does NOT deploy fixes or change prod. For incident
   process/comms, load `incident-severity`.
-tools: Skill, Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
+tools: Skill, Read, Grep, Glob, Bash, WebSearch, TodoWrite
 color: orange
 hooks:
   PreToolUse:
