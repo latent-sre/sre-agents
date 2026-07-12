@@ -27,12 +27,32 @@ events  →  dedup into ALERTS  →  cluster into SITUATIONS  →  notify / page
 
 ## During an alert storm (investigation)
 1. Look at the **Situation**, not individual alerts — Moogsoft has already clustered the related ones.
-2. Read the Situation's alert list by time: the **first** alert often points at the trigger; the rest
-   are downstream/correlated.
+2. Read the Situation's alert list by time. The **first** alert is a **ranked hypothesis, not the
+   cause.** First-in-time is a weak signal and routinely wrong: detection latency differs per check
+   (a 60s poll reports after a 10s one), a slow dependency often alerts *after* the fast service it
+   starved, and clock skew across sources reorders the list outright. Treat arrival order as a place to
+   *start looking*, never as a finding.
 3. If your foundation merges Situations (a newer one absorbing an older), follow the live one — confirm
    exact merge/supersede behavior against your version's docs.
-4. Hand the likely-root alert to `sre-ladder` (investigator tier) to confirm cause; don't trust clustering as
-   proof of causation — it's a strong hint, not a verdict.
+4. Hand the top-ranked alert to `sre-ladder` (investigator tier) and **clear the bar below** before
+   anyone writes "root cause" in the incident channel.
+
+## The bar for asserting cause (correlation is a ranking, not a verdict)
+Clustering and time-ordering **rank hypotheses**. Promoting one to a *cause* takes at least one of:
+
+- **Mechanism** — you can state *how* A produces B, concretely enough to be wrong ("the pool saturated
+  at 20:04, so requests queued, so p99 crossed the 5s gateway timeout"). "They fired together" is not a
+  mechanism.
+- **Corroboration** — an independent signal class agrees (metrics *and* logs *and* an event/change),
+  not three views of the same feed.
+- **Disconfirmation** — you looked for what should be true if the hypothesis is FALSE, and didn't find
+  it. Ask: *what would I expect to see if this were NOT the cause?*
+- **Controlled response** — the fix reverses the symptom, and the timing lines up. (Strongest, and the
+  one you usually only get after mitigation.)
+
+None of these? Say **"leading hypothesis"** and keep the alternatives alive. Writing a coincidence into
+the postmortem as a cause is how a fleet fixes the wrong thing and the incident recurs — see
+`blameless-postmortem`.
 
 ## Reducing noise (tuning, with `sre-monitor`)
 - **Dedup keys** — collapse repeated events from the same source (the de-duplication key is built from

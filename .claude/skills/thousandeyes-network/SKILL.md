@@ -50,3 +50,23 @@ Our enterprise agents, test inventory, critical-journey coverage, and BGP monito
 ## Tip
 It tells you **where** (network vs app vs DNS vs routing), rarely the code-level **why** — use it to
 route the investigation, then confirm cause on the indicated layer.
+
+## A path difference is not a cause
+Path Visualization will *always* show you differences — routes change constantly, and a diff between a
+healthy and an unhealthy run is the **normal** state of the internet, not evidence. The trap is
+reading "the path changed **and** the app broke" as "the path change **broke** the app".
+
+Before you attribute an incident to the network, clear the same bar as any other correlation
+(`moogsoft-correlation` states it in full):
+- **Mechanism** — name the hop and the effect: *loss/latency at this hop, of this magnitude, is enough
+  to breach this timeout*. A different-looking path with **no loss, no latency change, and no
+  reachability change** is a different path, not an outage.
+- **Corroboration** — the app's own signals agree (5xx/timeouts to *that* dependency in Splunk, latency
+  to *that* hop in Wavefront), not just the synthetic.
+- **Disconfirmation** — do healthy agents on the **same** path also fail? Do failing agents on a
+  **different** path also fail? If the failure doesn't track the path, the path isn't the cause.
+- **Blast radius** — one agent/region vs all. A single vantage point failing is far more often that
+  vantage point.
+
+If it clears the bar, escalate to the network/platform team **with the evidence** (agent, hop, loss/
+latency deltas, timestamps). If it doesn't, say **"leading hypothesis"** and keep looking app-side.
