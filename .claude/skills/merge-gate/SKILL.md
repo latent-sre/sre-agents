@@ -14,7 +14,13 @@ recorded waiver from a human owner.
 
 ## Checklist
 - [ ] **Builds & CI green** — compile/lint/format and the full test suite pass in CI. Attach the
-      evidence (run/command output or CI link), not just a tick — an asserted "green" is `[unverified]`.
+      evidence (CI link, or run output from a non-read-only agent such as `test-engineer`), not just a
+      tick — an asserted "green" is `[unverified]`.
+      > The **read-only agents cannot supply this themselves**: `code-reviewer`, `security-reviewer`,
+      > and `sre-engineer` are blocked from running test suites and builds, because doing so executes
+      > the code under review (`conftest.py`, npm lifecycle scripts). Take the evidence from CI or from
+      > `test-engineer` — do not ask a reviewer to run the suite, and do not accept a reviewer's
+      > second-hand "tests pass" as `[verified]`.
 - [ ] **Behavior tested** — the change's new/changed lines are covered; new behavior has tests; any bug
       fix has a regression test that fails without the fix (`tdd-workflow`). Show that it ran.
 - [ ] **Reviewed** — `code-reviewer` ran; all Critical/High findings are resolved (not just acknowledged).

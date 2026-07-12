@@ -77,6 +77,15 @@ leaves an audit trail, but a determined or novel command can evade a denylist. T
 is **OS-level least-privilege credentials + an outbound allowlist** at the host/network layer — the guard
 is a fast speed-bump on top of that, not a substitute for it.
 
+Two consequences worth knowing before you use these agents:
+- **They cannot run test suites or builds** (`pytest`, `npm test`, `go test`, `make`, local scripts).
+  That is intentional: running the suite executes the code *under review* — the diff's own
+  `conftest.py`, its npm lifecycle scripts. Test evidence comes from CI or from `test-engineer`;
+  `merge-gate` says so explicitly. A reviewer's unobserved "tests pass" is `[unverified]`.
+- **Nothing is exempt by path.** There is no allowlist. A path-based exemption cannot pin a *mutable*
+  file's contents — a reviewer sits in a checkout of untrusted code, so any PR could rewrite the
+  exempted script. If a helper ever needs an exemption, pin its **content hash**, not its path.
+
 > **Routing and incident-command are *skills*, not agents.** `route-request` (planning a multi-step
 > request) and `incident-severity` (running a live incident) run in the **main session's** context. The
 > durable reason is **cost, not capability**: routing is a *low-context* task, so a coordinator *subagent*
