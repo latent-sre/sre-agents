@@ -147,8 +147,12 @@ _DENY_PATTERNS = [
     # Reads (`--get`/`--list`) lack the trailing value, so they pass through. _GIT_CMD/_GIT_PRE as above.
     _GIT_CMD + _GIT_PRE + r"config\s+(?:--\S+\s+)*\S+\.\S+\s+\S",
     _GIT_CMD + _GIT_PRE + r"config\s+(--unset|--unset-all|--replace-all|--add|--rename-section|--remove-section)\b",
-    # filesystem / process / service mutations
-    r"\b(rm|rmdir|mv|cp|rsync|dd|truncate|shred|chmod|chown|chgrp|ln|mkfs|mkdir|touch)\b",
+    # filesystem / process / service mutations. Command-position anchored (like the `install` and
+    # editor rules just below), NOT a bare `\b(rm|cp|…)\b`: these short verbs also occur as ARGUMENTS
+    # or inside hyphen tokens, so a bare boundary wrongly denies read-only commands — `grep -rn "rm -rf" .`
+    # (rm as search text), `cf app cp-service` / `cat my-cp-notes.txt` (`cp` inside a hyphen token). `_CMD`
+    # keeps the real forms caught: `rm …`, `sudo cp …`, `find . | xargs rm`, `x && mkdir y`.
+    _CMD + r"(rm|rmdir|mv|cp|rsync|dd|truncate|shred|chmod|chown|chgrp|ln|mkfs|mkdir|touch)\b",
     r"\bfind\b.*\s-delete\b",
     # GNU install copies/creates files; anchored to command position because 'install'
     # is also a common path component (e.g. `ls /opt/install`) and a package subcommand.

@@ -96,6 +96,13 @@ ALLOW = [
     "git log --oneline | grep terraform",
     'rg "go build" .',                       # 'go build' as search text, not command position
     'git log --grep="cargo build"',
+    # filesystem verbs as SEARCH TEXT or inside hyphen tokens are not the command — must PASS
+    # (regression: the fs-mutation rule is command-position anchored, not a bare `\b(rm|cp|…)\b`)
+    'grep -rn "rm -rf" .',                   # 'rm' as search text
+    "grep -rn chmod scripts/",               # 'chmod' as search text
+    "cat my-cp-notes.txt",                   # 'cp' inside a hyphenated filename
+    "cf app cp-service",                     # 'cp' inside a hyphenated app name — `cf app` is read-only
+    "cf logs mv-worker --recent",            # 'mv' inside a hyphenated app name
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
