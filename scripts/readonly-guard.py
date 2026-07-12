@@ -405,8 +405,20 @@ _DENY_PATTERNS = [
     # Command-position anchored, so `grep -rn "pytest" docs/` and `cat pytest.ini` stay allowed.
     _CMD + r"(pytest|py\.test|tox|nox|jest|vitest|mocha|rspec|bats|Invoke-Pester)\b",
     _CMD + r"(?:\S*/)?(python|python3|py)\s+(?:-\S+\s+)*-m\s+(pytest|unittest|nose2?|tox|nox)\b",
-    _CMD + r"(npm|pnpm|yarn)\s+(test|run|ci|exec|start|build)\b",
+    _CMD + r"(npm|pnpm|yarn)\s+(test|run|ci|exec|start|build|dlx)\b",
     _CMD + r"(?:\S*/)?(go|cargo|dotnet)\s+test\b",
+    # ENVIRONMENT-MANAGER WRAPPERS. `pytest` is denied; `uv run pytest` was not — and neither were
+    # poetry/pipenv/pdm/hatch/rye/pixi/conda/bundle, each of which runs an arbitrary command inside a
+    # managed env. Same execution, one word of indirection.
+    #
+    # BE HONEST ABOUT THE CEILING: unlike the git rules above, this CANNOT be made a closed grammar.
+    # There is no finite list of "every package manager, wrapper, alias, plugin loader and runner" —
+    # a new tool ships next month and this list is stale again. These entries raise the bar for a
+    # COOPERATIVE agent and buy an audit trail; they are NOT a boundary. The real control is an
+    # isolated, credential-less execution lane (see merge-gate: CI is that boundary today). Do not
+    # read a green test suite here as "test execution is contained".
+    _CMD + r"(uv|poetry|pipenv|pdm|hatch|rye|pixi|conda|bundle|pipx)\s+(run|exec)\b",
+    _CMD + r"(uvx|pipx)\b",
     # cargo/go run-or-build (install/get already covered above). Command-position anchored like the
     # make/docker rule, so observation-only text — `rg "go build" .`, `grep "cargo build" notes` —
     # is NOT a false-positive; only an actual `go build`/`cargo run` in the command slot is blocked.
