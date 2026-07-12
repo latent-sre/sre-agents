@@ -313,8 +313,8 @@ def main():
         'cloud or Kubernetes',         # sde-engineer.md       -- charter disclaimer (line-wrapped)
         'or Terraform/grafana',        # grafana-dashboards    -- dashboards-as-code provisioning aside
         'datasource-managed',          # grafana-dashboards    -- Grafana unified-alerting rule-mode note
-        'Prometheus style',            # instrument-service    -- OTel metric-naming portability note
-        'suffixes are added by the',   # instrument-service    -- OTel names vs Prometheus-exporter suffixes
+        'an EXPORTER\'s rendering',    # instrument-service    -- OTel-name vs exporter-rendering contrast
+        'underscore-style exporter',   # instrument-service    -- OTel metric-naming portability note
         'build verbs (',               # agent-security        -- readonly-guard blocked-verb example (terraform)
         'PromQL equivalence',          # wavefront-queries     -- section heading
         'accepts PromQL',              # wavefront-queries     -- WQL/PromQL equivalence note

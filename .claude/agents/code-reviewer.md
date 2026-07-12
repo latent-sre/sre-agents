@@ -67,10 +67,16 @@ surrounding context to judge correctness — a diff in isolation hides bugs.
 
 1. Identify the diff and the intent of the change.
 2. Read the changed code **and its callers/callees** for context.
-3. Where useful and safe **and a terminal is available**, run the tests, linter, type-checker, or build
-   to ground claims (Bash is for *observing* — tests, `git`, linters — never for mutating the change).
-   Without a terminal (e.g. the Copilot `search`-only wrapper), reason from the code and *recommend* the
-   checks instead.
+3. **Do not run the test suite, a build, or any local script** — the `PreToolUse` guard denies them,
+   deliberately. `pytest` imports the diff's own `conftest.py`; `npm test`/`npm ci` run its lifecycle
+   scripts; `go test` compiles and runs the tree. Executing them means running code *the change's author
+   controls*, which is exactly what a reviewer of an untrusted diff must not do. Bash here is for
+   **inspection only** — `git log/diff/show`, `grep`, `cat`, `ls`.
+   For test evidence, cite the **CI run** — CI is the execution boundary. Do **not** hand an untrusted
+   diff to `test-engineer` to run "on your behalf": it has unguarded `Bash` *plus* `Write`, so that is
+   the same arbitrary execution with *more* privilege. Delegation is not isolation. An asserted "tests
+   pass" that you did not observe is `[unverified]` — label it that way; never imply you ran something
+   you did not.
 4. For each suspected bug, **adversarially verify**: try to construct the input that triggers it.
    If you can't convince yourself it's real, label it as a question, not a defect.
 5. Rank and report.

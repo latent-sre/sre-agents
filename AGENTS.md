@@ -77,6 +77,29 @@ leaves an audit trail, but a determined or novel command can evade a denylist. T
 is **OS-level least-privilege credentials + an outbound allowlist** at the host/network layer — the guard
 is a fast speed-bump on top of that, not a substitute for it.
 
+**The guard only sees `Bash`.** It is wired `matcher: Bash`, so it governs that tool and nothing else.
+`security-reviewer` and `sre-engineer` also hold **`WebSearch`**, which is an **egress channel the guard
+cannot see** — it blocks `curl`, `nc`, and DNS tunnels inside Bash, then a query string walks out the
+side door. That is the full **lethal trifecta** in one agent: untrusted input (the diff/logs it was
+pointed at), sensitive data (the repo it can `Read`), and egress. It is *low-bandwidth* (search terms,
+no request body), not nothing. Closing it means dropping `WebSearch` from those agents and delegating
+lookups to `researcher` — a real capability trade, so it is called out here rather than quietly
+"handled". Do not read "read-only agent" as "cannot exfiltrate".
+
+Two consequences worth knowing before you use these agents:
+- **They cannot run test suites or builds** (`pytest`, `npm test`, `go test`, `make`, local scripts).
+  That is intentional: running the suite executes the code *under review* — the diff's own
+  `conftest.py`, its npm lifecycle scripts. Test evidence comes from **CI**, which is the execution
+  boundary. **Delegation is not isolation:** do not route an untrusted diff to `test-engineer` to run
+  it instead — `test-engineer` has *unguarded* `Bash` plus `Write`/`Edit`, so that is the same
+  arbitrary execution with more privilege. It runs suites for code **the team authored**; it is not a
+  sandbox. We have **no credential-less isolated runner** for agent-initiated test execution today —
+  building one is the open gap, and until it exists, untrusted-diff test evidence comes from CI or not
+  at all. A reviewer's unobserved "tests pass" is `[unverified]`.
+- **Nothing is exempt by path.** There is no allowlist. A path-based exemption cannot pin a *mutable*
+  file's contents — a reviewer sits in a checkout of untrusted code, so any PR could rewrite the
+  exempted script. If a helper ever needs an exemption, pin its **content hash**, not its path.
+
 > **Routing and incident-command are *skills*, not agents.** `route-request` (planning a multi-step
 > request) and `incident-severity` (running a live incident) run in the **main session's** context. The
 > durable reason is **cost, not capability**: routing is a *low-context* task, so a coordinator *subagent*

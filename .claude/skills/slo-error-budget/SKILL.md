@@ -12,8 +12,13 @@ description: >-
 Start with **one SLO per critical user journey**, not a metric zoo. An SLO you can compute and act on
 beats a perfect one you can't.
 
-> **Helper:** `scripts/error_budget.py --slo 99.9 --window-days 28 --bad-minutes <m> --sli <pct>`
-> prints budget remaining and burn-rate severity (page/ticket) — see the burn-rate table below.
+> **Helper:** `scripts/error_budget.py`
+> - request-based status: `--slo 99.9 --bad-events <n> --total-events <n>`
+> - time-based status: `--slo 99.9 --window-days 28 --bad-minutes <m>`
+> - burn rate + severity: `--slo 99.9 --sli-long <pct> --sli-short <pct>` — **both windows required**.
+>
+> It will not mix a request-based SLI with a time-based one, and it will not emit PAGE/TICKET from a
+> single window (see *Burn-rate alerting* below for why).
 
 ## SLI — the measurement
 An SLI is a ratio of **good events / valid events**, from the user's perspective:
@@ -27,7 +32,15 @@ usually not your fault).
 
 ## SLO — the target over a window
 - Pick a **target** (e.g. 99.9%) over a **rolling window** (commonly 28 days).
-- **Error budget = 1 − SLO.** 99.9% over 28d ≈ **40 minutes** of allowed badness.
+- **Error budget = 1 − SLO**, and its UNIT follows the SLI — do not convert between them:
+  - **Request-based SLI** (the ratio above, and the usual case): the budget is a **number of bad
+    requests**. 99.9% of 9.3M requests ≈ **9,300 failed requests**.
+  - **Time-based SLI** (probe/uptime — the SLI is literally minutes): the budget is **minutes**.
+    99.9% over 28d ≈ **40 minutes**.
+  > Saying "99.9% ≈ 40 minutes of downtime" for a **request-based** SLO is wrong, and it is wrong in
+  > the dangerous direction: it assumes traffic is uniform, so it under-counts a peak-hour outage and
+  > over-counts a 3am one. This skill used to do exactly that, one section after defining the SLI as a
+  > request ratio. Pick the SLI first; the unit follows.
 - The budget is a *decision tool*: budget left → ship features; budget burned → freeze risky changes,
   spend on reliability. Fits a non-Google, ops-focused team — makes "how reliable is enough" an
   explicit, shared call.
