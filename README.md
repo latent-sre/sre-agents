@@ -34,10 +34,6 @@ cross-tool project guide.
 **VS Code / GitHub Copilot** — open the repo; pick a custom agent from the Chat agents dropdown (skills
 load automatically or via `/`). Both tools read `.claude/` directly — no build step.
 
-**Vendor it into an existing repo** — to embed the fleet as a subdirectory of another project (rather than
-using it standalone), see **[docs/INTEGRATION.md](docs/INTEGRATION.md)**: the scripts are location-robust,
-but `.claude/`, `CLAUDE.md`, and `AGENTS.md` must be surfaced at the host repo's root.
-
 ## Layout
 
 ```
