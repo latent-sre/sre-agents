@@ -196,19 +196,14 @@ ALLOW = [
     "gh auth status",
     "gh alias list",
     "gh workflow view deploy.yml",
-    # git INSPECTION of refs/notes/submodules is read-only and must stay allowed. The new branch/tag
-    # rules key on a NAME argument (creation); a bare listing or a flag-only form creates nothing.
-    "git branch",
-    "git branch -a",
-    "git branch -r",
-    "git branch -v",
-    "git branch --list 'release/*'",
-    "git branch --show-current",
-    "git branch --contains HEAD",
-    "git tag",
-    "git tag -l",
-    "git tag --list 'v1.*'",
-    "git tag -n5",
+    # Ref inspection WITHOUT `git branch`/`git tag`, which are denied outright (they accept abbreviated
+    # long options — `--dele` deletes — so no flag list can make them safe). These cannot mutate a ref
+    # no matter what flags they carry: a closed grammar replacing an open denylist.
+    "git for-each-ref --format='%(refname:short)' refs/heads",
+    "git for-each-ref refs/tags",
+    "git for-each-ref --contains HEAD refs/heads",
+    "git rev-parse --abbrev-ref HEAD",
+    "git rev-parse HEAD",
     "git remote -v",
     "git remote show origin",
     "git submodule status",
@@ -345,18 +340,31 @@ DENY = [
     "git submodule update --init",           # fetches + checks out code, can run hooks
     "git submodule add https://example.com/x.git vendor/x",
     "git replace HEAD~1 HEAD",               # rewrites object graph
-    # LONG-FORM flags. Matching only the short ones (-d/-D/-m/-M) left the spelling a human actually
-    # types wide open: `git branch --delete` deleted while `git branch -D` was denied.
+    # `git branch` / `git tag` are denied OUTRIGHT — flag enumeration is unwinnable. Git accepts any
+    # UNAMBIGUOUS ABBREVIATION of a long option, so `--delete` is also `--dele`, `--del`, ... an
+    # unbounded set. Verified on a scratch repo: `git branch --dele victim` DELETED THE BRANCH while
+    # every enumerated rule allowed it. Both prior attempts (short flags, then long flags) shipped
+    # believing the area was covered. Reads go through `git for-each-ref` (see ALLOW).
     "git branch --delete feature",
-    "git branch --delete --force feature",
+    "git branch --dele feature",              # ABBREVIATED long option — deletes; the killer case
+    "git branch --del feature",
+    "git branch -D feature",
     "git branch --move old new",
-    "git branch --copy main copy",
-    "git branch -f feature main",            # force-move a ref (-f/-u were missing beside -d/-m/-c)
-    "git branch -u origin/main",
+    "git branch -f feature main",
+    "git branch audit-temp",
+    "git branch",                             # denied too: closed grammar, unknown forms fail closed
+    "git branch --list 'release/*'",
     "git tag --delete v1.0.0",
-    "git tag --force v1.0.0",
-    "git tag --annotate v9.9.9 -m x",
-    "git tag --sign v9.9.9",
+    "git tag --dele v1.0.0",                  # abbreviated
+    "git tag -d v1.0.0",
+    "git tag audit-temp",
+    "git tag -n5",
+    # `git config` write, incl. the abbreviated --unset that walked past the enumerated rule
+    "git config user.email evil@example.com",
+    "git config --unset user.name",
+    "git config --unse user.name",            # ABBREVIATED — bypassed the old enumerated write list
+    "git config --global core.pager cat",
+    "git config --edit",
     # git's ext:: transport and --upload-pack/--receive-pack run an ARBITRARY COMMAND. This is remote
     # code execution wearing a clone/fetch costume, and it defeats every verb-based rule above.
     "git clone 'ext::sh -c whoami'",

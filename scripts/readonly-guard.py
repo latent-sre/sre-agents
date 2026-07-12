@@ -265,14 +265,28 @@ _DENY_PATTERNS = [
     # `git tag`, `-l`, `-n5`) create nothing and stay allowed. -c/-C (copy) were missing beside -d/-m.
     # These live in their OWN entries, not in the verb group above: that group ends in `\b`, which a
     # single-character name (`git branch a…`) can never satisfy — the boundary falls mid-token.
-    # Both SHORT and LONG spellings. Matching only `-[dDmMcC]` / `-[dfas]` left the form a human
-    # actually types wide open — `git branch --delete feature` and `git tag --delete v1.0.0` sailed
-    # through while `-D` / `-d` were caught. (That gap predates the creation fix above: the ORIGINAL
-    # rule was `branch\s+-[dDmM]`, so long-form deletion was never covered.)
-    # Read forms create nothing and stay allowed: `--list`, `--all`, `--contains`, `--show-current`, `-n5`.
-    _GIT_CMD + _GIT_PRE + r"branch\s+(?:-[dDmMcCfu]\b|"
-    r"--(?:delete|move|copy|force|edit-description|set-upstream-to|unset-upstream)\b|(?!-)\S)",
-    _GIT_CMD + _GIT_PRE + r"tag\s+(?:-[dfasu]\b|--(?:delete|force|annotate|sign|local-user)\b|(?!-)\S)",
+    # `git branch` and `git tag` are denied OUTRIGHT — no flag enumeration, in either direction.
+    #
+    # Enumerating mutation flags is UNWINNABLE, and not merely "incomplete". Git's parse-options
+    # accepts any UNAMBIGUOUS ABBREVIATION of a long option, so `--delete` is also spelled `--dele`,
+    # `--del`, ... — an unbounded set. Demonstrated on a scratch repo: `git branch --dele victim`
+    # DELETED THE BRANCH while every enumerated rule allowed it. Option clusters (`-fd`) and future
+    # flags widen it further. Two prior commits tried to enumerate (first short flags, then long) and
+    # both shipped believing the area was covered; that is the failure mode, not the specific misses.
+    #
+    # So: closed grammar instead of an open denylist. Nothing named `branch`/`tag` runs, and the
+    # read-only need is served by commands that CANNOT mutate a ref no matter what flags they carry:
+    #     git for-each-ref --format='%(refname:short)' refs/heads    # list branches
+    #     git for-each-ref refs/tags                                  # list tags
+    #     git rev-parse --abbrev-ref HEAD                             # current branch
+    # Accepted cost, deliberately: reads like `git branch --list` / `git tag -n5` are denied too. That
+    # is the point of a closed grammar — an unrecognized form fails closed rather than being guessed at.
+    _GIT_CMD + _GIT_PRE + r"(branch|tag)\b",
+    # `git config`: same lesson, same shape. `--unset` abbreviates to `--unse`/`--uns`, which walked
+    # past the enumerated write-flag rule. Inverted to a closed grammar: a `git config` invocation is
+    # a WRITE unless it carries an explicit read flag (--get*/--list/-l), so unknown and abbreviated
+    # options fail closed. Scope flags in any position stay fine (`git config --global --get user.name`).
+    _GIT_CMD + _GIT_PRE + r"config\b(?![^|;&\n]*(?:--get|--list|\s-l\b))",
     # git's ext:: transport and --upload-pack/--receive-pack execute an ARBITRARY COMMAND on the local
     # host (`git clone 'ext::sh -c id'`). That is remote code execution wearing a clone/fetch costume,
     # and no verb-based rule can see it — the verb is a perfectly ordinary `clone`/`fetch`/`ls-remote`.
@@ -284,10 +298,6 @@ _DENY_PATTERNS = [
     # workflow anyone has, and failing closed on a code-execution transport is worth the trade.
     # (`grep -rn 'ext::' .` — no git in command position — is unaffected and stays allowed.)
     _GIT_CMD + r"[^|;&\n]*(ext::|--upload-pack[=\s]|--receive-pack[=\s])",
-    # git config WRITE: a dotted key followed by a value, or an explicit write flag.
-    # Reads (`--get`/`--list`) lack the trailing value, so they pass through. _GIT_CMD/_GIT_PRE as above.
-    _GIT_CMD + _GIT_PRE + r"config\s+(?:--\S+\s+)*\S+\.\S+\s+\S",
-    _GIT_CMD + _GIT_PRE + r"config\s+(--unset|--unset-all|--replace-all|--add|--rename-section|--remove-section)\b",
     # filesystem mutations. Command-position anchored via _CMD (like the `install`/editor rules below),
     # NOT a bare `\b(rm|cp|…)\b`: these short verbs also occur as ARGUMENTS or inside hyphen tokens, so a
     # bare boundary wrongly denies reads — `grep -rn "rm -rf" .` (rm as search text), `cf app cp-service` /
@@ -480,7 +490,11 @@ _REASON = (
     "Blocked: this is a read-only agent. The command appears to change state "
     "(deploy/scale/restart, GitHub or git write, file/process/service mutation, package install, "
     "nested shell, or an HTTP write) or to exfiltrate data (raw-socket tool, or HTTP/DNS egress "
-    "carrying command substitution). For reachability use ThousandEyes or a plain `curl`/`dig`; "
+    "carrying command substitution). To inspect refs read-only, use `git for-each-ref` "
+    "(e.g. `git for-each-ref --format='%(refname:short)' refs/heads`) or `git rev-parse --abbrev-ref "
+    "HEAD` — `git branch`/`git tag` are denied outright, in BOTH directions, because git accepts "
+    "abbreviated long options (`--dele` deletes) and no flag list can close that. "
+    "For reachability use ThousandEyes or a plain `curl`/`dig`; "
     "for a state change, recommend it and hand off to the owning writer agent with human sign-off "
     "(see the production-change-gate skill for prod)."
 )
