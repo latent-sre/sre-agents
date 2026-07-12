@@ -417,6 +417,13 @@ _ALLOW_RE = re.compile(
     re.IGNORECASE,
 )
 
+_REASON_UNPARSEABLE = (
+    "Blocked: the read-only guard could not parse the PreToolUse payload, so it cannot tell whether "
+    "this command changes state. Failing CLOSED — refusing rather than silently allowing. This is a "
+    "harness/wiring fault, not something the command did: check that Claude Code is piping the hook "
+    "JSON on stdin (see scripts/readonly-guard-hook.sh)."
+)
+
 _REASON = (
     "Blocked: this is a read-only agent. The command appears to change state "
     "(deploy/scale/restart, GitHub or git write, file/process/service mutation, package install, "
@@ -427,34 +434,80 @@ _REASON = (
 )
 
 
+def _deny(reason: str) -> None:
+    """Emit a deny decision and exit on the documented non-error path (stdout + exit 0).
+
+    Exit 0 is deliberate: Claude Code treats a NON-ZERO hook exit (other than 2) as a NON-BLOCKING
+    error and runs the tool anyway. So a guard that crashes ALLOWS. Every failure path must therefore
+    come through here — printing an explicit deny — rather than raising.
+    """
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }))
+    sys.exit(0)
+
+
 def main() -> None:
+    # FAIL CLOSED on input we cannot understand. This used to `sys.exit(0)` on any exception --
+    # emitting no decision, which lets the command through. That is the same fall-open shape as the
+    # Windows launcher bug (see module docstring): the guard that could not run silently allowed.
+    # The launcher fails closed; the parser must too, or the fix only covers half the path.
     try:
         # Read raw bytes and decode with utf-8-sig so a leading BOM (which some Windows shells
         # and pipes prepend) is stripped reliably, regardless of the locale encoding.
         raw = sys.stdin.buffer.read().decode("utf-8-sig", errors="replace")
-        data = json.loads(raw) if raw.strip() else {}
     except Exception:
-        sys.exit(0)  # unparseable input -> don't interfere with the normal permission flow
+        _deny(_REASON_UNPARSEABLE)
 
+    if not raw.strip():
+        _deny(_REASON_UNPARSEABLE)  # the hook only fires on a Bash call; an empty payload is a fault
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        _deny(_REASON_UNPARSEABLE)
+
+    if not isinstance(data, dict):
+        _deny(_REASON_UNPARSEABLE)
+
+    # A non-Bash tool is genuinely none of this guard's business -- stay silent (asserted by a test).
+    # This is the ONE allow-on-uncertainty path, and it is safe: the hook is wired `matcher: Bash`.
     if data.get("tool_name") != "Bash":
         sys.exit(0)
 
-    command = (data.get("tool_input") or {}).get("command", "") or ""
+    tool_input = data.get("tool_input")
+    if not isinstance(tool_input, dict):
+        _deny(_REASON_UNPARSEABLE)
+    command = tool_input.get("command", "")
+    if not isinstance(command, str):
+        # A non-string command (list/dict/number) made _DENY_RE.search() raise TypeError; the guard
+        # crashed, and a crashed hook is NON-BLOCKING -- so the command RAN. Do NOT try to str() it
+        # and scan the result: str(["rm","-rf","/"]) is "['rm', '-rf', '/']", which matches no
+        # command-position anchor and would sail through as an ALLOW. A shape the guard cannot
+        # reason about is a payload it cannot vet -- deny it.
+        _deny(_REASON_UNPARSEABLE)
     # The allowlist is a SINGLE-command exemption; require a single line so a multiline command that
     # merely STARTS with the triage helper (`triage.sh\nrm -rf /`) can't ride the exemption past the
     # (now MULTILINE) denylist. A legitimate triage invocation is always one line.
     if "\n" not in command and "\r" not in command and _ALLOW_RE.match(command):
         sys.exit(0)  # bundled read-only triage helper — explicitly permitted
     if _DENY_RE.search(command):
-        print(json.dumps({
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "deny",
-                "permissionDecisionReason": _REASON,
-            }
-        }))
+        _deny(_REASON)
     sys.exit(0)
 
 
 if __name__ == "__main__":
-    main()
+    # Last-resort backstop. Anything main() raises would exit non-zero, and Claude Code treats a
+    # non-zero hook (other than exit 2) as a NON-BLOCKING error -- the tool call proceeds. So an
+    # unhandled exception in the guard is an ALLOW. Convert any such crash into a deny.
+    # SystemExit must pass through untouched: _deny() and the allow paths both raise it.
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception:
+        _deny(_REASON_UNPARSEABLE)

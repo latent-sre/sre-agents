@@ -582,6 +582,35 @@ def main() -> int:
     if subprocess.run([sys.executable, GUARD], input=other, capture_output=True, text=True).stdout.strip():
         failures.append("  guard emitted a decision for a non-Bash tool (should stay silent)")
 
+    # ---- FAIL CLOSED on a payload the guard cannot understand ----
+    # These used to `sys.exit(0)` with no decision -- i.e. ALLOW. A guard that cannot read its input
+    # cannot know the command is safe, and Claude Code runs the tool when a hook emits no decision.
+    # The last case is the subtle one: a non-string `command` made _DENY_RE.search() raise TypeError,
+    # the guard crashed, and a crashed hook is NON-BLOCKING -- so the command RAN.
+    def raw_decision(payload):
+        p = subprocess.run([sys.executable, GUARD], input=payload, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        out = (p.stdout or "").strip()
+        if not out:
+            return "allow"
+        try:
+            return json.loads(out)["hookSpecificOutput"]["permissionDecision"]
+        except Exception:
+            return f"malformed:{out[:40]}"
+
+    malformed = {
+        "not JSON at all": "not json at all",
+        "truncated JSON": '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"',
+        "empty stdin": "",
+        "whitespace only": "   \n  ",
+        "JSON but not an object": '["tool_name", "Bash"]',
+        "non-string command (crashed the regex -> allowed)":
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": ["rm", "-rf", "/"]}}),
+    }
+    for label, payload in malformed.items():
+        if raw_decision(payload) != "deny":
+            failures.append(f"  FELL OPEN on a malformed payload ({label}) -- must fail CLOSED")
+
     # ---- THE LAUNCHER (scripts/readonly-guard-hook.sh) -- what agents actually invoke ----
     # Everything above tests the guard SCRIPT. It all passed while the guard was DEAD on Windows:
     # the old inline hook ran `command -v python3 || command -v python`, python3 RESOLVED to the
@@ -625,12 +654,13 @@ def main() -> int:
             if via_hook("rm -rf /", env=broke) != "deny":
                 failures.append("  LAUNCHER: FELL OPEN with no working Python -- it must fail CLOSED")
 
-    total = len(ALLOW) + len(DENY) + 1 + 3
+    total = len(ALLOW) + len(DENY) + 1 + len(malformed) + 3
     if failures:
         print(f"FAIL — {len(failures)}/{total} case(s) wrong:")
         print("\n".join(failures))
         return 1
-    print(f"PASS — {total} cases ({len(ALLOW)} allow, {len(DENY)} deny, 1 non-Bash, 3 launcher).")
+    print(f"PASS — {total} cases ({len(ALLOW)} allow, {len(DENY)} deny, 1 non-Bash, "
+          f"{len(malformed)} fail-closed, 3 launcher).")
     return 0
 
 
