@@ -83,6 +83,40 @@ def has_field_line(fm, key):
     return any(key_match.search(ln) for ln in fm)
 
 
+def get_list_field(fm, key):
+    """Return a list-field value as a list of token strings, handling both YAML shapes:
+      inline: `tools: Skill, Read, Grep`
+      block:  `tools:` followed by `  - Skill` / `  - Read` lines
+    Returns [] if the key is absent or empty. Line-oriented on purpose — matches get_field's approach
+    and keeps the validator stdlib-only. A previous version only inspected same-line values, so a
+    block-list form that omitted `Skill` would silently pass the `Skill` allowlist check."""
+    key_match = re.compile(r'^\s*' + re.escape(key) + r'\s*:\s*(.*)$')
+    item_re = re.compile(r'^(\s*)-\s*(.+?)\s*$')
+    for i, ln in enumerate(fm):
+        m = key_match.match(ln)
+        if not m:
+            continue
+        rest = m.group(1).strip()
+        if rest:
+            # inline: split on commas, drop empties
+            return [t.strip() for t in rest.split(',') if t.strip()]
+        # block form: consume subsequent `- item` lines at deeper indent than the key
+        key_indent = len(ln) - len(ln.lstrip(' '))
+        items = []
+        for ln2 in fm[i + 1:]:
+            if not ln2.strip():
+                continue
+            im = item_re.match(ln2)
+            if not im:
+                break
+            item_indent = len(im.group(1))
+            if item_indent <= key_indent:
+                break
+            items.append(im.group(2).strip())
+        return items
+    return []
+
+
 def description_length(fm):
     """Compute the folded-description length the same way the .ps1 does.
 
@@ -195,8 +229,10 @@ def main():
                 issues.append("agent '%s': name '%s' fails charset rule" % (a, name))
         if not has_field_line(fm, 'description'):
             issues.append("agent '%s': missing description" % a)
-        tools = get_field(fm, 'tools')
-        if tools and re.search(r'\bBash\b', tools) and not re.search(r'\b(Write|Edit)\b', tools):
+        tool_list = get_list_field(fm, 'tools')
+        has_tools = has_field_line(fm, 'tools')
+        tool_set = set(tool_list)
+        if has_tools and 'Bash' in tool_set and not (tool_set & {'Write', 'Edit'}):
             body = read_raw(afull)
             # The hook is wired via scripts/readonly-guard-hook.sh (which launches readonly-guard.py).
             # Accept either spelling; what matters is that a read-only Bash agent declares the guard.
@@ -209,7 +245,9 @@ def main():
         # WHO, skills are HOW, loaded on demand). It shipped that way and nothing caught it, because
         # the validator only checked that skills EXIST -- never that an agent could REACH one.
         # `skills:` does NOT substitute: it preloads content, it does not grant invocation.
-        if tools and not re.search(r'\bSkill\b', tools):
+        # Uses get_list_field so both inline (`tools: A, B`) and YAML block (`tools:\n  - A`) forms
+        # are covered -- an earlier same-line-only check could be bypassed by reformatting to a list.
+        if has_tools and 'Skill' not in tool_set:
             issues.append(
                 "agent '%s': tools: omits 'Skill' -- it cannot invoke ANY skill (the documented way to "
                 "disable skills). Its body tells it to load skills. Add Skill to tools:, or drop tools: "
