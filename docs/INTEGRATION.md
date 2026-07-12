@@ -31,7 +31,7 @@ host-repo/
 ├─ AGENTS.md                → surfaced from tools/sre-agents/AGENTS.md  (symlink or copy)
 ├─ .github/
 │  └─ workflows/
-│     └─ sre-agents-validate.yml   ← copy of this repo's validate.yml, path-adjusted (see CI section)
+│     └─ sre-agents-validate.yml   ← from the illustrative validate.yml template below, path-adjusted
 └─ tools/
    └─ sre-agents/           ← this entire repo, vendored verbatim
       ├─ .claude/
@@ -78,7 +78,7 @@ cp     tools/sre-agents/AGENTS.md AGENTS.md
 
 ## CI integration
 
-This repo's `.github/workflows/validate.yml` assumes the repo root **is** the fleet. When the fleet is
+The illustrative `validate.yml` template (below) assumes the repo root **is** the fleet. When the fleet is
 nested, copy it to the host's `.github/workflows/` and pin every step to the subdirectory. The cleanest way
 is a job-level `working-directory` default:
 
