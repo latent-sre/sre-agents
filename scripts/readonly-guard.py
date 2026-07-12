@@ -365,6 +365,12 @@ _DENY_PATTERNS = [
     # via `\b`; these file-exec rules were command-position-anchored and missed the path prefix).
     _CMD + r"(?:\S*/)?(bash|sh|zsh)\s+[\"'./~$A-Za-z0-9_-]*\S+\.sh\b",
     _CMD + r"(?:\S*/)?(bash|sh|zsh)\s+\.{0,2}/\S+",
+    # PowerShell running a SCRIPT FILE. This gap was found by DELETING the triage allowlist, which had
+    # been masking it: the interpreter rule above only fires on an inline-code flag (-c/-Command/-File),
+    # and pwsh/powershell were absent from the sh/bash/zsh script-file rule — so a bare
+    # `pwsh deploy.ps1` (no -File) matched NOTHING and ran. On Windows, where the Bash tool fronts a
+    # PowerShell-capable shell, that was a general script-exec hole, not a triage-shaped one.
+    _CMD + r"(?:\S*/)?(pwsh|powershell)\s+[^|;&\n]*\.ps1\b",
     # `python3 ./mutate.py`, `node x.js|.mjs|.cjs`, `ruby x.rb` — a script-file argument.
     # The earlier `-c/-e/--eval` and `--version`/`-m` forms are read-only and pass through.
     r"\b(python|python3|py)\s+(?!-)\S*\.py\b",
@@ -380,14 +386,13 @@ _DENY_PATTERNS = [
     # *mutating* command is still caught by its verb rule (`/bin/rm` → the fs-verb rule, whose `_CMD`
     # anchor carries a `(?:\S*/)?` binary-path prefix; `…/cf push` → the cf-write rule). Anchored to
     # command position so a path ARGUMENT (`cat path/to/file`) is
-    # not — `cat` holds the command slot there. The fleet's own bundled read-only triage helper is
-    # exempted up front via _ALLOW_RE (it's a relative path that would otherwise trip this).
+    # not — `cat` holds the command slot there. NOTHING is exempted from this: the bundled triage
+    # helper used to be, by path, and that exemption is gone (see NO ALLOWLIST below).
     r"(?:^|[|;&]\s*)[A-Za-z0-9_.~-]+/\S*",
     # An ABSOLUTE path to a SCRIPT FILE (by extension) in command position — `/tmp/x.sh`,
     # `/opt/app/deploy.py`. Absolute paths to BINARIES (`/bin/cat`, `/usr/local/bin/cf`) have no
     # script extension and stay allowed (handled above); this blocks running an arbitrary local
-    # *script* by absolute path, which the relative-path rule above would otherwise miss. The bundled
-    # triage helper is invoked by its relative `.claude/skills/...` path and allowlisted via _ALLOW_RE.
+    # *script* by absolute path, which the relative-path rule above would otherwise miss.
     r"(?:^|[|;&]\s*)/\S*\.(sh|bash|zsh|py|rb|js|mjs|cjs|pl|ps1)\b",
     # Sourcing a file pulls its (possibly mutating) commands into the current shell.
     r"(?:^|[|;&]\s*)source\b",
@@ -402,20 +407,22 @@ _DENY_PATTERNS = [
 # push`) would slip past every `(?:^|…)`-anchored rule. A newline is a command separator just like `;`.
 _DENY_RE = re.compile("|".join(_DENY_PATTERNS), re.IGNORECASE | re.MULTILINE)
 
-# Allowlist: the fleet's own bundled READ-ONLY triage helper, at its EXACT bundled path
-# `.claude/skills/pcf-ops/scripts/triage.{sh,ps1}` (the path pcf-ops/foundations.md documents).
-# The path-exec / `bash …​.sh` rules above would otherwise (wrongly) deny it. Pinned to the bundled
-# path (optional leading `./`) so an attacker-planted look-alike at a DIFFERENT path —
-# `/tmp/evil/pcf-ops/scripts/triage.sh`, or a CWD-relative `pcf-ops/scripts/triage.sh` — is NOT
-# exempted. Anchored to the WHOLE command (optional interpreter prefix, optional args, but no command
-# separators) so a chained mutation like `triage.sh; rm -rf /` does NOT get a free pass — that falls
-# through to the deny rules. Args are bounded by [^|;&] to forbid pipelines/chaining.
-_ALLOW_RE = re.compile(
-    r"^\s*(?:bash\s+|pwsh\s+(?:-File\s+)?)?"
-    r"(?:\./)?\.claude/skills/pcf-ops/scripts/triage\.(?:sh|ps1)"
-    r"(?:\s+[^|;&]*)?\s*$",
-    re.IGNORECASE,
-)
+# NO ALLOWLIST — deliberately. There used to be one: it exempted the bundled triage helper at its
+# exact path, `.claude/skills/pcf-ops/scripts/triage.{sh,ps1}`, so the script-exec rules above would
+# not deny it. Pinning the PATH does not pin the CONTENT. A read-only reviewer's whole job is to sit
+# in a checkout of code it does not trust, and that file is a normal, writable file in the tree: any
+# branch, PR, or patch could rewrite triage.sh and the guard would hand it an execution pass. It was
+# the ONLY way for a read-only agent to run a local script — a single, path-shaped hole in an
+# otherwise closed rule.
+#
+# And it bought nothing. triage.sh is a convenience wrapper around four commands the guard ALREADY
+# allows individually: `cf target`, `cf app <x>`, `cf events <x>`, `cf logs <x> --recent`. An agent
+# runs those directly and gets the same picture, with no script execution anywhere. So the exemption
+# traded a real code-execution vector for zero capability. Removed; the pcf-ops skill now tells agents
+# to run the four reads. The scripts stay in the tree for HUMANS, who are not behind this guard.
+#
+# If a future helper genuinely needs an exemption, pin its CONTENT (a SHA-256 of the file, checked at
+# call time), never its path.
 
 _REASON_UNPARSEABLE = (
     "Blocked: the read-only guard could not parse the PreToolUse payload, so it cannot tell whether "
@@ -490,11 +497,6 @@ def main() -> None:
         # command-position anchor and would sail through as an ALLOW. A shape the guard cannot
         # reason about is a payload it cannot vet -- deny it.
         _deny(_REASON_UNPARSEABLE)
-    # The allowlist is a SINGLE-command exemption; require a single line so a multiline command that
-    # merely STARTS with the triage helper (`triage.sh\nrm -rf /`) can't ride the exemption past the
-    # (now MULTILINE) denylist. A legitimate triage invocation is always one line.
-    if "\n" not in command and "\r" not in command and _ALLOW_RE.match(command):
-        sys.exit(0)  # bundled read-only triage helper — explicitly permitted
     if _DENY_RE.search(command):
         _deny(_REASON)
     sys.exit(0)

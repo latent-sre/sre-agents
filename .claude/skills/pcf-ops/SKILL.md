@@ -14,9 +14,18 @@ Our apps run on PCF (VMware Tanzu Application Service). cf CLI v8 talks to CAPI 
 you observe only** — every command below is read-only. State-changing commands are listed last and
 belong to a human release owner with human sign-off.
 
-> **Helpers:** `scripts/triage.sh <app>` (Bash) and `scripts/triage.ps1 -App <app>` (PowerShell)
-> run a one-shot read-only summary (target → app → events → recent logs). Record our foundations,
-> orgs/spaces, and app inventory in
+> **One-shot triage — run these four reads directly:**
+> `cf target` → `cf app <app>` → `cf events <app> | head -n 25` → `cf logs <app> --recent | tail -n 120`.
+>
+> `scripts/triage.sh` / `triage.ps1` bundle exactly those four commands and remain **for humans**.
+> Read-only agents are behind a `PreToolUse` guard that denies executing any local script, including
+> these — deliberately. The guard used to carry a path-based exemption for them, but pinning a *path*
+> does not pin the *content*: a reviewer works inside a checkout of untrusted code, so any PR could
+> rewrite `triage.sh` and inherit its execution pass. The exemption bought no capability (the four
+> commands are individually allowed) and cost a code-execution vector, so it was removed. Run the
+> commands.
+>
+> Record our foundations, orgs/spaces, and app inventory in
 > [references/foundations.md](references/foundations.md).
 
 ## App-side vs platform-side (know your lane)

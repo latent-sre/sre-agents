@@ -145,7 +145,9 @@ Claude hooks don't apply, enforce the same read-only posture via the agent's `to
   worktree. The 2026-07 AGENTS.md trim dropped incident delegation from 9/9 to 3/9 *[unverified: manual
   A/B run, n=9; no committed transcript/seed/model-id]* while every structural check stayed green — only
   this probe caught it.
-- **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),
+- **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage — **for
+  humans**; read-only agents run the four `cf` reads directly, since the guard denies local script
+  execution and a path-based exemption cannot pin a mutable file's contents),
   `slo-error-budget/scripts/error_budget.py` (budget/burn calculator), starter templates under each
   skill's `assets/` (`api-design`, `ops-cli`, `pcf-deploy`, `github-actions-ci`), and `references/`
   fill-in files (`pcf-ops`, `splunk-triage`, `wavefront-queries`, `grafana-dashboards`,

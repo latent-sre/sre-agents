@@ -59,9 +59,10 @@ ALLOW = [
     "/bin/cat /var/log/app.log",            # absolute-path read binary (not a script)
     "/usr/local/bin/cf apps",               # cf by absolute path, read subcommand
     "/opt/splunk/bin/splunk search 'index=app'",   # absolute-path read tool
-    ".claude/skills/pcf-ops/scripts/triage.sh checkout",   # bundled READ-ONLY helper (exact path only)
-    "bash .claude/skills/pcf-ops/scripts/triage.sh checkout",
-    "pwsh .claude/skills/pcf-ops/scripts/triage.ps1 -App checkout",
+    # The four cf reads the bundled triage.sh wrapped — an agent runs these DIRECTLY now that the
+    # path-based exemption is gone. Same picture, no script execution. (See the triage cases in DENY.)
+    "cf target && cf app checkout",
+    "cf events checkout | head -n 25",
     "crontab -l",                           # listing cron is read-only
     "git log --oneline -20",
     "git diff main...HEAD",
@@ -224,9 +225,17 @@ DENY = [
     "cf curl /v3/apps -X POST -d'{\"name\":\"x\"}'",  # glued -d body write
     "cf curl /v3/apps -d @payload.json",
     "/usr/local/bin/cf push checkout",       # absolute-path cf WRITE still caught by verb rule
-    ".claude/skills/pcf-ops/scripts/triage.sh checkout; rm -rf /tmp/x",  # chained mutation defeats the allowlist
-    "pcf-ops/scripts/triage.sh checkout",    # bare relative path — NOT the bundled helper, denied
-    "/tmp/evil/pcf-ops/scripts/triage.sh checkout",  # attacker-planted look-alike at another path, denied
+    # The path-based exemption for the bundled triage helper is GONE. Pinning a PATH does not pin the
+    # CONTENT: a reviewer sits in a checkout of untrusted code, and triage.sh is a writable file in
+    # that tree — any PR could rewrite it and claim the execution pass. It also bought nothing (it
+    # wrapped four cf reads the guard already allows; see ALLOW). No script exec, at any path.
+    ".claude/skills/pcf-ops/scripts/triage.sh checkout",      # the once-exempt bundled path
+    "bash .claude/skills/pcf-ops/scripts/triage.sh checkout",
+    "pwsh .claude/skills/pcf-ops/scripts/triage.ps1 -App checkout",
+    "./.claude/skills/pcf-ops/scripts/triage.sh checkout",
+    ".claude/skills/pcf-ops/scripts/triage.sh checkout; rm -rf /tmp/x",  # chained mutation
+    "pcf-ops/scripts/triage.sh checkout",    # bare relative path
+    "/tmp/evil/pcf-ops/scripts/triage.sh checkout",  # attacker-planted look-alike at another path
     "go build ./...",                        # build runner in command position
     "cargo run",
     "python3 -m py_compile foo.py",          # writes .pyc bytecode — not read-only
