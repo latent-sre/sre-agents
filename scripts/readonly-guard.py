@@ -58,13 +58,51 @@ import re
 import sys
 
 # Leading-wrapper tolerance shared by the command-position anchors: an optional `sudo`, `env FOO=1`,
-# `xargs`, `nice -n 10`, `time`, `nohup`, etc. before the real command. Without it, `sudo install ...` /
-# `sudo vim ...` would slip past the position-anchored patterns below. Bounded to a single command via
-# [^|;&] so it can't span a pipeline.
-_WRAP = r"(?:(?:sudo|xargs|nice|env|time|command|nohup|setsid|stdbuf|ionice)\b[^|;&]*?\s)?"
+# `xargs`, `nice -n 10`, `time`, `timeout 5`, `parallel`, `nohup`, etc. before the real command — plus the
+# shell keywords `do`/`then`/`else`/`elif` that introduce a command inside a loop/conditional body
+# (`for f in *; do rm $f; done`, `if …; then rm x; fi`). Without it, `sudo install ...` / `xargs rm` /
+# `do rm ...` would slip past the position-anchored patterns below. Bounded to a single command via
+# [^|;&\n] so it can't span a pipeline OR a newline — the trailing `\n` exclusion keeps this lazy run from
+# rescanning to end-of-string at every line under re.MULTILINE (a superlinear blow-up on long multiline
+# commands); a mutation on a later line is still anchored by that line's own `^`. `timeout`/`time` both
+# listed (\btime\b does not match `timeout`). Keywords are safe here: a read never places `do <verb>` in
+# command position, and quoted/argument positions (`grep "do rm" f`) lack the anchor that precedes _WRAP.
+_WRAP = (
+    r"(?:(?:sudo|doas|xargs|parallel|nice|env|time|timeout|command|nohup|setsid|stdbuf|ionice|"
+    r"flock|watch|busybox|do|then|else|elif)\b[^|;&\n]*?\s)?"
+)
 
-# Command-position anchor: start of string or just after a pipe/sep, plus the wrapper tolerance.
-_CMD = r"(?:^|[|;&]\s*)" + _WRAP
+# Leading `VAR=val` env-assignment prefix (`FOO=1 rm …`, `TZ="a b" rm …`, `GIT_SSH_COMMAND=… git push`).
+# The value may be a QUOTED string containing spaces, so a bare `\S+` (which stops at the first space)
+# would let the mutator escape after a quoted-whitespace value — accept a quoted string OR a bare token.
+_ASSIGN = r"(?:\w+=(?:\"[^\"]*\"|'[^']*'|\S+)\s+)*"
+
+# Command-position anchor: the start of a command. Kept in lockstep with _GIT_CMD (below) so every
+# _CMD-anchored rule catches the same positions the git rule does — otherwise a mutation is caught in one
+# form and missed in another. A command starts at: string start (modulo indentation), after a
+# separator/pipe (`|;&`, so `&&`/`||` too), after a subshell/brace opener (`(` `{`) that is itself in
+# command position (start-of-line or after separator/whitespace — NOT inside a quoted argument like
+# `grep "{ rm x }"`), or after find's `-exec`/`-execdir`/`-ok`/`-okdir` (which run the following token as
+# a command; require a preceding whitespace so `grep "-exec rm"` — where `-exec` sits inside quotes — is
+# not treated as an anchor). Then, optionally: leading `VAR=val` assignments, a sudo/wrapper prefix
+# (_WRAP), and an absolute/relative path to the binary (`(?:\S*/)?`, so `/bin/rm` anchors like bare `rm`).
+# `\s*` sits OUTSIDE the alternation so indentation after `^` is consumed (a bare `^` + wrapper would miss
+# `\n  rm`). Residual (accepted, matching the cooperative-agent posture): a mutation crafted with no
+# whitespace before a `(`/`{` in mid-token (`foo(rm x)`) is not classified — bash wouldn't parse it as a
+# subshell anyway.
+_CMD = (
+    r"(?:"
+      r"^"
+      r"|[|;&]"
+      r"|(?:(?<=^)|(?<=[|;&\s]))[(){}]"
+      r"|(?<=\s)-exec(?:dir)?\b"
+      r"|(?<=\s)-ok(?:dir)?\b"
+    r")\s*"
+    + _ASSIGN
+    + _WRAP
+    + r"[\"']?"          # an optional quote around the command WORD: `"rm" -rf`, `'kill' -9`
+    + r"(?:\S*/)?"
+)
 
 # Git accepts GLOBAL options BETWEEN `git` and the subcommand (`git -C <path> push`, `git -c k=v commit`,
 # `git --git-dir=… --work-tree=… add`, `git --no-pager reset`). Without tolerating that prefix, the verb
@@ -96,12 +134,17 @@ _GIT_PRE = (
 #   - after a sudo/env-style wrapper; and `(?:\S*/)?` re-admits an absolute/relative path to the binary.
 # The trailing write-verb list still gates it, so a git READ in any of these positions (`(git log)`)
 # stays allowed. Residual (accepted — matches the guard's cooperative-agent / non-sandbox posture and
-# the rest of the denylist): a git write hidden after a shell *keyword* (`...; do git push`) or a
-# literal `(git push)` inside a quoted grep argument is not perfectly classified; the load-bearing
-# control is OS-level least-privilege creds + a network allowlist, not this regex.
+# the rest of the denylist): a git write hidden after a shell *keyword* (`...; do git push`) is not
+# perfectly classified; the load-bearing control is OS-level least-privilege creds + a network allowlist,
+# not this regex. The `(` / `{` anchors require command position (start-of-line or after separator/
+# whitespace) so `grep "(git push)" file` — the verb sitting inside a quoted argument — stays allowed.
 _GIT_CMD = (
-    r"(?:^|[|;&(){}])\s*"
-    r"(?:\w+=\S+\s+)*"
+    r"(?:"
+      r"^"
+      r"|[|;&]"
+      r"|(?:(?<=^)|(?<=[|;&\s]))[(){}]"
+    r")\s*"
+    + _ASSIGN
     + _WRAP
     + r"(?:\S*/)?git\s+"
 )
@@ -147,17 +190,24 @@ _DENY_PATTERNS = [
     # Reads (`--get`/`--list`) lack the trailing value, so they pass through. _GIT_CMD/_GIT_PRE as above.
     _GIT_CMD + _GIT_PRE + r"config\s+(?:--\S+\s+)*\S+\.\S+\s+\S",
     _GIT_CMD + _GIT_PRE + r"config\s+(--unset|--unset-all|--replace-all|--add|--rename-section|--remove-section)\b",
-    # filesystem / process / service mutations
-    r"\b(rm|rmdir|mv|cp|rsync|dd|truncate|shred|chmod|chown|chgrp|ln|mkfs|mkdir|touch)\b",
-    r"\bfind\b.*\s-delete\b",
+    # filesystem mutations. Command-position anchored via _CMD (like the `install`/editor rules below),
+    # NOT a bare `\b(rm|cp|…)\b`: these short verbs also occur as ARGUMENTS or inside hyphen tokens, so a
+    # bare boundary wrongly denies reads — `grep -rn "rm -rf" .` (rm as search text), `cf app cp-service` /
+    # `cat my-cp-notes.txt` (`cp` in a hyphen token). Because _CMD mirrors _GIT_CMD, the real forms all stay
+    # caught in command position: `rm …`, `sudo cp …`, `find . | xargs rm`, `x && mkdir y`, `/bin/rm -rf x`
+    # (abs path), `VAR=1 rm x`, `(rm x)` / `{ rm x; }` (subshell/brace), and `find … -exec rm {} \;`.
+    _CMD + r"(rm|rmdir|mv|cp|rsync|dd|truncate|shred|chmod|chown|chgrp|ln|mkfs|mkdir|touch)\b",
+    _CMD + r"find\b[^|;&\n]*\s-delete\b",
     # GNU install copies/creates files; anchored to command position because 'install'
     # is also a common path component (e.g. `ls /opt/install`) and a package subcommand.
     _CMD + r"install\b",
     # interactive/line editors and awk are file writers (in command position to avoid grep'd-text false positives)
     _CMD + r"(vim|vi|nvim|nano|emacs|ex|pico|ed)\b",
     r"\b[gmn]?awk\b.*system\s*\(",
-    # PowerShell mutations, for Windows shells behind the Bash tool name
-    r"\b(Remove-Item|Move-Item|Copy-Item|New-Item|Set-Content|Add-Content|Out-File|"
+    # PowerShell mutations, for Windows shells behind the Bash tool name. Command-position anchored (via
+    # _CMD, which includes `|` and `{`) so a pipeline/scriptblock write (`Get-ChildItem | Remove-Item`,
+    # `& { Remove-Item x }`) is caught but the cmdlet name as an ARGUMENT (`Get-Help Remove-Item`) is not.
+    _CMD + r"(Remove-Item|Move-Item|Copy-Item|New-Item|Set-Content|Add-Content|Out-File|"
     r"Set-Item|Clear-Item|Rename-Item|Set-ItemProperty|New-ItemProperty|Remove-ItemProperty|"
     r"Start-Service|Stop-Service|Restart-Service|Set-Service|Stop-Process|Start-Process)\b",
     # in-place file editors
@@ -170,18 +220,23 @@ _DENY_PATTERNS = [
     # messages) from being misread as redirection — a real redirect is never preceded by - or =.
     r"(?<![-=])>>?\s*\|?\s*(?!&|/dev/null\b)[\"'~./$A-Za-z0-9_-]",
     r"(?:^|[|;&]\s*)tee\b",
-    r"\b(kill|pkill|killall)\b",
-    r"\b(systemctl|service)\s+(start|stop|restart|reload|enable|disable)\b",
-    r"\b(shutdown|reboot|halt|poweroff)\b",
-    # package / dependency installs (state change, out of scope for read-only triage)
-    r"\b(apt|apt-get|yum|dnf|zypper|pip|pip3|npm|pnpm|yarn|gem|brew|choco)\s+"
+    # process / service / power mutations. Command-position anchored (via _CMD) so the verb as SEARCH
+    # TEXT or inside a hyphenated app/file name is not a false positive — `cf logs kill-switch-app`,
+    # `cat pre-shutdown-checklist.md`, `grep -n "pkill" runbook.md` are reads and must pass; the real
+    # forms (`kill -9 1234`, `pkill -f java`, `shutdown -h now`, `sudo systemctl restart x`) stay caught.
+    _CMD + r"(kill|pkill|killall)\b",
+    _CMD + r"(systemctl|service)\s+(start|stop|restart|reload|enable|disable)\b",
+    _CMD + r"(shutdown|reboot|halt|poweroff)\b",
+    # package / dependency installs (state change, out of scope for read-only triage). Command-position
+    # anchored so `grep -rn "pip install" docs/` (search text) is not denied.
+    _CMD + r"(apt|apt-get|yum|dnf|zypper|pip|pip3|npm|pnpm|yarn|gem|brew|choco)\s+"
     r"(install|remove|uninstall|update|upgrade|add)\b",
-    # more package managers the original list missed
-    r"\bcargo\s+install\b",
-    r"\b(go)\s+(install|get)\b",
-    r"\buv\s+pip\s+install\b",
-    r"\bpoetry\s+(add|install)\b",
-    r"\b(apk\s+add|pacman\s+-S)\b",
+    # more package managers the original list missed (command-position anchored like the rest)
+    _CMD + r"cargo\s+install\b",
+    _CMD + r"(go)\s+(install|get)\b",
+    _CMD + r"uv\s+pip\s+install\b",
+    _CMD + r"poetry\s+(add|install)\b",
+    _CMD + r"(apk\s+add|pacman\s+-S)\b",
     # HTTP writes, file downloads/uploads (these mutate the local FS or a remote)
     r"\bcurl\b.*(-X\s*(POST|PUT|DELETE|PATCH)|--request\s+(POST|PUT|DELETE|PATCH))",
     r"\bcurl\b.*(--data(-raw|-binary|-urlencode)?|--form|\s-d[\s'\"@=]|\s-F[\s'\"@=])",
@@ -244,8 +299,9 @@ _DENY_PATTERNS = [
     # `../bin/x`, `bin/run`, `scripts/x.sh`. The leading char must be a non-`/` path char, so
     # ABSOLUTE paths (`/bin/cat`, `/usr/local/bin/cf apps`, `/opt/splunk/bin/splunk search`) are
     # NOT caught here — a read-only binary invoked by absolute path is fine, and an absolute-path
-    # *mutating* command is still caught by its verb rule (`/bin/rm` → `\brm\b`, `…/cf push` →
-    # the cf-write rule). Anchored to command position so a path ARGUMENT (`cat path/to/file`) is
+    # *mutating* command is still caught by its verb rule (`/bin/rm` → the fs-verb rule, whose `_CMD`
+    # anchor carries a `(?:\S*/)?` binary-path prefix; `…/cf push` → the cf-write rule). Anchored to
+    # command position so a path ARGUMENT (`cat path/to/file`) is
     # not — `cat` holds the command slot there. The fleet's own bundled read-only triage helper is
     # exempted up front via _ALLOW_RE (it's a relative path that would otherwise trip this).
     r"(?:^|[|;&]\s*)[A-Za-z0-9_.~-]+/\S*",

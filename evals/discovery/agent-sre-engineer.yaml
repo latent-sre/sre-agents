@@ -5,11 +5,12 @@ prompt: |
   don't know why. Figure out the likely cause and what I should check.
 # Feasibility-verified 2026-06: delegated to sre-engineer.
 # 2026-07-11: THIS PROBE CAUGHT A REAL REGRESSION. Trimming AGENTS.md (the file loaded into every
-# session) dropped delegation from 9/9 to 3/9 — the main session answered the PCF 502 triage inline
+# session) dropped delegation from 9/9 to 3/9 [unverified: manual A/B, no committed artifact] — the
+# main session answered the PCF 502 triage inline
 # instead of handing it to sre-engineer. Misroutes stayed at 0 throughout, and every structural check
 # (validate_fleet, eval --validate, guard tests) passed the whole time. Only running this probe found
 # it. Cause: the trim deleted the fleet's only explicit "route work to the fleet" instruction and
 # replaced the header with language priming the session to act as the worker ("what an agent needs
-# while working"). Restoring an explicit routing directive returned it to 14/15.
+# while working"). Restoring an explicit routing directive returned it to 14/15 [unverified: same A/B run].
 # LESSON: AGENTS.md is delegation-load-bearing. Re-run this probe after ANY edit to it.
-note: "2026-06: 2/2 delegated. 2026-07-11 A/B (n=9 each, isolated worktrees): main 9/9 · post-trim 3/9 (REGRESSION) · post-fix 14/15."
+note: "2026-06: 2/2 delegated. 2026-07-11 A/B (n=9 each, isolated worktrees): main 9/9 · post-trim 3/9 (REGRESSION) · post-fix 14/15. [unverified: manual runs; no committed transcript/seed/model-id]"

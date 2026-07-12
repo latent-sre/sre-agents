@@ -17,7 +17,7 @@ Built on Anthropic's eval shape (["Demystifying evals for AI agents"](https://ww
 ```bash
 python3 -m pip install -r requirements-dev.txt   # one-time: the eval harness needs PyYAML
                                                  # (the fleet validator + guard tests are stdlib-only)
-python evals/run_evals.py --validate     # check the suite itself (no model) — this is what CI runs
+python evals/run_evals.py --validate     # check the suite itself (no model) — the CI-safe gate; wire into CI or run locally
 python evals/run_evals.py --list         # show scenarios
 python evals/run_evals.py --run          # invoke the fleet and grade (needs a Claude-enabled runner)
 ```
@@ -45,7 +45,7 @@ python evals/discovery_probe.py --ab  --match method  # A=listed vs B=name-only,
 (`B == A` ⇒ name-only is safe; `B << A` ⇒ it hurts) — it forces `name-only` on the expected
 skills of the selected scenarios, so scope it with `--match`. This is the harness behind the
 2026-06 Tier-1 decision: with `--match method` (the four `domain=method` skills) at
-`skillListingBudgetFraction: 0.04` discovery was **6/12 → 6/12** between conditions — no discovery loss, and no measurable gain — so the
+`skillListingBudgetFraction: 0.04` discovery was **6/12 → 6/12** *[unverified: manual run; no committed artifact]* between conditions — no discovery loss, and no measurable gain — so the
 "demote the meta-skills" idea was declined. Like `--run` in `run_evals.py`, the model-driven
 modes are **not** a CI gate; only `--validate` is.
 
@@ -77,7 +77,7 @@ write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 
 > **Important limitation — measures delegation propensity, not routing quality.** Headless `claude -p`
 > often answers a request *inline* instead of delegating, so a low agent score is **not** a fleet
-> routing fault. The 2026-06 baseline was **4/12**: `security-reviewer` and `sre-engineer` routed
+> routing fault. The 2026-06 baseline was **4/12** *[unverified: manual run; no committed artifact]*: `security-reviewer` and `sre-engineer` routed
 > 2/2 (investigative/review work naturally spins up a subagent), while `runbook-author` (and the
 > since-removed `database-reliability` / `release-engineer` agents) were handled inline (`saw: none`) and `sde-engineer`
 > delegated to the built-in `Explore` agent. The authoritative test of *routing correctness* is the
@@ -101,8 +101,8 @@ write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 `contains_all` · `contains_any` · `not_contains` · `regex` · `not_regex` (passes iff the pattern does
 *not* match — used for "must not propose to act" checks). Each scores the response text and returns
 `(passed, detail)`. Add new ones to the `REGISTRY`. The graders and the stream-json parser are
-unit-tested offline and run in CI: `python evals/test_graders.py` (includes adversarial should-fail
-verdicts — e.g. a `BLOCKED … does not pass` that must not score as PASS) and
+unit-tested offline (run them in CI or locally): `python evals/test_graders.py` (includes adversarial
+should-fail verdicts — e.g. a `BLOCKED … does not pass` that must not score as PASS) and
 `python evals/test_discovery_probe.py`.
 
 > The bundled graders are keyword/structural proxies — fast, deterministic, and good at catching

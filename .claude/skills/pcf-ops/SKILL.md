@@ -116,6 +116,8 @@ Recommend them; let a human release owner execute.
 - Can't `cf ssh` (connection to port `2222` times out)? That's the SSH proxy / network path, not your
   app — a network/platform signal, not an app bug.
 - Diagnose a bound backing service via **port-forwarding through the app container**:
-  `cf ssh APP -L 63306:db.host:3306` then connect a local client to `localhost:63306`. This is read-only
-  triage (a tunnel, not a change) — but the DB still enforces its own access controls; don't run
-  state-changing queries without the `production-change-gate`.
+  `cf ssh APP -L 63306:db.host:3306` then connect a local client to `localhost:63306`. Note `cf ssh` is
+  **privileged shell access** (state-changing list above; the `readonly-guard` blocks it for read-only
+  agents) — so this is a **human-run, approved** step, not sre-engineer read-only triage: recommend it and
+  hand off. Even then the DB enforces its own access controls; don't run state-changing queries without the
+  `production-change-gate`.

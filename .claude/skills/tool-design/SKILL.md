@@ -25,18 +25,18 @@ for a careful-but-literal junior engineer. *[sourced: Anthropic, "Writing effect
 4. **Token efficiency.** Return high-signal, bounded output. Implement pagination / range selection /
    filtering / truncation with sensible defaults; cap large responses (Claude Code defaults tool output
    to ~25K tokens). Give **helpful error messages** that steer the agent toward a better call.
-   *[sourced: Anthropic — token efficiency + actionable errors]*
+   *[sourced: Anthropic, "Writing effective tools for agents" — token efficiency + actionable errors]*
 5. **Engineer the surface, then iterate.** Treat the schema and description as a prompt you tune.
 
 ## Promote bash → a dedicated tool when you need to…
 gate (hard-to-reverse/prod actions), staleness-check, render, or parallelize. A `cf_restart_app` tool
 the harness can gate and audit is safer than `bash -c "cf restart ..."`; start with bash for breadth,
-promote the actions that need control. *[sourced: Anthropic agent-design guidance]*
+promote the actions that need control. *[sourced: Anthropic, "Writing effective tools for agents"]*
 
 ## Process
 **Prototype → evaluate → collaborate.** Build the tool, run the agent against realistic tasks, watch
 *how* it misuses it (wrong tool, over-broad query, context blown by huge output), and fix the
-name/description/defaults. Repeat — `self-improve-loop` applied to a tool. *[sourced: Anthropic]*
+name/description/defaults. Repeat — `self-improve-loop` applied to a tool. *[sourced: Anthropic, "Writing effective tools for agents" — prototype→evaluate loop]*
 
 ## In this fleet
 Reach for this when exposing `cf`/Splunk/Wavefront/ThousandEyes capability or an MCP server to an agent,

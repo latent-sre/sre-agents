@@ -47,7 +47,6 @@ CLAUDE.md                  Claude Code entrypoint (imports AGENTS.md + Claude sp
   agents/                  the agent roster — read by Claude Code AND VS Code/Copilot
   skills/                  the skills (SKILL.md open standard) — read by both tools
                            some bundle scripts/ (pcf-ops Bash/PowerShell, slo-error-budget) and references/ fill-ins
-runbooks/                  starter on-call runbooks (PCF OOM, 5xx-after-deploy, dependency timeout)
 evals/                     behavioral evals (scenarios + graders) — routing, gates, security; run locally
 docs/                       INTEGRATION (vendor into another repo) · RESEARCH (sources)
 scripts/
@@ -103,10 +102,13 @@ checklist, playbook — is a **skill**. The full decision rule (and the roster-d
 lives in the [`agent-authoring`](.claude/skills/agent-authoring/SKILL.md) skill, roster tier.
 
 **The `skills:` frontmatter convention.** Only some agents declare a `skills:` block, and that is **by
-design**. When present it names the agent's *single primary* skill for discoverability
-(`code-reviewer → merge-gate`, `test-engineer → tdd-workflow`). It is **not** an exhaustive preload list —
-agents pick up the rest via description-based auto-load at runtime, so an absent or single-entry block is
-expected, not a gap. (Claude-only field.)
+design**. When present it names the agent's *single primary* skill to **preload**: Claude Code injects
+that skill's **full content** (not just its description) into the agent up front — an always-on token
+cost — so an agent names only the one skill it always needs (`code-reviewer → merge-gate`,
+`test-engineer → tdd-workflow`, `runbook-author → runbook-template`). Every *other* skill loads **on
+demand** via the `Skill` tool, so an absent or single-entry block is expected, not a gap. Note `skills:`
+preloads content; it does **not** grant invocation — that's the `Skill` tool in `tools:`.
+*[sourced: https://code.claude.com/docs/en/sub-agents]* (Claude-only field.)
 
 **The one non-portable seam** is the agent `tools:` field: Claude uses `Read, Grep`; Copilot expects
 arrays like `['edit','search/codebase']`. Claude-only `PreToolUse` hooks don't cross to Copilot either.
@@ -144,10 +146,9 @@ Claude hooks don't apply, enforce the same read-only posture via the agent's `to
   satisfy a rule.
 - **Delegation canary:** `AGENTS.md` and agent `description`s are delegation-load-bearing. After editing
   either, re-run `python evals/discovery_probe.py --run --agents --match sre-engineer` in a throwaway
-  worktree. The 2026-07 AGENTS.md trim dropped incident delegation from 9/9 to 3/9 while every
-  structural check stayed green — only this probe caught it.
-- **Starter runbooks** live in [`runbooks/`](runbooks/) (PCF OOM, 5xx-after-deploy, dependency timeout),
-  authored with the `runbook-template` skill. **Fill the placeholders before treating them as live.**
+  worktree. The 2026-07 AGENTS.md trim dropped incident delegation from 9/9 to 3/9 *[unverified: manual
+  A/B run, n=9; no committed transcript/seed/model-id]* while every structural check stayed green — only
+  this probe caught it.
 - **Some skills bundle helpers:** `pcf-ops/scripts/triage.sh` / `triage.ps1` (read-only triage),
   `slo-error-budget/scripts/error_budget.py` (budget/burn calculator), starter templates under each
   skill's `assets/` (`api-design`, `ops-cli`, `pcf-deploy`, `github-actions-ci`), and `references/`

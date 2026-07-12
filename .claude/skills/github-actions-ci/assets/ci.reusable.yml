@@ -4,9 +4,9 @@
 name: ci
 
 on:
-  workflow_call:
-    inputs:
-      python-version: { type: string, default: "3.12" }
+  workflow_call:        # reusable: an app repo calls it with one `uses:` line
+    # Add typed `inputs:` here when a caller needs to parameterize the run (e.g. a python-version the
+    # job actually consumes). The version axis below is a build matrix, so no input is wired by default.
 
 permissions:
   contents: read            # start at nothing-extra; add per-job only what a job needs.

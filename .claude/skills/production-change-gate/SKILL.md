@@ -14,6 +14,12 @@ Any action that touches production must clear this gate **before execution**. Th
 our **"prod-facing actions require explicit human confirmation"** rule. `sre-engineer`/`sde-engineer`
 *recommend*; a human release owner *executes*; a human *approves*.
 
+> **The checklist is not the enforcement.** This gate is a discipline a *cooperating* agent runs; on its
+> own it stops nothing. The load-bearing control for prod is **GitHub branch protection + protected
+> environments with required reviewers** (see CLAUDE.md) — and only if *Allow administrators to bypass
+> protection rules* is disabled (it is ON by default). Treat this checklist as the human-decision record
+> that rides on top of that boundary, **not** as the boundary itself.
+
 > **How it layers with `release-gate`:** `release-gate` checks whether a *build/release* is **ready** to
 > ship (artifact, migrations, flags, rollback). This gate authorizes the **prod change itself** — and
 > applies equally to changes that **aren't** releases (a scale, a route remap, a config flip, a data
