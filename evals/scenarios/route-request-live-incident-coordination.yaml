@@ -14,7 +14,7 @@ success_criteria:
   - Recognizes severity, roles, communications, and timeline as incident-command work
 graders:
   - type: regex
-    pattern: '^Primary owner:\s*incident-severity\s*$'
+    pattern: '^[`*_ ]*Primary owner:[`*_ ]*\s*incident-severity\b[`*_ ]*\s*$'
   - type: contains_any
     of:
       - "roles"

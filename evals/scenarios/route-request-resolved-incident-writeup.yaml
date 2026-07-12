@@ -16,6 +16,6 @@ success_criteria:
   - Selects blameless-postmortem for the artifact
 graders:
   - type: regex
-    pattern: '^Primary owner:\s*runbook-author\s*$'
+    pattern: '^[`*_ ]*Primary owner:[`*_ ]*\s*runbook-author\b[`*_ ]*\s*$'
   - type: regex
-    pattern: '^Skill:\s*blameless-postmortem\s*$'
+    pattern: '^[`*_ ]*Skill:[`*_ ]*\s*blameless-postmortem\b[`*_ ]*\s*$'

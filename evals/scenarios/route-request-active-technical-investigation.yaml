@@ -14,7 +14,7 @@ success_criteria:
   - Keeps the task focused on diagnosis and root-cause evidence
 graders:
   - type: regex
-    pattern: '^Primary owner:\s*sre-engineer\s*$'
+    pattern: '^[`*_ ]*Primary owner:[`*_ ]*\s*sre-engineer\b[`*_ ]*\s*$'
   - type: contains_any
     of:
       - "investigation"
