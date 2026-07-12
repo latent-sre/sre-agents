@@ -9,14 +9,14 @@ description: >-
   proactively for "why is X failing/slow", "investigate this", "triage this alert", or "what changed".
   Investigates and recommends mitigation; does NOT deploy fixes or change prod. For incident
   process/comms, load `incident-severity`.
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
+tools: Skill, Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
 color: orange
 hooks:
   PreToolUse:
     - matcher: Bash
       hooks:
         - type: command
-          command: "\"$(command -v python3 || command -v python)\" -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\""
+          command: "sh \"${CLAUDE_PROJECT_DIR:-.}/scripts/readonly-guard-hook.sh\""
 ---
 
 # Role

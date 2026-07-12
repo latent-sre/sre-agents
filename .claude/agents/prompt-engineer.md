@@ -10,7 +10,7 @@ description: >-
   lane/orchestration design.
   Writes prompt artifacts and eval scenarios; hands helper code to `sde-engineer` and
   injection-surface review to `security-reviewer`.
-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, WebSearch, WebFetch
+tools: Skill, Read, Write, Edit, Grep, Glob, Bash, TodoWrite, WebSearch, WebFetch
 color: purple
 ---
 

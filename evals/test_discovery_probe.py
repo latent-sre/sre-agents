@@ -80,11 +80,32 @@ def test_dedupe_and_order() -> None:
     check(out["skill"] == ["splunk-triage", "pcf-ops"], "skills de-duped, first-seen order preserved")
 
 
+def test_subagent_skill_attribution() -> None:
+    """parent_tool_use_id: None = the main session; an id = a SUBAGENT, under that Task call.
+
+    This distinction is load-bearing. The fleet shipped with `Skill` missing from every agent's
+    `tools:` allowlist -- the documented way to disable skill invocation entirely -- so no agent
+    could load a skill. It was invisible because every other probe measures the MAIN session, which
+    always has Skill. Only subagent attribution catches it. Do not collapse these two.
+    """
+    blob = "\n".join([
+        # main session loads a skill -- must NOT count as the agent reaching one
+        _line({"content": [{"type": "tool_use", "name": "Skill", "input": {"skill": "pcf-ops"}}]}),
+        # a subagent loads one -- this is the real capability being asserted
+        _line({"parent_tool_use_id": "toolu_abc",
+               "content": [{"type": "tool_use", "name": "Skill", "input": {"skill": "sre-ladder"}}]}),
+    ])
+    out = dp._invocations_from_stream(blob)
+    check(out["skill"] == ["pcf-ops", "sre-ladder"], "attribution: both skills seen overall")
+    check(out["subagent_skill"] == ["sre-ladder"], "attribution: only the SUBAGENT's skill counted")
+    check("pcf-ops" not in out["subagent_skill"], "attribution: a main-session skill is NOT an agent reach")
+
+
 def test_empty_and_blank_lines() -> None:
     out = dp._invocations_from_stream("")
-    check(out == {"skill": [], "agent": []}, "empty blob -> empty result")
+    check(out == {"skill": [], "agent": [], "subagent_skill": []}, "empty blob -> empty result")
     out2 = dp._invocations_from_stream("\n   \n\n")
-    check(out2 == {"skill": [], "agent": []}, "blank lines -> empty result")
+    check(out2 == {"skill": [], "agent": [], "subagent_skill": []}, "blank lines -> empty result")
 
 
 def test_mixed_skill_and_agent() -> None:
@@ -102,7 +123,7 @@ def test_ignores_non_skill_tool_use() -> None:
     # A tool_use that isn't Skill/Task/Agent (e.g. a normal Read) must not be counted.
     blob = _line({"content": [{"type": "tool_use", "name": "Read", "input": {"file_path": "/x"}}]})
     out = dp._invocations_from_stream(blob)
-    check(out == {"skill": [], "agent": []}, "non-routing tool_use ignored")
+    check(out == {"skill": [], "agent": [], "subagent_skill": []}, "non-routing tool_use ignored")
     # Skill tool_use with a non-string skill input must be ignored (defensive).
     blob2 = _line({"content": [{"type": "tool_use", "name": "Skill", "input": {"skill": None}}]})
     out2 = dp._invocations_from_stream(blob2)
@@ -113,7 +134,7 @@ def main() -> int:
     tests = [
         test_skill_tool_use, test_agent_task_nesting, test_regex_fallback_on_malformed,
         test_dedupe_and_order, test_empty_and_blank_lines, test_mixed_skill_and_agent,
-        test_ignores_non_skill_tool_use,
+        test_ignores_non_skill_tool_use, test_subagent_skill_attribution,
     ]
     for t in tests:
         t()

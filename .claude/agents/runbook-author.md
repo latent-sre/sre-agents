@@ -7,7 +7,7 @@ description: >-
   procedure is manual/tribal-knowledge, or when the user says "write/update a runbook", "document this
   process", or "how do we handle X". It produces precise, copy-pasteable, verified procedures and keeps
   existing runbooks current. It consumes findings from `sre-engineer` and the release/deploy steps.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebFetch, TodoWrite
+tools: Skill, Read, Write, Edit, Grep, Glob, Bash, WebFetch, TodoWrite
 skills:
   - runbook-template
 color: green

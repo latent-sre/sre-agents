@@ -7,14 +7,14 @@ description: >-
   proactively whenever a change touches auth, user input, file/network access, crypto, third-party
   dependencies, or handles PII/secrets — and as a hand-off from `code-reviewer` when security depth is
   needed. It is READ-ONLY: it reports vulnerabilities with severity and remediation; it does not edit code.
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
+tools: Skill, Read, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
 color: red
 hooks:
   PreToolUse:
     - matcher: Bash
       hooks:
         - type: command
-          command: "\"$(command -v python3 || command -v python)\" -c \"import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')\""
+          command: "sh \"${CLAUDE_PROJECT_DIR:-.}/scripts/readonly-guard-hook.sh\""
 ---
 
 # Role

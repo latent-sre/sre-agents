@@ -7,7 +7,7 @@ description: >-
   "write tests", "add coverage", "is this tested", or before shipping risky code. It writes and runs
   tests (it CAN edit test files) but focuses on the test surface, handing feature/code changes to
   `sde-engineer`. Complements `code-reviewer` (which judges existing tests).
-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
+tools: Skill, Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 skills:
   - tdd-workflow
 color: green

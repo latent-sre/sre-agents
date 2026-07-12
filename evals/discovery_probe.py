@@ -123,9 +123,20 @@ def validate(scenarios: list[dict]) -> list[str]:
 
 def _invocations_from_stream(blob: str) -> dict[str, list[str]]:
     """What the model invoked, parsed from a stream-json transcript:
-    {'skill': [...], 'agent': [...]} (order-preserving, de-duped)."""
+    {'skill': [...], 'agent': [...], 'subagent_skill': [...]} (order-preserving, de-duped).
+
+    `subagent_skill` is the load-bearing one: skills a SUBAGENT invoked, not the main session.
+    Claude Code stamps each event with `parent_tool_use_id` -- None for the main session, and the
+    id of the Task/Agent tool_use for anything a subagent did. So a Skill event with a non-None
+    parent_tool_use_id was invoked BY the delegated agent.
+
+    This distinction is why the fleet shipped with agents that could not invoke ANY skill: every
+    other probe here measures the MAIN session, which always has the Skill tool, so a subagent
+    with `Skill` missing from its `tools:` allowlist looked identical to a healthy one.
+    """
     skills: list[str] = []
     agents: list[str] = []
+    subagent_skills: list[str] = []
     for line in blob.splitlines():
         line = line.strip()
         if not line:
@@ -136,6 +147,8 @@ def _invocations_from_stream(blob: str) -> dict[str, list[str]]:
             skills += _SKILL_RE.findall(line)   # fallback: regex the raw line
             agents += _AGENT_RE.findall(line)
             continue
+        # None => the main session emitted this; an id => a subagent did, under that Task call.
+        from_subagent = evt.get("parent_tool_use_id") is not None
         stack = [evt]
         while stack:
             node = stack.pop()
@@ -144,6 +157,8 @@ def _invocations_from_stream(blob: str) -> dict[str, list[str]]:
                     inp = node.get("input") or {}
                     if node.get("name") == "Skill" and isinstance(inp.get("skill"), str):
                         skills.append(inp["skill"])
+                        if from_subagent:
+                            subagent_skills.append(inp["skill"])
                     elif node.get("name") in ("Task", "Agent") and isinstance(inp.get("subagent_type"), str):
                         agents.append(inp["subagent_type"])
                 stack.extend(node.values())
@@ -157,7 +172,8 @@ def _invocations_from_stream(blob: str) -> dict[str, list[str]]:
                 seen.add(x); out.append(x)
         return out
 
-    return {"skill": _dedupe(skills), "agent": _dedupe(agents)}
+    return {"skill": _dedupe(skills), "agent": _dedupe(agents),
+            "subagent_skill": _dedupe(subagent_skills)}
 
 
 def run_trial(prompt: str, settings: str | None, timeout: int) -> dict[str, list[str]]:
@@ -188,6 +204,12 @@ def run_trial(prompt: str, settings: str | None, timeout: int) -> dict[str, list
 def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: int) -> tuple[int, list[list[str]]]:
     kind, exp = scenario_target(scenario)
     accept = {exp, *(scenario.get("also_acceptable") or [])}
+    # CAPABILITY probe: the delegated agent must itself invoke a skill. Set `agent_must_reach_skill`
+    # to a skill name, or to `true` for "any skill". This is the ONLY check that catches an agent
+    # whose `tools:` omits `Skill` -- the documented way to disable skill invocation entirely
+    # (https://code.claude.com/docs/en/sub-agents). Every other probe measures the main session,
+    # which always has Skill, so a crippled agent is invisible to them. It shipped that way.
+    must_reach = scenario.get("agent_must_reach_skill")
     hits, traces = 0, []
     for _ in range(trials):
         full = run_trial(scenario["prompt"], settings, timeout)
@@ -196,8 +218,14 @@ def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: i
         # misroute, not a no-route). Agent scenarios: only agent delegations count — skills are
         # the chosen agent's own tools, not a competing route.
         invoked = (full["skill"] + full["agent"]) if kind == "skill" else full["agent"]
-        traces.append(invoked)
-        if accept & set(invoked):
+        reached = full["subagent_skill"]
+        traces.append(invoked + [f"subagent-skill:{s}" for s in reached])
+        ok = bool(accept & set(invoked))
+        if must_reach:
+            # The agent must have been reached AND have loaded a skill ITSELF. A main-session
+            # Skill call does not count: that is exactly the false pass this probe exists to kill.
+            ok = ok and (bool(reached) if must_reach is True else must_reach in reached)
+        if ok:
             hits += 1
     return hits, traces
 
