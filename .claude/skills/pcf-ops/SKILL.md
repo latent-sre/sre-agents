@@ -101,12 +101,31 @@ buffer, go to Splunk (`splunk-triage`).
 
 ## Drill in (read-only)
 ```bash
-cf app <app> --guid            # app guid for CAPI queries
-cf curl /v3/apps/<guid>/processes        # process/instance detail (read-only CAPI)
-cf env <app>                   # env + bound-service creds — CAUTION: contains secrets; don't paste them
-cf routes                      # routing: which routes map to which apps (blast radius)
-cf services / cf service <name># bound backing services + last operation status
+cf app <app> --guid                         # app guid for CAPI queries
+cf curl /v3/apps/<guid>/processes           # LISTS the app's processes (web, worker) — NOT instance stats
+cf curl /v3/processes/<process-guid>/stats  # per-instance stats: state, cpu, mem, disk, uptime
+cf routes                                   # which routes map to which apps (blast radius)
+cf services / cf service <name>             # bound backing services + last operation status
 ```
+
+> **`/v3/apps/<guid>/processes` lists PROCESSES, not instances.** For per-instance cpu/mem/disk/state
+> you need the `/stats` endpoint above (`cf app <app>` shows the same numbers in human form). This
+> skill previously labelled the processes endpoint "process/instance detail", which sent people to an
+> endpoint that does not contain the instance data they were looking for.
+
+### Secrets: `cf env`, `cf service-key`, and `CF_TRACE` are BLOCKED for agents
+`cf env <app>` prints **`VCAP_SERVICES`** — the app's bound-service **credentials** (DB passwords, API
+keys). `cf service-key` prints a key's credentials outright. `CF_TRACE=true` dumps the raw CAPI
+exchange **including the bearer token**.
+
+These are *reads*, so they used to pass the read-only guard, and this skill used to list `cf env` as
+routine triage behind a "CAUTION: don't paste them" note. **A warning is not a control.** Read-only
+agents also hold `WebSearch` — an egress channel the guard cannot see — so credentials in the context
+plus an unguarded exit is the lethal trifecta. `scripts/readonly-guard.py` now **denies all three**.
+
+**You do not need them.** Misconfiguration shows up in `cf app`, `cf events`, and logs: a bad binding
+surfaces as a connection error in the app log, not as a diff of the credential itself. If raw env is
+genuinely required, a **human** captures it, sanitized, outside the agent.
 
 Treat `cf ssh` as privileged shell access, not read-only triage — even a harmless-looking remote shell
 can mutate an instance. Read-only agents should not use it; get explicit human approval and hand off if
@@ -119,7 +138,9 @@ These are mitigations/deploys or privileged shell access — see `rollback-mitig
 Recommend them; let a human release owner execute.
 
 ## Tips
-- `CF_TRACE=true cf <cmd>` shows the raw CAPI request/response when a command behaves oddly.
+- `CF_TRACE=true` would show the raw CAPI request/response — but it also prints the **bearer token**,
+  so it is **denied for agents** (see *Secrets* above). If a `cf` command is behaving oddly, a human
+  runs it with `CF_TRACE` and shares the *sanitized* excerpt.
 - App instances are ephemeral and numbered (`-i <n>`); a "fix" that only restarts one hides a recurring
   cause — capture logs/events first.
 - Can't `cf ssh` (connection to port `2222` times out)? That's the SSH proxy / network path, not your

@@ -217,6 +217,25 @@ _DENY_PATTERNS = [
     r"create-security-group|update-security-group|add-network-policy|remove-network-policy|"
     r"enable-org-isolation|create-isolation-segment|install-plugin|uninstall-plugin|"
     r"set-running-environment-variable-group|set-staging-environment-variable-group)\b",
+    # --- cf commands that DISCLOSE SECRETS (denied although they are technically READS) -----------
+    # `cf env <app>` prints VCAP_SERVICES — the app's BOUND-SERVICE CREDENTIALS (DB passwords, API
+    # keys). `cf service-key` prints a key's credentials directly. `CF_TRACE=true` dumps the raw CAPI
+    # exchange INCLUDING THE BEARER TOKEN. All three are reads, so every rule above let them through,
+    # and the pcf-ops skill actively taught them for routine triage — mitigated only by a prose
+    # "CAUTION: contains secrets; don't paste them".
+    #
+    # That is not a control, it is a request. And these agents hold `WebSearch` (see the SCOPE note at
+    # the top of this file) — an egress channel this guard cannot see. Secrets in the context plus an
+    # unguarded exit is the lethal trifecta; "the agent was told to be careful" is exactly the
+    # cooperative-agent assumption the rest of this file exists to stop depending on.
+    #
+    # A read-only agent has no triage need for raw credentials: misconfiguration shows up in
+    # `cf app`, `cf events`, and logs. If raw env is genuinely required, a HUMAN captures it,
+    # sanitized, outside the agent.
+    _CF_CMD + _CF_PRE + r"(env|e)\b",              # `cf events` is unaffected — `e` needs a word boundary
+    _CF_CMD + _CF_PRE + r"service-key\b",          # prints the key's credentials
+    _CF_CMD + _CF_PRE + r"curl\b[^|;&\n]*/env\b",  # /v3/apps/:guid/env returns the same secrets
+    r"\bCF_TRACE\s*=",                             # dumps the raw CAPI exchange incl. the bearer token
     _CF_CMD + _CF_PRE + r"curl\b[^|;&\n]*-X\s*(POST|PUT|DELETE|PATCH)",
     _CF_CMD + _CF_PRE + r"curl\b[^|;&\n]*--request[=\s]+(POST|PUT|DELETE|PATCH)",
     _CF_CMD + _CF_PRE + r"curl\b[^|;&\n]*(--data(-raw|-binary|-urlencode)?|\s-d[\s'\"@=])",

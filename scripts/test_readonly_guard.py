@@ -322,6 +322,17 @@ DENY = [
     "cf rt checkout \"rake db:migrate\"",   # run-task
     "cf -v p checkout",                      # alias BEHIND a global option — both fixes must compose
     "/usr/local/bin/cf p checkout",          # alias via absolute path
+    # --- cf reads that DISCLOSE SECRETS: denied despite being reads ------------------------------
+    # `cf env` prints VCAP_SERVICES (bound-service credentials); `cf service-key` prints them
+    # outright; CF_TRACE dumps the CAPI exchange incl. the bearer token. These agents hold WebSearch
+    # (egress the guard cannot see), so secrets-in-context is the lethal trifecta, and the old
+    # mitigation was a prose "CAUTION: don't paste them" — a request, not a control.
+    "cf env checkout",
+    "cf e checkout",                         # the `e` alias for env
+    "cf service-key my-db my-key",
+    "cf curl /v3/apps/abc/env",              # the same secrets via CAPI
+    "CF_TRACE=true cf apps",
+    "CF_TRACE=1 cf app checkout",
     # --- git write verbs the list simply omitted -------------------------------------------------
     # The rule denied only `branch -[dDmM]` and `tag -d`, so CREATING a ref, or rewriting the repo's
     # remotes/notes/submodules, was never state-changing as far as the guard was concerned.
