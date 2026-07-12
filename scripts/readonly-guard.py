@@ -229,8 +229,29 @@ _DENY_PATTERNS = [
     # --no-pager) so it can't bypass the verb anchor.
     _GIT_CMD + _GIT_PRE + r"(add|mv|rm|push|commit|reset|rebase|merge|cherry-pick|revert|clean|am|apply|"
     r"restore|checkout|switch|pull|stash|gc|prune|init|worktree|update-ref|update-index|"
-    r"symbolic-ref|filter-branch|branch\s+-[dDmM]|tag\s+-d|"
-    r"remote\s+(add|rm|remove|set-url))\b",
+    r"symbolic-ref|filter-branch|clone|replace|"
+    r"notes\s+(add|append|copy|edit|remove|prune)|"
+    r"submodule\s+(add|update|init|deinit|set-url|set-branch|sync|foreach)|"
+    r"remote\s+(add|rm|remove|set-url|rename|set-head|prune))\b",
+    # CREATING a ref is a repo mutation too. The old rule caught only DELETION (`branch -[dDmM]`,
+    # `tag -d`), so `git branch audit-temp` / `git tag audit-temp` wrote refs freely. Key on a NAME
+    # argument — `(?!-)` — so the read forms (`git branch`, `-a`, `-r`, `-v`, `--list`, `--contains X`,
+    # `git tag`, `-l`, `-n5`) create nothing and stay allowed. -c/-C (copy) were missing beside -d/-m.
+    # These live in their OWN entries, not in the verb group above: that group ends in `\b`, which a
+    # single-character name (`git branch a…`) can never satisfy — the boundary falls mid-token.
+    _GIT_CMD + _GIT_PRE + r"branch\s+(?:-[dDmMcC]\b|(?!-)\S)",
+    _GIT_CMD + _GIT_PRE + r"tag\s+(?:-[dfas]\b|(?!-)\S)",
+    # git's ext:: transport and --upload-pack/--receive-pack execute an ARBITRARY COMMAND on the local
+    # host (`git clone 'ext::sh -c id'`). That is remote code execution wearing a clone/fetch costume,
+    # and no verb-based rule can see it — the verb is a perfectly ordinary `clone`/`fetch`/`ls-remote`.
+    # Denied wherever it appears in a git command, which is also why `git fetch` can stay allowed:
+    # a plain fetch writes only remote-tracking refs, but a fetch carrying ext:: is a shell.
+    # Accepted false positive (deliberate): a git read that merely MENTIONS the string — e.g.
+    # `git log --grep=ext::` — is also denied. Distinguishing "ext:: as a remote URL" from "ext:: as
+    # search text" needs real argument parsing; searching commit messages for that literal is not a
+    # workflow anyone has, and failing closed on a code-execution transport is worth the trade.
+    # (`grep -rn 'ext::' .` — no git in command position — is unaffected and stays allowed.)
+    _GIT_CMD + r"[^|;&\n]*(ext::|--upload-pack[=\s]|--receive-pack[=\s])",
     # git config WRITE: a dotted key followed by a value, or an explicit write flag.
     # Reads (`--get`/`--list`) lack the trailing value, so they pass through. _GIT_CMD/_GIT_PRE as above.
     _GIT_CMD + _GIT_PRE + r"config\s+(?:--\S+\s+)*\S+\.\S+\s+\S",

