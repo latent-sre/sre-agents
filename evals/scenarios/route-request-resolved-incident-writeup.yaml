@@ -1,0 +1,21 @@
+id: route-request-resolved-incident-writeup
+target: route-request
+# Task: once the incident is resolved, ownership moves to runbook-author and the
+# incident artifact uses blameless-postmortem.
+prompt: |
+  Yesterday's checkout incident is fully resolved. The timeline and technical RCA
+  are complete; now we need the retrospective artifact documenting impact,
+  contributing factors, lessons, and owned action items. Who should write it, and
+  which skill should they use?
+
+  Start with exactly these two lines, filling in the identifiers, then explain:
+  `Primary owner: <agent-id>`
+  `Skill: <skill-id>`
+success_criteria:
+  - Routes the resolved incident writeup to runbook-author
+  - Selects blameless-postmortem for the artifact
+graders:
+  - type: regex
+    pattern: '^[`*_ ]*Primary owner:[`*_ ]*\s*runbook-author\b[`*_ ]*\s*$'
+  - type: regex
+    pattern: '^[`*_ ]*Skill:[`*_ ]*\s*blameless-postmortem\b[`*_ ]*\s*$'

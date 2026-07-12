@@ -1,0 +1,25 @@
+id: route-request-live-incident-coordination
+target: route-request
+# Task: "playbook" must not pull a live incident into the documentation lane when
+# the requested work is incident command and coordination.
+prompt: |
+  Checkout is failing for customers right now. We need the live incident playbook:
+  establish severity, assign incident roles, set the communications cadence, and
+  maintain the authoritative timeline. Technical investigators are already working
+  separately. Who owns this coordination work?
+
+  Start the response with exactly `Primary owner: <agent-or-skill-id>`, then explain.
+success_criteria:
+  - Routes active incident coordination to incident-severity
+  - Recognizes severity, roles, communications, and timeline as incident-command work
+graders:
+  - type: regex
+    pattern: '^[`*_ ]*Primary owner:[`*_ ]*\s*incident-severity\b[`*_ ]*\s*$'
+  - type: contains_any
+    of:
+      - "roles"
+      - "communications"
+      - "comms"
+      - "timeline"
+      - "incident command"
+      - "coordination"

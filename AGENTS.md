@@ -64,7 +64,7 @@ routes to when work leaves its lane. Agents are not pinned to a model; they inhe
 | [`test-engineer`](.claude/agents/test-engineer.md) | Author tests, raise meaningful coverage | tests | `tdd-workflow` |
 | [`sre-engineer`](.claude/agents/sre-engineer.md) | Detection, triage, root-cause investigation | no | `sre-ladder`, `database-reliability`, stack skills |
 | [`sre-monitor`](.claude/agents/sre-monitor.md) | Dashboards, SLOs, alert hygiene (steady state) | obs-as-code | `slo-error-budget`, `wavefront-queries`, `grafana-dashboards`, `moogsoft-correlation` |
-| [`runbook-author`](.claude/agents/runbook-author.md) | Create/update operational runbooks | docs | `runbook-template`, `blameless-postmortem` |
+| [`runbook-author`](.claude/agents/runbook-author.md) | Create/update operational runbooks and resolved-incident postmortems | docs | `runbook-template`, `blameless-postmortem` |
 | [`researcher`](.claude/agents/researcher.md) | Cited fact-finding & synthesis for any agent | no | `context-engineering` |
 | [`prompt-engineer`](.claude/agents/prompt-engineer.md) | Author/optimize LLM-facing artifacts — agent definitions, skills, prompts, tool descriptions, evals (incl. this fleet) | prompt artifacts | `agent-authoring`, `tool-design`, `agent-security` |
 

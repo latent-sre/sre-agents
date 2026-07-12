@@ -10,7 +10,6 @@ Modes:
   --validate   Check every scenario file parses, has required fields, names a
                real fleet target, and uses known graders. Needs no model — run
                it as your CI gate (or locally) to keep the eval suite honest.
-               The fleet ships no CI workflow of its own (see docs/INTEGRATION.md).
   --list       Print the scenarios.
   --run        Actually invoke the agent and grade. Requires a Claude-enabled
                runner: set CLAUDE_BIN (default "claude"); each trial shells out
