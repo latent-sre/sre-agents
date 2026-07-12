@@ -223,6 +223,25 @@ _DENY_PATTERNS = [
     _GH_CMD + _GH_PRE + r"release\s+(create|delete|edit|upload)\b",
     _GH_CMD + _GH_PRE + r"repo\s+(create|delete|fork|edit|rename|sync|archive|unarchive)\b",
     _GH_CMD + _GH_PRE + r"api\b[^|;&\n]*(-X\s*(POST|PUT|DELETE|PATCH)|--method[=\s]+(POST|PUT|DELETE|PATCH))",
+    # `gh api` POSTs IMPLICITLY. Per gh's own docs, the method "defaults to POST if any parameters are
+    # added" — so -f/-F/--field/--raw-field/--input is a WRITE with no -X in sight, and the rule above
+    # (which only looks for -X/--method) never saw it. Skipped when the method is explicitly GET, which
+    # is the legitimate read form (`gh api -X GET /search/issues -f q=…`).
+    _GH_CMD + _GH_PRE + r"api\b(?![^|;&\n]*(?:-X\s*GET|--method[=\s]+GET))"
+    r"[^|;&\n]*(\s-f[\s=]|\s-F[\s=]|--field|--raw-field|--input)",
+    # `gh gist create` is a DATA-EGRESS channel wearing a GitHub badge: it publishes a local file to
+    # the internet using credentials the agent already holds. The raw-socket / curl-substitution rules
+    # below exist to close exactly this exit; leaving an authenticated one open makes them theatre.
+    _GH_CMD + _GH_PRE + r"gist\s+(create|edit|delete|rename)\b",
+    # `gh extension install` executes third-party code. `gh auth login/refresh` rewrites credentials.
+    # `gh alias set` persists a command the agent (or the next one) will run.
+    _GH_CMD + _GH_PRE + r"extension\s+(install|remove|uninstall|upgrade|exec|create)\b",
+    _GH_CMD + _GH_PRE + r"auth\s+(login|logout|refresh|setup-git)\b",
+    _GH_CMD + _GH_PRE + r"alias\s+(set|delete|import)\b",
+    # remaining gh write surface: labels, caches, projects, codespaces, keys, workflow enable/disable.
+    _GH_CMD + _GH_PRE + r"(label|cache|project|codespace|gpg-key|ssh-key|key|ruleset)\s+"
+    r"(create|edit|delete|remove|add|clone|rename|cp|ssh|stop|item-add|item-edit|item-delete)\b",
+    _GH_CMD + _GH_PRE + r"workflow\s+(enable|disable)\b",
     # git writes: history, remote, index, or worktree mutations. _GIT_CMD anchors git to command
     # position (no false positive when a git verb is only grep'd/echoed text) while keeping absolute-path
     # coverage; _GIT_PRE tolerates git's global-option prefix (git -C <path> / -c k=v / --work-tree=… /
