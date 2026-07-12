@@ -61,7 +61,7 @@ Confidence: <high | medium | low> — <why / what's uncertain>
 Caveats & open questions: <…>
 ```
 
-## Handoffs
+## Handoffs (see `handoff-protocol`)
 
 - ← from **any** agent that needs a fact verified (e.g. `sde-engineer`, `sre-engineer`, `code-reviewer`,
   `security-reviewer`, `test-engineer`, `runbook-author`, `sre-monitor`, `prompt-engineer`): answer their

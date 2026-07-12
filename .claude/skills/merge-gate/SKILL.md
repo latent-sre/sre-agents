@@ -12,6 +12,10 @@ description: >-
 A change merges only when **all** of these pass. Any **NO** blocks the merge — fix it or get an explicit,
 recorded waiver from a human owner.
 
+Throughout, **`HEAD` means the tip commit of the branch being merged — the PR head — not your local
+checkout** (reviewing a PR from a local `main` would otherwise resolve `HEAD` to main's tip and block
+everything).
+
 ## Checklist
 - [ ] **Builds & CI green** — compile/lint/format and the full test suite pass **in CI**. Attach the
       **CI run link**, not just a tick — an asserted "green" is `[unverified]`.
@@ -31,8 +35,15 @@ recorded waiver from a human owner.
       > We do **not** currently have a credential-less isolated runner for agent-initiated test
       > execution. Until we do, untrusted-diff test evidence comes from CI or it does not exist.
 - [ ] **Behavior tested** — the change's new/changed lines are covered; new behavior has tests; any bug
-      fix has a regression test that fails without the fix (`tdd-workflow`). Show that it ran.
+      fix has a regression test that fails without the fix (`tdd-workflow`). Show that it ran, **and record
+      the SHA it ran at**. If that SHA != `HEAD`, apply the same staleness test as below: empty or
+      test-irrelevant diff → re-confirm and record `HEAD`; otherwise the evidence is stale — **re-run**.
 - [ ] **Reviewed** — `code-reviewer` ran; all Critical/High findings are resolved (not just acknowledged).
+      **Record the SHA the review ran against.** If that SHA != `HEAD`, diff them (`git diff <review-sha>..HEAD`).
+      If the diff is **empty** (rebase, `--amend`, a merge of the base branch) or touches only files outside
+      the reviewed set, **re-confirm and record the new SHA — no re-review needed.** If it touches reviewed
+      code, the approval is stale — a later fix can break what was approved — so re-derive the diff
+      (`handoff-protocol`) and this item is a **NO** until the new commits are reviewed.
 - [ ] **Security** — if the change touches auth, input handling, secrets, crypto, file/network access,
       or dependencies → `security-reviewer` ran and must-fix items are closed.
 - [ ] **No secrets** — no credentials/tokens/keys in code, fixtures, or logs.
@@ -58,4 +69,8 @@ Waivers (if any): <item — approved by <human> — reason>
 ## Notes
 - This gate is a checklist by default. In GitHub it should be backed by **branch protection** (required
   checks + required review) so it can't be skipped; in Claude Code, hardened with a hook.
+- **The stale-approval check above is a self-run speed-bump, not the control.** The enforcement is branch
+  protection's **"Dismiss stale pull request approvals when new commits are pushed"** — it invalidates the
+  approval mechanically when a later fix lands, whether or not the agent runs this checklist. Turn it on;
+  don't rely on the tick-box.
 - "Approved with nits" can merge if the nits are non-blocking and tracked. Critical/High cannot.

@@ -1,0 +1,25 @@
+id: merge-gate-blocks-stale-approval
+target: merge-gate
+# Task: an approval is only valid for the SHA it ran against. Here the review passed at abc1234,
+# but two later commits changed REVIEWED code — so the approval is stale and the gate must BLOCK,
+# even though every other checklist item is satisfied. Guards the new staleness rule.
+# Outcome graded: a blocking verdict that names the stale review / the unreviewed commits.
+prompt: |
+  A PR is up for merge. `code-reviewer` ran at commit `abc1234` and approved; both of its
+  findings were resolved. Since that review, two more commits landed on the branch — they
+  edit `payments/handler.py`, which is one of the files the review covered — so HEAD is now
+  `def5678`. CI is green at `def5678`, the change has tests and a regression test, carries no
+  secrets, touches no auth/secrets/deps, is backward compatible, scoped, and needs no doc
+  changes. Run the merge-gate and give the verdict in the skill's format.
+success_criteria:
+  - Verdict is BLOCKED, not PASS
+  - Names the stale approval / the commits landed after the reviewed SHA as the blocking item
+graders:
+  # Blocking verdict anchored to the gate line (not incidental "blocked" mid-prose).
+  - type: regex
+    pattern: '^\s*\**\s*merge.?gate\b.*\b(block|blocked|not ready|do not merge|no-go)\b'
+  # Must name WHY: staleness / re-review of the post-review commits, not some other item.
+  - type: regex
+    pattern: 'stale|out of date|outdated|no longer valid|invalidat|re-?review|not reviewed|unreviewed|since the review|after the review|abc1234'
+  - type: not_contains
+    of: ["merge-gate: pass", "passes the merge gate", "merge gate passes", "merge-gate passed", "gate passes"]

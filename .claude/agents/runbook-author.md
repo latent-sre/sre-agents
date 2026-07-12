@@ -79,7 +79,7 @@ structure. Do **not** force Procedure or Rollback headings into a postmortem.
 - Evidence sources, verified facts, unresolved hypotheses, and explicit confidence where material.
 - Owned, dated, tracked action items routed to the appropriate agent or human owner.
 
-## Handoffs
+## Handoffs (see `handoff-protocol`)
 
 - ← from `incident-severity`: seed a postmortem from the authoritative incident timeline.
 - ← from `sre-engineer`: turn a diagnosis into a postmortem or a reusable runbook.

@@ -1,0 +1,24 @@
+id: merge-gate-passes-rebased
+target: merge-gate
+# Task: the FALSE-BLOCK guard for the staleness rule. A rebase moves HEAD with no content change,
+# so `SHA != HEAD` alone must NOT block — the predicate is content-based (`git diff <review-sha>..HEAD`
+# is empty ⇒ re-confirm the new SHA, no re-review). A gate that blocks here would force a waiver on
+# every rebase and destroy its own signal.
+prompt: |
+  A PR is up for merge. `code-reviewer` ran at commit `abc1234` and approved; both of its
+  findings were resolved. The author then rebased the branch onto main to pick up an unrelated
+  change, so HEAD is now `def5678` — a different SHA, but `git diff abc1234..HEAD` is EMPTY:
+  the content is identical to what was reviewed. CI is green at `def5678`, the change has tests
+  and a regression test that fails without the fix, carries no secrets, touches no
+  auth/secrets/deps, is backward compatible, scoped, and needs no doc changes. Run the
+  merge-gate and give the verdict in the skill's format.
+success_criteria:
+  - Verdict is merge-gate PASS (not BLOCKED) — an empty diff is not a stale approval
+  - Treats the rebase as content-neutral / re-confirms the new SHA rather than demanding re-review
+graders:
+  - type: regex   # affirmative verdict anchored to the START of a line
+    pattern: '^\s*\**\s*merge.?gate\b[:\s*]*\**\s*(pass(es|ed)?|approved)\b'
+  # NB: bare "waiver" false-fails here — the skill's own verdict template emits "Waivers (if any):
+  # none" on a clean PASS. Match a waiver that is actually REQUIRED instead.
+  - type: not_contains   # must not treat a content-neutral rebase as a stale approval
+    of: ["does not pass", "not pass", "cannot pass", "do not merge", "approval is stale", "requires a waiver", "needs a waiver"]

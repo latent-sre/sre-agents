@@ -17,7 +17,7 @@ specialist task, **say so and route directly** — don't manufacture ceremony.
 something on fire?).
 
 ## 2. Route (decision table)
-| Signal in the request | Primary agent | Then (typical chain) |
+| Signal in the request | Route to | Then (typical chain) |
 |---|---|---|
 | "implement / build / refactor / fix code" | `sde-engineer` (pick `sde-ladder` by scope; load language `craft`) | → `code-reviewer` (+`security-reviewer` if sensitive, `test-engineer` if thin) → **`merge-gate`** |
 | "build a tool for the ops side — a CLI, an API endpoint, or a web GUI" | `sde-engineer` (pick the shape: **`ops-cli`** / **`api-design`** / **`spa-architecture`**; + **`ops-stack-integration`** if it calls cf/Splunk/Wavefront/Moogsoft; + the language `craft`) | → `code-reviewer` (+`security-reviewer` for auth/secrets/token/CORS) → **`merge-gate`** |
@@ -27,9 +27,9 @@ something on fire?).
 | "failing test / flaky build / bug, cause unknown" | `sde-engineer` (or `test-engineer`) + **`debug-rca`** skill | → `sde-engineer` for the fix; → `sre-engineer` if it's actually a prod incident |
 | "DB schema/migration / slow query / DB incident" | `sde-engineer` (loads the **`database-reliability`** skill for schema/query/ORM work) | → `code-reviewer` → **`merge-gate`**; prod migration → a human release owner runs it under **`production-change-gate`** |
 | "X is broken / slow / erroring / alerting" | `sre-engineer` (`sre-ladder` by depth) | → run the incident-command process (`incident-severity`) if major; → a human release owner to mitigate |
-| "run the incident / comms / who's doing what" | load **`incident-severity`** (severity, roles, comms, timeline) | ⇄ `sre-engineer` (technical RCA) in parallel |
+| "run the incident / comms / who's doing what" | **skill (main session):** load **`incident-severity`** (severity, roles, comms, timeline) — not an agent | ⇄ `sre-engineer` (technical RCA) in parallel |
 | "set up monitoring / noisy alert / define SLO" | `sre-monitor` | → `runbook-author` for alert runbooks |
-| "ship / release / deploy / roll back / move off Bamboo" | a human release owner (**`pcf-deploy`** / **`bamboo-to-actions-migration`** / **`rollback-mitigation`**) | **`release-gate`** + **`production-change-gate`** for prod |
+| "ship / release / deploy / roll back / move off Bamboo" | **human:** a human release owner, using **`pcf-deploy`** / **`bamboo-to-actions-migration`** / **`rollback-mitigation`** — no agent executes this | **`release-gate`** + **`production-change-gate`** for prod |
 | "write/update an operational runbook or procedure, or a resolved-incident postmortem/writeup" | `runbook-author` (preloads **`runbook-template`**; invokes **`blameless-postmortem`** for incident writeups) | — |
 | "write/tune an agent, skill, or prompt / skill never triggers / agent ignores instruction" | `prompt-engineer` (loads **`agent-authoring`** — artifact tier for one artifact, roster tier for lane/orchestration design) | → `security-reviewer` if the artifact ingests untrusted input; → `code-reviewer` for gate/guard wording changes |
 | any agent is missing a fact | `researcher` | → back to the requester |
