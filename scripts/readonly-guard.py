@@ -340,6 +340,18 @@ _DENY_PATTERNS = [
     # Build / orchestration runners (bare verb in command position; covers `make target`,
     # `docker run ...`, `terraform apply`, `kubectl ...`, `ansible-playbook ...`, `npx ...`).
     _CMD + r"(make|docker|terraform|kubectl|ansible-playbook|npx|mvn|gradle)\b",
+    # TEST RUNNERS. Same category as the script/build runners around them, and the omission was pure
+    # oversight: the guard denied `python3 mutate.py` and `bash deploy.sh` while allowing `pytest`,
+    # which imports and EXECUTES the repo's conftest.py before a single test runs. For a reviewer
+    # pointed at an untrusted PR, `pytest` is arbitrary code execution chosen by the diff's author —
+    # the same for `npm test`/`npm ci` (lifecycle scripts), tox/nox (they build and exec envs), and
+    # `go test` (which compiles and runs the tree). A read-only agent reviews the tests; it does not
+    # run them. Running the suite belongs to test-engineer / merge-gate, which are not read-only.
+    # Command-position anchored, so `grep -rn "pytest" docs/` and `cat pytest.ini` stay allowed.
+    _CMD + r"(pytest|py\.test|tox|nox|jest|vitest|mocha|rspec|bats|Invoke-Pester)\b",
+    _CMD + r"(?:\S*/)?(python|python3|py)\s+(?:-\S+\s+)*-m\s+(pytest|unittest|nose2?|tox|nox)\b",
+    _CMD + r"(npm|pnpm|yarn)\s+(test|run|ci|exec|start|build)\b",
+    _CMD + r"(?:\S*/)?(go|cargo|dotnet)\s+test\b",
     # cargo/go run-or-build (install/get already covered above). Command-position anchored like the
     # make/docker rule, so observation-only text — `rg "go build" .`, `grep "cargo build" notes` —
     # is NOT a false-positive; only an actual `go build`/`cargo run` in the command slot is blocked.

