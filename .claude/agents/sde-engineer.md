@@ -9,7 +9,7 @@ description: >-
   proactively for "implement", "build", "refactor", "fix", "add", "change", or a design decision. Hand
   off to `code-reviewer` before declaring done, `security-reviewer` for sensitive changes, and
   `test-engineer` when coverage is thin.
-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, WebSearch, WebFetch
+tools: Skill, Read, Write, Edit, Grep, Glob, Bash, TodoWrite, WebSearch, WebFetch
 color: blue
 ---
 

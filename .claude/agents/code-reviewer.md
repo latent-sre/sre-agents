@@ -8,7 +8,7 @@ description: >-
   whenever code has just been written/changed and the user wants it checked, says "review this",
   "is this correct", or before a release. It is READ-ONLY: it reports findings and suggested fixes
   but does not edit code itself. For security-specific depth, also use `security-reviewer`.
-tools: Read, Grep, Glob, Bash, TodoWrite
+tools: Skill, Read, Grep, Glob, Bash, TodoWrite
 skills:
   - merge-gate
 color: yellow

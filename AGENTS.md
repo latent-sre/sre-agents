@@ -90,11 +90,15 @@ is a fast speed-bump on top of that, not a substitute for it.
 ## Skills
 
 A skill is a folder under [`.claude/skills/`](.claude/skills/) with a `SKILL.md` (open
-[Agent Skills](https://agentskills.io) standard). **You already have the full skill listing in
-context** — each skill's *what + when* is its frontmatter `description`, so match the task against
-those and load the one you need. You can also invoke one directly as `/skill-name`. The
-`sde-ladder`/`sre-ladder` skills set your **altitude**: load the tier that matches the task's ambiguity
-and blast radius. (The roster of skills by category is in [README.md](README.md#the-fleet).)
+[Agent Skills](https://agentskills.io) standard). Each skill's *what + when* is its frontmatter
+`description`. Match the task against the skill listing and load the one you need with the **`Skill`
+tool**; you can also invoke one directly as `/skill-name`. The `sde-ladder`/`sre-ladder` skills set
+your **altitude**: load the tier that matches the task's ambiguity and blast radius. (The roster of
+skills by category is in [README.md](README.md#the-fleet).)
+
+> **If you have no `Skill` tool, you will also have no skill listing** — you'd see skill *names* here
+> with no trigger descriptions. In that case read the skill directly: `.claude/skills/<name>/SKILL.md`.
+> Do **not** proceed from body prose alone; the skill carries the lane rules and safe-command lists.
 
 ## Routing & gates (selectors that control the workflow)
 

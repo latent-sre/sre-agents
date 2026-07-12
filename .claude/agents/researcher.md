@@ -7,7 +7,7 @@ description: >-
   concise, CITED answers and flags uncertainty. Use proactively whenever a task hinges on a fact that
   isn't certain from the current context — before guessing an API contract, a config key, a CLI flag,
   or "did this change between versions". It is READ-ONLY and does not modify code or systems.
-tools: Read, Grep, Glob, WebSearch, WebFetch, TodoWrite
+tools: Skill, Read, Grep, Glob, WebSearch, WebFetch, TodoWrite
 color: purple
 ---
 

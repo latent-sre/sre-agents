@@ -200,6 +200,19 @@ def main():
             body = read_raw(afull)
             if not re.search(r'readonly-guard\.py', body):
                 issues.append("agent '%s': read-only Bash agent is missing readonly-guard.py hook" % a)
+        # An explicit `tools:` list that omits `Skill` is the DOCUMENTED way to stop a subagent
+        # invoking skills at all: "To prevent a subagent from invoking skills entirely, omit `Skill`
+        # from the tools list" -- https://code.claude.com/docs/en/sub-agents. Every agent body here
+        # says "load the X skill", so omitting it silently guts the fleet's core mechanism (agents are
+        # WHO, skills are HOW, loaded on demand). It shipped that way and nothing caught it, because
+        # the validator only checked that skills EXIST -- never that an agent could REACH one.
+        # `skills:` does NOT substitute: it preloads content, it does not grant invocation.
+        if tools and not re.search(r'\bSkill\b', tools):
+            issues.append(
+                "agent '%s': tools: omits 'Skill' -- it cannot invoke ANY skill (the documented way to "
+                "disable skills). Its body tells it to load skills. Add Skill to tools:, or drop tools: "
+                "entirely to inherit all tools." % a
+            )
 
     # ---- Roster coverage (docs that enumerate the roster must name every agent) ----
     # A past agent addition silently missed README.md and the roster docs;

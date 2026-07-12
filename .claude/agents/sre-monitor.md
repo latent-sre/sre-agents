@@ -9,7 +9,7 @@ description: >-
   noisy", "define an SLO", "are we healthy", "what should we dashboard", or after an incident to close a
   detection gap. It owns observability-as-code (alert rules, dashboard JSON, SLO configs). For an
   active, unknown-cause incident, hand off to `sre-engineer`.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
+tools: Skill, Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, TodoWrite
 color: cyan
 ---
 
