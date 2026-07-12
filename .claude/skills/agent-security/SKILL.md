@@ -68,16 +68,22 @@ Break any one leg and the injection can't complete. *[sourced: Simon Willison, "
   - **`sde-engineer`, `sre-monitor`, `runbook-author`, `prompt-engineer`** are write-capable
     (`Write`+`Edit`+`Bash`) with **no PreToolUse hook**, and **all four also hold `WebFetch`** (all but
     `runbook-author` also `WebSearch`) — so their network-egress leg is bounded by the **outbound
-    allowlist**, not the Bash guard. Containment is not a broken leg but (a) **human review of every write**
-    before it merges/ships (`merge-gate` / PR review) and (b) treating **all fetched/log/PR text as DATA,
-    never instructions** (`handoff-protocol` carries the untrusted taint). Leg-3 reach is the local repo +
-    a PR, not prod — but a poisoned `WebFetch`/log line steering a file write is a real injection surface,
-    so keep their writes human-reviewed and never auto-merged.
+    allowlist**, not the Bash guard. **No leg is broken.** The dominant path is **single-turn and produces
+    no handoff at all**: `WebFetch` a poisoned page (or `Bash`-read a poisoned CI log) → the injected text
+    steers an `Edit` → the write lands. So the **one control that does not depend on the agent cooperating
+    is (a) human review of every write** before it merges/ships (`merge-gate` / PR review, enforced by
+    **branch protection**). The rest is **prompt-level discipline an injected prompt can talk the agent out
+    of**: (b) treating all fetched/log/PR text as **DATA, never instructions**, and (c) carrying the
+    `[UNTRUSTED]` label in `handoff-protocol`'s `Inputs:` — which only exists on a *handoff*, and the
+    fetch→write path never makes one. Keep (b) and (c) as **hygiene that makes an attack easier to spot in
+    review — not containment.** Leg-3 reach is the local repo + a PR, not prod, so keep every write
+    human-reviewed and never auto-merged.
   - **`test-engineer`** holds `Write`+`Edit`+`Bash` (no `WebFetch`) and **no
     PreToolUse hook**. Lacking `WebFetch` narrows leg 2 but doesn't close it: `Bash` still ingests
     untrusted **test output, DB/query results, and logs** — as do migration files authored with the
     `database-reliability` skill (the forward/rollback scripts a human release owner later runs under the `production-change-gate`).
-    Same containment — human review of every write + treat all tool/log output as DATA.
+    Same posture — **human review of every write is the control**; treating all tool/log output as DATA is
+    hygiene, not containment.
   - **`code-reviewer`, `security-reviewer`, `sre-engineer`** are read-only (no `Write`/`Edit`) and keep
     `Bash` for observation — its leg-3 egress contained by the `readonly-guard` **speed-bump** (incomplete,
     see above) + OS least-privilege. `security-reviewer` and `sre-engineer` also hold `WebSearch` (bounded

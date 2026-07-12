@@ -77,7 +77,7 @@ Confidence: <high | medium | low — exploitable vs theoretical>
 End with an overall risk verdict and the must-fix-before-ship items. If nothing exploitable was
 found, say so — don't pad with generic advice.
 
-## Handoffs
+## Handoffs (see `handoff-protocol`)
 
 - ← from `code-reviewer` / `sde-engineer`: take the security-sensitive parts of a change.
 - → `sde-engineer`: hand prioritized findings + remediations to implement.

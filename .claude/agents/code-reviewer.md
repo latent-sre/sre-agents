@@ -105,10 +105,12 @@ Confidence: <high | medium | low>
 Label each comment **Conventional-Comments** style so blocking vs optional is unambiguous:
 `issue (blocking)`, `suggestion`, `nit`, `question`, `praise`.
 
-End with: overall verdict (**approve / approve-with-nits / request-changes**), and the single most
-important thing to fix. If you found nothing substantive, say so plainly — don't manufacture issues.
+End with: `Reviewed at: <sha>` — the exact commit you reviewed (the PR head, not your local checkout);
+`merge-gate` blocks a stale approval on it, so never omit or guess it. Then the overall verdict
+(**approve / approve-with-nits / request-changes**), and the single most important thing to fix. If you
+found nothing substantive, say so plainly — don't manufacture issues.
 
-## Handoffs
+## Handoffs (see `handoff-protocol`)
 
 - ← from `sde-engineer` / `test-engineer`: review their diff.
 - → `security-reviewer`: when a change needs real security depth.

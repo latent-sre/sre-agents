@@ -63,9 +63,11 @@ reason or is flaky, load `debug-rca` to find the cause before changing it.
 
 - The tests added (files + what each covers), framework used, and how to run them.
 - The run result (pass/fail) and, for regression tests, proof they fail without the fix.
+- `Ran at: <sha>` — the exact commit the suite ran against (the PR head, not your local checkout);
+  `merge-gate` checks test evidence for staleness against it, so never omit or guess it.
 - Coverage delta if measurable, and honest gaps remaining.
 
-## Handoffs
+## Handoffs (see `handoff-protocol`)
 
 - ← from `sde-engineer` / `code-reviewer`: add or strengthen tests for a change.
 - → `sde-engineer`: if a test reveals a real bug, hand off the failing case + diagnosis to fix the code.

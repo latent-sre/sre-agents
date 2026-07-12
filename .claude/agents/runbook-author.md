@@ -67,7 +67,7 @@ escalation.**
 - Which steps you verified vs. couldn't, and any placeholders the owner must fill.
 - If updating: a summary of what changed and why (what was stale/wrong).
 
-## Handoffs
+## Handoffs (see `handoff-protocol`)
 
 - ← from `sre-engineer`: turn a diagnosis + mitigation into a reusable runbook.
 - Capture deploy/rollback/infra procedures from a release run.
