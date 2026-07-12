@@ -164,6 +164,20 @@ ALLOW = [
     'FOO="a b" echo hi',                     # quoted-whitespace assignment before a READ command
     'X="rm -rf" cat notes.txt',              # mutation text lives in a string value, not the command
     'echo FOO="a b"',                        # assignment-looking text as an echo argument
+    # A cf/gh WRITE verb appearing only as ARGUMENT or SEARCH TEXT is not the command — must NOT be
+    # denied. The cf/gh rules are command-position anchored (_CF_CMD/_GH_CMD), like the git rules;
+    # before that they were bare `\bcf\s+push`, which denied every runbook grep that mentioned a deploy.
+    'grep "cf push" README.md',
+    'echo "cf delete app"',
+    "cat runbook.md | grep 'cf restart'",
+    'grep "gh pr merge" .github/ci.md',
+    'rg "cf scale" docs/',
+    'git log --grep="cf push"',
+    # cf/gh READ verbs behind a global option stay allowed (the *-PRE prefixes gate on the verb list)
+    "cf -v apps",
+    "cf -v logs checkout --recent",
+    "gh --repo example/repo pr view 1",
+    "gh -R example/repo run list",
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -210,6 +224,36 @@ DENY = [
     "gh repo edit --description x",
     "gh api repos/example/repo/actions/secrets -X PUT",
     "gh api repos/example/repo --method=PATCH",
+    # --- cf/gh bypasses: a GLOBAL OPTION between the binary and the write verb ------------------
+    # git tolerated its global-option prefix via _GIT_PRE (`git -C path push` is caught); cf and gh
+    # had no equivalent, so the idiomatic flag-first form sailed past the verb anchor. cf's globals
+    # are `-v` and `-h/--help` (cf CLI v8 GLOBAL OPTIONS); gh's `-R/--repo` is a persistent flag on
+    # `gh pr`/`gh issue` that Cobra's stripFlags() accepts BEFORE the subcommand too.
+    "cf -v push checkout",
+    "cf --help push checkout",
+    "cf -v delete checkout -f",
+    "gh --repo example/repo pr merge 1",
+    "gh -R example/repo pr merge 1 --squash",
+    "gh --repo=example/repo issue close 7",
+    "gh -R example/repo release create v1.0.0",
+    # --- cf bypasses: the SHORT ALIASES ---------------------------------------------------------
+    # Every cf write command has a short alias (cf CLI v8 `ALIAS:` in each command's help). The
+    # denylist matched only the long names, so `cf p` deployed and `cf d` deleted straight through.
+    "cf p checkout",                         # push
+    "cf d checkout -f",                      # delete
+    "cf rs checkout",                        # restart
+    "cf rg checkout",                        # restage
+    "cf sp checkout",                        # stop
+    "cf st checkout",                        # start
+    "cf ds my-db -f",                        # delete-service
+    "cf us checkout my-db",                  # unbind-service
+    "cf cs mysql small my-db",               # create-service
+    "cf bs checkout my-db",                  # bind-service
+    "cf se checkout KEY value",              # set-env
+    "cf ue checkout KEY",                    # unset-env
+    "cf rt checkout \"rake db:migrate\"",   # run-task
+    "cf -v p checkout",                      # alias BEHIND a global option — both fixes must compose
+    "/usr/local/bin/cf p checkout",          # alias via absolute path
     "git push origin main",
     "git commit -m 'x'",
     "git reset --hard origin/main",

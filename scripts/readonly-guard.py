@@ -149,10 +149,53 @@ _GIT_CMD = (
     + r"(?:\S*/)?git\s+"
 )
 
+# Command-position prefix for `cf` and `gh` — the exact treatment `git` already gets from _GIT_CMD.
+# Before this, both were bare `\bcf\s+(push|…)` / `\bgh\s+(pr|issue)\s+(merge|…)`, which broke in BOTH
+# directions at once:
+#   FALSE NEGATIVE — a global option between the binary and the verb slid past the anchor, so
+#     `cf -v push app` and `gh --repo o/r pr merge 1` (both valid, both idiomatic) deployed and merged.
+#   FALSE POSITIVE — with no command-position anchor, the verb as SEARCH TEXT was denied, so
+#     `grep "cf push" README.md` — a read — was blocked. (git was immune to both, via _GIT_PRE/_GIT_CMD.)
+# One asymmetry, two faces; anchoring fixes both. `(?:\S*/)?` (inherited from _CMD) keeps the
+# absolute-path form caught: `/usr/local/bin/cf push`.
+_CF_CMD = _CMD + r"cf\s+"
+_GH_CMD = _CMD + r"gh\s+"
+
+# cf's GLOBAL OPTIONS are exactly two — `-v` and `-h`/`--help` (cf CLI v8 reference, GLOBAL OPTIONS;
+# `-v` doubles as --version on the top-level go-flags struct). They may precede the command word.
+_CF_PRE = r"(?:(?:-v|-h|--help)\s+)*"
+
+# gh has no root `--repo`: `-R`/`--repo` is a PERSISTENT flag on `gh pr`/`gh issue`/`gh release`. But
+# Cobra (TraverseChildren=false) calls stripFlags() to find the subcommand while IGNORING flag position,
+# then hands the flags to the leaf — so `gh --repo o/r pr merge 1` parses and MERGES. Verified live
+# against the GitHub API. Tolerate a run of leading flags (with optional values, `=` or space-separated)
+# so the write-verb list still gates: a gh READ behind the same flags (`gh -R o/r pr view 1`) stays allowed.
+_GH_PRE = r"(?:-{1,2}[A-Za-z][^\s]*(?:\s+[^-\s]\S*)?\s+)*"
+
+# Every cf write command carries a SHORT ALIAS (each command's `ALIAS:` in cf help / the `alias:` struct
+# tags in cloudfoundry/cli command_list_v7.go). The denylist matched only the long names, so the shortest
+# spelling of the most destructive commands — `cf p` (push), `cf d` (delete) — went straight through.
+# Read-only aliases (a=apps, s=services, t=target, e=env, r=routes, o=orgs) are deliberately NOT here.
+# Do not hand-extend this list from memory: regenerate it from `cf help -a`.
+# Only aliases CONFIRMED against those two sources are listed — no guesses. Commands whose alias was
+# not confirmed (quotas, domains, security groups) are still covered by their LONG name in the rule
+# below; the residual is that their short alias, if one exists, is not caught. Close that by
+# regenerating from `cf help -a` on a real cf v8 install, not by pattern-matching this list.
+_CF_WRITE_ALIASES = (
+    r"push|p|delete|d|restart|rs|restage|rg|stop|sp|start|st|"
+    r"create-service|cs|bind-service|bs|unbind-service|us|delete-service|ds|"
+    r"create-service-key|csk|delete-service-key|dsk|create-service-broker|csb|"
+    r"create-user-provided-service|cups|update-user-provided-service|uups|"
+    r"bind-route-service|brs|unbind-route-service|urs|"
+    r"set-env|se|unset-env|ue|run-task|rt|create-org|co|create-space|csp|"
+    r"set-running-environment-variable-group|srevg|set-staging-environment-variable-group|ssevg"
+)
+
 # State-changing command patterns — denied for read-only agents. Case-insensitive.
 _DENY_PATTERNS = [
     # PCF / cf CLI writes: deploys, scaling, lifecycle, routes, services, env, ssh, tasks
-    r"\bcf\s+(?:v3-)?(push|delete|delete-[a-z-]+|scale|restart|restage|restart-app-instance|stop|start|"
+    _CF_CMD + _CF_PRE + r"(?:v3-)?(?:" + _CF_WRITE_ALIASES + r")\b",
+    _CF_CMD + _CF_PRE + r"(?:v3-)?(push|delete|delete-[a-z-]+|scale|restart|restage|restart-app-instance|stop|start|"
     r"stage|map-route|unmap-route|create-route|delete-route|set-env|unset-env|set-label|unset-label|rename|bind-service|"
     r"unbind-service|create-service|update-service|create-user-provided-service|"
     r"update-user-provided-service|delete-user-provided-service|create-service-key|"
@@ -167,17 +210,19 @@ _DENY_PATTERNS = [
     r"create-security-group|update-security-group|add-network-policy|remove-network-policy|"
     r"enable-org-isolation|create-isolation-segment|install-plugin|uninstall-plugin|"
     r"set-running-environment-variable-group|set-staging-environment-variable-group)\b",
-    r"\bcf\s+curl\b.*-X\s*(POST|PUT|DELETE|PATCH)",
-    r"\bcf\s+curl\b.*--request[=\s]+(POST|PUT|DELETE|PATCH)",
-    r"\bcf\s+curl\b.*(--data(-raw|-binary|-urlencode)?|\s-d[\s'\"@=])",
-    # GitHub CLI writes: PR/issue/release/workflow/secrets/repo mutations
-    r"\bgh\s+(pr|issue)\s+(create|edit|close|reopen|merge|ready|lock|unlock|comment|review)\b",
-    r"\bgh\s+workflow\s+run\b",
-    r"\bgh\s+run\s+(rerun|cancel|delete)\b",
-    r"\bgh\s+(secret|variable)\s+(set|delete|remove)\b",
-    r"\bgh\s+release\s+(create|delete|edit|upload)\b",
-    r"\bgh\s+repo\s+(create|delete|fork|edit|rename|sync|archive|unarchive)\b",
-    r"\bgh\s+api\b.*(-X\s*(POST|PUT|DELETE|PATCH)|--method[=\s]+(POST|PUT|DELETE|PATCH))",
+    _CF_CMD + _CF_PRE + r"curl\b[^|;&\n]*-X\s*(POST|PUT|DELETE|PATCH)",
+    _CF_CMD + _CF_PRE + r"curl\b[^|;&\n]*--request[=\s]+(POST|PUT|DELETE|PATCH)",
+    _CF_CMD + _CF_PRE + r"curl\b[^|;&\n]*(--data(-raw|-binary|-urlencode)?|\s-d[\s'\"@=])",
+    # GitHub CLI writes: PR/issue/release/workflow/secrets/repo mutations. _GH_CMD anchors gh to command
+    # position (so `grep "gh pr merge" ci.md` is a read, not a denial); _GH_PRE absorbs a leading
+    # `-R/--repo …` that Cobra accepts BEFORE the subcommand.
+    _GH_CMD + _GH_PRE + r"(pr|issue)\s+(create|edit|close|reopen|merge|ready|lock|unlock|comment|review)\b",
+    _GH_CMD + _GH_PRE + r"workflow\s+run\b",
+    _GH_CMD + _GH_PRE + r"run\s+(rerun|cancel|delete)\b",
+    _GH_CMD + _GH_PRE + r"(secret|variable)\s+(set|delete|remove)\b",
+    _GH_CMD + _GH_PRE + r"release\s+(create|delete|edit|upload)\b",
+    _GH_CMD + _GH_PRE + r"repo\s+(create|delete|fork|edit|rename|sync|archive|unarchive)\b",
+    _GH_CMD + _GH_PRE + r"api\b[^|;&\n]*(-X\s*(POST|PUT|DELETE|PATCH)|--method[=\s]+(POST|PUT|DELETE|PATCH))",
     # git writes: history, remote, index, or worktree mutations. _GIT_CMD anchors git to command
     # position (no false positive when a git verb is only grep'd/echoed text) while keeping absolute-path
     # coverage; _GIT_PRE tolerates git's global-option prefix (git -C <path> / -c k=v / --work-tree=… /
