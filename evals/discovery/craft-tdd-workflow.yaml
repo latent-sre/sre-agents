@@ -1,0 +1,9 @@
+id: discover-craft-tdd-workflow
+expected: tdd-workflow
+# The owning agent legitimately covers this lane and loads the skill itself — delegating
+# there is the roster working, not a misroute. Grade the outcome, not the path.
+also_acceptable: [test-engineer, sde-engineer]
+prompt: |
+  I'm about to fix a bug in the retry logic. Should I write the test before the fix, and what should
+  the test actually assert?
+note: "2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: tdd-workflow. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."

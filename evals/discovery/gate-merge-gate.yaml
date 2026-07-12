@@ -1,0 +1,8 @@
+id: discover-gate-merge-gate
+expected: merge-gate
+# The owning agent legitimately covers this lane and loads the skill itself — delegating
+# there is the roster working, not a misroute. Grade the outcome, not the path.
+also_acceptable: [code-reviewer]
+prompt: |
+  The PR looks good to me and CI is green. What should I actually check before I hit merge?
+note: "2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: merge-gate. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."

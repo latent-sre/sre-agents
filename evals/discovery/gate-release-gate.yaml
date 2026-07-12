@@ -1,0 +1,5 @@
+id: discover-gate-release-gate
+expected: release-gate
+prompt: |
+  Build 47 is through CI and code review. Is it actually ready to ship to prod, and how would I know?
+note: "2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: release-gate. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."
