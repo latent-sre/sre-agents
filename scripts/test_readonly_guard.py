@@ -311,6 +311,18 @@ DENY = [
     "git submodule update --init",           # fetches + checks out code, can run hooks
     "git submodule add https://example.com/x.git vendor/x",
     "git replace HEAD~1 HEAD",               # rewrites object graph
+    # LONG-FORM flags. Matching only the short ones (-d/-D/-m/-M) left the spelling a human actually
+    # types wide open: `git branch --delete` deleted while `git branch -D` was denied.
+    "git branch --delete feature",
+    "git branch --delete --force feature",
+    "git branch --move old new",
+    "git branch --copy main copy",
+    "git branch -f feature main",            # force-move a ref (-f/-u were missing beside -d/-m/-c)
+    "git branch -u origin/main",
+    "git tag --delete v1.0.0",
+    "git tag --force v1.0.0",
+    "git tag --annotate v9.9.9 -m x",
+    "git tag --sign v9.9.9",
     # git's ext:: transport and --upload-pack/--receive-pack run an ARBITRARY COMMAND. This is remote
     # code execution wearing a clone/fetch costume, and it defeats every verb-based rule above.
     "git clone 'ext::sh -c whoami'",

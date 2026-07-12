@@ -163,7 +163,7 @@ _GH_CMD = _CMD + r"gh\s+"
 
 # cf's GLOBAL OPTIONS are exactly two — `-v` and `-h`/`--help` (cf CLI v8 reference, GLOBAL OPTIONS;
 # `-v` doubles as --version on the top-level go-flags struct). They may precede the command word.
-_CF_PRE = r"(?:(?:-v|-h|--help)\s+)*"
+_CF_PRE = r"(?:(?:-v|--version|-h|--help)\s+)*"
 
 # gh has no root `--repo`: `-R`/`--repo` is a PERSISTENT flag on `gh pr`/`gh issue`/`gh release`. But
 # Cobra (TraverseChildren=false) calls stripFlags() to find the subcommand while IGNORING flag position,
@@ -239,8 +239,14 @@ _DENY_PATTERNS = [
     # `git tag`, `-l`, `-n5`) create nothing and stay allowed. -c/-C (copy) were missing beside -d/-m.
     # These live in their OWN entries, not in the verb group above: that group ends in `\b`, which a
     # single-character name (`git branch a…`) can never satisfy — the boundary falls mid-token.
-    _GIT_CMD + _GIT_PRE + r"branch\s+(?:-[dDmMcC]\b|(?!-)\S)",
-    _GIT_CMD + _GIT_PRE + r"tag\s+(?:-[dfas]\b|(?!-)\S)",
+    # Both SHORT and LONG spellings. Matching only `-[dDmMcC]` / `-[dfas]` left the form a human
+    # actually types wide open — `git branch --delete feature` and `git tag --delete v1.0.0` sailed
+    # through while `-D` / `-d` were caught. (That gap predates the creation fix above: the ORIGINAL
+    # rule was `branch\s+-[dDmM]`, so long-form deletion was never covered.)
+    # Read forms create nothing and stay allowed: `--list`, `--all`, `--contains`, `--show-current`, `-n5`.
+    _GIT_CMD + _GIT_PRE + r"branch\s+(?:-[dDmMcCfu]\b|"
+    r"--(?:delete|move|copy|force|edit-description|set-upstream-to|unset-upstream)\b|(?!-)\S)",
+    _GIT_CMD + _GIT_PRE + r"tag\s+(?:-[dfasu]\b|--(?:delete|force|annotate|sign|local-user)\b|(?!-)\S)",
     # git's ext:: transport and --upload-pack/--receive-pack execute an ARBITRARY COMMAND on the local
     # host (`git clone 'ext::sh -c id'`). That is remote code execution wearing a clone/fetch costume,
     # and no verb-based rule can see it — the verb is a perfectly ordinary `clone`/`fetch`/`ls-remote`.
