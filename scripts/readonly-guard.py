@@ -350,6 +350,24 @@ _DENY_PATTERNS = [
     # the response to a FILE (-OutFile), an HTTP WRITE method, or a request carrying a body/upload.
     _CMD + r"(Invoke-WebRequest|iwr|Invoke-RestMethod|irm)\b[^|;&\n]*"
     r"(-OutFile|-InFile|-Body|-Method\s*[\"']?(POST|PUT|DELETE|PATCH))",
+    # --- DATABASE CLIENTS -------------------------------------------------------------------------
+    # A read-only agent could run `psql -c "DROP TABLE users"`. The guard blocked `cf push` and let
+    # DROP TABLE through — found while correcting the database-reliability skill, missed by two prior
+    # security reviews. Every one of these was allowed: psql/mysql/sqlplus/sqlcmd/mongosh/redis-cli
+    # with an inline statement, a script file, or a shell.
+    #
+    # Denied OUTRIGHT — no attempt to tell a read statement from a write. That distinction cannot be
+    # made with a regex, and SQL proves it better than any other surface: `EXPLAIN ANALYZE INSERT …`
+    # reads like introspection and MUTATES THE TABLE (Postgres: "the statement is actually executed…
+    # other side effects of the statement will happen as usual"). A denylist that tried to allow
+    # "SELECT and EXPLAIN" would wave that straight through. Same closed-grammar lesson as
+    # git branch/tag: an unrecognized form must fail closed.
+    #
+    # Database access for a read-only agent is not a capability we owe it: slow queries and DB
+    # saturation are diagnosed from the app's metrics/logs, and the plan work belongs to a human or
+    # DBA with credentials scoped for it. See the database-reliability skill.
+    _CMD + r"(?:\S*/)?(psql|pgcli|mysql|mariadb|mycli|sqlplus|sqlcmd|osql|isql|bcp|sqlite3|"
+    r"mongo|mongosh|redis-cli|cqlsh|clickhouse-client|influx|cockroach)\b",
     # in-place file editors
     r"\bsed\s+(-[^\s]*i|--in-place)",
     r"\bperl\s+-[^\s]*i",

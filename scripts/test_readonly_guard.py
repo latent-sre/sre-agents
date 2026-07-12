@@ -221,6 +221,10 @@ ALLOW = [
     'rg "npm test" .github/',
     "cf logs pytest-runner --recent",        # runner name inside a hyphenated app name
     "ls node_modules/.bin",
+    # DB-client names as SEARCH TEXT / in filenames are reads — the rule is command-position anchored
+    'grep -rn "psql" runbooks/',
+    "cat psql-notes.md",
+    "cf logs redis-cli-worker --recent",
 ]
 
 # Commands that CHANGE STATE — must be DENIED.
@@ -427,6 +431,20 @@ DENY = [
     "Add-Type -TypeDefinition $code",        # compiles and loads arbitrary code
     "Set-ExecutionPolicy Bypass -Scope Process",
     "Start-Job -ScriptBlock { Remove-Item x }",
+    # --- database clients: a read-only agent could DROP TABLE ------------------------------------
+    # Denied outright. Read-vs-write cannot be told apart by regex, and SQL is the proof:
+    # `EXPLAIN ANALYZE INSERT ...` reads like introspection and MUTATES the table.
+    'psql -c "DROP TABLE users"',
+    'psql -h prod -U app -c "UPDATE users SET admin=true"',
+    "psql -f migrate.sql",
+    'psql -c "SELECT 1"',                    # denied too — closed grammar, not a SELECT-sniffer
+    'psql -c "EXPLAIN ANALYZE INSERT INTO t VALUES (1)"',   # looks like a read; writes
+    'mysql -e "DELETE FROM orders"',
+    "sqlplus user/pass@prod @drop.sql",
+    'sqlcmd -Q "DROP DATABASE prod"',
+    'mongosh --eval "db.users.drop()"',
+    "redis-cli FLUSHALL",
+    "sqlite3 app.db 'DELETE FROM t'",
     "git push origin main",
     "git commit -m 'x'",
     "git reset --hard origin/main",

@@ -39,8 +39,42 @@ data* layer, not the DB platform internals.
   Alembic/`migrate`), not ad-hoc SQL.
 
 ## Performance is a feature
-- Reproduce the slow query; read the plan with **`EXPLAIN` / `EXPLAIN ANALYZE`** (Postgres),
-  `EXPLAIN PLAN`/AWR (Oracle), or the actual execution plan (MS SQL).
+
+> ### ⚠️ "Read the plan" is not always a READ
+> **`EXPLAIN ANALYZE` (Postgres) and the "actual execution plan" (MS SQL) RUN THE STATEMENT.** They are
+> not observation. On a `SELECT` that means load; on an `INSERT`/`UPDATE`/`DELETE`/`MERGE` it means
+> **the data changes**. Postgres is explicit: *"the statement is actually executed when the ANALYZE
+> option is used… other side effects of the statement will happen as usual."* This skill previously
+> listed them next to plain `EXPLAIN` as if they were the same kind of act.
+>
+> | Engine | Safe (plan only, no execution) | EXECUTES the statement |
+> |---|---|---|
+> | **Postgres** | `EXPLAIN <stmt>` | `EXPLAIN ANALYZE <stmt>` |
+> | **MS SQL** | Estimated plan · `SET SHOWPLAN_XML ON` | Actual plan · `SET STATISTICS XML ON` |
+> | **Oracle** | `EXPLAIN PLAN FOR …` + `DBMS_XPLAN.DISPLAY` | (running the statement) |
+>
+> **Default to the safe column.** Reach for the executing form only on a statement you have confirmed
+> is a `SELECT`, on a non-prod copy or a read replica, with DBA sign-off for prod.
+>
+> To get real timings on a **mutating** statement without persisting the change, Postgres documents:
+> ```sql
+> BEGIN;  EXPLAIN ANALYZE <the INSERT/UPDATE/DELETE>;  ROLLBACK;
+> ```
+> Rollback covers ordinary table DML — it does **not** undo sequence/`nextval` consumption, or effects
+> that escape the transaction (FDW/dblink writes, `COPY TO PROGRAM`). Not a blanket safety net.
+>
+> **Oracle AWR/ADDM/ASH require the Diagnostics Pack** — a separately licensed, extra-cost Enterprise
+> Edition option. The features are **installed and will happily run on an unlicensed database**, so a
+> casual `@awrrpt` creates real audit exposure. Check `CONTROL_MANAGEMENT_PACK_ACCESS` (set it to
+> `NONE` where unlicensed). License-free alternatives: **`EXPLAIN PLAN` / `DBMS_XPLAN`**, and
+> **Statspack** (the pre-AWR facility). *Do not run AWR "just to look" — confirm licensing first.*
+
+- Reproduce the slow query; read the plan with **plain `EXPLAIN`** (Postgres), **`EXPLAIN PLAN` +
+  `DBMS_XPLAN`** (Oracle), or the **estimated** plan / `SET SHOWPLAN_XML ON` (MS SQL) — see the box
+  above before reaching for the executing variants.
+- **Application diagnosis vs DBA operations are different lanes.** Reading a plan and fixing a query is
+  ours. Running AWR, changing DB parameters, or executing plans against prod is DBA work with their
+  sign-off — hand it over rather than reaching for it.
 - **Index for the real query patterns** (composite/covering indexes match `WHERE` + `ORDER BY`); avoid
   full scans on hot paths, **N+1** query patterns (a `sde-engineer`/ORM smell), and **unbounded result
   sets** — paginate.
