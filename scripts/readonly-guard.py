@@ -29,6 +29,13 @@ egress carrying command substitution, DNS-tunnel lookups carrying substitution, 
 and read-only interpreter probes (`python3 --version`, `python3 -m json.tool`) still pass.
 Covered by scripts/test_readonly_guard.py (pure-stdlib, runs offline).
 
+SCOPE — this guard only sees the `Bash` tool (it is wired `matcher: Bash`, and main() returns early for
+anything else). It is NOT a whole-agent egress control. `security-reviewer` and `sre-engineer` also hold
+`WebSearch`, which this guard cannot see: it blocks curl/nc/DNS-tunnel exfil inside Bash while a query
+string walks out the side door. Low-bandwidth, but real — do not read "read-only agent" as "cannot
+exfiltrate". Closing that means removing `WebSearch` from those agents (delegating lookups to
+`researcher`), not adding a rule here.
+
 Known residuals (ACCEPTED BY DESIGN — do not chase with more regex): a regex denylist cannot
 fully parse shell, so a state-changing verb deliberately hidden behind shell *evaluation* will pass
 — e.g. backtick command substitution (``x=`git push` ``), a verb after a shell *keyword* the anchor

@@ -77,6 +77,15 @@ leaves an audit trail, but a determined or novel command can evade a denylist. T
 is **OS-level least-privilege credentials + an outbound allowlist** at the host/network layer — the guard
 is a fast speed-bump on top of that, not a substitute for it.
 
+**The guard only sees `Bash`.** It is wired `matcher: Bash`, so it governs that tool and nothing else.
+`security-reviewer` and `sre-engineer` also hold **`WebSearch`**, which is an **egress channel the guard
+cannot see** — it blocks `curl`, `nc`, and DNS tunnels inside Bash, then a query string walks out the
+side door. That is the full **lethal trifecta** in one agent: untrusted input (the diff/logs it was
+pointed at), sensitive data (the repo it can `Read`), and egress. It is *low-bandwidth* (search terms,
+no request body), not nothing. Closing it means dropping `WebSearch` from those agents and delegating
+lookups to `researcher` — a real capability trade, so it is called out here rather than quietly
+"handled". Do not read "read-only agent" as "cannot exfiltrate".
+
 Two consequences worth knowing before you use these agents:
 - **They cannot run test suites or builds** (`pytest`, `npm test`, `go test`, `make`, local scripts).
   That is intentional: running the suite executes the code *under review* — the diff's own
