@@ -124,6 +124,12 @@ def validate(scenarios: list[dict]) -> list[str]:
         primary = s.get("expected_agent") if kind == "agent" else s.get("expected")
         if primary and not exists(primary):
             problems.append(f"{where}: target '{primary}' is not a known {noun}")
+        # agent_must_reach_skill: a string names a specific skill the delegated agent must invoke
+        # itself. Unvalidated, a typo (e.g. 'sde-laddr') silently scores 0 hits forever instead of
+        # failing --validate -- the capability check would never fire and nothing would say why.
+        must_reach = s.get("agent_must_reach_skill")
+        if isinstance(must_reach, str) and not skill_exists(must_reach):
+            problems.append(f"{where}: agent_must_reach_skill '{must_reach}' is not a known skill")
         # also_acceptable: for a SKILL scenario an AGENT is a legitimate alternate -- discovery_rate()
         # already counts agent delegations as routing targets there (invoked = skills + agents), and
         # delegating to the agent that OWNS the skill is the roster working, not a misroute. Validating
@@ -211,31 +217,66 @@ def run_trial(prompt: str, settings: str | None, timeout: int,
         # A delegation may have been emitted BEFORE the (slow-subagent) timeout — parse the
         # partial trace rather than scoring a real routing decision as a miss.
         out = e.stdout if isinstance(e.stdout, str) else (e.stdout or b"").decode("utf-8", "replace")
-        # No returncode is available for a TimeoutExpired -- fall back to the text-only scan.
-        if clean_room.is_auth_failure(out):
-            raise clean_room.AuthUnavailable(_AUTH_FAILED_MSG)
+        invocations = _invocations_from_stream(out)
+        # A killed process almost never gets to emit the final structured result event, so
+        # is_error_event is normally False here -- no structured signal either way, same as before.
+        # IF one somehow is present, honor it -- but never fall back to substring-scanning the raw
+        # partial transcript for the auth marker text (the false-fatal this fix exists to close):
+        # this branch planted the literal string "Not logged in" in ~30 places across evals/ and
+        # docs/, so an agent scenario that greps this repo and then times out would read a
+        # tool_result containing that text and wrongly abort the whole suite as an auth failure.
+        if clean_room.is_error_event(out) and not (invocations["skill"] or invocations["agent"]):
+            if clean_room.result_looks_like_auth(out):
+                raise clean_room.AuthUnavailable(_AUTH_FAILED_MSG)
+            raise clean_room.RunnerFailed(f"trial timed out after {timeout}s and the runner reported an error")
         print(f"    [runner timeout after {timeout}s — parsing partial trace]", file=sys.stderr)
-        return _invocations_from_stream(out)
+        return invocations
 
-    # FAIL LOUD. A credential-less run exits 1 but still emits a VALID stream-json trace with no
-    # Skill() call -- and puts "Not logged in" in the RESULT event, not on stderr (stderr carries an
-    # unrelated stdin warning). Parsing it yields a clean NO-ROUTE. Every scenario would "fail" and
-    # the report would read as a devastating finding about the fleet rather than a broken instrument.
-    # Gated on proc.returncode: this is an SRE fleet whose agents legitimately quote "Not logged in"
-    # in healthy output (Splunk triage, auth-incident narratives) -- an ungated scan would abort the
-    # whole suite on a healthy rc=0 run that merely mentions the phrase.
-    if clean_room.is_auth_failure(proc.stdout, proc.returncode) or clean_room.is_auth_failure(proc.stderr, proc.returncode):
-        raise clean_room.AuthUnavailable(_AUTH_FAILED_MSG)
-
-    if proc.returncode != 0:
-        # Surface a failing runner instead of silently scoring it as a miss
-        # (a bad --settings payload would otherwise corrupt results).
-        print(f"    [runner error rc={proc.returncode}] {proc.stderr.strip()[:300]}", file=sys.stderr)
-    return _invocations_from_stream(proc.stdout)
+    invocations = _invocations_from_stream(proc.stdout)
+    measured = bool(invocations["skill"] or invocations["agent"])
+    # The CLI's own structured signal (the stream-json `result` event's `is_error`), not a substring
+    # scan of the raw transcript: that would match `tool_result` content too -- a file the agent
+    # itself read, a grep hit -- which can innocently contain any marker text this module cares
+    # about. `subtype` still lies (a not-logged-in run says subtype="success" while is_error=true),
+    # so is_error is the only field trusted here. proc.returncode is an OR'd fallback for the case
+    # where the CLI crashed before emitting any stream event at all.
+    failed = proc.returncode != 0 or clean_room.is_error_event(proc.stdout)
+    if failed and not measured:
+        # Nothing was invoked AND the run did not complete cleanly: this trial produced NO
+        # measurement. Scoring it would silently fold a broken instrument (rate limit, 5xx, network
+        # drop, bad --settings payload -- auth is only one way to get here) into "no-route" stats.
+        if clean_room.is_error_event(proc.stdout) and clean_room.result_looks_like_auth(proc.stdout):
+            raise clean_room.AuthUnavailable(_AUTH_FAILED_MSG)
+        raise clean_room.RunnerFailed(
+            f"trial produced no measurement (rc={proc.returncode}): {proc.stderr.strip()[:300]}"
+        )
+    if failed and measured:
+        # The routing decision WAS genuinely observed before/despite the failure signal -- score
+        # it, but make the runner problem visible rather than silently swallowing it.
+        print(f"    [runner reported rc={proc.returncode} but an invocation was already observed "
+              f"in the trace -- scoring it] {proc.stderr.strip()[:300]}", file=sys.stderr)
+    return invocations
 
 
 def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: int,
-                   env: dict[str, str] | None = None) -> tuple[int, list[list[str]]]:
+                   env: dict[str, str] | None = None) -> tuple[int, int, int, list[list[str]]]:
+    """Returns (hits, capability_fails, errors, traces).
+
+    A trial with `agent_must_reach_skill` set lands in exactly one of FOUR outcomes, not three:
+      HIT             -- expected agent reached AND it loaded the required skill itself.
+      CAPABILITY FAIL -- expected agent reached, but `must_reach` was NOT satisfied. This used to
+                         fall into NO bucket at all: not a hit (ok was False), not a misroute (the
+                         expected target WAS in the trace), not a no-route (the trace was
+                         non-empty) -- so `0 hit / 0 mis / 0 none` printed for real trials and the
+                         suite exited 0 while the exact failure this probe exists to catch occurred.
+      MISROUTE/NO-ROUTE (computed by the caller from `traces`, unchanged) -- the expected agent was
+                         never delegated to, so there is no capability to observe: UNMEASURED, not
+                         a capability failure. Keep these conceptually distinct even though the
+                         count is the same union (mis + none).
+    An ERROR trial (clean_room.RunnerFailed: the runner didn't complete and nothing was invoked) is
+    excluded entirely -- it is unmeasurable, not a no-route -- and counted separately so the
+    per-scenario buckets can still be shown to sum to `trials`.
+    """
     kind, exp = scenario_target(scenario)
     accept = {exp, *(scenario.get("also_acceptable") or [])}
     # CAPABILITY probe: the delegated agent must itself invoke a skill. Set `agent_must_reach_skill`
@@ -244,9 +285,15 @@ def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: i
     # (https://code.claude.com/docs/en/sub-agents). Every other probe measures the main session,
     # which always has Skill, so a crippled agent is invisible to them. It shipped that way.
     must_reach = scenario.get("agent_must_reach_skill")
-    hits, traces = 0, []
+    hits = cap_fails = errors = 0
+    traces: list[list[str]] = []
     for _ in range(trials):
-        full = run_trial(scenario["prompt"], settings, timeout, env=env)
+        try:
+            full = run_trial(scenario["prompt"], settings, timeout, env=env)
+        except clean_room.RunnerFailed as e:
+            print(f"    [trial ERROR -- unmeasurable, excluded from routing stats: {e}]", file=sys.stderr)
+            errors += 1
+            continue
         # Skill scenarios: a wrong skill OR ANY agent delegation counts as a routing target
         # (e.g. delegating to the built-in Explore instead of loading the expected skill is a
         # misroute, not a no-route). Agent scenarios: only agent delegations count — skills are
@@ -254,14 +301,19 @@ def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: i
         invoked = (full["skill"] + full["agent"]) if kind == "skill" else full["agent"]
         reached = full["subagent_skill"]
         traces.append(invoked + [f"subagent-skill:{s}" for s in reached])
-        ok = bool(accept & set(invoked))
+        expected_reached = bool(accept & set(invoked))
+        capability_ok = True
         if must_reach:
             # The agent must have been reached AND have loaded a skill ITSELF. A main-session
             # Skill call does not count: that is exactly the false pass this probe exists to kill.
-            ok = ok and (bool(reached) if must_reach is True else must_reach in reached)
-        if ok:
+            capability_ok = bool(reached) if must_reach is True else (must_reach in reached)
+        if expected_reached and must_reach and not capability_ok:
+            cap_fails += 1
+        elif expected_reached and capability_ok:
             hits += 1
-    return hits, traces
+        # else: the expected target was never reached -- a routing miss (misroute/no-route),
+        # computed by the caller from `traces`. No capability was observable in that trial.
+    return hits, cap_fails, errors, traces
 
 
 def _load_settings(val: str | None) -> str | None:
@@ -354,29 +406,71 @@ def main() -> int:
     try:
         with clean_room.clean_env() as env:
             if args.run:
-                # Classify every trial: hit (the expected target was reached) / MISROUTE (a non-accepted
-                # target was invoked AND the expected one was not — incl. a wrong-kind delegation) /
-                # no-route (nothing invoked; the model answered inline). Misroutes are the real routing
-                # failures; a no-route on a general-knowledge prompt is usually not a fault.
-                t_hit = t_mis = t_none = 0
+                # Classify every trial into one of FOUR mutually-exclusive buckets, which sum to
+                # `trials` per scenario (an ERROR trial is excluded up front by discovery_rate and
+                # counted separately, so it doesn't silently vanish from the arithmetic either):
+                #   hit             -- the expected target was reached (and, if `agent_must_reach_skill`
+                #                      is set, the delegated agent loaded the required skill itself).
+                #   MISROUTE        -- a non-accepted target was invoked AND the expected one was not.
+                #   no-route        -- nothing invoked; the model answered inline.
+                #   CAPABILITY FAIL -- the expected agent WAS reached but did not satisfy
+                #                      `agent_must_reach_skill`. This used to land in NO bucket at
+                #                      all (not hit, not misroute, not no-route) and print
+                #                      `0 hit / 0 mis / 0 none` while exiting 0 -- silently
+                #                      swallowing the exact failure this probe exists to catch.
+                # UNMEASURED (informational, not a bucket in the sum): for a must_reach scenario,
+                # mis+none trials had no capability to observe at all -- distinct from CAPABILITY
+                # FAIL, which means the capability WAS observable and failed.
+                t_hit = t_mis = t_none = t_capfail = t_err = 0
                 for s in scenarios:
-                    hits, traces = discovery_rate(s, base, args.trials, args.timeout, env=env)
+                    hits, cap_fails, errors, traces = discovery_rate(s, base, args.trials, args.timeout, env=env)
                     kind, exp = scenario_target(s)
                     accept = {exp, *(s.get("also_acceptable") or [])}
+                    must_reach = s.get("agent_must_reach_skill")
                     mis = sum(1 for tr in traces if tr and not (accept & set(tr)))
                     none = sum(1 for tr in traces if not tr)
-                    t_hit += hits; t_mis += mis; t_none += none
+                    unmeasured = (mis + none) if must_reach else 0
+                    bucket_sum = hits + mis + none + cap_fails + errors
+                    assert bucket_sum == args.trials, (
+                        f"{s['id']}: buckets do not sum to trials "
+                        f"({hits} hit + {mis} mis + {none} none + {cap_fails} capfail + {errors} error "
+                        f"= {bucket_sum} != {args.trials})"
+                    )
+                    t_hit += hits; t_mis += mis; t_none += none; t_capfail += cap_fails; t_err += errors
                     picks = ", ".join(sorted({x for tr in traces for x in tr}) or ["none"])
-                    tag = "   <- MISROUTE" if mis else ""
-                    print(f"  {s['id']:<34} {hits} hit / {mis} mis / {none} none  -> {kind}:{exp}  (saw: {picks}){tag}")
+                    tags = []
+                    if mis:
+                        tags.append("MISROUTE")
+                    if cap_fails:
+                        tags.append("CAPABILITY FAIL")
+                    if errors:
+                        tags.append("ERROR")
+                    tag = "   <- " + ", ".join(tags) if tags else ""
+                    cap_bit = f" / {cap_fails} CAPFAIL" if must_reach else ""
+                    unmeasured_bit = f" / {unmeasured} unmeasured" if must_reach else ""
+                    err_bit = f" / {errors} ERROR" if errors else ""
+                    print(f"  {s['id']:<34} {hits} hit / {mis} mis / {none} none{cap_bit}{unmeasured_bit}{err_bit}"
+                          f"  -> {kind}:{exp}  (saw: {picks}){tag}  [{bucket_sum}/{args.trials} accounted for]")
                 n = len(scenarios) * args.trials
+                grand_total = t_hit + t_mis + t_none + t_capfail + t_err
                 print(f"\n{t_hit}/{n} hit · {t_mis}/{n} MISROUTE (real routing failures) · "
-                      f"{t_none}/{n} no-route (answered without the target — often not a fault).")
-                print("Decision rule: treat MISROUTE as the failure signal, not raw hit-rate.")
-                # ADVISORY exit only — --run is not a CI gate. Tolerate up to --max-misroute (default 0)
-                # stochastic misroutes before signaling failure, mirroring run_evals' --threshold.
+                      f"{t_none}/{n} no-route (answered without the target — often not a fault) · "
+                      f"{t_capfail}/{n} CAPABILITY FAIL (agent reached, ladder/skill not loaded) · "
+                      f"{t_err}/{n} ERROR (runner failed, unmeasurable, excluded from the rates above).")
+                print(f"buckets sum to n: {grand_total} == {n}: {grand_total == n}")
+                print("Decision rule: treat MISROUTE and CAPABILITY FAIL as failure signals, not raw hit-rate.")
+                # CAPABILITY FAIL and ERROR are NOT advisory-tolerant like MISROUTE: a capability
+                # check that can't report its own failure (or a run that produced no measurement)
+                # is a correctness bug in the probe/fleet, not stochastic model variance.
+                if t_capfail > 0:
+                    print(f"{t_capfail} CAPABILITY FAIL -- forcing non-zero exit (never advisory).")
+                if t_err > 0:
+                    print(f"{t_err} ERROR trial(s) -- unmeasurable, forcing non-zero exit.")
+                # ADVISORY exit only for MISROUTE — --run is not a CI gate. Tolerate up to
+                # --max-misroute (default 0) stochastic misroutes, mirroring run_evals' --threshold.
                 if t_mis > args.max_misroute:
                     print(f"(advisory) {t_mis} misroute(s) > --max-misroute {args.max_misroute}")
+                if t_mis > args.max_misroute or t_capfail > 0 or t_err > 0:
                     return 1
                 return 0
 
@@ -391,8 +485,8 @@ def main() -> int:
             print(f"  {'scenario':<34} {'A':>5} {'B':>5}")
             ta = tb = 0
             for s in skill_scenarios:
-                ha, _ = discovery_rate(s, base, args.trials, args.timeout, env=env)
-                hb, _ = discovery_rate(s, b_settings, args.trials, args.timeout, env=env)
+                ha, _, _, _ = discovery_rate(s, base, args.trials, args.timeout, env=env)
+                hb, _, _, _ = discovery_rate(s, b_settings, args.trials, args.timeout, env=env)
                 ta += ha; tb += hb
                 flag = "" if ha == hb else "   <- changed"
                 print(f"  {s['id']:<34} {ha}/{args.trials:<3} {hb}/{args.trials:<3}{flag}")
