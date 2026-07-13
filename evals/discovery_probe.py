@@ -351,53 +351,57 @@ def main() -> int:
     # invocation aborts with zero scenario results instead of reporting a fake 0% discovery rate.
     # --validate/--list return above this line and so never touch it -- they run no model and are
     # CI gates that must work on machines with no ~/.claude at all.
-    with clean_room.clean_env() as env:
-        if args.run:
-            # Classify every trial: hit (the expected target was reached) / MISROUTE (a non-accepted
-            # target was invoked AND the expected one was not — incl. a wrong-kind delegation) /
-            # no-route (nothing invoked; the model answered inline). Misroutes are the real routing
-            # failures; a no-route on a general-knowledge prompt is usually not a fault.
-            t_hit = t_mis = t_none = 0
-            for s in scenarios:
-                hits, traces = discovery_rate(s, base, args.trials, args.timeout, env=env)
-                kind, exp = scenario_target(s)
-                accept = {exp, *(s.get("also_acceptable") or [])}
-                mis = sum(1 for tr in traces if tr and not (accept & set(tr)))
-                none = sum(1 for tr in traces if not tr)
-                t_hit += hits; t_mis += mis; t_none += none
-                picks = ", ".join(sorted({x for tr in traces for x in tr}) or ["none"])
-                tag = "   <- MISROUTE" if mis else ""
-                print(f"  {s['id']:<34} {hits} hit / {mis} mis / {none} none  -> {kind}:{exp}  (saw: {picks}){tag}")
-            n = len(scenarios) * args.trials
-            print(f"\n{t_hit}/{n} hit · {t_mis}/{n} MISROUTE (real routing failures) · "
-                  f"{t_none}/{n} no-route (answered without the target — often not a fault).")
-            print("Decision rule: treat MISROUTE as the failure signal, not raw hit-rate.")
-            # ADVISORY exit only — --run is not a CI gate. Tolerate up to --max-misroute (default 0)
-            # stochastic misroutes before signaling failure, mirroring run_evals' --threshold.
-            if t_mis > args.max_misroute:
-                print(f"(advisory) {t_mis} misroute(s) > --max-misroute {args.max_misroute}")
-                return 1
-            return 0
+    try:
+        with clean_room.clean_env() as env:
+            if args.run:
+                # Classify every trial: hit (the expected target was reached) / MISROUTE (a non-accepted
+                # target was invoked AND the expected one was not — incl. a wrong-kind delegation) /
+                # no-route (nothing invoked; the model answered inline). Misroutes are the real routing
+                # failures; a no-route on a general-knowledge prompt is usually not a fault.
+                t_hit = t_mis = t_none = 0
+                for s in scenarios:
+                    hits, traces = discovery_rate(s, base, args.trials, args.timeout, env=env)
+                    kind, exp = scenario_target(s)
+                    accept = {exp, *(s.get("also_acceptable") or [])}
+                    mis = sum(1 for tr in traces if tr and not (accept & set(tr)))
+                    none = sum(1 for tr in traces if not tr)
+                    t_hit += hits; t_mis += mis; t_none += none
+                    picks = ", ".join(sorted({x for tr in traces for x in tr}) or ["none"])
+                    tag = "   <- MISROUTE" if mis else ""
+                    print(f"  {s['id']:<34} {hits} hit / {mis} mis / {none} none  -> {kind}:{exp}  (saw: {picks}){tag}")
+                n = len(scenarios) * args.trials
+                print(f"\n{t_hit}/{n} hit · {t_mis}/{n} MISROUTE (real routing failures) · "
+                      f"{t_none}/{n} no-route (answered without the target — often not a fault).")
+                print("Decision rule: treat MISROUTE as the failure signal, not raw hit-rate.")
+                # ADVISORY exit only — --run is not a CI gate. Tolerate up to --max-misroute (default 0)
+                # stochastic misroutes before signaling failure, mirroring run_evals' --threshold.
+                if t_mis > args.max_misroute:
+                    print(f"(advisory) {t_mis} misroute(s) > --max-misroute {args.max_misroute}")
+                    return 1
+                return 0
 
-        # --ab : A = baseline, B = every expected SKILL forced to name-only (skill scenarios only)
-        skill_scenarios = [s for s in scenarios if scenario_target(s)[0] == "skill"]
-        if not skill_scenarios:
-            print("--ab applies to skill scenarios only; none selected.")
-            return 1
-        expected = {s["expected"] for s in skill_scenarios}
-        b_settings = _name_only(base, expected)
-        print(f"A = baseline | B = name-only for: {', '.join(sorted(expected))}\n")
-        print(f"  {'scenario':<34} {'A':>5} {'B':>5}")
-        ta = tb = 0
-        for s in skill_scenarios:
-            ha, _ = discovery_rate(s, base, args.trials, args.timeout, env=env)
-            hb, _ = discovery_rate(s, b_settings, args.trials, args.timeout, env=env)
-            ta += ha; tb += hb
-            flag = "" if ha == hb else "   <- changed"
-            print(f"  {s['id']:<34} {ha}/{args.trials:<3} {hb}/{args.trials:<3}{flag}")
-        print(f"\n  {'TOTAL':<34} {ta}/{len(skill_scenarios)*args.trials:<3} {tb}/{len(skill_scenarios)*args.trials:<3}")
-        print("\nReading: B << A means demoting these skills costs discovery; B == A means name-only is safe.")
-        return 0
+            # --ab : A = baseline, B = every expected SKILL forced to name-only (skill scenarios only)
+            skill_scenarios = [s for s in scenarios if scenario_target(s)[0] == "skill"]
+            if not skill_scenarios:
+                print("--ab applies to skill scenarios only; none selected.")
+                return 1
+            expected = {s["expected"] for s in skill_scenarios}
+            b_settings = _name_only(base, expected)
+            print(f"A = baseline | B = name-only for: {', '.join(sorted(expected))}\n")
+            print(f"  {'scenario':<34} {'A':>5} {'B':>5}")
+            ta = tb = 0
+            for s in skill_scenarios:
+                ha, _ = discovery_rate(s, base, args.trials, args.timeout, env=env)
+                hb, _ = discovery_rate(s, b_settings, args.trials, args.timeout, env=env)
+                ta += ha; tb += hb
+                flag = "" if ha == hb else "   <- changed"
+                print(f"  {s['id']:<34} {ha}/{args.trials:<3} {hb}/{args.trials:<3}{flag}")
+            print(f"\n  {'TOTAL':<34} {ta}/{len(skill_scenarios)*args.trials:<3} {tb}/{len(skill_scenarios)*args.trials:<3}")
+            print("\nReading: B << A means demoting these skills costs discovery; B == A means name-only is safe.")
+            return 0
+    except clean_room.AuthUnavailable as e:
+        print(f"discovery_probe: {e}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

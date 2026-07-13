@@ -174,6 +174,27 @@ def test_discovery_probe_aborts_on_an_auth_failure_trace() -> None:
             check(True, "auth-failure trace raises AuthUnavailable instead of scoring a no-route")
 
 
+def test_run_evals_aborts_on_auth_failure_instead_of_grading_the_error_string() -> None:
+    import subprocess
+    import unittest.mock as mock
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import run_evals  # noqa: E402
+
+    fake = subprocess.CompletedProcess(
+        args=[], returncode=1, stdout="Not logged in · Please run /login", stderr="",
+    )
+    with mock.patch.object(run_evals.subprocess, "run", return_value=fake) as m:
+        try:
+            run_evals.run_agent("hi", "sde-ladder", env={"CLAUDE_CONFIG_DIR": "/tmp/room"})
+            check(False, "auth failure must raise, NOT return a string for the graders to score")
+        except clean_room.AuthUnavailable:
+            check(True, "run_agent raises AuthUnavailable instead of returning an error string")
+    kwargs = m.call_args.kwargs
+    check((kwargs.get("env") or {}).get("CLAUDE_CONFIG_DIR") == "/tmp/room",
+          "run_agent passes the clean env to subprocess.run")
+
+
 def main() -> int:
     tests = [
         test_clean_env_copies_only_the_credentials,
@@ -184,6 +205,7 @@ def main() -> int:
         test_is_auth_failure_is_gated_on_exit_code_not_just_text,
         test_discovery_probe_passes_the_clean_env_to_subprocess,
         test_discovery_probe_aborts_on_an_auth_failure_trace,
+        test_run_evals_aborts_on_auth_failure_instead_of_grading_the_error_string,
     ]
     for t in tests:
         t()
