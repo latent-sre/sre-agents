@@ -143,7 +143,7 @@ Boundary note: `frontend-craft/references/data-viz.md` owns **product-UI charts*
 | agent-authoring | SDE `prompt-craft`/`prompt-engineer` method + SRE `agent-authoring`; references absorb tool-design, context-engineering, multi-agent-architect's "should this be multi-agent at all?"; teaches **personal-first, promote-by-PR** and compose-with-fleet-agents |
 | agent-security | SRE, rewritten Copilot-native (tool-scope containment) — ships because teammates *will* build their own agents |
 
-Prompt files: `adr` (scaffold). Old skills not named above are absorbed or deleted; the implementation plan (writing-plans phase) carries the full 37→26 disposition table naming where every old skill's content lands.
+Prompt files: `adr` (scaffold). The complete fate of every existing unit is the **Disposition ledger** (appendix at the end of this document); the implementation plan turns that ledger into dependency-ordered tasks.
 
 ## Section 5 — Safety model
 
@@ -197,3 +197,65 @@ Prompt files: `adr` (scaffold). Old skills not named above are absorbed or delet
 - **sre-agents contributes:** domain content (PCF, obs queries, incident process, gates, DB reliability), the clean-room eval rig, the restored CI, the audit's factual fixes.
 - **sde-agents contributes:** the agent chassis (reviewer/sde bodies), the doctrine layer (packets + worked examples + verification labeling), allowlist guard philosophy + positive-ALLOW protocol, Tier 0–3 change authority, service-onboard/lab-audit shapes, eng-ladder, root-cause, backend/frontend-craft, canary probes, tripwire tests, cluster routing evals, validator hardening patterns, "no second source of truth."
 - **New:** plugin packaging, six by-signal obs skills, LGTM references, stack-profile, setup.ps1, Copilot-native validator/hook/probes.
+
+## Appendix — Disposition ledger (every existing unit, old → new)
+
+Verbs: **survives** (ported, possibly renamed/fixed) · **merges into** (content combined with another unit) · **reference under** (demoted to a `references/` file, loaded on demand) · **dissolves** (replaced by a native platform mechanism) · **deleted** (content dropped; recoverable from git history).
+
+### Skills (37 → 26)
+
+| Old skill | Disposition |
+|---|---|
+| adr-template | → **prompt file `adr`** (template asset kept) |
+| agent-authoring | survives, rebuilt on the sde-agents method (prompt-craft/prompt-engineer) |
+| agent-security | survives, rewritten Copilot-native; per-agent census dropped (anti-rot: point at `tools:` frontmatter, not prose) |
+| api-design | → reference content under **backend-craft** (`references/stack.md` work rewrite; OpenAPI asset rides along) |
+| bamboo-to-actions-migration | **deleted** (default; prompt file only if live migrations remain — Phase 3 confirms) |
+| blameless-postmortem | survives as **postmortem** (renamed) |
+| context-engineering | → reference under **agent-authoring** |
+| craft | survives as-is (per-language references) + gains process references from safe-refactor/tdd-workflow |
+| database-reliability | survives |
+| debug-rca | **replaced by root-cause** (sde-agents; measured routing winner) |
+| github-actions-ci | survives as **ci-actions** (`cf auth` argv leak fixed) |
+| grafana-dashboards | merges into **obs-dashboards** (Grafana 13 rewrite; Enterprise-plugin licensing facts added) |
+| handoff-protocol | **dissolves** → `handoffs:` frontmatter + packet templates in agent bodies (SHA-pinning + taint doctrine woven in) |
+| incident-severity | survives as **incident-command** |
+| instrument-service | → OTel reference under **obs-pipeline** |
+| merge-gate | survives (AGENTS.md-duplication cut; severity rubric added per audit) |
+| moogsoft-correlation | → reference under **obs-alerting** |
+| ops-cli | → CLI reference under **ops-tooling** |
+| ops-stack-integration | → reference content under **backend-craft** (`consuming-apis` + stack) |
+| pcf-deploy | survives (blue-green name-rotation fix; stays `disable-model-invocation`) |
+| pcf-ops | survives (audit-clean) |
+| production-change-gate | survives (+ Tier 0–3 model; branch-protection check already merged) |
+| release-gate | survives |
+| rollback-mitigation | merges into **incident-command** (the reversible-action decision table) |
+| route-request | **dissolves** → native model-initiated delegation + `agents:` allowlists |
+| runbook-template | merges into **runbook** (sde-agents body; this template becomes its asset) |
+| safe-refactor | → process reference under **craft** |
+| sde-ladder | merges into **eng-ladder** (sde-agents base) |
+| self-improve-loop | **deleted** (Ralph/Claude-specific machinery; its move-failures-left principle survives in agent doctrine) |
+| slo-error-budget | merges into **obs-alerting** (burn-rate patterns; `error_budget.py` ported with severity fixes) |
+| spa-architecture | → reference content under **frontend-craft** |
+| splunk-triage | → SPL reference under **obs-logs** (3-sigma bucketing fix applied) |
+| sre-ladder | merges into **eng-ladder** (responder/investigator/elite as the SRE-track tier references) |
+| tdd-workflow | → sde agent body (tests-first discipline) + process reference under **craft** |
+| thousandeyes-network | → synthetics reference under **obs-alerting** |
+| tool-design | → reference under **agent-authoring** |
+| wavefront-queries | → WQL reference under **obs-metrics** (fabricated `by`-clause fixed) |
+
+### Agents (9 → 5)
+
+| Old agent | Disposition |
+|---|---|
+| sde-engineer | → **sde** (chassis replaced by sde-agents `sde-fullstack`; domain content carried) |
+| code-reviewer | → **reviewer** (chassis: sde-agents `code-reviewer`) |
+| security-reviewer | merges into **reviewer** (its threat lens = review dimension 2; split back is one file if pilot shows dilution) |
+| test-engineer | **deleted** (tool scope identical to sde; testing method → sde body; untrusted-code refusal doctrine kept) |
+| sre-engineer | → **sre** (+ Tier 0–3 change authority; compromise-handling rules kept) |
+| sre-monitor | → **observer** (+ "never cut the branch you're sitting on") |
+| runbook-author | → **scribe** (loses `execute` entirely — cleaner than the guard it wore) |
+| researcher | **deleted** (native `web` tool + subagents; also held the fleet's widest egress) |
+| prompt-engineer | **deleted as agent** → **agent-authoring** skill carries the method |
+
+Count check: survivors + merges + new = 26 skills (roster table, Section 4); 5 agents (Section 3). Nothing in the old fleet is unaccounted for.
