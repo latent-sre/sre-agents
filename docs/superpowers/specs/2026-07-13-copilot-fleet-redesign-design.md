@@ -77,13 +77,15 @@ run code on your machine. Review the plugin contents and publisher before instal
 - **Rollback:** revert on `release`; engineers pull within 24h, or immediately via **Extensions: Check for Extension Updates**. Announce in the team channel — a silent revert is indistinguishable from a broken update.
 - Bump `version` in `plugin.json` on every promotion (the field VS Code uses for update decisions).
 
-**Gate zero (Phase 0 — three checks, not one, on one engineer's machine).** The spec previously called
-`chat.plugins.enabled` "the design's only admin dependency." It is not:
+**The gate checks (three, not one — they run in Phase 5, Distribution).** An earlier draft called `chat.plugins.enabled`
+"the design's only admin dependency," and fronted the plan with it. Both were wrong: there are three gates, and none of
+them gates *content* — they decide which channel delivers a fleet that is identical either way. They belong with
+Distribution:
 1. **`chat.plugins.enabled`** — defaults false, **org-managed**. Flippable, or policy-blocked? (Decides channel.)
 2. **Copilot org policy — "Editor preview features."** Agent plugins are Preview; an org toggle can gate preview features independently of the VS Code setting. *[unverified — verify here rather than assert]*
 3. **Model availability.** Section 3 pins Claude-first fallback arrays. Anthropic-model access depends on org model policy and license tier. Confirm the named models are actually selectable, and record the assumed tier (Business/Enterprise) as a stated assumption.
 
-**Also in Phase 0 — the platform-contract probes**, run against a *throwaway spike*, not the fleet (Section 7 explains why the spike/fleet distinction matters).
+**Platform-contract probes** are *not* gathered here. The only one that can invalidate the design — does `tools:` omission genuinely deny? — is answered by the first real agent in Phase 1; the hook-payload probes run in Phase 4, where they are first needed. See Section 7.
 
 **Fallback (if policy blocks plugins).** Clone to a fixed path; point the GA settings `chat.agentFilesLocations` / `chat.agentSkillsLocations` into the clone; sync via scheduled `git pull --ff-only` (or a SessionStart hook, preview). **The repo layout is identical for both channels** — choosing the channel is a per-engineer setting, not a repo fork.
 
@@ -145,9 +147,10 @@ Which one VS Code chat actually accepts — and, critically, **whether an unreco
 nothing) or open (agent gets defaults)** — is unconfirmed. If it fails open, `reviewer` and `scribe` silently run
 with full tools and **the entire safety model is decorative.**
 
-**Gate-zero probe (blocking):** two throwaway agents, one with `execute` and one without; confirm the exact accepted
-strings and that omission genuinely blocks terminal + edit. **Then pin the verbatim `tools:` array for all five agents
-into this spec** before Phase 2 authors a single file.
+**Blocking check (Phase 1, on the first real agent):** author `reviewer` (`read`, `search` only) first, load it, and ask
+it to run a shell command. If it can, the vocabulary is wrong or an unrecognized alias fails **open** — either way the
+primary control is decorative and `reviewer`/`scribe` must be hook-guarded instead. Stop and amend Section 5 before
+authoring the other four; pin the verbatim `tools:` arrays into this spec at that point.
 
 ### The delegation graph (was unspecified — Phase 2 cannot start without it)
 
@@ -299,70 +302,76 @@ fleet) plus the trifecta note in the agent body. **The alternative** — strip `
 
 ## Section 7 — Migration plan (phases; each independently valuable)
 
-> **Ordering rule: the fleet is the product; the machinery protects it. Content first.**
-> An earlier draft put *all* platform probes in Phase 0 as blocking gates. That creates a loop — you cannot
-> probe "does `tools:` omission actually deny?" without agents to probe *with* — and it is the wrong shape
-> besides: a validator written before the files exist, canary probes for unwritten skills, and a guard
-> allowlist for agents whose real command usage nobody has watched all get **reworked every time a content
-> decision lands.** The distinction that resolves it is **spike vs. fleet**: platform-contract facts are
-> answered by a *throwaway spike* (hours, then deleted); everything else that tests or guards content is
-> written **after** the content it tests. Content also carries standalone value — if distribution turns out
-> policy-blocked, a finished fleet still ships via the fallback channel; a finished validator with no fleet
-> is worth nothing.
+> **Ordering rule: the fleet is the product; the machinery protects it. Content first — and no phase that
+> produces nothing.**
+> Two earlier drafts got this wrong in opposite directions. The first put the machinery before the content, so the
+> validator, the canaries, and the guard allowlist were all written against artifacts that did not exist yet — and
+> every content decision churned them. The second over-corrected into a *spike phase* plus a *scaffold phase*, neither
+> of which ships anything: the scaffold is `mkdir` and one `git mv` (minutes, not a phase), and the gate checks it
+> fronted decide **which channel delivers the fleet, never what the fleet is** — the layout is identical either way,
+> so asking them early buys nothing.
+> What remains true is narrow: **exactly one platform fact can invalidate the design rather than cost a frontmatter
+> edit** — whether `tools:` omission genuinely denies. That question is answered by the *first real agent*, not by a
+> throwaway. Everything else that tests or guards content (canaries, routing evals, the allowlist, the validator) is
+> written **after** the content it tests; the allowlist in particular is only knowable once you have watched `sre` and
+> `observer` actually work.
+> Content also carries standalone value: if distribution turns out policy-blocked, a finished fleet still ships via
+> the fallback channel. A finished validator with no fleet is worth nothing.
 
-**Phase 0 — Spike (throwaway) + gate check.** *Not fleet-building. Two junk agents and one junk skill,
-deleted at the end of the phase.* Answer only the facts that would **invalidate the content** if we guessed
-wrong:
-- The three gate-zero checks (plugins setting · editor-preview policy · model availability) — Section 1.
-- **Blocking probes:** does a plugin load at all? do agents load? **does `tools:` omission genuinely deny —
-  and does an *unrecognized alias* fail closed or open?** (If it fails open, the safety model is decorative
-  and the roster's tool grants must be re-thought *before* any agent is authored.) What is the hook payload
-  shape (camelCase? which agent-identity field?) and do plugin-shipped hooks fire? Can plugins ship prompt
-  files (the `adr` home)?
-- **Output:** the verbatim `tools:` array vocabulary and the hook payload contract, pinned into this spec.
-  Then **delete the spike.** Phase 1 does not start until these answer.
+**Phase 1 — THE AGENTS (5).** The first phase, and the first one that produces the product.
 
-**Phase 1 — Scaffold + the coexistence cut.**
-- `.claude-plugin/marketplace.json`, `plugin.json`, `agents/`, `skills/`, `hooks/`, `prompts/`, `.mcp.json` —
-  **empty dirs and manifests only.** No validator, no hook, no evals yet.
-- **`git mv .claude/{agents,skills} legacy/claude-fleet/`** — *this is not cosmetic.* VS Code discovers skills
-  from `.claude/skills/` **in any open workspace**. Leaving the old fleet in place means anyone opening this
-  repo double-loads **37 old + 26 new** skills — the exact routing confusion the redesign exists to kill, at
-  its worst during the very phases used to judge whether the redesign worked. Frozen, not deleted
-  (git-recoverable); fixes land in the new tree only.
-- **Owner's Claude Code story:** the same `.claude-plugin/plugin.json` makes the repo loadable as a Claude Code
-  plugin (`claude --plugin-dir .`) — which is also what the routing-eval proxy needs (below). The owner does
-  not lose the fleet.
+*Opens with the scaffolding, which is minutes of work, not a phase of its own:*
+- `.claude-plugin/marketplace.json`, `plugin.json`, empty `agents/`, `skills/`, `hooks/`, `prompts/`, `.mcp.json`.
+- **`git mv .claude/{agents,skills} legacy/claude-fleet/`** — *not cosmetic.* VS Code discovers skills from
+  `.claude/skills/` **in any open workspace**, so leaving the old fleet in place means anyone opening this repo
+  double-loads **37 old + 26 new** skills — the exact routing confusion the redesign exists to kill, at its worst
+  during the phases used to judge whether it worked. Frozen, not deleted (git-recoverable). The
+  `.claude-plugin/plugin.json` keeps the repo loadable in Claude Code (`--plugin-dir .`), which the owner uses and
+  the routing-eval proxy needs.
 
-**Phase 2 — THE AGENTS (5).** sde-agents bodies + doctrine layer + the delegation matrix, tool arrays, and
-model arrays from Section 3. **This is the first phase that produces the product.** Usable at the end of it:
-load the repo with `--plugin-dir .` (or the fallback channel) and the five agents work, unguarded, against real
-repos. Exercise them — that is what tells you the guard allowlist (Phase 5) and the canary prompts (Phase 5).
+*Then the five agents* — sde-agents bodies + doctrine layer + the delegation matrix, tool arrays, and model arrays
+from Section 3.
 
-**Phase 3 — THE SKILLS (harvest + fix).** Direct imports (root-cause, eng-ladder, runbook, backend/frontend-craft,
+**The one blocking check rides on the first agent — no separate spike phase.** Author `reviewer` (`read`, `search`
+only) **first**, load it, and tell it to run a shell command:
+- If it **cannot** — tool scoping holds, "read-only by tool absence" is real, and the rest of Section 5 stands.
+- If it **can** — the vocabulary is wrong *or* an unrecognized alias fails **open**. Either way the primary safety
+  control is decorative, and `reviewer`/`scribe` must be guarded by the hook instead of by tool absence. **Stop and
+  amend Section 5 before authoring the other four.** This is the only platform fact that can invalidate the design
+  rather than cost a frontmatter edit, and the first real agent answers it — from an artifact we keep, not a
+  throwaway.
+
+**Done when:** the five agents load and work against a real repo via `--plugin-dir .` (or the fallback channel).
+**The fleet is usable here**, unguarded — and using it is what teaches Phase 4 the guard allowlist and the canary
+prompts.
+
+**Phase 2 — THE SKILLS (harvest + fix).** Direct imports (root-cause, eng-ladder, runbook, backend/frontend-craft,
 ops-tooling) → SRE domain skills **with the audit's Tier-2 fixes applied — blue-green name rotation, the WQL `by`
 deletion, SPL `timechart` bucketing, `cf auth` argv, error_budget severity, Grafana licence notes. Every fix is
-specified in [`docs/AUDIT-2026-07-12.md`](../../AUDIT-2026-07-12.md); none may be ported as-is.** Confirm the
-Bamboo decision here.
+specified in [`docs/AUDIT-2026-07-12.md`](../../AUDIT-2026-07-12.md); none may be ported as-is.** Confirm the Bamboo
+decision, and the `adr` home (if plugins can't ship prompt files, `adr` becomes a skill — a one-line disposition
+change, not a design change).
 
-**Phase 4 — THE OBSERVABILITY SKILLS.** Six by-signal skills; LGTM references written; legacy references carried
-over post-fact-check. **End of Phase 4 the fleet is content-complete** — 5 agents, 26 skills, working. Everything
-after this protects, measures, and delivers it.
+**Phase 3 — THE OBSERVABILITY SKILLS.** Six by-signal skills; LGTM references written; legacy references carried over
+post-fact-check. **End of Phase 3 the fleet is content-complete:** 5 agents, 26 skills, working.
 
-**Phase 5 — Machinery** *(now it can be written against artifacts that exist, and against observed usage from
-Phases 2–4 — no churn)*: validator v2 · the allowlist hook (Section 5a — **seeded from what `sre`/`observer`
-actually ran**, not guessed) · hook wiring tests · canary + tripwire probes (one per real skill) · routing evals
-rewritten for the real roster · CI extension.
+**Phase 4 — Machinery** *(written against artifacts that exist, and against usage observed in Phases 1–3 — no churn)*:
+validator v2 · the allowlist hook (Section 5a — **seeded from what `sre`/`observer` actually ran**, not guessed) ·
+hook wiring tests · canary + tripwire probes, one per real skill · routing evals rewritten for the real roster · CI
+extension. The hook payload shape is probed here, where it is first needed.
 
-**Phase 6 — Distribution:** `setup.ps1` + `-Verify`, the `release` ref and promotion gate, CODEOWNERS, README,
-the rollback runbook (Section 1).
+**Phase 5 — Distribution** *(and only here do the org gates matter — they decide the channel, never the content, and
+the layout is identical either way)*:
+- **The three gate checks**, on one engineer's machine: `chat.plugins.enabled` flippable, or policy-blocked? The
+  Copilot org **"Editor preview features"** policy? Are the named Claude **models** selectable under the team's
+  license tier? *(Whatever the answers, the fleet built above still ships — plugin channel or fallback.)*
+- `setup.ps1` + `-Verify`, the `release` ref and promotion gate, CODEOWNERS, README, the rollback runbook (Section 1).
 
-**Phase 7 — Pilot:** one engineer, real work repos. Exit only on the Acceptance bar (Section 8) — not "fix what
+**Phase 6 — Pilot:** one engineer, real work repos. Exit only on the Acceptance bar (Section 8) — not "fix what
 reality finds."
 
-**Phase 8 — Team rollout** (promote `main` → `release`), then retire `legacy/claude-fleet/` and the owner's
-personal `~/.claude` duplicates (`root-cause`, `eng-ladder`, `runbook` — the shadowing the clean-room rig
-diagnosed).
+**Phase 7 — Team rollout** (promote `main` → `release`), then retire `legacy/claude-fleet/` and the owner's personal
+`~/.claude` duplicates (`root-cause`, `eng-ladder`, `runbook` — the shadowing the clean-room rig diagnosed).
 
 ### The routing-eval rig needs a decision, or Phase 5 deadlocks
 
@@ -440,7 +449,7 @@ while the runbook says `/incident-command`. Rules:
 ## Risks (ranked) and open questions
 
 1. **Agent plugins are Preview** — format churn could break the team at once. Mitigations: identical-layout fallback channel; probes catch loading regressions; pin plugin versions if churn appears.
-2. **`chat.plugins.enabled` org-policy-blocked** — fallback channel exists; gate check is step 0.
+2. **`chat.plugins.enabled` org-policy-blocked** — fallback channel exists, identical layout; checked in Phase 5, because it changes the channel and never the content.
 3. **No Copilot routing measurement** — descriptions are grounded in the one measured pattern (verbatim triggers) and the Claude proxy; risk of silent dark skills recurring. Probe + canary loading checks partially cover.
 4. **Hook payload details under-documented** — the probe list exists precisely for this; the guard fails closed if the payload shape shifts.
 5. **Reviewer merge could dilute security reviews** — watch review outputs during pilot; split is one file if needed.
