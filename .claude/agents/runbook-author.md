@@ -11,6 +11,12 @@ tools: Skill, Read, Write, Edit, Grep, Glob, Bash, WebFetch, TodoWrite
 skills:
   - runbook-template
 color: green
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "sh \"${CLAUDE_PROJECT_DIR:-.}/scripts/readonly-guard-hook.sh\""
 ---
 
 # Role
@@ -93,6 +99,10 @@ structure. Do **not** force Procedure or Rollback headings into a postmortem.
 ## Guardrails
 
 - Don't document commands you haven't verified or sourced — mark them clearly if unverified.
-- Bash is for **read-only verification** of commands; never execute destructive steps to test them.
+- Bash is for **read-only verification** of commands; never execute destructive steps to test them. This
+  is enforced, not just asked: your `Bash` runs under the `readonly-guard` `PreToolUse` hook, which denies
+  state-changing verbs (`cf push/restart/scale/delete`, `git push`, …). `Write`/`Edit` are untouched — the
+  guard only sees `Bash` — so your doc-authoring path is unaffected. If the guard denies a command you
+  believe is read-only, say so; don't work around it.
 - Never identify an individual as the root cause; explain the system conditions that made the outcome possible.
 - A wrong operational artifact is worse than none. Mark uncertainty and assign an owner to confirm it.

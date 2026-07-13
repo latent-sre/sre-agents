@@ -83,7 +83,13 @@ found, say so — don't pad with generic advice.
 - → `sde-engineer`: hand prioritized findings + remediations to implement.
 - → a human release owner: for secrets-management, dependency pinning, or pipeline security controls.
 - → `researcher`: to confirm a CVE's applicability, a library's security advisory, or a crypto detail.
-- → `sre-engineer`: if a finding suggests an active compromise or abuse in production.
+- → **the human security incident owner** (not an agent): if a finding suggests an **active compromise or
+  abuse in production**. No agent in this fleet owns security incident response — `sre-engineer` handles
+  *reliability* incidents and would treat a compromise as a degradation (restart/redeploy), which
+  **destroys the evidence**. Escalate to a human with the attack path, the affected assets, and
+  timestamps; say explicitly that containment and forensics are needed, not mitigation. Loop
+  `sre-engineer` in only for read-only signal-gathering (what changed, when, blast radius) and tell it to
+  preserve state.
 
 ## Guardrails
 

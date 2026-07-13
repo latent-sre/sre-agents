@@ -77,14 +77,31 @@ leaves an audit trail, but a determined or novel command can evade a denylist. T
 is **OS-level least-privilege credentials + an outbound allowlist** at the host/network layer — the guard
 is a fast speed-bump on top of that, not a substitute for it.
 
-**The guard only sees `Bash`.** It is wired `matcher: Bash`, so it governs that tool and nothing else.
-`security-reviewer` and `sre-engineer` also hold **`WebSearch`**, which is an **egress channel the guard
-cannot see** — it blocks `curl`, `nc`, and DNS tunnels inside Bash, then a query string walks out the
-side door. That is the full **lethal trifecta** in one agent: untrusted input (the diff/logs it was
-pointed at), sensitive data (the repo it can `Read`), and egress. It is *low-bandwidth* (search terms,
-no request body), not nothing. Closing it means dropping `WebSearch` from those agents and delegating
-lookups to `researcher` — a real capability trade, so it is called out here rather than quietly
-"handled". Do not read "read-only agent" as "cannot exfiltrate".
+**`runbook-author` runs the same guard**, even though it is write-capable. The guard only matches `Bash`,
+so its `Write`/`Edit` doc-authoring path is untouched; what it constrains is exactly what that agent's own
+guardrail already promised — *"Bash is for read-only verification of commands"* — on the one agent whose
+job is transcribing and verifying **prod** commands. Structural enforcement over prose. The capability
+delta is zero: every read it needs (`cf app`/`apps`/`events`/`logs`, `git log`, `gh run list`) is on the
+allow path. The other `Bash`-holders (`sde-engineer`, `test-engineer`, `prompt-engineer`) legitimately run
+test suites and builds, which the guard denies by design, so they cannot take it. **`sre-monitor` is the
+open gap** — its documented "validate syntax" step shells out to `python3 -c`, repo scripts, and linters,
+all of which the guard denies, so wiring it needs a *narrowed* rule (cf/gh/git writes only), not this one.
+
+**The guard only sees `Bash`.** It is wired `matcher: Bash`, so it governs that tool and nothing else —
+**every non-`Bash` egress channel is un-inspected by it.** `security-reviewer` and `sre-engineer` hold
+**`WebSearch`** (low-bandwidth: search terms, no request body). `researcher`, `sde-engineer`,
+`sre-monitor`, `runbook-author`, and `prompt-engineer` hold **`WebFetch`**, which dereferences an
+attacker-chosen URL — a far *higher*-bandwidth exit. So the guard blocks `curl`, `nc`, and DNS tunnels
+inside Bash, and the request walks out the side door. That is the full **lethal trifecta** in one agent:
+untrusted input (the diff/logs it was pointed at), sensitive data (the repo it can `Read`), and egress.
+Do not read "read-only agent" as "cannot exfiltrate".
+
+**Contain egress at the boundary, not by shuffling tool grants.** Do **not** "fix" this by dropping
+`WebSearch` and delegating lookups to `researcher`: `researcher` holds the *widest* exit in the fleet
+(arbitrary-URL `WebFetch`), so that relocates the channel to a higher-bandwidth one. The load-bearing
+control is the **outbound network allowlist** at the host/network layer; `WebFetch(domain:…)` permission
+rules and a `matcher: WebFetch` / `matcher: WebSearch` hook can add the same audit trail the Bash guard
+gives you. Per-agent census of which legs each agent holds: the `agent-security` skill.
 
 Two consequences worth knowing before you use these agents:
 - **They cannot run test suites or builds** (`pytest`, `npm test`, `go test`, `make`, local scripts).

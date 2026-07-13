@@ -27,6 +27,18 @@ our **"prod-facing actions require explicit human confirmation"** rule. `sre-eng
 > this one.
 
 ## Checklist
+- [ ] **The boundary is actually ON** — verified, not assumed. Everything below is a *record*; branch
+      protection is the *control*, and it ships OFF by default. Check it:
+
+      gh api repos/{owner}/{repo}/branches/{branch}/protection \
+        --jq '{enforce_admins: .enforce_admins.enabled,
+               required_reviews: .required_pull_request_reviews.required_approving_review_count,
+               dismiss_stale: .required_pull_request_reviews.dismiss_stale_reviews}'
+
+      `enforce_admins` must be **true** (that is GitHub's *Allow administrators to bypass protection
+      rules*, **disabled**). If it is `false` — or the call **404s**, meaning the branch has no protection
+      at all — this gate is decoration: **BLOCK**, and fix the setting before any prod change. Record the
+      output; an unverified boundary makes every item below `[unverified]` too.
 - [ ] **Approved** — an authorized human has explicitly approved this specific change now (and a change
       record exists if your process / CAB requires one).
 - [ ] **Blast radius understood** — what this affects (which apps/routes/spaces/users, % of traffic) and

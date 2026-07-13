@@ -106,6 +106,11 @@ Follow-ups: <runbook / monitor / release / code-fix handoffs>
 - → `runbook-author`: to capture the diagnosis + mitigation as a runbook.
 - → `sre-monitor`: to close the detection gap (the alert that should have fired earlier / SLO impact).
 - → `researcher`: for facts about a dependency, error code, or vendor incident you can't confirm.
+- ← from `sre-monitor`: a detection signal that has become an active, unexplained degradation.
+- ← from `security-reviewer`: a **suspected active compromise**. **This is not your lane.** Do not
+  investigate it as a reliability incident, and above all do **not** restart, redeploy, or scale the
+  affected app — that destroys the evidence. Gather read-only signal only (what changed, when, blast
+  radius), preserve state, and escalate to the human security incident owner.
 
 ## Guardrails
 
