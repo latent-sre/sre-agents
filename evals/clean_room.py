@@ -30,6 +30,7 @@ import contextlib
 import os
 import shutil
 import stat
+import sys
 import tempfile
 from pathlib import Path
 
@@ -42,6 +43,15 @@ AUTH_MARKERS = ("authentication_failed", "Not logged in")
 
 class AuthUnavailable(RuntimeError):
     """Fatal: the harness cannot produce a valid measurement. Never scored as a result."""
+
+
+def _warn_leftover(func, path, exc) -> None:
+    """onexc handler for the clean-room rmtree: never fail silently, we're deleting a credential copy."""
+    print(
+        f"clean_room: WARNING -- failed to remove {path} ({func.__name__}: {exc}). "
+        f"This directory holds a COPY OF THE AUTH CREDENTIALS and was left on disk.",
+        file=sys.stderr,
+    )
 
 
 def user_config_dir() -> Path:
@@ -66,8 +76,20 @@ def require_credentials() -> Path:
     return p
 
 
-def is_auth_failure(text: str) -> bool:
-    """True if a trial's output shows the run never authenticated."""
+def is_auth_failure(text: str, returncode: int | None = None) -> bool:
+    """True if a trial's output shows the run never authenticated.
+
+    Gated on a NON-ZERO exit. This is an SRE fleet: a healthy response can legitimately quote a log
+    line containing "Not logged in" (an auth incident, a Splunk triage scenario), and aborting the
+    suite on that would be a false fatal -- as bad as the fail-open this module exists to close. A
+    real auth failure exits 1 (probed); a healthy run exits 0. rc == 0 is therefore never an auth
+    failure, whatever the text says.
+
+    `returncode=None` means "unknown" (e.g. a TimeoutExpired, which carries no rc) -- fall back to
+    the marker scan, since a timed-out run has no exit code to gate on.
+    """
+    if returncode == 0:
+        return False
     return any(m in (text or "") for m in AUTH_MARKERS)
 
 
@@ -81,10 +103,14 @@ def clean_env():
     creds = require_credentials()
     tmp = Path(tempfile.mkdtemp(prefix="fleet-cleanroom-"))
     try:
-        os.chmod(tmp, stat.S_IRWXU)                      # 0700 -- it holds an auth secret
+        # 0700 -- it holds an auth secret. Advisory only on non-POSIX filesystems (e.g. Windows/NTFS,
+        # where os.chmod cannot enforce POSIX user/group/other bits); real protection there comes from
+        # the temp dir already being user-scoped. Enforced for real on the POSIX CI runners this
+        # harness targets.
+        os.chmod(tmp, stat.S_IRWXU)
         dst = tmp / CREDENTIALS
         shutil.copyfile(creds, dst)
-        os.chmod(dst, stat.S_IRUSR | stat.S_IWUSR)       # 0600
+        os.chmod(dst, stat.S_IRUSR | stat.S_IWUSR)       # 0600 -- same advisory-only caveat as above.
         yield dict(os.environ, CLAUDE_CONFIG_DIR=str(tmp))
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        shutil.rmtree(tmp, onexc=_warn_leftover)  # onexc (3.12+): repo/CI both pin Python 3.12.

@@ -94,11 +94,13 @@ def test_missing_credentials_raises_instead_of_running() -> None:
 def test_is_auth_failure_recognises_a_real_not_logged_in_trace() -> None:
     # Verbatim shapes from a probed credential-less run. Note the trap: the result event says
     # subtype "success" while is_error is true -- anything keying on subtype calls this a good run.
+    # A real auth failure exits non-zero (probed: exit=1); pass that through so the returncode gate
+    # doesn't mask it.
     assistant = '{"type":"assistant","error":"authentication_failed"}'
     result = '{"type":"result","subtype":"success","is_error":true,"result":"Not logged in \\u00b7 Please run /login"}'
-    check(clean_room.is_auth_failure(assistant), "detects error=authentication_failed")
-    check(clean_room.is_auth_failure(result), "detects the 'Not logged in' result text")
-    check(clean_room.is_auth_failure(assistant + "\n" + result), "detects it in a full trace")
+    check(clean_room.is_auth_failure(assistant, returncode=1), "detects error=authentication_failed")
+    check(clean_room.is_auth_failure(result, returncode=1), "detects the 'Not logged in' result text")
+    check(clean_room.is_auth_failure(assistant + "\n" + result, returncode=1), "detects it in a full trace")
 
 
 def test_is_auth_failure_does_not_fire_on_a_healthy_trace() -> None:
@@ -108,7 +110,26 @@ def test_is_auth_failure_does_not_fire_on_a_healthy_trace() -> None:
         '"input":{"command":"sde-ladder"}}]}}\n'
         '{"type":"result","subtype":"success","is_error":false,"result":"done"}'
     )
-    check(not clean_room.is_auth_failure(healthy), "no false positive on a healthy trace")
+    check(not clean_room.is_auth_failure(healthy, returncode=0), "no false positive on a healthy trace")
+
+
+def test_is_auth_failure_is_gated_on_exit_code_not_just_text() -> None:
+    # This is an SRE fleet: a perfectly healthy response can legitimately quote a log line or an
+    # incident narrative containing "Not logged in" (Splunk triage, an auth-incident postmortem).
+    # Flagging that as a fatal auth failure would abort the whole suite over normal fleet output --
+    # a false fatal, as bad as the fail-open this module exists to close. A healthy run exits 0, no
+    # matter what words are in it, so rc=0 must never be treated as an auth failure.
+    healthy_but_mentions_the_marker = (
+        '{"type":"system","subtype":"init","tools":["Skill","Task"]}\n'
+        '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill",'
+        '"input":{"command":"sde-ladder"}}]}}\n'
+        '{"type":"result","subtype":"success","is_error":false,'
+        '"result":"the log shows: Not logged in \\u00b7 Please run /login"}'
+    )
+    check(
+        not clean_room.is_auth_failure(healthy_but_mentions_the_marker, returncode=0),
+        "a healthy (rc=0) trace that quotes 'Not logged in' in its own text is NOT flagged",
+    )
 
 
 def main() -> int:
@@ -118,6 +139,7 @@ def main() -> int:
         test_missing_credentials_raises_instead_of_running,
         test_is_auth_failure_recognises_a_real_not_logged_in_trace,
         test_is_auth_failure_does_not_fire_on_a_healthy_trace,
+        test_is_auth_failure_is_gated_on_exit_code_not_just_text,
     ]
     for t in tests:
         t()
