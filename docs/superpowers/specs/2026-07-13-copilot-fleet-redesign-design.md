@@ -97,7 +97,7 @@ Distribution:
   print the one manual step (Extensions → `@agentPlugins` → Install → accept the trust prompt). **That click is
   deliberately not scriptable** — it is VS Code's publisher-trust gate for code that will run on the machine, and
   given the hook-execution risk above, we *want* it conscious.
-- **Fallback channel (only if gate zero fails):** clone to a fixed path → write `chat.agentFilesLocations` +
+- **Fallback channel (only if the Phase-5 gate checks fail):** clone to a fixed path → write `chat.agentFilesLocations` +
   `chat.agentSkillsLocations` into it → **`setup.ps1` registers the scheduled task** running `git pull --ff-only`
   (not the engineer — an unregistered sync means a permanently stale fleet).
 - **JSONC hazard:** VS Code `settings.json` is **JSONC** — comments and trailing commas are legal. `ConvertFrom-Json`
@@ -175,7 +175,13 @@ hard way (see `docs/AUDIT-2026-07-12.md`, Tier 4).
 first *available* model wins. **Selection rule** (so this survives the model lineup churning): primary = the strongest
 Claude model exposed in the team's Copilot picker at ship time; final fallback = the org's default non-Claude model,
 so an agent still runs if Claude is policy-blocked. **The chosen pair is recorded in `stack-profile`**, not scattered
-across five agent files. Gate zero (check 3) confirms the named models are selectable.
+across five agent files.
+
+**Timing (the model check is free, and earlier than Phase 5).** Agents are authored in Phase 1 but model availability
+is formally checked in Phase 5 — which sounds like a hole and is not: the array is a *prioritized fallback*, so an
+unavailable model degrades to the next entry rather than failing. In practice you learn the answer in Phase 1 for
+nothing: **loading the first agent shows you which model it actually picked.** Phase 5 only confirms it for the whole
+team under their license tier.
 
 Every agent also gets the uniform **doctrine layer**: `[verified]/[sourced]/[unverified]` labeling, an output packet
 **with a worked example**, "recommend better, never silently substitute," "ask the forks, assume the details."
@@ -328,6 +334,13 @@ fleet) plus the trifecta note in the agent body. **The alternative** — strip `
   during the phases used to judge whether it worked. Frozen, not deleted (git-recoverable). The
   `.claude-plugin/plugin.json` keeps the repo loadable in Claude Code (`--plugin-dir .`), which the owner uses and
   the routing-eval proxy needs.
+- **`cp AGENTS.md CLAUDE.md legacy/claude-fleet/`** — **the root docs must be preserved *beside* the fleet, not left
+  to git archaeology.** They sit at the repo root, so the `git mv` above does *not* capture them, and both are
+  slated for rewrite-in-place (Appendix 2). But they carry content the new agent bodies must **absorb, not lose**:
+  the stack profile, the roster and routing tables, the read-only-agent doctrine, the egress/trifecta census, the
+  gate layering, and the shared conventions. A rewrite that silently drops them is exactly the failure this
+  redesign exists to prevent. **Phases 1–3 mine `legacy/claude-fleet/AGENTS.md` while authoring; the rewrite of the
+  live `AGENTS.md` happens last, once its content has a new home.**
 
 *Then the five agents* — sde-agents bodies + doctrine layer + the delegation matrix, tool arrays, and model arrays
 from Section 3.
@@ -397,10 +410,19 @@ dressed as a milestone — and "silent dark skills" (Risk 3) goes unmeasured, wh
 | **No dark skills** | **0 of 26** fail to fire on their own on-target prompt | canary probe per skill (the old fleet had 4 dark) |
 | **Routing precision** | no near-miss negative fires **at all**; positives ≥ old-fleet clean-room baseline | cluster routing evals, rates over runs |
 | **Fan-out** | a single incident prompt loads **≤ 2** fleet skills | routing eval with a `max_skills` assertion (the old fleet loaded **6**) |
-| **Always-on context** | **≤ 3k tokens** before any work (was ~8.3k) | measured in a real Copilot session; skill descriptions are the bulk |
+| **Always-on context** | **≤ 4.5k tokens** before any work (was ~8.3k) — and **≤ 150 tokens per description**, so it cannot creep | measured in a real Copilot session |
 | **Guard** | 0 false denies across the pilot; 0 silent load failures | `setup.ps1 -Verify` + hook audit log. The allowlist is *seeded from observed Phase 2–4 usage*, so a false deny means we missed a real command — a one-line fix, loudly. |
 | **Pilot exit** | one engineer, **one week** of real work touching **≥ 3 agents**, no unrecovered routing failure, no guard false-positive | pilot log |
 | **Rollout safety** | any acceptance regression in week one → **revert `release`**, team announce | Section 1 rollback runbook |
+
+**The token bar, honestly (an earlier draft said ≤3k, which this design makes impossible).** The always-on cost is
+31 descriptions (26 skills + 5 agents) — and the discoverability fix *requires them to be longer*: verbatim user
+phrasings plus boundary clauses are what makes a skill fire at all. Measured against the old fleet (37 descriptions,
+avg 426 chars ≈ 106 tokens), 31 descriptions at the same length already cost ~3.3k, and with the added triggers
+~4.0–4.6k. **So there is a real trade this design makes and must name: better routing costs context.** The structural
+saving is not the descriptions — it is `AGENTS.md` + `CLAUDE.md` no longer being injected into every session
+(−4.3k). Net ~8.3k → ~4.5k, a ~45% cut, with the routing failure mode fixed rather than traded away. A bar set below
+what the roster can achieve would simply be ignored.
 
 ## Section 9 — Ownership and lifecycle
 
@@ -554,8 +576,8 @@ That claim was false: the machinery, the eval corpus, the root docs, and the in-
 
 | Item | Disposition |
 |---|---|
-| `AGENTS.md` | **Split — it has two roles the spec previously conflated.** (a) *Shipped fleet context* → **dies** (its stack profile becomes `stack-profile`; its roster/routing become native `agents:`/`handoffs:`; its egress census becomes Section 5c). (b) *This repo's own project instructions*, for people working **on** the fleet → **survives, rewritten** and much shorter. Note VS Code also reads `AGENTS.md` from any open workspace, so it must not carry shipped-fleet content once the plugin exists. |
-| `CLAUDE.md` | **Survives, minimal** — the Claude Code entrypoint for developing the fleet (`@AGENTS.md`), matching the sister repo's convention. |
+| `AGENTS.md` | **Preserved to `legacy/claude-fleet/` in Phase 1 before any rewrite** (see Phase 1 — it is at the repo root, so the fleet `git mv` misses it, and its content must be *absorbed* into the new agent bodies, not lost). Then **split — it has two roles the spec previously conflated.** (a) *Shipped fleet context* → **dies** (its stack profile becomes `stack-profile`; its roster/routing become native `agents:`/`handoffs:`; its egress census becomes Section 5c). (b) *This repo's own project instructions*, for people working **on** the fleet → **survives, rewritten** and much shorter. Note VS Code also reads `AGENTS.md` from any open workspace, so it must not carry shipped-fleet content once the plugin exists. |
+| `CLAUDE.md` | **Preserved to `legacy/claude-fleet/` in Phase 1**, then **survives, minimal** — the Claude Code entrypoint for developing the fleet (`@AGENTS.md`), matching the sister repo's convention. |
 | `README.md` | **Rewritten** — install (marketplace + the trust prompt), the maintainer name, `--write-inventory` fleet table. |
 | `docs/RESEARCH.md` | **Survives, updated** — retarget from Claude Code sources to the VS Code/Copilot doc set (the five pages this design is built on). |
 | `docs/AUDIT-2026-07-12.md` | **Survives** — the evidence base for every "audit fix" in Appendix 1. |
