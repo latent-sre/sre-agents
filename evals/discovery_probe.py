@@ -14,6 +14,13 @@ It needs a live model (like `run_evals.py --run`), so it is NOT a CI gate —
 scenarios spawn a real subagent that does real work, so they are MUCH slower than
 skill scenarios (minutes each) — scope them with `--match` and raise `--timeout`.
 
+`--run` and `--ab` execute every trial inside `clean_room.clean_env()` (see evals/clean_room.py):
+each `claude` subprocess sees ONLY a copy of the credentials, not the operator's ~/.claude, so the
+fleet's skills/agents aren't competing against personal ones for discovery. If no credentials are
+available, or a trial's trace shows it never authenticated, the run ABORTS with `AuthUnavailable`
+before any scenario is scored — a credential-less run otherwise emits a valid, Skill()-free
+stream-json trace that would read as a devastating (but fake) finding about the fleet.
+
 Scenario files: evals/discovery/*.yaml — each targets exactly one of:
   expected:        a SKILL that should be invoked (folder in .claude/skills/), or
   expected_agent:  an AGENT the request should delegate to (file in .claude/agents/)
@@ -46,12 +53,20 @@ try:
 except ModuleNotFoundError:
     sys.exit("discovery_probe: PyYAML required — `python -m pip install pyyaml`")
 
+import clean_room
+
 ROOT = Path(__file__).resolve().parent.parent
 DISCOVERY_DIR = Path(__file__).resolve().parent / "discovery"
 SKILLS_DIR = ROOT / ".claude/skills"
 AGENTS_DIR = ROOT / ".claude/agents"
 _SKILL_RE = re.compile(r'"skill"\s*:\s*"([a-z0-9-]+)"')
 _AGENT_RE = re.compile(r'"subagent_type"\s*:\s*"([^"]+)"')  # accept capitals (built-in Explore/Plan)
+
+_AUTH_FAILED_MSG = (
+    "a trial came back UNAUTHENTICATED. This is fatal, not a result: the trace is well-formed and "
+    "contains no Skill() call, so scoring it would report a no-route -- a fake finding about the "
+    "fleet caused by a broken instrument. Run `claude` and /login, then re-run."
+)
 
 
 def load_scenarios() -> list[dict]:
@@ -176,7 +191,8 @@ def _invocations_from_stream(blob: str) -> dict[str, list[str]]:
             "subagent_skill": _dedupe(subagent_skills)}
 
 
-def run_trial(prompt: str, settings: str | None, timeout: int) -> dict[str, list[str]]:
+def run_trial(prompt: str, settings: str | None, timeout: int,
+              env: dict[str, str] | None = None) -> dict[str, list[str]]:
     claude = os.environ.get("CLAUDE_BIN", "claude")
     cmd = [claude, "-p", prompt, "--output-format", "stream-json", "--verbose"]
     if settings:
@@ -184,24 +200,42 @@ def run_trial(prompt: str, settings: str | None, timeout: int) -> dict[str, list
     try:
         # encoding/errors: text=True alone decodes with the locale codec (cp1252 on Windows), which
         # dies on non-latin-1 bytes in the model's output and yields stdout=None. Force UTF-8.
+        # env: the CLEAN ROOM (clean_room.clean_env()). Without it this inherits the operator's
+        # ~/.claude -- personal skills, personal agents, installed plugins -- which COMPETE with the
+        # fleet for discovery, i.e. we would be measuring the laptop.
         proc = subprocess.run(
             cmd, capture_output=True, text=True, timeout=timeout, check=False,
-            encoding="utf-8", errors="replace",
+            encoding="utf-8", errors="replace", env=env,
         )
     except subprocess.TimeoutExpired as e:
         # A delegation may have been emitted BEFORE the (slow-subagent) timeout — parse the
         # partial trace rather than scoring a real routing decision as a miss.
         out = e.stdout if isinstance(e.stdout, str) else (e.stdout or b"").decode("utf-8", "replace")
+        # No returncode is available for a TimeoutExpired -- fall back to the text-only scan.
+        if clean_room.is_auth_failure(out):
+            raise clean_room.AuthUnavailable(_AUTH_FAILED_MSG)
         print(f"    [runner timeout after {timeout}s — parsing partial trace]", file=sys.stderr)
         return _invocations_from_stream(out)
+
+    # FAIL LOUD. A credential-less run exits 1 but still emits a VALID stream-json trace with no
+    # Skill() call -- and puts "Not logged in" in the RESULT event, not on stderr (stderr carries an
+    # unrelated stdin warning). Parsing it yields a clean NO-ROUTE. Every scenario would "fail" and
+    # the report would read as a devastating finding about the fleet rather than a broken instrument.
+    # Gated on proc.returncode: this is an SRE fleet whose agents legitimately quote "Not logged in"
+    # in healthy output (Splunk triage, auth-incident narratives) -- an ungated scan would abort the
+    # whole suite on a healthy rc=0 run that merely mentions the phrase.
+    if clean_room.is_auth_failure(proc.stdout, proc.returncode) or clean_room.is_auth_failure(proc.stderr, proc.returncode):
+        raise clean_room.AuthUnavailable(_AUTH_FAILED_MSG)
+
     if proc.returncode != 0:
         # Surface a failing runner instead of silently scoring it as a miss
-        # (a bad --settings payload or auth failure would otherwise corrupt results).
+        # (a bad --settings payload would otherwise corrupt results).
         print(f"    [runner error rc={proc.returncode}] {proc.stderr.strip()[:300]}", file=sys.stderr)
     return _invocations_from_stream(proc.stdout)
 
 
-def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: int) -> tuple[int, list[list[str]]]:
+def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: int,
+                   env: dict[str, str] | None = None) -> tuple[int, list[list[str]]]:
     kind, exp = scenario_target(scenario)
     accept = {exp, *(scenario.get("also_acceptable") or [])}
     # CAPABILITY probe: the delegated agent must itself invoke a skill. Set `agent_must_reach_skill`
@@ -212,7 +246,7 @@ def discovery_rate(scenario: dict, settings: str | None, trials: int, timeout: i
     must_reach = scenario.get("agent_must_reach_skill")
     hits, traces = 0, []
     for _ in range(trials):
-        full = run_trial(scenario["prompt"], settings, timeout)
+        full = run_trial(scenario["prompt"], settings, timeout, env=env)
         # Skill scenarios: a wrong skill OR ANY agent delegation counts as a routing target
         # (e.g. delegating to the built-in Explore instead of loading the expected skill is a
         # misroute, not a no-route). Agent scenarios: only agent delegations count — skills are
@@ -312,52 +346,62 @@ def main() -> int:
 
     base = _load_settings(args.settings)
 
-    if args.run:
-        # Classify every trial: hit (the expected target was reached) / MISROUTE (a non-accepted
-        # target was invoked AND the expected one was not — incl. a wrong-kind delegation) /
-        # no-route (nothing invoked; the model answered inline). Misroutes are the real routing
-        # failures; a no-route on a general-knowledge prompt is usually not a fault.
-        t_hit = t_mis = t_none = 0
-        for s in scenarios:
-            hits, traces = discovery_rate(s, base, args.trials, args.timeout)
-            kind, exp = scenario_target(s)
-            accept = {exp, *(s.get("also_acceptable") or [])}
-            mis = sum(1 for tr in traces if tr and not (accept & set(tr)))
-            none = sum(1 for tr in traces if not tr)
-            t_hit += hits; t_mis += mis; t_none += none
-            picks = ", ".join(sorted({x for tr in traces for x in tr}) or ["none"])
-            tag = "   <- MISROUTE" if mis else ""
-            print(f"  {s['id']:<34} {hits} hit / {mis} mis / {none} none  -> {kind}:{exp}  (saw: {picks}){tag}")
-        n = len(scenarios) * args.trials
-        print(f"\n{t_hit}/{n} hit · {t_mis}/{n} MISROUTE (real routing failures) · "
-              f"{t_none}/{n} no-route (answered without the target — often not a fault).")
-        print("Decision rule: treat MISROUTE as the failure signal, not raw hit-rate.")
-        # ADVISORY exit only — --run is not a CI gate. Tolerate up to --max-misroute (default 0)
-        # stochastic misroutes before signaling failure, mirroring run_evals' --threshold.
-        if t_mis > args.max_misroute:
-            print(f"(advisory) {t_mis} misroute(s) > --max-misroute {args.max_misroute}")
-            return 1
-        return 0
+    # clean_env() wraps ONLY --run/--ab -- the paths that invoke a model. It raises AuthUnavailable
+    # immediately (before a single trial runs) if there are no credentials, so a credential-less
+    # invocation aborts with zero scenario results instead of reporting a fake 0% discovery rate.
+    # --validate/--list return above this line and so never touch it -- they run no model and are
+    # CI gates that must work on machines with no ~/.claude at all.
+    try:
+        with clean_room.clean_env() as env:
+            if args.run:
+                # Classify every trial: hit (the expected target was reached) / MISROUTE (a non-accepted
+                # target was invoked AND the expected one was not — incl. a wrong-kind delegation) /
+                # no-route (nothing invoked; the model answered inline). Misroutes are the real routing
+                # failures; a no-route on a general-knowledge prompt is usually not a fault.
+                t_hit = t_mis = t_none = 0
+                for s in scenarios:
+                    hits, traces = discovery_rate(s, base, args.trials, args.timeout, env=env)
+                    kind, exp = scenario_target(s)
+                    accept = {exp, *(s.get("also_acceptable") or [])}
+                    mis = sum(1 for tr in traces if tr and not (accept & set(tr)))
+                    none = sum(1 for tr in traces if not tr)
+                    t_hit += hits; t_mis += mis; t_none += none
+                    picks = ", ".join(sorted({x for tr in traces for x in tr}) or ["none"])
+                    tag = "   <- MISROUTE" if mis else ""
+                    print(f"  {s['id']:<34} {hits} hit / {mis} mis / {none} none  -> {kind}:{exp}  (saw: {picks}){tag}")
+                n = len(scenarios) * args.trials
+                print(f"\n{t_hit}/{n} hit · {t_mis}/{n} MISROUTE (real routing failures) · "
+                      f"{t_none}/{n} no-route (answered without the target — often not a fault).")
+                print("Decision rule: treat MISROUTE as the failure signal, not raw hit-rate.")
+                # ADVISORY exit only — --run is not a CI gate. Tolerate up to --max-misroute (default 0)
+                # stochastic misroutes before signaling failure, mirroring run_evals' --threshold.
+                if t_mis > args.max_misroute:
+                    print(f"(advisory) {t_mis} misroute(s) > --max-misroute {args.max_misroute}")
+                    return 1
+                return 0
 
-    # --ab : A = baseline, B = every expected SKILL forced to name-only (skill scenarios only)
-    skill_scenarios = [s for s in scenarios if scenario_target(s)[0] == "skill"]
-    if not skill_scenarios:
-        print("--ab applies to skill scenarios only; none selected.")
+            # --ab : A = baseline, B = every expected SKILL forced to name-only (skill scenarios only)
+            skill_scenarios = [s for s in scenarios if scenario_target(s)[0] == "skill"]
+            if not skill_scenarios:
+                print("--ab applies to skill scenarios only; none selected.")
+                return 1
+            expected = {s["expected"] for s in skill_scenarios}
+            b_settings = _name_only(base, expected)
+            print(f"A = baseline | B = name-only for: {', '.join(sorted(expected))}\n")
+            print(f"  {'scenario':<34} {'A':>5} {'B':>5}")
+            ta = tb = 0
+            for s in skill_scenarios:
+                ha, _ = discovery_rate(s, base, args.trials, args.timeout, env=env)
+                hb, _ = discovery_rate(s, b_settings, args.trials, args.timeout, env=env)
+                ta += ha; tb += hb
+                flag = "" if ha == hb else "   <- changed"
+                print(f"  {s['id']:<34} {ha}/{args.trials:<3} {hb}/{args.trials:<3}{flag}")
+            print(f"\n  {'TOTAL':<34} {ta}/{len(skill_scenarios)*args.trials:<3} {tb}/{len(skill_scenarios)*args.trials:<3}")
+            print("\nReading: B << A means demoting these skills costs discovery; B == A means name-only is safe.")
+            return 0
+    except clean_room.AuthUnavailable as e:
+        print(f"discovery_probe: {e}", file=sys.stderr)
         return 1
-    expected = {s["expected"] for s in skill_scenarios}
-    b_settings = _name_only(base, expected)
-    print(f"A = baseline | B = name-only for: {', '.join(sorted(expected))}\n")
-    print(f"  {'scenario':<34} {'A':>5} {'B':>5}")
-    ta = tb = 0
-    for s in skill_scenarios:
-        ha, _ = discovery_rate(s, base, args.trials, args.timeout)
-        hb, _ = discovery_rate(s, b_settings, args.trials, args.timeout)
-        ta += ha; tb += hb
-        flag = "" if ha == hb else "   <- changed"
-        print(f"  {s['id']:<34} {ha}/{args.trials:<3} {hb}/{args.trials:<3}{flag}")
-    print(f"\n  {'TOTAL':<34} {ta}/{len(skill_scenarios)*args.trials:<3} {tb}/{len(skill_scenarios)*args.trials:<3}")
-    print("\nReading: B << A means demoting these skills costs discovery; B == A means name-only is safe.")
-    return 0
 
 
 if __name__ == "__main__":

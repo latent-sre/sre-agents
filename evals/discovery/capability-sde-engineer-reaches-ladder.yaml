@@ -1,0 +1,40 @@
+id: capability-sde-engineer-reaches-ladder
+expected_agent: sde-engineer
+# The question the preload decision actually rests on -- and one NO existing scenario asks.
+#
+# `craft-sde-ladder` measures MAIN-SESSION routing to the skill (expected: sde-ladder,
+# also_acceptable: [sde-engineer]) -- it passes if the main session merely delegates to the agent.
+# That is a different question, and it is exactly the false pass we must not take.
+#
+# `agent_must_reach_skill` demands that the DELEGATED AGENT invoke the skill ITSELF, proven via the
+# stream's `parent_tool_use_id` (None = main session; an id = a subagent, under that Task call).
+#
+# WHY IT MATTERS: the ladder skills SET ALTITUDE ON EVERY TASK (CLAUDE.md). sde-engineer preloads
+# none of its 15 skills and is merely TOLD to "load the skill" -- an instruction, and instructions
+# bend. If it does not, the agent silently works at no altitude and nothing ever reports it.
+#
+# The prompt must be a real BUILD request (so sde-engineer is the right target), non-trivial enough
+# that altitude genuinely matters (so loading the ladder is correct, not ceremony), and it must NOT
+# name a skill, a ladder, a tier, or the word "design" -- naming any of them hands the agent the
+# answer and turns a discovery probe into a compliance probe.
+#
+# PROMPT REVISION (2026-07-13, after the first clean run). v1 ended
+# "...only payments owns the writes. Get started on it." and scored 0 hit / 3 no-route with
+# `saw: none` -- the main session never DELEGATED to sde-engineer at all, so no subagent was ever
+# spawned and `agent_must_reach_skill` had nothing to observe. The probe measured routing, not
+# capability, and could not answer the question it exists to ask.
+#
+# Delegation is a PRECONDITION of this measurement, not part of what is being measured: if the agent
+# never runs, "did the agent load its ladder?" is unanswerable. So the prompt now asks for the work
+# to be done properly by the right specialist -- the same device `agent-reaches-skill` already uses
+# ("Work the problem properly -- use the runbook-grade procedure ... not general knowledge"), which
+# reliably induces delegation. It still names NO skill, NO ladder, NO tier, and never says "design":
+# whether the delegated agent then reaches for its ladder remains entirely the agent's own choice,
+# which is the thing under test.
+agent_must_reach_skill: sde-ladder
+prompt: |
+  The checkout service and the payments service both read the order table directly. I want to put
+  an API in front of it so only payments owns the writes. Work this properly with the right
+  engineering specialist rather than answering from general knowledge — it touches two services and
+  changes a contract other teams call, so I want it handled at the level that deserves.
+note: "namespace: CLEAN (clean_room; --agents, throwaway git worktree). 2026-07-13 baseline (n=3, prompt v2): 2 hit / 0 misroute / 1 no-route. saw: sde-engineer + subagent-skill: adr-template, api-design, database-reliability, sde-ladder. FINDING: a delegated sde-engineer DOES load sde-ladder itself. Prompt v1 scored 0/3 with saw:none — it never induced delegation, so the probe measured routing, not capability."

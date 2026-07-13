@@ -27,6 +27,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import clean_room
 import graders
 
 
@@ -99,8 +100,13 @@ def validate(scenarios: list[dict]) -> list[str]:
     return problems
 
 
-def run_agent(prompt: str, target: str) -> str:
-    """Invoke the fleet in a fresh session. Replace with the Agent SDK if preferred."""
+def run_agent(prompt: str, target: str, env: dict[str, str] | None = None) -> str:
+    """Invoke the fleet in a fresh session. Replace with the Agent SDK if preferred.
+
+    `env` is the CLEAN ROOM (clean_room.clean_env()): without it this inherits the operator's
+    ~/.claude -- personal skills, personal agents, installed plugins, personal CLAUDE.md -- and the
+    suite grades output produced under the influence of a fleet that is not this one.
+    """
     claude = os.environ.get("CLAUDE_BIN", "claude")
     hint = f"(Use the {target} skill/agent.)\n\n" if target else ""
     proc = subprocess.run(
@@ -109,8 +115,19 @@ def run_agent(prompt: str, target: str) -> str:
         # Decode as UTF-8 explicitly: text=True alone uses the locale codec, which on Windows is
         # cp1252 and dies on the em-dashes/box-drawing the fleet emits. The reader thread then
         # raises, stdout comes back None, and the grader fails with a confusing AttributeError.
-        encoding="utf-8", errors="replace",
+        encoding="utf-8", errors="replace", env=env,
     )
+    # FAIL LOUD. Returning the error string here would hand it to the TEXT graders, which would
+    # score it -- an auth failure would come back as a plausible-looking scenario failure. Gated
+    # on proc.returncode (see clean_room.is_auth_failure): this is an SRE fleet whose agents
+    # legitimately quote "Not logged in" in healthy output (Splunk triage, auth-incident
+    # narratives) -- an ungated scan would abort the whole suite on a healthy rc=0 response that
+    # merely mentions the phrase.
+    if clean_room.is_auth_failure(proc.stdout, proc.returncode) or clean_room.is_auth_failure(proc.stderr, proc.returncode):
+        raise clean_room.AuthUnavailable(
+            "a trial came back UNAUTHENTICATED. This is fatal, not a result: the error text would "
+            "otherwise be graded as if it were the fleet's answer. Run `claude` and /login."
+        )
     if proc.returncode != 0:
         return f"[runner error rc={proc.returncode}] {proc.stderr.strip()}"
     return proc.stdout
@@ -163,21 +180,31 @@ def main() -> int:
         return 0
 
     # --run
-    failures = 0
-    for s in scenarios:
-        passes = 0
-        print(f"\n== {s['id']} (target: {s['target']}) ==")
-        for t in range(args.trials):
-            response = run_agent(s["prompt"], s["target"])
-            ok, details = grade_trial(s, response)
-            passes += ok
-            print(f"  trial {t + 1}: {'PASS' if ok else 'FAIL'}")
-            if not ok:
-                print("\n".join(details))
-        frac = passes / args.trials
-        verdict = "PASS" if frac >= args.threshold else "FAIL"
-        print(f"  -> {verdict} ({passes}/{args.trials} trials, threshold {args.threshold})")
-        failures += verdict == "FAIL"
+    # clean_env() wraps ONLY --run -- the path that invokes a model. It raises AuthUnavailable
+    # immediately (before a single trial runs) if there are no credentials, so a credential-less
+    # invocation aborts with zero scenario results instead of scoring the runner's error text.
+    # --validate/--list return above this line and so never touch it -- they run no model and are
+    # CI gates that must work on machines with no ~/.claude at all.
+    try:
+        with clean_room.clean_env() as env:
+            failures = 0
+            for s in scenarios:
+                passes = 0
+                print(f"\n== {s['id']} (target: {s['target']}) ==")
+                for t in range(args.trials):
+                    response = run_agent(s["prompt"], s["target"], env=env)
+                    ok, details = grade_trial(s, response)
+                    passes += ok
+                    print(f"  trial {t + 1}: {'PASS' if ok else 'FAIL'}")
+                    if not ok:
+                        print("\n".join(details))
+                frac = passes / args.trials
+                verdict = "PASS" if frac >= args.threshold else "FAIL"
+                print(f"  -> {verdict} ({passes}/{args.trials} trials, threshold {args.threshold})")
+                failures += verdict == "FAIL"
+    except clean_room.AuthUnavailable as e:
+        print(f"run_evals: {e}", file=sys.stderr)
+        return 1
 
     print(f"\n{len(scenarios) - failures}/{len(scenarios)} scenarios passed.")
     return 1 if failures else 0

@@ -3,4 +3,4 @@ expected_agent: sde-engineer
 prompt: |
   Add a retry-with-exponential-backoff wrapper around the cf API client calls in our
   deploy tooling, with a cap on attempts and jitter. Match the existing code style.
-note: "2026-06: 0/2 — delegated to the built-in Explore agent, then worked inline."
+note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). 2026-06: 0/2 — delegated to the built-in Explore agent, then worked inline."

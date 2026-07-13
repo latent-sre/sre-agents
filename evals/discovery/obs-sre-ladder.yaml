@@ -6,4 +6,4 @@ also_acceptable: [sre-engineer]
 prompt: |
   An alert just fired and I'm first on the scene. I don't know what's wrong yet. What do I do, in
   what order, and when do I escalate?
-note: "2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: incident-severity, sre-ladder. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."
+note: "namespace: CLEAN (clean_room; only this project's .claude/ visible). 2026-07-13 baseline (n=5): 2 hit / 0 misroute / 3 no-route. saw: sre-ladder. Supersedes the contaminated 2-hit/0-no-route note (n=2) — contamination was FLATTERING this one. The dirty asymmetry vs craft-sde-ladder was NOISE: clean, both ladders sit at the same rate."
