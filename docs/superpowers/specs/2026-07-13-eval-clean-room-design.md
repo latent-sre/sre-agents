@@ -1,7 +1,7 @@
 # Eval clean room — make the harness measure the fleet, not the laptop
 
 **Date:** 2026-07-13
-**Status:** approved, not implemented
+**Status:** implemented (PR #52, merged 2026-07-13) — first clean baselines recorded in `evals/`
 
 ## Problem
 
