@@ -27,6 +27,24 @@ Separately, the **target runtime changed**: the consuming team works in **VS Cod
 | Sister repo | `latent-sre/sde-agents` is a **harvest source** — its doctrine, agent chassis, guard philosophy, and eval machinery import; its home-lab units do not |
 | Fleet size | 5 agents / **26 distributed skills** (see count correction note in Section 4) — growth from the initial estimate was accepted "for the right reason" (backend-craft, frontend-craft, service-onboarding earn slots) |
 
+### The sister repo (harvest source), located
+
+`sde-agents` is the owner's *other* agent fleet — a leaner, newer-generation Claude Code plugin
+(7 agents / 9 skills: code review, engineering ladder, root-cause debugging, backend/frontend craft,
+plus home-lab operations). It is **not** part of this repository and never becomes one — it stays an
+independent personal fleet; content imports here are one-way copies that this repo then owns.
+
+- **GitHub:** https://github.com/latent-sre/sde-agents
+- **Local checkout (this machine):** `C:\Users\hawkins\sde-agents`
+- **Files this spec cites from it:** the plan-format template
+  (`docs/superpowers/plans/2026-07-12-fleet-doctrine-alignment.md`), the allowlist guard
+  (`scripts/readonly-guard.py` + `hooks/hooks.json`), the doctrine spec
+  (`docs/superpowers/specs/2026-07-12-fleet-doctrine-alignment-design.md`), and the agent/skill
+  bodies named in the provenance columns below.
+
+The full harvest ledger is the Provenance summary at the end of this document; every roster table
+marks imported units SDE (from sde-agents), SRE (from this repo's old fleet), or NEW.
+
 ## Section 1 — Distribution: plugin-first, clone-and-point fallback
 
 **Primary channel.** This repo becomes an **agent plugin**: `plugin.json` at the root, `agents/`, `skills/`, `hooks/`, `.mcp.json`. Each engineer adds the team repo to `chat.plugins.marketplaces` (any git remote works; private repos supported — VS Code falls back to cloning directly) and installs once from the Extensions view (`@agentPlugins` filter). Marketplace-sourced plugins auto-update every 24h under `extensions.autoUpdate`. Skills arrive as `/sre-agents:<skill>`; agents appear in the chat dropdown; hooks and MCP config ride the same bundle.
