@@ -58,6 +58,33 @@ ENV_PREFIX_RE = re.compile(r'^\$\{[^}]*\}/')
 ROOT = os.environ.get('FLEET_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# Where the fleet's skills/ and agents/ live UNDER that root. This is resolved, not hardcoded, because
+# the Copilot migration MOVES them: `git mv .claude/{agents,skills} legacy/claude-fleet/` is the first
+# action of Phase 1, and the plugin layout puts them at the plugin root (skills/, agents/) rather than
+# under .claude/. A hardcoded '.claude' segment meant this validator raised FileNotFoundError for the
+# entire migration -- i.e. the gate was guaranteed dead across the four phases that author the fleet.
+# Probe plugin layout first: post-migration the repo root holds the NEW fleet at skills/, and the old
+# one is reachable with FLEET_ROOT=legacy/claude-fleet.
+_LAYOUTS = (('skills', 'agents'), (os.path.join('.claude', 'skills'), os.path.join('.claude', 'agents')))
+
+
+def _resolve_layout():
+    """Return (skills_dir, agents_dir) for the first layout present under ROOT.
+
+    Falls back to the .claude layout so a genuinely missing fleet fails with the existing
+    'directory not found' error rather than silently validating zero units -- a validator that
+    passes because it found nothing to check is the exact failure mode this repo keeps hitting.
+    """
+    for skills, agents in _LAYOUTS:
+        if os.path.isdir(os.path.join(ROOT, skills)) and os.path.isdir(os.path.join(ROOT, agents)):
+            return os.path.join(ROOT, skills), os.path.join(ROOT, agents)
+    claude_skills, claude_agents = _LAYOUTS[1]
+    return os.path.join(ROOT, claude_skills), os.path.join(ROOT, claude_agents)
+
+
+SKILLS_DIR, AGENTS_DIR = _resolve_layout()
+
+
 def read_lines(path):
     """Read a UTF-8 file as a list of lines without trailing newlines (mirrors Get-Content)."""
     with open(path, 'r', encoding='utf-8') as fh:
@@ -251,7 +278,7 @@ def main():
     issues = []
 
     # ---- Skills ----
-    skills_dir = os.path.join(ROOT, '.claude', 'skills')
+    skills_dir = SKILLS_DIR
     skill_count = 0
     skill_dirs = sorted(
         d for d in os.listdir(skills_dir)
@@ -328,7 +355,7 @@ def main():
             no_preload_skills.add(name_dir)
 
     # ---- Agents ----
-    agents_dir = os.path.join(ROOT, '.claude', 'agents')
+    agents_dir = AGENTS_DIR
     agent_files = sorted(
         f for f in os.listdir(agents_dir)
         if f.endswith('.md') and os.path.isfile(os.path.join(agents_dir, f))

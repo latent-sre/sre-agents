@@ -64,9 +64,13 @@ def load_scenarios() -> list[dict]:
 
 
 def target_exists(target: str) -> bool:
-    return (ROOT / ".claude/skills" / target / "SKILL.md").is_file() or (
-        ROOT / ".claude/agents" / f"{target}.md"
-    ).is_file()
+    # Both layouts, for the same reason validate_fleet.py resolves rather than hardcodes: the Copilot
+    # migration moves skills/agents out of .claude/ (to the plugin root, and the old fleet to
+    # legacy/claude-fleet/), which would otherwise make every scenario target un-resolvable mid-port.
+    for skills, agents in (("skills", "agents"), (".claude/skills", ".claude/agents")):
+        if (ROOT / skills / target / "SKILL.md").is_file() or (ROOT / agents / f"{target}.md").is_file():
+            return True
+    return False
 
 
 def validate(scenarios: list[dict]) -> list[str]:

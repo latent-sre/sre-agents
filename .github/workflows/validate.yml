@@ -43,38 +43,26 @@ jobs:
         with:
           python-version: '3.12'
 
-      # Structure: frontmatter, names, descriptions, unknown-key namespace, the read-only guard's
-      # WIRING (not merely a mention of it), and the skills: preload list. Pure stdlib, no install.
-      - name: Validate the fleet
-        run: ${{ matrix.py }} scripts/validate_fleet.py
-
-      # The validator's own tests. Each mutates a throwaway copy of the fleet one way and asserts
-      # rejection -- so a check that stops checking fails here rather than shipping.
-      - name: Test the validator
-        run: ${{ matrix.py }} -m unittest discover -s scripts -p 'test_validate_fleet.py' -v
-
-      # The read-only guard: the actual security control on the Bash-holding agents.
-      - name: Test the read-only guard
-        run: ${{ matrix.py }} scripts/test_readonly_guard.py
-
-      # Everything above is pure stdlib. Everything below needs PyYAML: the graders' layer-2 scenario
-      # tests load scenario files, and they FAIL (not skip) without it. Installing after them -- which
-      # is what the first draft of this workflow did -- passes on any machine that happens to have
-      # pyyaml already and fails on a clean runner. That is the bug this gate exists to prevent, so
-      # the install goes here, before its dependents.
+      # PyYAML: the graders' layer-2 scenario tests load scenario files, and they FAIL (not skip)
+      # without it. Gate A preflights this and refuses to run rather than half-running, but CI should
+      # simply have the deps -- and PINNED, which is the point of the requirements file.
       - name: Install eval-harness deps
         run: ${{ matrix.py }} -m pip install -r requirements-dev.txt
 
-      # Eval graders. A broken grader makes every behavioural measurement downstream untrustworthy,
-      # so they are a gate too.
-      - name: Test the eval graders
-        run: |
-          ${{ matrix.py }} evals/test_graders.py
-          ${{ matrix.py }} evals/test_discovery_probe.py
-          ${{ matrix.py }} evals/test_clean_room.py
-
-      # The eval SUITE itself: every scenario parses, has its required fields, and names a grader
-      # that actually exists with the right kwargs. No model is invoked. This is the step
-      # requirements-dev.txt means by "CI installs this before the --validate steps".
-      - name: Validate the eval suite
-        run: ${{ matrix.py }} evals/run_evals.py --validate
+      # ONE STEP, ONE SOURCE OF TRUTH. Gate A (scripts/gate_a.py) is the mechanical audit: fleet
+      # structure, the validator's own tests, the read-only guard's 505 cases, the eval graders, and
+      # the eval suite's parse check. It is what CI runs and what the spec's run protocol (Section 0)
+      # tells a human or agent to run locally -- the same command, so the two cannot drift.
+      #
+      # This used to be six transcribed steps here and a SECOND transcription in the spec. They had
+      # already disagreed (the spec's copy dropped the install step above, so a cold checkout died on
+      # ModuleNotFoundError). The repo's own anti-rot doctrine says never transcribe an artifact that
+      # lives in the repo -- point at it. This points at it.
+      #
+      # Gate A also fixes the interpreter war by not having an opinion: it re-invokes its sub-steps
+      # under sys.executable, so `python` (Windows), `python3` (Linux/macOS), and `py -3` all do the
+      # right thing. `python3` on Windows is the Microsoft Store stub -- not an interpreter -- which
+      # is how the guard's earlier inline form SILENTLY DISABLED ITSELF, running nothing while every
+      # Bash call sailed through unguarded. A Linux-only CI would never have seen it. Hence the matrix.
+      - name: Gate A -- mechanical audit
+        run: ${{ matrix.py }} scripts/gate_a.py
