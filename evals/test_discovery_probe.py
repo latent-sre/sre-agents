@@ -130,11 +130,66 @@ def test_ignores_non_skill_tool_use() -> None:
     check(out2["skill"] == [], "Skill with non-string input ignored")
 
 
+def test_capability_fail_is_counted_not_silently_zero() -> None:
+    """[P1] The exact trial the branch's flagship scenario exists to catch: a delegated agent that
+    runs but never loads its ladder. Before the fix this landed in NO bucket -- not a hit (must_reach
+    unsatisfied), not a misroute (the expected agent WAS in the trace), not a no-route (the trace was
+    non-empty) -- and `discovery_rate` silently returned `(0, [...])`, printing `0 hit / 0 mis / 0
+    none` for real trials while exiting 0. It must now be counted as a CAPABILITY FAIL and the
+    buckets must sum to `trials`."""
+    import unittest.mock as mock
+
+    # Every trial: the expected agent WAS delegated to, but it never invoked the required skill
+    # itself (reached == [] under its own parent_tool_use_id) -- exactly the crippled-agent trace.
+    fake_invocations = {"skill": [], "agent": ["sde-engineer"], "subagent_skill": []}
+    scenario = {
+        "id": "test-capability-fail",
+        "expected_agent": "sde-engineer",
+        "agent_must_reach_skill": "sde-ladder",
+        "prompt": "do the thing",
+    }
+    with mock.patch.object(dp, "run_trial", return_value=fake_invocations):
+        hits, cap_fails, errors, traces = dp.discovery_rate(scenario, None, 3, 10, env=None)
+
+    check(hits == 0, f"a capability-fail trial must NOT count as a hit (got hits={hits})")
+    check(cap_fails == 3, f"all 3 trials must be counted as CAPABILITY FAIL (got cap_fails={cap_fails})")
+    check(errors == 0, "no runner errors occurred in this scenario")
+    # Reproduce the caller's mis/none classification (as main() does) to prove the four buckets are
+    # now mutually exclusive and exhaustive -- the bug this test exists to catch was exactly that
+    # hit + mis + none did NOT sum to trials.
+    accept = {"sde-engineer"}
+    mis = sum(1 for tr in traces if tr and not (accept & set(tr)))
+    none = sum(1 for tr in traces if not tr)
+    check(mis == 0, "the expected agent WAS in the trace -- this must not be a misroute")
+    check(none == 0, "the trace was non-empty -- this must not be a no-route")
+    check(hits + mis + none + cap_fails + errors == 3,
+          f"buckets must sum to trials (got {hits}+{mis}+{none}+{cap_fails}+{errors} != 3)")
+
+
+def test_capability_hit_when_ladder_is_reached() -> None:
+    """Sanity counterpart: when the delegated agent DOES load the required skill itself, it's a
+    hit, not a capability fail -- guards against a fix that over-corrects to always flagging."""
+    import unittest.mock as mock
+
+    fake_invocations = {"skill": [], "agent": ["sde-engineer"], "subagent_skill": ["sde-ladder"]}
+    scenario = {
+        "id": "test-capability-hit",
+        "expected_agent": "sde-engineer",
+        "agent_must_reach_skill": "sde-ladder",
+        "prompt": "do the thing",
+    }
+    with mock.patch.object(dp, "run_trial", return_value=fake_invocations):
+        hits, cap_fails, errors, traces = dp.discovery_rate(scenario, None, 2, 10, env=None)
+    check(hits == 2, f"ladder reached -> both trials are hits (got hits={hits})")
+    check(cap_fails == 0, "ladder reached -> not a capability fail")
+
+
 def main() -> int:
     tests = [
         test_skill_tool_use, test_agent_task_nesting, test_regex_fallback_on_malformed,
         test_dedupe_and_order, test_empty_and_blank_lines, test_mixed_skill_and_agent,
         test_ignores_non_skill_tool_use, test_subagent_skill_attribution,
+        test_capability_fail_is_counted_not_silently_zero, test_capability_hit_when_ladder_is_reached,
     ]
     for t in tests:
         t()

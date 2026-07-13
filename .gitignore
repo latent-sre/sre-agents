@@ -11,3 +11,8 @@
 __pycache__/
 *.pyc
 
+# Local Claude Code permission overrides — untracked operator-machine state (can carry env/hooks/
+# plugin keys, not just Bash allow-rules). It is read from the CWD on every eval trial regardless of
+# CLAUDE_CONFIG_DIR (see evals/clean_room.py's warn_if_settings_local_present()) — never commit it.
+.claude/settings.local.json
+

@@ -102,7 +102,16 @@ clean numbers.
 
 The harness **aborts** if it cannot authenticate. It does not degrade: a credential-less run still
 emits a well-formed trace containing no `Skill()` call, which would score as a clean no-route —
-turning a broken instrument into a fake finding about the fleet.
+turning a broken instrument into a fake finding about the fleet. (If you authenticate via
+`ANTHROPIC_API_KEY`/Bedrock/Vertex instead of `/login`, there is no `.credentials.json` to copy at
+all — the clean room detects this and yields an empty config dir; isolation is unaffected.)
+
+**Run clean trials from a throwaway git worktree**, not your working checkout — the same mandate
+`--agents` already carries. `CLAUDE_CONFIG_DIR` isolates `~/.claude`, but Claude Code also reads
+`.claude/settings.local.json` from the **CWD** on every invocation, regardless of `CLAUDE_CONFIG_DIR`.
+That file is untracked and usually benign (Bash allow-rules today), but it can carry `env`, `hooks`,
+and plugin keys — operator-machine state inside the "clean" namespace. `clean_env()` prints a WARNING
+(not a refusal) if it finds one; a throwaway worktree avoids the question entirely.
 
 ## Discipline (how to add a scenario)
 

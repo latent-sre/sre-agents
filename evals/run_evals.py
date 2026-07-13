@@ -16,7 +16,8 @@ Modes:
                `"$CLAUDE_BIN" -p <prompt>` in a FRESH process (fresh session, so
                authoring context can't mask gaps — per skills best practice).
 
-Exit non-zero if any scenario fails its threshold (CI-friendly).
+Exit non-zero if any scenario fails its threshold, or ERRORs (the runner itself broke on a trial —
+auth, rate limit, 5xx, network drop, bad flag — never scored PASS/FAIL). CI-friendly.
 """
 from __future__ import annotations
 
@@ -129,7 +130,12 @@ def run_agent(prompt: str, target: str, env: dict[str, str] | None = None) -> st
             "otherwise be graded as if it were the fleet's answer. Run `claude` and /login."
         )
     if proc.returncode != 0:
-        return f"[runner error rc={proc.returncode}] {proc.stderr.strip()}"
+        # Same invariant as the auth check above, generalized: a trial that did not complete
+        # produced no measurement, whatever broke it (rate limit, 5xx, network drop, bad flag --
+        # auth is only one way to get here). Raise, don't return a string: returning it would hand
+        # the runner's own error text to the TEXT graders, which would score it as a plausible
+        # scenario FAILURE with no hint the runner (not the fleet) broke.
+        raise clean_room.RunnerFailed(f"trial exited rc={proc.returncode}: {proc.stderr.strip()}")
     return proc.stdout
 
 
@@ -188,16 +194,31 @@ def main() -> int:
     try:
         with clean_room.clean_env() as env:
             failures = 0
+            errors = 0
             for s in scenarios:
                 passes = 0
+                runner_failed = False
                 print(f"\n== {s['id']} (target: {s['target']}) ==")
                 for t in range(args.trials):
-                    response = run_agent(s["prompt"], s["target"], env=env)
+                    try:
+                        response = run_agent(s["prompt"], s["target"], env=env)
+                    except clean_room.RunnerFailed as e:
+                        # The runner, not the fleet, broke on this trial: no measurement exists to
+                        # grade. A single unmeasurable trial taints the whole scenario -- we cannot
+                        # honestly report a pass fraction with an unknown number of denominators --
+                        # so the scenario is ERROR, never PASS/FAIL.
+                        print(f"  trial {t + 1}: ERROR (runner) -- {e}")
+                        runner_failed = True
+                        continue
                     ok, details = grade_trial(s, response)
                     passes += ok
                     print(f"  trial {t + 1}: {'PASS' if ok else 'FAIL'}")
                     if not ok:
                         print("\n".join(details))
+                if runner_failed:
+                    print(f"  -> ERROR (runner failed on >=1 trial; excluded from pass fraction)")
+                    errors += 1
+                    continue
                 frac = passes / args.trials
                 verdict = "PASS" if frac >= args.threshold else "FAIL"
                 print(f"  -> {verdict} ({passes}/{args.trials} trials, threshold {args.threshold})")
@@ -206,8 +227,9 @@ def main() -> int:
         print(f"run_evals: {e}", file=sys.stderr)
         return 1
 
-    print(f"\n{len(scenarios) - failures}/{len(scenarios)} scenarios passed.")
-    return 1 if failures else 0
+    scored = len(scenarios) - errors
+    print(f"\n{scored - failures}/{scored} scenarios passed" + (f" ({errors} ERRORED, excluded)." if errors else "."))
+    return 1 if (failures or errors) else 0
 
 
 if __name__ == "__main__":
