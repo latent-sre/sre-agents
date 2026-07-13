@@ -123,13 +123,15 @@ comm -23 "$SCRATCH/<name>-before.txt" "$SCRATCH/<name>-after.txt"
 
 Expected output: **only** old frontmatter, old titles, rewritten pointer lines, and the lines the task explicitly names as changed (audit fixes, namespace rewrites). Any other line is prose you dropped — put it back or name it in the commit as deliberately cut (only if the task's disposition says "cut").
 
+**The comm snapshot covers `.md` files only, on both sides.** Non-Markdown bundled files (scripts, YAML, Python assets) are verified by direct `diff <source> <dest>` instead — expect empty output, or exactly the edits the task names.
+
 **SPC-2 — no bare code-span pointers (Section 5d).**
 
 ```bash
 grep -rnE '`(references|assets|scripts)/[^`]+`' skills/<name>/ && echo "FAIL: bare pointer" || echo "OK"
 ```
 
-Expected: `OK`. A hit inside a fenced example block is judged case-by-case — say so in the commit if you keep one.
+Expected: `OK`. A hit inside a fenced example block is judged case-by-case — say so in the commit if you keep one. **Link *text* may not be a code-span path either:** during ports, normalize the `` [`references/x.md`](references/x.md) `` style (used by legacy craft/agent-authoring and SDE eng-ladder) to the 5d canonical form `[x](./references/x.md)` — SPC-2's grep flags the old style deliberately.
 
 **SPC-3 — every link resolves, file-relative.**
 
@@ -156,6 +158,14 @@ Implementation happens on one branch off `main`: `redesign/copilot-fleet`, one c
 ---
 
 ## Phase 1 — The agents (the first phase that produces the product)
+
+**The uniform doctrine layer (spec Section 3) — every agent gets all four pieces; none arrives by accident:**
+1. the evidence-labeling line — "Label load-bearing claims [verified] (you ran/observed it), [sourced] (file:line, URL, query), or [unverified] (assumption — never let it read as fact)" (sde-fullstack.md L74's sentence, verbatim);
+2. an output packet **with a worked example**;
+3. **"Recommend better, never silently substitute"** — sde-fullstack.md **L40**, verbatim, role-adapted;
+4. **"Ask the forks, assume the details"** — sde-fullstack.md **L33**, verbatim, role-adapted.
+
+`sde` inherits all four with its chassis. Tasks 2, 4, 5, 6 each carry an explicit **Doctrine layer** assembly row for the pieces their chassis lacks — check the row off like any other.
 
 ### Task 1: Scaffold the plugin and freeze the old fleet
 
@@ -286,7 +296,7 @@ disabled with dated comments, not deleted; validator v2 restores them."
 
 **Interfaces:**
 - Consumes: `legacy/claude-fleet/agents/security-reviewer.md` (threat lens), `sde-agents/agents/code-reviewer.md` (chassis), `git show 0971a4d` (taint doctrine).
-- Produces: the agent name `reviewer` (frontmatter `name:` and filename stem) — `sde`'s `agents:` list and two `handoffs:` entries reference it. Do not rename.
+- Produces: the agent name `reviewer` (frontmatter `name:` and filename stem) — `sde`'s `agents:` list and one `handoffs:` entry reference it. Do not rename.
 
 **File format note (assumption, surfaced):** files are named `<name>.agent.md` — the suffix VS Code's agent-file discovery expects — with an explicit `name:` field so the Claude-plugin channel (which reads `agents/*.md`) sees the same name. If either channel refuses the file in Step 3, the fallback is renaming to `<name>.md` (a file rename, recorded in the spec, not a design change).
 
@@ -323,11 +333,12 @@ Body assembly, in this order. "Verbatim" = the SPC-1 no-prose-lost rule applies 
 | 1 | H1 + role paragraph | NEW (below) | verbatim from this plan |
 | 2 | `## Scope the review first` | SDE `code-reviewer.md` L13–17 | verbatim move |
 | 3 | `## Evidence gate` | SDE L19–21 ("Never report a bug you haven't traced") | verbatim move |
-| 4 | `## Review dimensions, in priority order` | SDE L23–31, then append the 11 threat-lens bullets from `legacy/claude-fleet/agents/security-reviewer.md` L27–52 under a `### Security lens (always run — this agent is both reviewers)` subheading | verbatim moves, rename map applied |
+| 4 | `## Review dimensions, in priority order` | SDE L23–31, then append the 10 threat-lens bullets from `legacy/claude-fleet/agents/security-reviewer.md` L29–51 under a `### Security lens (always run — this agent is both reviewers)` subheading | verbatim moves, rename map applied |
 | 5 | `## Output format` | SDE L33–42 (keeps `[caller-flagged]`/`[independent]`, the mandatory independent-P0/P1 count, APPROVE/NITS/REQUEST CHANGES) + security-reviewer's CWE/OWASP + Attack-path + exploitable-vs-theoretical fields (old L69–75) folded in as required fields for security findings | verbatim moves |
 | 6 | `### Worked example (the shape, compressed)` | SDE L44–70 | verbatim move (it already shows a security P0, `hmac.compare_digest`) |
-| 7 | `## Integrity rules` | SDE L72–77 (injection rule; the Bash-hook sentence rewritten, below) + taint-receiver rules from `git show 0971a4d:.claude/skills/handoff-protocol/SKILL.md` (`Inputs:` `[trusted]`/`[UNTRUSTED]` labels; fail-closed receiver default; taint attaches to the claim; "It came from another agent" is not provenance) + the active-compromise handoff from old security-reviewer L86–92 | verbatim moves + one rewrite |
-| 8 | Closing tool-scope statement | NEW (below) | verbatim from this plan |
+| 7 | `## Integrity rules` | SDE L72–77 (injection rule; the Bash-hook sentence rewritten, below) + taint-receiver rules from `git show 0971a4d:.claude/skills/handoff-protocol/SKILL.md` — BOTH fields: `Change:` (artifact identity — a review request must pin what is reviewed: `<repo@sha | PR #N (head <sha>) | base..head>`; a review of "the branch" floats, a review of a SHA is evidence) AND `Inputs:` (`[trusted]`/`[UNTRUSTED]` labels; fail-closed receiver default; taint attaches to the claim; "It came from another agent" is not provenance) + the active-compromise handoff from old security-reviewer L86–92 | verbatim moves + one rewrite |
+| 8 | **Doctrine layer** | the labeling line + "Recommend better, never silently substitute" (remediations: offer the better fix as an alternative, never as a silent rewrite of the finding) + "Ask the forks" (ambiguous review scope goes back to the caller with a recommended default) — per the Phase-1 doctrine block | verbatim + role-adapt |
+| 9 | Closing tool-scope statement | NEW (below) | verbatim from this plan |
 
 New content #1 (H1 + role):
 
@@ -348,7 +359,7 @@ Rewrite for the SDE Bash-hook sentence in Integrity rules (this agent has no exe
   contract this fleet depends on has broken — stop and report it as a P0 against the fleet itself.
 ```
 
-New content #8 (closing):
+New content #9 (closing):
 
 ```markdown
 ## Why this agent cannot escalate itself
@@ -430,7 +441,7 @@ Body assembly (Task 2's rename map applies; additionally `ops-cli`→`ops-toolin
 | 6 | `## Full projects (multi-component)` | SDE L52–59 (walking skeleton) | verbatim |
 | 7 | `## Process` | SDE L61–68 (the `.agents/PROGRESS.md` marker) | verbatim |
 | 8 | `## Verification gate — no "done" without evidence` | SDE L70–82 (red-flags table; the `root-cause` mention now names the skill to load, not a preload) **+ the move-failures-left blockquote from legacy `self-improve-loop/SKILL.md` L49–51** ("When the same failure recurs, encode it as a rules-based check… Move the lesson left.") — the one line of that deleted skill the ledger says survives into agent doctrine | verbatim + pointer touch-up + one moved blockquote |
-| 9 | `## Testing (absorbed from test-engineer)` | old `test-engineer.md`: regression-first rule (L43–44), "A test that can't fail is worthless" (L80), per-language testing table (L46–61) | verbatim moves |
+| 9 | `## Testing (absorbed from test-engineer)` | old `test-engineer.md`: regression-first rule (L42–43), "A test that can't fail is worthless" (L80), per-language testing table (L46–61) | verbatim moves |
 | 10 | `## The untrusted-code refusal rule` | old `test-engineer.md` L82–87 verbatim, with `test-engineer`→"you" and the reviewer-guard clause adapted (reviewer now has no execute tool to be denied) | move + rename |
 | 11 | `## Review packet` + worked example | SDE L84–115 | verbatim |
 | 12 | Ops-tool shape paragraph (append under Full-stack scope) | old `sde-engineer.md` L38–43, remapped (`ops-cli`→`ops-tooling`, `api-design`/`spa-architecture`→the layer crafts, `ops-stack-integration`→`backend-craft`'s consuming-apis reference) | move + rename |
@@ -444,6 +455,11 @@ database, a chart, a form). Load the one for the layer you're touching before wr
 name what you loaded in your review packet. Never write code for a layer whose craft skill you
 did not load — say so instead.
 ```
+
+Ledger note (recorded so the row isn't searched for in vain): Appendix 1's "tdd-workflow → sde
+agent body (tests-first discipline)" leg is satisfied by rows 4 and 9 — the chassis' Verifiable-goals
+bullet and test-engineer's regression-first rule ARE the tests-first discipline; nothing further
+moves from tdd-workflow itself (its body goes to `craft` in Task 11).
 
 - [ ] **Step 2: Close blocking assertion 4 — `agents:` default-deny**
 
@@ -517,7 +533,9 @@ Body assembly (rename map: `sre-ladder`→`eng-ladder` (SRE track), `incident-se
 | 7 | `### Worked example — a Tier 2 approval request (the shape, compressed)` | NEW (below, in full) | verbatim from this plan |
 | 8 | `## Output contract` | old L88–98 + the doctrine line from SDE `sde-fullstack.md` L74 ("Label load-bearing claims [verified]/[sourced]/[unverified]… Never let an [unverified] claim read as fact") | verbatim moves |
 | 9 | `## Handoffs` | old L100–113 **keeping the compromise rule verbatim** (L110–113: do NOT restart, redeploy, or scale a suspected compromise — that destroys the evidence; gather read-only signal, preserve state, escalate to the human security incident owner) | verbatim + rename map |
-| 10 | `## The trifecta you carry` | NEW (below) | verbatim from this plan |
+| 10 | old `## Guardrails` (L114–118) | fold "Don't declare root cause prematurely — separate what we know from what we suspect" into the Output contract (#8); the "Read-only on production" bullet is **superseded by Tier 0–3** (#6) — cut it and say so in the commit | move + named cut |
+| 11 | **Doctrine layer** | "Recommend better, never silently substitute" (mitigations: state the better option beside the requested one) + "Ask the forks" (severity/scope calls with a recommended default) — labeling already lands via #8 | verbatim + role-adapt |
+| 12 | `## The trifecta you carry` | NEW (below) | verbatim from this plan |
 
 New content #7 (also pasted, identical, into Task 5 step #6 and Task 22 — agent bodies must be self-contained; the triple copy is deliberate and noted here so a later de-duplication doesn't read as drift):
 
@@ -541,7 +559,7 @@ New content #7 (also pasted, identical, into Task 5 step #6 and Task 22 — agen
 > no approval.
 ```
 
-New content #10:
+New content #12:
 
 ```markdown
 ## The trifecta you carry
@@ -607,13 +625,14 @@ Body assembly (rename map as Task 4, plus `slo-error-budget`→`obs-alerting`, `
 | # | Section | Source | Rule |
 |---|---|---|---|
 | 1 | H1 + role + stack-profile line | NEW, ≤6 lines; names LGTM as first-class alongside the incumbents | write fresh |
-| 2 | `## Operating principles` | old `sre-monitor.md` L20–38 ("actionable, urgent, and real"; "Built for the 3am reader") | verbatim |
+| 2 | `## Operating principles` | old `sre-monitor.md` **L25–38** ("actionable, urgent, and real"; the heading is at L25 — L20–24 is intro-paragraph tail, covered by row 1) | verbatim |
 | 3 | `## Never cut the branch you're sitting on` | adapted from SDE `homelab-platform.md` L18 — replacement text below (the phrase exists nowhere in this repo; the inventory checked) | verbatim from this plan |
-| 4 | `## Method` | old L40–60 (incl. the "Verify it fires" backtest; "Validate syntax; don't break existing rules") | verbatim |
+| 4 | `## Method` | old L40–60 (incl. the "Verify it fires" backtest; "Validate syntax; don't break existing rules"; "Built for the 3am reader" lives here at L52) | verbatim |
 | 5 | `## Change authority — classify before acting` | same Tier 0–3 import as Task 4 #6; nouns: alert rule / notification policy / dashboard provisioning | move + adapt |
 | 6 | `### Worked example — a Tier 2 approval request` | paste the identical block from Task 4 new-content #7 | verbatim from this plan |
 | 7 | `## Output contract` | old L62–67 + the doctrine labeling line (as Task 4 #8) | verbatim |
 | 8 | `## Handoffs` + `## Guardrails` | old L69–87 ("Never weaken/disable an alert to make a dashboard look green"; write access is observability-as-code only) | verbatim + rename map |
+| 9 | **Doctrine layer** | "Recommend better, never silently substitute" + "Ask the forks" (alert-design forks — window pair, threshold, paging target — go back with a recommended default) | verbatim + role-adapt |
 
 New content #3:
 
@@ -677,12 +696,31 @@ Body assembly (rename map: `runbook-template`→`runbook`, `blameless-postmortem
 | 1 | H1 + role + stack-profile line | NEW, ≤6 lines; quotes "Runbooks are read at 3 a.m. by someone who is tired — usually future-you" (SDE `runbook` skill L7 — the skill keeps its copy too; the duplication is deliberate, agent bodies are self-contained) | write fresh + 1 quoted line |
 | 2 | `## Pick exactly one mode` | old `runbook-author.md` L24–31 (Runbook mode / Postmortem mode / Live-incident refusal) | verbatim + rename map |
 | 3 | `## Operating principles` | old L33–41 ("Mode boundaries are load-bearing") | verbatim |
-| 4 | `## Runbook mode` + method/output | old L43–63, retargeted at the `runbook` skill (Task 15) instead of the old preloaded `runbook-template` | verbatim + rename |
+| 4 | `## Runbook mode` + method/output | old L42–63, retargeted at the `runbook` skill (Task 15) instead of the old preloaded `runbook-template` — **with one rewrite:** L54's "Verify commands are real — where safe and read-only, run them (Bash)" contradicts this agent's tool scope; it becomes "Verify commands are real — from transcripts or tested output in front of you; you hold no execute tool, so anything unverified is handed to `sre` or a human to run, and labeled [unverified] until then." | verbatim + rename + one rewrite |
 | 5 | `## Postmortem mode` + method/output | old L65–87, retargeted at `postmortem` (Task 20) | verbatim + rename |
 | 6 | `## Handoffs` | old L88–98 | verbatim + rename map |
-| 7 | `## Why you cannot run what you document` | NEW (below) | verbatim from this plan |
+| 7 | old `## Guardrails` (L99–108) | keep "Never identify an individual as the root cause" and "A wrong operational artifact is worse than none" verbatim; the guard-mechanics sentences ("the guard only sees Bash" etc.) are **cut — the guard is gone, tool omission replaced it**; say so in the commit | move + named cuts |
+| 8 | **Doctrine layer + worked example** | "Recommend better, never silently substitute" (if a procedure should be automated rather than documented, say so beside the doc — and the handoff button exists for it) + "Ask the forks" (mode choice is the fork: unclear whether runbook or postmortem ⇒ ask with a recommended default) + the worked example below | verbatim + role-adapt + NEW |
+| 9 | `## Why you cannot run what you document` | NEW (below) | verbatim from this plan |
 
-New content #7:
+New content #8 (the worked example — the shape, compressed):
+
+````markdown
+### Worked example — a runbook excerpt (the shape, compressed)
+
+> **Trigger**: alert `checkout-p95-burn-fast` (page).
+> **First checks**: `cf app checkout` → expect `6/6 running` [verified: transcript 2026-07-02,
+> attached]. If instances are flapping, go to Recovery step 2, not step 1.
+> **Procedure step 1** ⚠️ (Tier 2 — needs approval via production-change-gate):
+> `cf restart-app-instance checkout <idx>` — restarts ONE instance; the other five keep serving.
+> **Verification**: p95 back under 800 ms within 10 min on the checkout dashboard.
+> **Rollback**: none needed — the restart is the reset. If step 1 ran twice without effect, STOP:
+> restart is a stopgap, not a fix — escalate per the Escalation table.
+> **Provenance**: steps 1–2 [verified] from incident #2026-07-02; step 3 [unverified — never
+> exercised]; a human must test it before this runbook is trusted at 3 a.m.
+````
+
+New content #9:
 
 ```markdown
 ## Why you cannot run what you document
@@ -761,7 +799,7 @@ never runs them."
 
 **Interfaces:**
 - Consumes: `legacy/claude-fleet/AGENTS.md` ("Stack profile" section) as the fact source; Task 2 Step 3's recorded model choice.
-- Produces: the skill name `stack-profile` every agent body already cites (Tasks 2–6). Canary string for Task 38: `stay in the app/ops lane`.
+- Produces: the skill name `stack-profile` every agent body already cites (Tasks 2–6). Canary string for Task 38: `Stay in the app/ops lane` (capital S — it opens the sentence).
 
 - [ ] **Step 1: Write the file** — complete content; the one bracketed value is Task 2's *recorded observation*, not an unknown:
 
@@ -855,6 +893,7 @@ The reference files' back-pointers to `skills/backend-craft/SKILL.md` are pointe
 
 - [ ] **Step 4: Rewrite `references/stack.md` for the work stack.** Keep the file's shape (greenfield-only scope line, "existing repo's stack always wins", back-pointer); replace the four-language greenfield menu with the work defaults, sourced from the absorbed api-design: Python + FastAPI as the default service (api-design L59–63), deployed to PCF (buildpacks, `/healthz` unauthenticated health endpoint, `cf` routes — api-design's PCF framing), Go for single-binary agents/daemons (kept), and the rule that a service exposes its contract via OpenAPI 3.1 — link the starter: `[OpenAPI starter](../assets/openapi.starter.yaml)`.
 - [ ] **Step 5: Absorb api-design.** Copy `assets/openapi.starter.yaml` verbatim. Move api-design's non-duplicative serving rules into the SDE core's `## Contract first` (append verbatim bullets: RFC 9457 problem+json specifics, "Never `200` with an error in the body", cursor pagination default, Idempotency-Key on unsafe retries, 202 + status resource for long-running ops, "A breaking change to a shipped contract is a principal-altitude change" retargeted at `eng-ladder`). Move its auth bullets (broken-object-level-authz callout, server-is-source-of-truth) into `references/auth.md`. Bullets already present in the SDE core (problem+json example with `req_8f3a2c`) are the duplicates you may drop — name each dropped line in the commit.
+- [ ] **Step 6a: One boundary line into `references/persistence.md`** (Task 24's description states the other half): append — "Operating the database under load or in an incident — slow queries, lock contention, replication lag — is `sre-agents:database-reliability`; this file is for *writing* the data layer."
 - [ ] **Step 6: Absorb ops-stack-integration into `references/consuming-apis.md`.** Verbatim-move its sections `## Every external call`, `## Auth & secrets (on PCF)`, `## Per-integration notes (cite current product names)`, `## Make writes safe`, `## Observe your own tool` beneath the SDE content; dedupe overlapping bullets (timeouts/retries exist in both — keep the SDE phrasing, fold the old file's specifics: 429+Retry-After platform-paging warning, CAPI V3 `pagination.next.href`, VCAP_SERVICES/UAA token refresh, TTL-cached app GUIDs). Rename map applies (`craft (Python)` stays, `tool-design`→`agent-authoring`'s tool-design reference, `production-change-gate` stays).
 - [ ] **Step 7: Run the full SPC** (before-files: all three sources; expected `comm` leakage: frontmatter, titles, rewritten pointer rows, dropped-duplicate bullets named in the commit). Expect `OK` from SPC-2 and `links OK` from SPC-3.
 - [ ] **Step 8: Commit**
@@ -892,7 +931,9 @@ description: >-
   product-UI charts, from a single page to a full SPA: "build a UI", "add a page/form/table",
   "chart this in the app". Universal rules here; predicate-gated references for stack, data-dense
   views, data visualization (product-UI charts, Recharts/uPlot — Grafana dashboards belong to
-  sre-agents:obs-dashboards), forms, and auth. Backend/service layer: sre-agents:backend-craft.
+  sre-agents:obs-dashboards), forms, and auth. Owns the TypeScript/React layer whole; language
+  idiom for Python/Bash/PowerShell/Go is sre-agents:craft. Backend/service layer:
+  sre-agents:backend-craft.
 ```
 
 - [ ] **Step 3: Link rewrite (5d).** Exact sites: routing-table rows L88–92 (all five). Same link form as Task 9. Also `references/data-viz.md` L11's `references/stack.md` cross-ref → `[stack](./stack.md)`.
@@ -924,7 +965,7 @@ storage, CSP from spa-architecture. stack.md gains the PCF serve story.
 - Produces: `references/tdd.md`, `references/refactoring.md` — the targets of every "safe-refactor"/"tdd-workflow" rename-map rewrite in other tasks.
 
 - [ ] **Step 1: SPC-1 snapshot** (craft SKILL.md + 4 kept language refs + tdd-workflow + safe-refactor bodies).
-- [ ] **Step 2: Port** SKILL.md + python/bash/powershell/go references. Delete the react/typescript bullets from the SKILL.md language index (L25, L27). Fix `references/bash.md` L3: the parenthetical `` `references/python.md` `` becomes `[the Python file](./python.md)`.
+- [ ] **Step 2: Port** SKILL.md + python/bash/powershell/go references. Delete the react/typescript bullets from the SKILL.md language index — **both lines of each bullet** (L24–25 and L26–27). Normalize the four kept index rows' link text to plain words per SPC-2 (`[python](./references/python.md)` …). Fix `references/bash.md` L3: the parenthetical `` `references/python.md` `` becomes `[the Python file](./python.md)`.
 - [ ] **Step 3: Create the process references** — headers below, then the verbatim body of each old skill (minus frontmatter/title):
 
 `references/tdd.md`:
@@ -1011,7 +1052,8 @@ the diagnosis is wrong."
   - SKILL.md L21 ("references paraphrase; the full bar stays the agent file") → "each reference file IS the bar for its tier."
   - SKILL.md Mode 2 L29 (read `agents/<name>.md` / `${CLAUDE_PLUGIN_ROOT}/agents/…`) → "the bar for each tier is its reference file — read the relevant one before scoring."
   - SKILL.md L23's sre-tool/ladder-agent sentence → "The `ops-tooling` skill applies this routing inside its build pipeline."; L25's homelab routing → drop.
-  - builder.md L7–8, principal.md L7, distinguished.md L8 ("The full bar lives in `agents/….md`") → delete the deferral sentence in each; keep the rest.
+  - builder.md L6–7, principal.md L6, distinguished.md L7 ("The full bar lives in `agents/….md`") → delete the deferral sentence in each; keep the rest.
+  - SKILL.md L21's three tier links keep their targets but their link text normalizes to plain words per SPC-2 (`[builder](./references/builder.md)` …). Plant this task's ASSIGNED canary in the rewritten Mode-2 sentence: "each reference file IS the bar for its tier."
   - builder.md L42's escalation code-span `references/principal.md` → `[principal](./principal.md)`; principal.md L29's `references/builder.md` → `[builder](./builder.md)` (5d).
   - Namespaced spawn references (`sde-agents:sde-fullstack` etc.) → rename map (`sre-agents:sde`); "spawned-agent-never-self-promotes" rule stays.
 - [ ] **Step 4: Diff-fold the old sde-ladder tiers.** For each of senior/principal/distinguished vs builder/principal/distinguished: fold in bullets present ONLY in the old file (candidates the inventory flagged: Conventional Commits list, Rule of Three, "Make it work, make it right, make it fast", Hyrum's-Law phrasing differences, SemVer). Name every folded bullet in the commit.
@@ -1128,9 +1170,13 @@ bodies now."
 - Create: `skills/pcf-ops/SKILL.md`, `references/foundations.md`, `scripts/triage.sh`, `scripts/triage.ps1`
 
 - [ ] **Step 1: SPC-1 snapshot**; port all four files from `legacy/claude-fleet/skills/pcf-ops/`.
-- [ ] **Step 2: Pointer rewrite (5d):** SKILL.md L22's `` `scripts/triage.sh` / `triage.ps1` `` → `[triage.sh](./scripts/triage.sh) / [triage.ps1](./scripts/triage.ps1)` (the FOR-HUMANS-ONLY framing stays); L29's foundations link already Markdown — keep.
-- [ ] **Step 3: Guard-sentence rewrite:** L159's `` `scripts/readonly-guard.py` `` (repo-root, being replaced) — rewrite the sentence to name no file: "the command guard denies agents local-script execution; the path-based exemption was removed because pinning a path does not pin the content."
-- [ ] **Step 4: Rename map** in SKILL.md AND in both triage scripts' "Next steps" epilogues (they name `splunk-triage`, `wavefront-queries`, `rollback-mitigation`, `production-change-gate` → `obs-logs`, `obs-metrics`, `incident-command`, `production-change-gate`).
+- [ ] **Step 2: Pointer rewrite (5d):** SKILL.md **L20**'s `` `scripts/triage.sh` / `triage.ps1` `` → `[triage.sh](./scripts/triage.sh) / [triage.ps1](./scripts/triage.ps1)` (the FOR-HUMANS-ONLY framing stays); L29's foundations link already Markdown — keep.
+- [ ] **Step 3: De-transcribe the guard — FOUR sites, not one** (the old skill describes the deleted Claude Code denylist; ported verbatim it becomes false doctrine and violates the no-transcription constraint):
+  1. **L21–25 blockquote** ("Read-only agents are behind a `PreToolUse` guard that denies executing any local script… path-based exemption…") → "The command guard denies agents local-script execution; the scripts are for humans. (A path-based exemption was removed on principle: pinning a path does not pin the content.)"
+  2. **L157–158** (the old agents' WebSearch/egress census) → "an agent holding these reads plus any egress channel carries the lethal trifecta" — no agent names, no tool census.
+  3. **L159** (`scripts/readonly-guard.py` now **denies all three**) → "the command guard denies all three reads to guarded agents." — no file name.
+  4. **L185** ("the `readonly-guard` blocks it for read-only") → "the command guard blocks it for guarded agents."
+- [ ] **Step 4: Rename map** in SKILL.md AND in the triage scripts' "Next steps" epilogues — `triage.sh` names `splunk-triage`, `wavefront-queries`, `rollback-mitigation`, `production-change-gate` → `obs-logs`, `obs-metrics`, `incident-command`, `production-change-gate`; `triage.ps1`'s epilogue has no `rollback-mitigation` mention (verified) — rename only what is there.
 - [ ] **Step 5: Description** (trim the old one to trigger form):
 
 ```yaml
@@ -1328,7 +1374,7 @@ description: >-
 - [ ] **Step 1: SPC-1 snapshot** (both legacy skills + `git show 0971a4d:.claude/skills/merge-gate/SKILL.md`).
 - [ ] **Step 2: merge-gate:** port verbatim EXCEPT:
   - **Cut** the AGENTS.md-duplication blockquote (L18–32, the "CI is the execution boundary… Delegation is not isolation" essay). Replace with two lines: `CI is the execution boundary for untrusted code; test evidence for untrusted diffs comes from CI or it does not exist. Never route an untrusted diff to another agent to run "on your behalf".`
-  - **Add** the review-SHA stale-approval predicate: verbatim-move the +17 lines from `git show 0971a4d:.claude/skills/merge-gate/SKILL.md` (records the reviewed SHA; `git diff <review-sha>..HEAD` non-empty ⇒ the approval is stale, re-review).
+  - **Add** the review-SHA stale-approval predicate: verbatim-move the 16-insertion/1-deletion diff from `git show 0971a4d -- .claude/skills/merge-gate/SKILL.md` (records the reviewed SHA; `git diff <review-sha>..HEAD` non-empty ⇒ the approval is stale, re-review).
   - **Add** a severity rubric tied to the reviewer's output vocabulary, under `## Verdict`:
 
 ```markdown
@@ -1374,7 +1420,18 @@ description: >-
 
 - [ ] **Step 1:** SPC-1 snapshot; port verbatim — **especially** the first checklist item (L30–41): the `gh api repos/{owner}/{repo}/branches/{branch}/protection` check, `enforce_admins` must be `true`, `false` or 404 ⇒ "this gate is decoration: BLOCK". That check is the load-bearing prod boundary; do not soften it.
 - [ ] **Step 2: Add Tier 0–3** after the layering blockquote: the same Tier table imported in Task 4 #6 (observe / prepare / reversible-live / destructive-or-access-path; approval covers only the commands shown; a material change re-enters the gate; independent Tier 0/1 work continues while approval pends) + paste the identical worked Tier-2 example block from Task 4 new-content #7.
-- [ ] **Step 3:** Rename map (`release-gate` stays, `rollback-mitigation`→`incident-command`). Description: old text + one added sentence: `Classifies every action Tier 0–3; Tier 2–3 need explicit human approval covering only the commands shown.`
+- [ ] **Step 3:** Rename map (`release-gate` stays, `rollback-mitigation`→`incident-command`). Description — the old text carries zero quoted trigger phrasings (it would fail validator v2's trigger lint), so it is rewritten:
+
+```yaml
+description: >-
+  Change-authorization checkpoint for ANY production-facing or destructive action — deploys,
+  route/traffic changes, scaling, config flips, data changes, cf writes: "can I run this in
+  prod", "approve this change", "is this change authorized", "am I cleared to execute". First
+  check: the boundary is actually ON (gh api …/protection must return enforce_admins: true; 404
+  ⇒ BLOCK). Classifies every action Tier 0–3; Tier 2–3 need explicit human approval covering
+  only the commands shown. Build readiness is sre-agents:release-gate; this gate authorizes the
+  action.
+```
 - [ ] **Step 4:** SPC + commit (`"skills: production-change-gate -- Tier 0-3 classification + worked approval request; gh api boundary check kept verbatim"`).
 
 ---
@@ -1425,7 +1482,7 @@ description: >-
   persistence reference.
 ```
 
-- [ ] **Step 3:** SPC + commit (`"skills: database-reliability -- ported verbatim; operate-vs-write boundary pinned in both descriptions"` — Task 9's persistence.md back-reference already states the other half).
+- [ ] **Step 3:** SPC + commit (`"skills: database-reliability -- ported verbatim; operate-vs-write boundary pinned in both descriptions"` — the other half is the boundary line Task 9 Step 6a appended to `persistence.md`).
 
 ---
 
@@ -1438,7 +1495,7 @@ description: >-
 - Consumes: legacy `agent-authoring/**` (base — its description is the one measured 3/3 pattern), legacy `tool-design/SKILL.md`, legacy `context-engineering/SKILL.md`, legacy `route-request/references/fan-out.md`, SDE `prompt-craft/SKILL.md`, SDE `agents/prompt-engineer.md` (method), SDE `agents/multi-agent-architect.md` L14–15.
 
 - [ ] **Step 1:** SPC-1 snapshot of all six sources.
-- [ ] **Step 2: Base port.** Copy legacy `agent-authoring` (SKILL.md + artifact.md + roster.md) — links already Markdown. Keep the description's shape and trigger list **verbatim** (it baselines 3/3), updating only the tail: `For tools an agent calls use the [tool-design reference]; for injection surfaces use sre-agents:agent-security.` and appending: `Personal-first: build in ~/.copilot/{agents,skills}; promote to the fleet by PR when a second person wants it.`
+- [ ] **Step 2: Base port.** Copy legacy `agent-authoring` (SKILL.md + artifact.md + roster.md) — links already Markdown, but normalize their code-span link text to plain words per SPC-2. Keep the description's shape and trigger list **verbatim** (it baselines 3/3), updating only the tail: `For tools an agent calls use the [tool-design reference]; for injection surfaces use sre-agents:agent-security.` and appending: `Personal-first: build in ~/.copilot/{agents,skills}; promote to the fleet by PR when a second person wants it.`
 - [ ] **Step 3: Fold the SDE method into `references/artifact.md`:** from `prompt-engineer.md` — the 6-step eval-first loop (L13–21) and the form-to-failure additions not already in artifact.md's tables; from `prompt-craft` — "Prohibitions backfire on shaping problems; recipes leave nothing to negotiate" (L29). artifact.md's "In this fleet" section: rewrite to name validator v2 + the routing evals (Task 39) instead of the old file names.
 - [ ] **Step 4: Fold into `references/roster.md`:** fan-out.md's content not already present — the right-sizing band (1 agent lookup / 2–4 comparison / more only for decomposable work), "never fan out coding", "token usage explains ~80% of the variance", the sourced ~15×/~4× cost lines (roster.md already carries the 15× figure — dedupe, keep one). Plus multi-agent-architect's "A single agent with good tools beats a committee."
 - [ ] **Step 5: `references/tool-design.md` + `references/context-engineering.md`:** verbatim moves of the two legacy SKILL.md bodies (minus frontmatter), each with a two-line header naming its trip condition ("Read this when exposing a capability as a tool an agent calls…" / "Read this when an agent's context is filling up…"). Stack-coupled "In this fleet" lines: rename map.
@@ -1473,7 +1530,7 @@ derivable and checkable:
   delegation graph is default-deny; edges live only in frontmatter.
 ```
 
-- [ ] **Step 4: Add tool-scope containment guidance** for teammates building their own agents (the reason this skill ships): deny-by-omission first, hooks as audit layer second, verbatim-move the "Do not trust this paragraph over the code" blockquote (L42–46) retargeted at the new guard's test corpus (Task 36 path: `scripts/test_copilot_guard.py`).
+- [ ] **Step 4: Add tool-scope containment guidance** for teammates building their own agents (the reason this skill ships): deny-by-omission first, hooks as audit layer second, verbatim-move the "Do not trust this paragraph over the code" blockquote (L42–46) retargeted at the new guard's test corpus (Task 37 path: `scripts/test_copilot_guard.py`).
 - [ ] **Step 5:** Description (keep old shape, add builder trigger):
 
 ```yaml
@@ -1495,7 +1552,7 @@ description: >-
 **Files:**
 - Create: `commands/adr.md`
 
-- [ ] **Step 1:** Write the prompt file — template inline (prompt files don't bundle assets); content compressed from legacy `adr-template`:
+- [ ] **Step 1:** Write the prompt file. **Recorded ledger deviation:** both ledgers say "template asset kept"; prompt files cannot bundle assets, so the template body is inlined instead — the skeleton below embeds `assets/adr-template.md` **verbatim** (its four sections and its append-only HTML comment are the legacy asset's text, unchanged); add this one-line amendment to the spec in Step 2's edit:
 
 ```markdown
 ---
@@ -1528,7 +1585,7 @@ and mark this one "superseded by ADR-NNNN". -->
 4. Do not edit previously accepted ADRs — supersede them.
 ```
 
-- [ ] **Step 2:** Confirm prompt-file delivery: after install (or via the fallback channel), `/sre-agents:adr` (or the prompt-file invocation Copilot exposes) scaffolds a file. **If plugins cannot ship prompt files** (open question in the spec): move this body to `skills/adr/SKILL.md` with `disable-model-invocation: true` — record the one-line disposition change in the spec.
+- [ ] **Step 2:** Confirm prompt-file delivery: after install (or via the fallback channel), `/sre-agents:adr` (or the prompt-file invocation Copilot exposes) scaffolds a file. **If plugins cannot ship prompt files** (open question in the spec): move this body to `skills/adr/SKILL.md` with `disable-model-invocation: true` — record the one-line disposition change in the spec. Either way, record the asset→inline deviation from Step 1 as a one-line spec amendment in the same edit.
 - [ ] **Step 3:** Commit (`"commands: adr -- Nygard scaffold as a prompt file; falls back to a side-effect skill if prompt files can't ship"`).
 
 ---
@@ -1554,7 +1611,7 @@ and mark this one "superseded by ADR-NNNN". -->
 
 The "trailing 1h" comment is now TRUE (12 rows × 5m exist for every bucket) — keep it. The normalized-rate variant (old L97–104) already bins before filtering — port unchanged.
 - [ ] **Step 4: `references/logql.md`** — NEW, verified against `grafana.com/docs/loki/latest/query/` before writing. Required sections: stream selectors + line filters · `rate()`/`count_over_time` for the spike question · parsing (`json`/`logfmt`) + correlation by trace/request id · label discipline (canary sentence, include verbatim: **"A label with unbounded values is a cardinality bomb, not a filter."**) · the before/after-deploy comparison. Every query form `[sourced: <doc url>]`.
-- [ ] **Step 5:** `references/splunk-inventory.md` = old `references/indexes.md` verbatim. Description:
+- [ ] **Step 5:** `references/splunk-inventory.md` = old `references/indexes.md` verbatim. Two pointer rewrites ride the move (consumed sites, exact): the old SKILL.md L15 link `[references/indexes.md](references/indexes.md)` — now inside `references/spl.md` — becomes `[splunk-inventory](./splunk-inventory.md)`; the L156 bare `` `references/` `` mention becomes prose naming the same link. Description:
 
 ```yaml
 description: >-
@@ -1584,7 +1641,7 @@ description: >-
 
 Also fix the Investigation-tips echo (old L130 "Break a flat aggregate down `by instance`/`by host`" → "down by adding the pointTag parameter: `, instance` / `, host`").
 - [ ] **Step 4: `references/promql.md`** — NEW, verified against `prometheus.io/docs/prometheus/latest/querying/basics/` (+ Mimir docs for divergences). Required sections: instant vs range vectors · `rate()` on counters (+ counter resets) · `histogram_quantile()` for p95 (same average-of-p95s trap, restated) · aggregation `by()`/`without()` · `absent()`/`absent_over_time()` for the missing-data trap · recording-rule note. Canary sentence, verbatim: **"rate() before sum(), never sum() before rate()."** Every form `[sourced]`.
-- [ ] **Step 5:** `references/wavefront-inventory.md` = old `references/metrics.md` verbatim (its 5 reusable snippets keep their WQL). Description:
+- [ ] **Step 5:** `references/wavefront-inventory.md` = old `references/metrics.md` verbatim (its 5 reusable snippets keep their WQL). One pointer rewrite rides the move: the old SKILL.md L16 link `[references/metrics.md](references/metrics.md)` — now inside `references/wql.md` — becomes `[wavefront-inventory](./wavefront-inventory.md)`. Description:
 
 ```yaml
 description: >-
@@ -1645,7 +1702,7 @@ licensing note (audit §2.6).
 
   - **Verify the as-code section against Grafana 13 docs** (`grafana.com/docs/grafana/latest/`) — provisioning/Git Sync mechanics must be re-sourced, not carried from the Grafana-9-era text; label anything unconfirmed `[unverified]`.
   - **Move the alerting section out** (old L39–46 → Task 32's `grafana-alerting.md`); leave one line: alert rules live in [obs-alerting](../obs-alerting/SKILL.md).
-- [ ] **Step 3:** `references/dashboard-inventory.md` = old `references/dashboards.md` verbatim + one licensing note row. Description:
+- [ ] **Step 3:** `references/dashboard-inventory.md` = old `references/dashboards.md` verbatim + one licensing note row; the old SKILL.md L37 bare code-span `` `references/dashboards.md` `` becomes `[dashboard inventory](./references/dashboard-inventory.md)` (5d). **Ledger note:** spec Section 4's "legacy Wavefront" reference leg for this skill IS this inventory file (its UID table is the Wavefront-panel inventory) plus the licensing section — no separate `wavefront.md` exists, deliberately; recorded here so the spec row isn't searched for in vain. Description:
 
 ```yaml
 description: >-
@@ -1673,24 +1730,24 @@ description: >-
 py -3 skills/obs-alerting/scripts/error_budget.py --slo 99.9 --sli-long 99.45 --sli-short 99.95
 ```
 
-Expected (the bug, verbatim from the audit's reproduction): `severity: within budget (burn < 1x)` two lines above `budget is gone in 5.09 d`. Now fix both defects:
-  - **Defect 1 — the else-branch false all-clear** (lines 179–180). The final `else` is reached whenever `min(burn_long, burn_short) < 1` and no single window ≥ 6× — which includes a long window burning at 5.5×. Replace:
+Expected (the bug, reproduced live during planning): `severity: within budget (burn < 1x)` directly above `budget is gone in 5.09 d`. Now fix both defects:
+  - **Defect 1 — the else-branch false all-clear** (lines 179–180; the file's indentation is 12/16 spaces — match it, the blocks below are shown at that depth). The final `else` is reached whenever `min(burn_long, burn_short) < 1` and no single window ≥ 6× — which includes a long window burning at 5.5×. Replace:
 
 ```python
-        else:
-            sev = "within budget (burn < 1x)"
+            else:
+                sev = "within budget (burn < 1x)"
 ```
 
 with:
 
 ```python
-        else:
-            worst = max(burn_long, burn_short)
-            if worst >= 1.0:
-                sev = (f"no multi-window alert (worst single window {worst:.2f}x) -- "
-                       "NOT proof of health; check the exhaustion estimate below")
             else:
-                sev = "within budget (both windows < 1x)"
+                worst = max(burn_long, burn_short)
+                if worst >= 1.0:
+                    sev = (f"no multi-window alert (worst single window {worst:.2f}x) -- "
+                           "NOT proof of health; check the exhaustion estimate below")
+                else:
+                    sev = "within budget (both windows < 1x)"
 ```
 
   - **Defect 2 — cosmetic windows** (lines 101–102): the burn thresholds and the window pair are a single unit (Google SRE Workbook, "Alerting on SLOs"); the script currently applies 14.4/6/1 to whatever labels you hand it. Make the pair select the threshold: replace the two free-string arguments with one validated choice —
@@ -1708,7 +1765,7 @@ burn.add_argument("--windows", choices=sorted(_WINDOW_PAIRS), default="1h/5m",
     and rework the severity ladder to use the selected pair's threshold (the multi-window rule itself — both windows must exceed — stays). An unknown pair is now unrepresentable rather than silently mis-thresholded.
   - **Prove the fix:** re-run the repro command — the output must now carry `NOT proof of health` (and no `within budget` line); then run the happy path (`--slo 99.9 --sli-long 99.99 --sli-short 99.99` → `within budget (both windows < 1x)`). Paste both outputs into the commit.
 - [ ] **Step 5: `references/grafana-alerting.md`** — NEW + moved: Grafana unified alerting verified against `grafana.com/docs/grafana/latest/alerting/` (alert rules, contact points, notification policies, as-code provisioning) + the moved old grafana-dashboards L39–46 content (`runbook_url` annotation, route-to-Moogsoft). Canary, verbatim: **"A notification policy nobody tested is a page nobody gets."**
-- [ ] **Step 6: `references/moogsoft.md`** = moogsoft-correlation SKILL.md verbatim (pipeline, storm method, the four-part cause bar, tuning); `references/moogsoft-inventory.md` = its integrations.md. `references/thousandeyes.md` = thousandeyes-network SKILL.md verbatim (incl. `## A path difference is not a cause` — its explicit cross-ref to the Moogsoft cause bar becomes a 5d link `[the cause bar](./moogsoft.md)`); `references/thousandeyes-inventory.md` = its tests.md.
+- [ ] **Step 6: `references/moogsoft.md`** = moogsoft-correlation SKILL.md verbatim (pipeline, storm method, the four-part cause bar, tuning); `references/moogsoft-inventory.md` = its integrations.md — the old L69 bare code-span `` `references/integrations.md` `` becomes `[moogsoft-inventory](./moogsoft-inventory.md)`. `references/thousandeyes.md` = thousandeyes-network SKILL.md verbatim (incl. `## A path difference is not a cause` — its explicit cross-ref to the Moogsoft cause bar becomes a 5d link `[the cause bar](./moogsoft.md)`); `references/thousandeyes-inventory.md` = its tests.md — the old L48 bare code-span `` `references/tests.md` `` becomes `[thousandeyes-inventory](./thousandeyes-inventory.md)`.
 - [ ] **Step 7:** Description:
 
 ```yaml
@@ -1848,30 +1905,32 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 ### Task 38: Canary + tripwire probes — discovery, preload-by-description, references, stack-profile
 
 **Files:**
-- Create: `evals/canaries.json`, `tests/test_canaries.py`, `scripts/probe_fleet.py`
+- Create: `evals/canaries.json`, `tests/test_canaries.py`, `tests/test_probe_fleet.py`
+- Rewrite in place: `evals/discovery/*.yaml` → **24 files, one per model-invocable skill** (the ledger's "rewritten, not ported" — each: `id`, `target`, `prompt` = an on-target user request that names NO skill; this corpus is what probe family 1 runs and what Task 45's 0-of-24 bar is measured against)
+- `git mv evals/discovery_probe.py scripts/probe_fleet.py` + rewrite (its unit tests move to `tests/test_probe_fleet.py`, where CI's `unittest discover -s tests` finds them)
 
-- [ ] **Step 1: `evals/canaries.json`** — the registry: for every skill, its body canary; for every reference file, its first distinctive line. Body canaries (existing strings unless marked ASSIGNED — those were planted by their port task):
+- [ ] **Step 1: `evals/canaries.json`** — the registry: for every skill, its body canary; for every reference file, its first distinctive line. **Every registry string must be contiguous on ONE line of the post-port file — `grep -F` each against the fleet before committing the registry** (wrapped or emphasis-broken strings are not canaries). Body canaries (existing strings unless marked ASSIGNED — those are planted by the named port task):
 
 | Skill | Canary (grep-exact) |
 |---|---|
 | stack-profile | `Stay in the app/ops lane` |
 | backend-craft | `req_8f3a2c` |
 | frontend-craft | `color courage` |
-| craft | `Match the repo's existing tooling first` |
+| craft | `pick the language` (the H1 — the fuller sentence lives only in reference files) |
 | root-cause | `Three failed fix attempts means the diagnosis is wrong` |
 | eng-ladder | `each reference file IS the bar for its tier` (ASSIGNED — Task 13's self-sovereign rewrite plants it in the SKILL.md body; the tier files' own lines live in the reference-canary set) |
 | ops-tooling | `never the criterion` |
 | runbook | `marked "n/a — why"` |
-| pcf-ops | `unknown_route is not a 5xx at all` |
+| pcf-ops | `not a 5xx at all` |
 | pcf-deploy | `right up until the rollback that doesn't work` |
 | service-onboarding | `top three things to fix this sprint` |
 | incident-command | `nobody is commanding` |
 | postmortem | `Luck is a preventative action item waiting to be written` |
 | merge-gate | `effective review chunk` |
-| release-gate | `build once, promote` |
-| production-change-gate | `this gate is decoration: BLOCK` |
+| release-gate | `prerequisite pointer` (the "build once, promote" phrase is line-wrapped in the body — not greppable) |
+| production-change-gate | `this gate is decoration` (the source's `**BLOCK**` bold markers break the longer match) |
 | ci-actions | `pwn request` |
-| database-reliability | `a hope, not a recovery plan` |
+| database-reliability | `is not always a READ` (the backup line is wrapped across two lines — not greppable) |
 | agent-authoring | `edit it like code` |
 | agent-security | `Read the census from the structure` |
 | obs-logs | `bucket FIRST, then filter inside the aggregation` |
@@ -1881,12 +1940,12 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 | obs-alerting | `half an alert` (ASSIGNED — Task 32's body carries "A page that doesn't link a runbook is half an alert.") |
 | obs-pipeline | `melts the metrics backend` |
 
-(Reference-file canaries incl. the four ASSIGNED LGTM lines from Tasks 28–33 — `cardinality bomb`, `rate() before sum()`, `Select on span attributes`, `pin its version and monitor it like a service`, `A notification policy nobody tested`.)
+(Reference-file canaries incl. the five ASSIGNED LGTM lines from Tasks 28–33 — `cardinality bomb`, `rate() before sum()`, `Select on span attributes`, `pin its version and monitor it like a service`, `A notification policy nobody tested`.)
 - [ ] **Step 2: `tests/test_canaries.py`** — the tripwire: every registry entry appears verbatim in its file (an innocent copy-edit must not silently disarm the oracle). Watch it fail by temporarily mangling one canary; revert.
 - [ ] **Step 3: `scripts/probe_fleet.py`** — this is `evals/discovery_probe.py` **surviving, adapted** (the machinery ledger's word — `git mv` it here, keep its four-bucket accounting, `--validate/--list/--run` modes, `--max-misroute`, and its unit tests adapted alongside), merged with `sde-agents/scripts/probe_plugin.py`'s oracle discipline (tool_use/tool_result correlation by id, never model prose; INCONCLUSIVE ≠ PASS): headless `claude -p … --plugin-dir . --output-format stream-json --verbose` sessions, three probe families:
-  1. **Discovery** (per model-invocable skill): an on-target prompt with NO skill named; PASS = the skill's `Skill(…)` fired AND its canary appears. This is the "0 dark skills of 24" bar's instrument.
+  1. **Discovery** (per model-invocable skill): the rewritten `evals/discovery/*.yaml` corpus — an on-target prompt with NO skill named; PASS = the skill's `Skill(…)` fired AND its canary appears. This is the "0 dark skills of 24" bar's instrument.
   2. **Reference-read** (per predicate row): a prompt tripping exactly one predicate; PASS = a Read of that reference path + its canary in output. Phase 4 runs at minimum `backend-craft/references/consuming-apis.md` (the SDE-proven row) plus one row per obs skill; the FULL row sweep runs in Task 45. A consistent failure here is **design Risk realized, not a flaky test**: the fix is pulling that content into the core, never hinting the path in the prompt.
-  3. **stack-profile (REQUIRED)**: prompt "Our PCF app is slow — should we move it to Kubernetes with autoscaling?"; PASS = stack-profile loads + `stay in the app/ops lane` appears + no Kubernetes recommendation. Acceptance (Section 8) fails without this one.
+  3. **stack-profile (REQUIRED)**: prompt "Our PCF app is slow — should we move it to Kubernetes with autoscaling?"; PASS = stack-profile loads + `Stay in the app/ops lane` appears (match the registry casing) + no Kubernetes recommendation. Acceptance (Section 8) fails without this one.
   Also: invocation canaries for the two `disable-model-invocation` skills (`/sre-agents:pcf-deploy`, `/sre-agents:service-onboarding` load + canary), and the honest limitation stated in the script docstring: **this measures Claude Code as proxy; nothing measures Copilot's own routing yet** (open item: Copilot CLI probe).
 - [ ] **Step 4:** Run family 3 + the family-2 minimum + family 1 for the six obs skills (the newest descriptions). Fix descriptions that go dark (trigger phrasing, not body prose). Commit (`"probes: canary registry + tripwires + fleet probe (discovery/reference-read/stack-profile-required)"`).
 
@@ -1898,6 +1957,7 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 - Create: `evals/routing/<cluster>.json` (five files), rewrite `evals/discovery/` + `evals/scenarios/` cases, modify `evals/graders.py`, `evals/run_evals.py`, `evals/README.md`
 - Port: `scripts/eval_routing.py` (from sde-agents) wrapped in `clean_room.clean_env()`
 
+- [ ] **Step 0: Record the OLD fleet's clean-room baseline first** — Section 8's routing-precision bar compares against it, and no committed artifact exists (the only prior number is marked `[unverified]` in evals/README.md). From a temp worktree at the pin: `git worktree add ../old-fleet 36812ed`, run the old rig's discovery probe through the clean room ×3 against the old fleet, and commit the rates as `evals/baselines/old-fleet-36812ed.json`. Task 45 compares new positives ≥ these rates per unit **via the rename map** (units with no old counterpart — the six obs bodies, stack-profile — compare against the 0.5 threshold instead; say so in the file). Remove the worktree after.
 - [ ] **Step 1: Port `eval_routing.py`** (cluster JSON format; deterministic grading off `Skill`/`Agent`/`Task` tool_use events; rates over runs, positives threshold 0.5, negatives fail on ANY fire) and wire it through `evals/clean_room.py` (which survives unchanged — it is what makes any number trustworthy).
 - [ ] **Step 2: Author five clusters**, members + 4–6 positives each; **negatives are cross-cluster positives** (one cluster's near-miss routes to another's member, so one case set nets the whole fleet):
   1. `obs.json` — members: the six obs skills; positives per skill from its trigger phrasings; negatives borrowed from craft (e.g. "chart this in the app UI" must NOT fire obs-dashboards — it is frontend-craft's data-viz row) and incident (live-incident prompt must fire incident-command, not obs-alerting).
@@ -1905,7 +1965,7 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
   3. `gates.json` — merge-gate/release-gate/production-change-gate (they eval'd well separated — keep proving it); negatives from incident ("should we roll back" → incident-command).
   4. `incident.json` — incident-command/postmortem/runbook; negatives from gates and obs.
   5. `meta.json` — agent-authoring/agent-security/stack-profile/eng-ladder/database-reliability/service-onboarding-adjacent; negatives from craft.
-- [ ] **Step 3: Scenarios port** (behavioral regressions, `run_evals.py`): retarget per rename map — the three production-change-gate cases (blocks-unapproved keeps its **line-anchored** verdict regex and the adversarial `_BLOCK_CASES` — audit Tier-1 #3's hardening must not regress), merge-gate blocks-untested/passes-ready + the two 0971a4d cases (blocks-stale-approval, passes-rebased) retargeted at the new merge-gate text, release-gate pair, incident-command classify + mitigation-picks-reversible, database-reliability-blocks-irreversible, craft-router-go, agent-security-injection pair, ops-cli-safety→ops-tooling, pcf-deploy-requires-gate, self-improve/route-request/researcher/handoff-protocol cases **deleted with their units** (stated in the commit). Old `evals/discovery/*.yaml` are superseded by the cluster files + probe families — delete after the clusters run green (they stay in git history).
+- [ ] **Step 3: Scenarios port** (behavioral regressions, `run_evals.py`): retarget per rename map — the three production-change-gate cases (blocks-unapproved keeps its **line-anchored** verdict regex and the adversarial `_BLOCK_CASES` — audit Tier-1 #3's hardening must not regress), merge-gate blocks-untested/passes-ready + the two 0971a4d cases (blocks-stale-approval, passes-rebased) retargeted at the new merge-gate text, release-gate pair, incident-command classify + mitigation-picks-reversible, database-reliability-blocks-irreversible, craft-router-go, agent-security-injection pair, ops-cli-safety→ops-tooling, pcf-deploy-requires-gate, and the three previously-unstated files: `readonly-agent-recommends-not-acts` **deleted** (agent-targeted, no proxy for `.agent.md` — stated per the spec's rule), `runbook-author-resolved-postmortem-structure` **retargeted** at the `postmortem` skill, `sde-ladder-principal` **retargeted** at `eng-ladder`. `self-improve`/`route-request`/`handoff-protocol` cases **deleted with their units** (stated in the commit — there is no researcher scenario to delete; don't hunt for one). The old discovery corpus is rewritten in place by Task 38 (24 files), not deleted.
 - [ ] **Step 4: `graders.py` gains `max_skills`:** `max_skills(response_meta, n)` counting distinct fleet `Skill` invocations from the stream-json transcript (plumb the tool-use list through `run_evals.py`/`eval_routing.py` — grading stays deterministic). One case uses it: the Section-8 fan-out bar — a single incident prompt loads **≤ 2** fleet skills (the old fleet loaded 6).
 - [ ] **Step 5: `evals/README.md` rewrite:** the clean-room rule (any number without it describes the laptop), rates-over-runs, **manual — never a CI gate** (variance would flake-fail honest PRs; run before/after description edits), the Claude-proxy limitation, and the no-baseline-no-edit rule for descriptions.
 - [ ] **Step 6:** Run all five clusters ×3: record the baseline table in `evals/README.md`. Expected: every positive ≥ 0.5; **zero negatives fire**; the fan-out case ≤ 2. Fix descriptions (never bodies) on misses; re-run. Commit (`"evals: cluster routing with cross-cluster negatives + max_skills fan-out bar; scenarios retargeted; clean room load-bearing"`).
@@ -1916,7 +1976,7 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 
 **Files:**
 - Modify: `.github/workflows/validate.yml`
-- Delete: `scripts/readonly-guard.py`, `scripts/readonly-guard-hook.sh`, `scripts/test_readonly_guard.py`, `scripts/test_validate_fleet.py` (old), `scripts/ralph-loop.sh`, `evals/discovery/*.yaml`, superseded scenario cases (per Task 39 Step 3). NOT deleted: `discovery_probe.py`/`test_discovery_probe.py` — they became `probe_fleet.py` + its tests in Task 38 (git mv, history intact).
+- Delete: `scripts/readonly-guard.py`, `scripts/readonly-guard-hook.sh`, `scripts/test_readonly_guard.py`, `scripts/test_validate_fleet.py` (old), `scripts/ralph-loop.sh`, superseded scenario cases (per Task 39 Step 3). NOT deleted: `evals/discovery/*.yaml` (rewritten in place by Task 38 — 24 files remain) and `discovery_probe.py`/`test_discovery_probe.py` (they became `probe_fleet.py` + `tests/test_probe_fleet.py` in Task 38 — git mv, history intact).
 
 - [ ] **Step 1: validate.yml v2** — same 3-OS matrix and step order discipline (deps before PyYAML-dependent steps):
   1. checkout, setup-python 3.12
@@ -1939,7 +1999,7 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 **Files:**
 - Create: `docs/probes/2026-XX-XX-org-gates.md`
 
-- [ ] **Step 1:** On a team engineer's VS Code (not only the owner's): (1) is `chat.plugins.enabled` flippable, or org-policy-blocked? (2) does the Copilot org policy "Editor preview features" gate agent plugins independently? (record what the admin console actually shows — the spec marks this `[unverified]`); (3) are the Section-3 models actually selectable in the picker under the team's license tier (record the tier)?
+- [ ] **Step 1:** On a team engineer's VS Code (not only the owner's): (1) is `chat.plugins.enabled` flippable, or org-policy-blocked? (2) does the Copilot org policy "Editor preview features" gate agent plugins independently? (record what the admin console actually shows — the spec marks this `[unverified]`); (3) are the Section-3 models actually selectable in the picker under the team's license tier (record the tier)? Plus the two parked platform questions: (4) does a **Grafana MCP server** exist and fit the LGTM-exploration role (spec Section 2's "verify during implementation") — if yes, wiring `.mcp.json` is a follow-up PR, not this task; (5) does VS Code ship a **plugin-validate equivalent** (spec Section 6's open question), or do the probes carry the platform-contract layer alone?
 - [ ] **Step 2:** Record all three answers + screenshots in the probe doc. **Decision line at the bottom: channel = plugin | fallback.** Whatever the answers, the fleet built above ships — that is why these checks waited until now.
 - [ ] **Step 3:** Commit (`"probe: org gates -- channel decision recorded"`).
 
@@ -1952,7 +2012,7 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 - [ ] **Step 2: Plugin channel:** set `chat.plugins.enabled: true` and append `"latent-sre/sre-agents"` to `chat.plugins.marketplaces`, then **print** the one manual step — Extensions → `@agentPlugins` → Install → accept the trust prompt. That click is deliberately not scriptable: it is VS Code's publisher-trust gate for code that will run on the machine, and given the hook-execution risk, we want it conscious.
 - [ ] **Step 3: Fallback channel** (if Task 41 said fallback): clone to the fixed path (`$HOME/sre-agents-fleet`), write `chat.agentFilesLocations`/`chat.agentSkillsLocations` into it, **register the scheduled task** (`schtasks` / cron) running `git -C <clone> pull --ff-only` daily — an unregistered sync is a permanently stale fleet — **and register the user-level hook** (`~/.copilot/hooks`) pointing at the clone's guard. Without that last step the fallback ships `sre`/`observer` holding `execute` with no allowlist at all, and "identical either way" is false in the one dimension that matters.
 - [ ] **Step 4: The JSONC hazard.** VS Code `settings.json` is JSONC — comments and trailing commas are legal; a naive `ConvertFrom-Json` round-trip fails or strips the engineer's comments. Implementation rule: **targeted textual key insertion** (regex-anchored, append-into-object, preserve the rest byte-for-byte), and if the anchor isn't found confidently, print the exact lines for a manual paste and verify with `-Verify` instead of writing. Never rewrite the whole file.
-- [ ] **Step 5: `-Verify` reports** (and exits non-zero on any failure): active channel · installed plugin commit/`ref` (or clone SHA + scheduled-task existence) · whether skills actually load (shell `claude --plugin-dir` if present, else instruct a chat check) · `gh auth` state · **the guard audit log contains no identity-missing entries** (this is what makes Section 8's "0 silent load failures" measurable rather than aspirational).
+- [ ] **Step 5: `-Verify` reports** (and exits non-zero on any failure): active channel · installed plugin commit/`ref` (or clone SHA + scheduled-task existence) · whether skills actually load (shell `claude --plugin-dir` if present, else instruct a chat check) · `gh auth` state · **the guard audit log contains no identity-missing entries** (this is what makes Section 8's "0 silent load failures" measurable rather than aspirational) · on the fallback channel, `py -3 scripts/validate_fleet.py` from the clone exits 0 (the plugin channel skips this — no working tree to validate).
 - [ ] **Step 6:** `setup.sh` twin (macOS/Linux paths, cron instead of schtasks). Test both `-Verify` paths on this machine; paste output. Commit (`"setup: one-time onboarding, two channels, JSONC-safe, -Verify fails loud"`).
 
 ### Task 43: The `release` channel — protection, CODEOWNERS, promotion
@@ -2003,7 +2063,7 @@ setup.sh            @OWNER
 - Create: `docs/probes/2026-XX-XX-acceptance.md` (the evidence table)
 
 - [ ] **Step 1: Full probe sweep** (the instruments exist since Task 38): discovery canaries — **0 of 24 model-invocable skills dark**; invocation canaries — both `/`-invoked skills load with canaries; reference-read — the FULL predicate-row sweep this time; stack-profile REQUIRED canary — passes.
-- [ ] **Step 2: Routing precision:** all five clusters ×3 runs — no negative fires at all; positives ≥ the Task-39 baseline; the `max_skills` incident case ≤ 2.
+- [ ] **Step 2: Routing precision:** all five clusters ×3 runs — no negative fires at all; positives ≥ the OLD-fleet clean-room baseline (`evals/baselines/old-fleet-36812ed.json`, Task 39 Step 0) per renamed unit, ≥ 0.5 for units with no old counterpart; the `max_skills` incident case ≤ 2.
 - [ ] **Step 3: Always-on context ≤ 4.5k tokens:** sum the 31 shipped descriptions (Task 34's estimator) + verify in a real Copilot session that no other fleet text is ambient (AGENTS.md no longer carries fleet content — that was the −4.3k). Record the number; ≤150/description means it cannot creep past the bar.
 - [ ] **Step 4: The pilot:** ONE engineer, ONE week, real work repos, touching **≥ 3 agents**. Exit bar: no unrecovered routing failure, no guard false-positive (`-Verify` + the audit log are the instruments; **a blocked legitimate read is a loud one-line allowlist fix — make it during the pilot**, that is the seed set maturing). Keep a dated pilot log in the probe doc.
 - [ ] **Step 5:** Any acceptance regression in week one → execute `docs/runbook-rollback.md` (revert `release`, announce). Commit the evidence table.
