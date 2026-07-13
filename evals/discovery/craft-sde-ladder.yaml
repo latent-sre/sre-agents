@@ -6,4 +6,4 @@ also_acceptable: [sde-engineer]
 prompt: |
   This change touches three services and alters an API contract other teams call. How much design
   work does something like this actually need before I start coding?
-note: "2026-07-11 FIRST baseline (n=2): 0 hit / 0 misroute / 2 no-route. saw: none. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."
+note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). 2026-07-11 FIRST baseline (n=2): 0 hit / 0 misroute / 2 no-route. saw: none. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."

@@ -1,0 +1,24 @@
+id: capability-sde-engineer-reaches-ladder
+expected_agent: sde-engineer
+# The question the preload decision actually rests on -- and one NO existing scenario asks.
+#
+# `craft-sde-ladder` measures MAIN-SESSION routing to the skill (expected: sde-ladder,
+# also_acceptable: [sde-engineer]) -- it passes if the main session merely delegates to the agent.
+# That is a different question, and it is exactly the false pass we must not take.
+#
+# `agent_must_reach_skill` demands that the DELEGATED AGENT invoke the skill ITSELF, proven via the
+# stream's `parent_tool_use_id` (None = main session; an id = a subagent, under that Task call).
+#
+# WHY IT MATTERS: the ladder skills SET ALTITUDE ON EVERY TASK (CLAUDE.md). sde-engineer preloads
+# none of its 15 skills and is merely TOLD to "load the skill" -- an instruction, and instructions
+# bend. If it does not, the agent silently works at no altitude and nothing ever reports it.
+#
+# The prompt must be a real BUILD request (so sde-engineer is the right target), non-trivial enough
+# that altitude genuinely matters (so loading the ladder is correct, not ceremony), and it must NOT
+# name a skill, a ladder, a tier, or the word "design" -- naming any of them hands the agent the
+# answer and turns a discovery probe into a compliance probe.
+agent_must_reach_skill: sde-ladder
+prompt: |
+  The checkout service and the payments service both read the order table directly. I want to put
+  an API in front of it so only payments owns the writes. Get started on it.
+note: "namespace: NOT YET BASELINED — take a CLEAN baseline before acting on this scenario."

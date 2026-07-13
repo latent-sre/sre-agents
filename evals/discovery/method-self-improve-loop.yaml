@@ -8,4 +8,4 @@ prompt: |
 # was genuinely ambiguous with tdd-workflow (add the regression test) and pulled it 0/3 — a
 # probe artifact, not a discoverability gap. This prompt is squarely self-improve-loop's lane
 # (evaluator-optimizer + unattended "Ralph" loop), which tdd-workflow does not cover.
-note: "Retargeted to evaluator-optimizer / unattended-loop lane: 3/3 (old prompt 0/3 was a tdd-workflow probe artifact, not a skill gap)."
+note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). Retargeted to evaluator-optimizer / unattended-loop lane: 3/3 (old prompt 0/3 was a tdd-workflow probe artifact, not a skill gap)."

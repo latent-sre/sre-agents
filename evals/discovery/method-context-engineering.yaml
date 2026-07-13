@@ -7,4 +7,4 @@ prompt: |
   in context?
 # Baseline 2026-06: 3/3 discovered when listed AND 3/3 when name-only — the skill NAME
 # alone carries the signal here. A strong "name-only is safe" case.
-note: "A/B 2026-06: A 3/3, B 3/3."
+note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). A/B 2026-06: A 3/3, B 3/3."

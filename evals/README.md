@@ -84,6 +84,26 @@ write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 > `route-request` skill's decision (see `run_evals.py`'s `route-request-*` scenario), not headless
 > delegation. These scenarios are kept as a working capability + a documented baseline, not a gate.
 
+## The clean room (and why a baseline states its namespace)
+
+Every trial runs with `CLAUDE_CONFIG_DIR` pointed at a temp dir holding only your credentials
+(`evals/clean_room.py`). The model therefore sees this project's `.claude/skills` and
+`.claude/agents` and **nothing else** — not your personal `~/.claude` skills or agents, not your
+installed plugins, not your global `CLAUDE.md`.
+
+This is not tidiness. Those things do not shadow the fleet by name; they **compete with it for
+discovery**, which is the one thing `discovery_probe.py` measures. Before the clean room, every
+number it produced was a property of the machine it ran on — and every baseline note said so
+("treat as a LOWER BOUND").
+
+**A baseline note must state the namespace it was taken in.** A number without one is not a
+baseline. Notes marked `namespace: CONTAMINATED` predate the clean room and are not comparable to
+clean numbers.
+
+The harness **aborts** if it cannot authenticate. It does not degrade: a credential-less run still
+emits a well-formed trace containing no `Skill()` call, which would score as a clean no-route —
+turning a broken instrument into a fake finding about the fleet.
+
 ## Discipline (how to add a scenario)
 
 1. **Eval before docs — for skills with a *gradeable* outcome.** When writing/changing a skill whose

@@ -6,4 +6,4 @@ also_acceptable: [sde-engineer]
 prompt: |
   I want to rename this function and move it to another module. It's called from a lot of places and
   the behaviour must not change at all. How do I do that without breaking anything?
-note: "2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: safe-refactor. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."
+note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). 2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: safe-refactor. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."

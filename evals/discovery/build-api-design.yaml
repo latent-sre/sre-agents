@@ -6,4 +6,4 @@ also_acceptable: [sde-engineer]
 prompt: |
   I need to put an HTTP endpoint in front of our cf scaling script so the dashboard can call it.
   What should the contract look like, and how should errors come back?
-note: "2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: api-design. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."
+note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). 2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: api-design. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."
