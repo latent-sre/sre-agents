@@ -57,8 +57,16 @@ jobs:
       - name: Test the read-only guard
         run: ${{ matrix.py }} scripts/test_readonly_guard.py
 
+      # Everything above is pure stdlib. Everything below needs PyYAML: the graders' layer-2 scenario
+      # tests load scenario files, and they FAIL (not skip) without it. Installing after them -- which
+      # is what the first draft of this workflow did -- passes on any machine that happens to have
+      # pyyaml already and fails on a clean runner. That is the bug this gate exists to prevent, so
+      # the install goes here, before its dependents.
+      - name: Install eval-harness deps
+        run: ${{ matrix.py }} -m pip install -r requirements-dev.txt
+
       # Eval graders. A broken grader makes every behavioural measurement downstream untrustworthy,
-      # so they are a gate too. Both suites are stdlib-only and run standalone (no pytest, no pyyaml).
+      # so they are a gate too.
       - name: Test the eval graders
         run: |
           ${{ matrix.py }} evals/test_graders.py
@@ -66,10 +74,6 @@ jobs:
 
       # The eval SUITE itself: every scenario parses, has its required fields, and names a grader
       # that actually exists with the right kwargs. No model is invoked. This is the step
-      # requirements-dev.txt was written for ("CI installs this before the --validate steps") --
-      # it is the only one here that needs a third-party dep, hence the install below it.
-      - name: Install eval-harness deps
-        run: ${{ matrix.py }} -m pip install -r requirements-dev.txt
-
+      # requirements-dev.txt means by "CI installs this before the --validate steps".
       - name: Validate the eval suite
         run: ${{ matrix.py }} evals/run_evals.py --validate
