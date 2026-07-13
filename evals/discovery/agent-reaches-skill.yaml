@@ -19,4 +19,4 @@ agent_must_reach_skill: true
 prompt: |
   Our checkout app on PCF is throwing 502s in production and I don't know why. Work the
   problem properly — use the runbook-grade procedure for PCF triage, not general knowledge.
-note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). 2026-07-11: verified sre-engineer invokes Skill(pcf-ops) + Skill(sre-ladder) under its own parent_tool_use_id once `Skill` is in tools:. With Skill absent it invoked NOTHING — the bug this probe exists to catch."
+note: "namespace: CLEAN (clean_room; --agents, throwaway git worktree). 2026-07-13 baseline (n=3): 2 hit / 0 misroute / 1 no-route. saw: sre-engineer + subagent-skill: pcf-ops, splunk-triage, sre-ladder, wavefront-queries. The delegated agent reaches its skills under its OWN parent_tool_use_id — the capability mechanism works."
