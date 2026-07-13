@@ -312,6 +312,60 @@ fleet) plus the trifecta note in the agent body. **The alternative** — strip `
 — is one line to apply if you'd rather not carry the risk. Either way it is now *recorded*, not silent.
 5. **Probed, not assumed.** Platform facts the safety model rests on get **probes re-run after every VS Code/Copilot upgrade** (the sde-agents discipline: `hooks:`-on-plugin-agents silently ignored and `Bash(git diff:*)` scoping inert were both *probed*, not read). New-fleet probe list: hook payload shape (camelCase, agent identity field), plugin skill/agent loading, hook firing for plugin-shipped hooks, `disable-model-invocation` behavior.
 
+## Section 5d — Reference files: the pattern is right for Claude Code and BROKEN for VS Code
+
+The whole design leans on progressive disclosure — 26 lean skills whose depth lives in `references/`, loaded on
+demand. It is why we rejected the Marketplace-extension channel (it cannot ship skill folders). So the mechanism has
+to actually work, and **as imported, it would not.**
+
+**The rule.** VS Code loads bundled files in three levels — name+description, then the `SKILL.md` body, then
+*"as Copilot works through the instructions, it accesses additional files"* — and pointers must use
+**Markdown link syntax with relative paths**, e.g. `[test template](./test-template.js)`. The doc is blunt about the
+failure mode: **"If a file isn't referenced in the instructions, it won't be loaded."**
+*[verified: code.visualstudio.com/docs/agent-customization/agent-skills, fetched 2026-07-13]*
+
+**What we were about to ship.** Both source fleets point at bundled files with **bare code-spans**, not links:
+
+| Repo | Markdown links | Bare code-spans |
+|---|---|---|
+| `sde-agents` (the harvest source) | 3 | **19** |
+| old `sre-agents` fleet | 21 | **26** (14 skills affected) |
+
+`frontend-craft`'s predicate table — the exact mechanism the six observability skills copy — is entirely
+code-spans: `` | a form or any user input to submit | `references/forms.md` | ``. **In Claude Code that works**, because
+the model simply calls Read on the path. **In VS Code the file is never loaded at all**, and the failure is *silent*:
+the model answers from memory of what `forms.md` probably says. That is precisely the failure sde-agents' own
+doctrine-alignment spec diagnosed — *"every branch is a chance to skip the read, hallucinate it, or answer from
+memory"* — reproduced in a runtime where it is worse, because the file is not merely un-read but un-loaded.
+
+**This is the one place the verbatim-move discipline must NOT apply.** Section 7 tells the porter to relocate prose
+unchanged, precisely to avoid transcription drift. Reference *pointers* are the stated exception: **every bundled-file
+pointer is rewritten to Markdown-link syntax during the move.** A verbatim port would faithfully preserve the bug.
+
+**Rules for every skill in the new fleet:**
+1. **Every** pointer to `references/`, `assets/`, or `scripts/` is a **relative Markdown link**:
+   `[forms](./references/forms.md)`, never `` `references/forms.md` ``.
+2. **Predicate tables keep their shape**, but the right-hand cell becomes a link:
+   `| a form or any user input to submit | [forms](./references/forms.md) |`
+3. **Every bundled file is linked from the body.** An unlinked file is dead weight that never loads — so if it
+   isn't worth linking, delete it.
+4. **The skill body names the trip condition and orders the read**: *"read it **before** writing that code, and name
+   what you read in your packet."* Progressive disclosure is not just "the file exists"; the model must be told when
+   to open it and be held to having done so.
+
+**Validator v2 enforces this (new rules, both errors — not warnings):**
+- A bundled-file path appearing as a **code-span rather than a link** in a `SKILL.md` body → **error**. This is the
+  rule that would have caught the bug above, and no existing validator has it: sde-agents' validator existence-checks
+  reference links but never their *syntax*, because in Claude Code the syntax does not matter.
+- A **linked file that does not exist** → error (existence check, imported).
+- A **bundled file that nothing links to** → error (it can never load).
+
+**And a probe (Phase 4), because the validator only proves the link is well-formed:** trip a predicate and assert the
+reference was actually read — sde-agents does this for exactly one of its eleven routing rows and openly flags the
+other ten as unverified. In the new fleet **every predicate row gets a canary**: a distinctive string in each
+reference file, asserted to appear when its condition trips. That is the only thing that distinguishes "the model read
+the file" from "the model guessed what was in it."
+
 ## Section 6 — Validation & maintenance machinery
 
 - **Validator** (rewritten for Copilot artifacts): unknown-frontmatter-key rejection (the `hooks:`→`hook:` war story — a typo silently disarms), **kebab-case name enforcement** (silent load failure class), `agents:`/`handoffs:` targets must exist, description trigger-format lint (verbatim user phrasings — the one pattern with 3/3 baselines), bundle-reference existence, `plugin.json` manifest integrity, schema-vs-policy error separation, `--write-inventory` regenerating the README fleet table. Also imported from sde-agents' validator (found in the completion sweep): **doctrine enforced by machine** — canonical evidence-label phrasing and the required end-of-packet headings are validator checks, not conventions; the hook must resolve the guard through the plugin root; no definition may resolve a fleet file outside the plugin; validator tested against **broken-fleet fixtures** (evidence-drift, inventory-drift, missing-packet). Two-layer validation: the repo validator owns *fleet policy*; the platform's own validator owns the *platform contract* — **open question:** does VS Code ship a plugin-validate equivalent, or do the probes carry that layer alone?
@@ -424,7 +478,7 @@ measures Copilot's *own* routing until the Copilot-CLI probe (open item) lands.
 
 **Migration ordering rule** (imported): fix internal contradictions first — the one class of change needing no behavioral baseline.
 
-**Implementation-plan format** (imported from sde-agents' plan doc, found in the completion sweep): dependency-ordered tasks with explicit **Interfaces** between them ("Task 5's probe asserts this path — do not rename it"); a **Global Constraints** block carrying machine-specific gotchas (on this machine: **Python is `py -3`, not `python3`** — bakes into setup.ps1, the validator shebang strategy, and CI matrix); **verbatim-move discipline** for content relocations (the plan names the section to move, never re-types it — re-typing invites silent transcription drift); and probes/tests written **first and failing** before the change that makes them pass — **scoped to the artifact under change.** That discipline governs each phase's *internal* task order (write the failing canary, then the skill); it does **not** mean writing the whole test suite before the whole fleet, which is the loop the ordering rule above forecloses.
+**Implementation-plan format** (imported from sde-agents' plan doc, found in the completion sweep): dependency-ordered tasks with explicit **Interfaces** between them ("Task 5's probe asserts this path — do not rename it"); a **Global Constraints** block carrying machine-specific gotchas (on this machine: **Python is `py -3`, not `python3`** — bakes into setup.ps1, the validator shebang strategy, and CI matrix); **verbatim-move discipline** for content relocations (the plan names the section to move, never re-types it — re-typing invites silent transcription drift), **with one stated exception: bundled-file pointers are rewritten to Markdown-link syntax (Section 5d), because a verbatim port would faithfully preserve a bug that silently breaks every reference in VS Code**; and probes/tests written **first and failing** before the change that makes them pass — **scoped to the artifact under change.** That discipline governs each phase's *internal* task order (write the failing canary, then the skill); it does **not** mean writing the whole test suite before the whole fleet, which is the loop the ordering rule above forecloses.
 
 ## Section 8 — Acceptance: how we know it worked
 
