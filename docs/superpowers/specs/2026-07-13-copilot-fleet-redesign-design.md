@@ -47,6 +47,103 @@ independent personal fleet; content imports here are one-way copies that this re
 The full harvest ledger is the Provenance summary at the end of this document; every roster table
 marks imported units SDE (from sde-agents), SRE (from this repo's old fleet), or NEW.
 
+## Section 0 — Run protocol: how every session on this spec opens and closes
+
+This spec is built across many sessions by agents that start cold. Two things must therefore be mechanical,
+not remembered.
+
+### Open: sync from `main`, and let it fail loudly
+
+```
+git status --porcelain                   # must be empty; a dirty tree makes the next line half-fail
+git fetch --prune origin                 # --prune: phase branches get merged and auto-deleted
+git switch main && git pull --ff-only origin main
+git log --oneline -1                     # record the SHA this phase branched from
+git switch -c <phase-branch>             # branch from main, NEVER from another phase branch
+```
+
+`--ff-only` is the load-bearing flag: it **fails** rather than silently manufacturing a merge commit when
+local `main` has drifted.
+
+**The owner merges PRs mid-session, so `main` moves *under* a long-running phase.** Fetching alone does not
+fix that — it updates remote-tracking refs and leaves your branch exactly where it was, so you learn `main`
+moved and change nothing. Before opening each PR, actually **move the branch**:
+
+```
+git fetch --prune origin
+git rebase origin/main
+git log --oneline origin/main..HEAD      # assert: ONLY this phase's commits
+```
+
+That last line is the real check. The failure this prevents is not an error — it is a **silently inflated
+diff**: if a PR is stacked on another phase branch and that parent merges and auto-deletes, GitHub
+**re-targets the child to the parent's base rather than erroring**, absorbing the parent's commits into your
+diff. Branch every phase from `main` and the mode cannot occur.
+
+### Close: four audits, in cost order
+
+A phase is not done until **A–C** are green. **D** runs at the end of **Phase 3** (the first point the fleet is
+content-complete) and again at **Phase 6** — not at every phase boundary, because "0 dark skills" over a
+half-built skill set is vacuously true, which is a green light that measured nothing.
+
+| Audit | Catches | Cannot catch | Cost |
+|---|---|---|---|
+| **A — Mechanical** | broken structure: bad frontmatter, unwired hooks, dangling references, non-kebab names | anything about whether the *content* is true | free |
+| **B — Content regression** | a known-bad fact ported forward verbatim | — *(once mechanized; see below)* | free |
+| **C — Adversarial review** | design holes, security regressions, spec non-conformance, **unverifiable stack facts** | things no reviewer thought to look for | model |
+| **D — Behavioral** | dark skills, routing fan-out, guard false-denies, token budget | correctness of any individual answer | model + time |
+
+**A — Mechanical.** One command. It is the same entrypoint CI runs, so the two cannot drift:
+
+```
+python scripts/gate_a.py
+```
+
+It resolves its own interpreter (`sys.executable`), which settles the `python` / `python3` / `py -3` question
+by not having an opinion — `python3` on Windows is the Microsoft Store stub, the bug that once silently
+disarmed the read-only guard. It preflights the pinned deps rather than letting a cold agent reach for a bare
+`pip install pyyaml`. **Do not transcribe its steps back into this document**; that is how the previous draft
+of this section shipped a step-list that had already dropped the dependency install.
+
+**B — Content regression. The audit that exists because of our own history.** The Tier-2 bugs in
+[`docs/AUDIT-2026-07-12.md`](../../AUDIT-2026-07-12.md) are **live on `main` right now**, and this migration's
+core operation is *copying content forward* — so verbatim-move discipline will faithfully preserve every one of
+them. They are not stylistic: a prod-password leak in `argv`, a blue-green playbook that pushes onto the live app
+on its second run, an SPL filter that guarantees the alert under-fires, an error-budget script that prints
+"within budget" at 5.50x burn, a fabricated WQL clause, and Grafana data sources needing an Enterprise license we
+do not have.
+
+> **Mechanize this gate — do not leave it as prose.** As a manual "diff each ported skill against the ledger"
+> pass it is the most skippable gate in the stack, and it is the one we already know we need. All six bugs are
+> **string-detectable**. **Phase 1 deliverable: `scripts/test_no_regressions.py`** — six assertions, pure stdlib,
+> wired into `gate_a.py`. B then collapses into A: free, permanent, unskippable. The repo's own doctrine is
+> *structural enforcement over prose*; B is currently prose.
+
+**C — Adversarial review.** Independent eyes on the diff: `code-reviewer`, `security-reviewer`, and one reviewer
+briefed only on the spec, checking conformance rather than code. **Not ceremony — it has already paid, twice.**
+The independent sanity review of this spec found the hole neither the author nor the design caught (the fallback
+channel shipped **no hook guard at all**, so `sre`/`observer` would have gone out with `execute` and no
+allowlist). The review of *this very section* caught that Gate A, as first written, **could not run at all from
+Phase 1 onward** — Phase 1's opening `git mv` moved the directories the validator hardcoded.
+
+C also owns the one class **no other gate covers**: a stack fact we *invent* during the port. B catches
+*known*-bad facts; nothing else looks at truth. Since a fabricated WQL clause is the fleet's own headline rot
+mode, C carries an explicit rule: **every stack-specific command, query, or API field in a ported skill is either
+executed against the real system and labeled `[verified]`, or labeled `[unverified]`.** An unlabeled claim is a
+review finding.
+
+**D — Behavioral.** Run **Section 8's acceptance table in full**, through the clean-room rig
+(`evals/clean_room.py`) so the operator's personal skills cannot compete with the fleet for discovery. The table
+is the source of truth; it is deliberately *not* re-listed here.
+
+> **Gate A cannot catch a single Tier-2 bug, and that is the whole point of running four.** This is
+> demonstrated, not argued. On `main` at `36812ed`, the entire mechanical suite passes — *"Validated 37 skills
+> and 9 agents… VALIDATION: PASS"*, 11/11 validator tests, 505/505 guard cases, 25/25 scenarios — while
+> `.claude/skills/github-actions-ci/SKILL.md:107` reads `cf auth "$CF_USERNAME" "$CF_PASSWORD"`, putting the
+> production password in `argv` where any process on the box can read it. The validator is *structural*: it
+> checks that a skill is well-formed, never that it is right. **A green Gate A over a leaking fleet is the
+> normal case, not the edge case.** Auditing means B and C ran too, or it means nothing.
+
 ## Section 1 — Distribution: plugin-first, clone-and-point fallback
 
 **Primary channel.** This repo becomes an **agent plugin**: **`.claude-plugin/plugin.json`**, the *single* manifest location (matching the sister repo; VS Code auto-detects the Claude plugin format). **There is no second `plugin.json` at the repo root** — "no second source of truth" is one of this fleet's own imported rules. Plus `agents/`, `skills/`, `commands/`, `hooks/`, `.mcp.json`. Each engineer adds the team repo to `chat.plugins.marketplaces` (any git remote works; private repos supported — VS Code falls back to cloning directly) and installs once from the Extensions view (`@agentPlugins` filter). Marketplace-sourced plugins auto-update every 24h under `extensions.autoUpdate`. Skills arrive as `/sre-agents:<skill>`; agents appear in the chat dropdown; hooks and MCP config ride the same bundle.
@@ -492,7 +589,7 @@ dressed as a milestone — and "silent dark skills" (Risk 3) goes unmeasured, wh
 | **Routing precision** | no near-miss negative fires **at all**; positives ≥ old-fleet clean-room baseline | cluster routing evals, rates over runs |
 | **Fan-out** | a single incident prompt loads **≤ 2** fleet skills | routing eval with a `max_skills` assertion (the old fleet loaded **6**) |
 | **Always-on context** | **≤ 4.5k tokens** before any work (was ~8.3k) — and **≤ 150 tokens per description**, so it cannot creep | measured in a real Copilot session |
-| **Guard** | 0 false denies across the pilot; 0 silent load failures | `setup.ps1 -Verify` + hook audit log. The allowlist is *seeded from observed Phases 1-3 usage|
+| **Guard** | 0 false denies across the pilot; 0 silent load failures | `setup.ps1 -Verify` + hook audit log. The allowlist is *seeded from observed Phases 1–3 usage*, not guessed. |
 | **Pilot exit** | one engineer, **one week** of real work touching **≥ 3 agents**, no unrecovered routing failure, no guard false-positive | pilot log |
 | **Rollout safety** | any acceptance regression in week one → **revert `release`**, team announce | Section 1 rollback runbook |
 
@@ -668,7 +765,7 @@ That claim was false: the machinery, the eval corpus, the root docs, and the in-
 | `scripts/validate_fleet.py` | **Rewritten** = validator v2 (Section 6). |
 | `scripts/ralph-loop.sh` | **Deleted.** Claude-Code-specific unattended-loop machinery; its owning skill (`self-improve-loop`) is deleted, and nothing in the Copilot fleet drives it. |
 | `.github/workflows/validate.yml` | **Survives, extended** to validator v2 + the new tests. Gains the `main` → `release` promotion gate (Section 1). |
-| `requirements-dev.txt` | **Survives.** Note the machine constraint: Python is **`py -3`**, not `python3`. |
+| `requirements-dev.txt` | **Survives.** Machine constraint: on Windows `python3` is the Microsoft Store stub, not an interpreter — use `python` or `py -3`. **Moot in practice:** every gate goes through `scripts/gate_a.py`, which re-invokes its sub-steps under `sys.executable` and is therefore correct under all three. Don't reintroduce a hardcoded interpreter name. |
 
 ### Root docs
 
