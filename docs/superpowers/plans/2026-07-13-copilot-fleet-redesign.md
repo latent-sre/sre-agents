@@ -160,7 +160,7 @@ Implementation happens on one branch off `main`: `redesign/copilot-fleet`, one c
 ## Phase 1 — The agents (the first phase that produces the product)
 
 **The uniform doctrine layer (spec Section 3) — every agent gets all four pieces; none arrives by accident:**
-1. the evidence-labeling line — "Label load-bearing claims [verified] (you ran/observed it), [sourced] (file:line, URL, query), or [unverified] (assumption — never let it read as fact)" (sde-fullstack.md L74's sentence, verbatim);
+1. the evidence-labeling line — [verified] (you ran/observed it) / [sourced] (file:line, URL, query) / [unverified] (assumption — never let it read as fact); role-adapt from sde-fullstack.md **L74**, whose full sentence is canonical (the gloss here is a digest, not the text to paste);
 2. an output packet **with a worked example**;
 3. **"Recommend better, never silently substitute"** — sde-fullstack.md **L40**, verbatim, role-adapted;
 4. **"Ask the forks, assume the details"** — sde-fullstack.md **L33**, verbatim, role-adapted.
@@ -240,7 +240,7 @@ Run each validate.yml step locally against the moved tree:
 py -3 scripts/validate_fleet.py                                    # EXPECT: fails (no .claude/skills)
 py -3 -m unittest discover -s scripts -p 'test_validate_fleet.py'  # EXPECT: fails (copies the .claude fleet)
 py -3 scripts/test_readonly_guard.py                               # EXPECT: passes (guard files unmoved until Phase 4)
-py -3 -m unittest evals.test_graders evals.test_discovery_probe evals.test_clean_room  # EXPECT: passes
+py -3 evals/test_graders.py && py -3 evals/test_discovery_probe.py && py -3 evals/test_clean_room.py  # EXPECT: passes (script-style tests, .claude-independent — this is the form validate.yml actually runs; `-m unittest` collects ZERO tests from these files and exits 5)
 py -3 evals/run_evals.py --validate                                # EXPECT: fails (target_exists checks .claude/skills)
 ```
 
@@ -326,14 +326,16 @@ handoffs:
 ---
 ```
 
-Body assembly, in this order. "Verbatim" = the SPC-1 no-prose-lost rule applies (snapshot the named sources first). Namespace rename map for every agent task: `sde-agents:sde-fullstack`→`sre-agents:sde`, `sde-agents:code-reviewer`→(self), `sde-agents:lab-audit`→drop the clause, `test-engineer`→delete with its clause (agent no longer exists), `github-actions-ci`→`ci-actions`, `sde-engineer`→`sre-agents:sde`.
+Body assembly, in this order. "Verbatim" = the SPC-1 no-prose-lost rule applies (snapshot the named sources first). **The Global rename map at the top of Phase 2 applies to all five agent tasks too** (the moved sections name old agents and skills throughout — `sre-engineer`→`sre-agents:sre`, `sre-monitor`→`sre-agents:observer`, `runbook-author`→`sre-agents:scribe`, `security-reviewer`→`sre-agents:reviewer`, `researcher`→drop the clause, `blameless-postmortem`→`postmortem`, `handoff-protocol`→drop the name, `api-design`/`spa-architecture`→the layer crafts, etc.), plus these Phase-1 specifics: `sde-agents:sde-fullstack`→`sre-agents:sde`, `sde-agents:code-reviewer`→(self), `sde-agents:lab-audit`→drop the clause, `test-engineer`→delete with its clause (agent no longer exists), `github-actions-ci`→`ci-actions`, `sde-engineer`→`sre-agents:sde`.
+
+**SPC for agent tasks (all of Tasks 2–6):** the after-side of SPC-1 is `cat agents/<name>.agent.md`; and because these tasks mine sources *selectively*, the blanket disposition is — any source section the assembly table does not name is a **deliberate cut**: list the cut section headings in the commit (e.g. for this task, security-reviewer's `## Method`, `## Handoffs`, `## Guardrails` remainders).
 
 | # | Section | Source | Rule |
 |---|---|---|---|
 | 1 | H1 + role paragraph | NEW (below) | verbatim from this plan |
 | 2 | `## Scope the review first` | SDE `code-reviewer.md` L13–17 | verbatim move |
 | 3 | `## Evidence gate` | SDE L19–21 ("Never report a bug you haven't traced") | verbatim move |
-| 4 | `## Review dimensions, in priority order` | SDE L23–31, then append the 10 threat-lens bullets from `legacy/claude-fleet/agents/security-reviewer.md` L29–51 under a `### Security lens (always run — this agent is both reviewers)` subheading | verbatim moves, rename map applied |
+| 4 | `## Review dimensions, in priority order` | SDE L23–31, then append the 10 threat-lens bullets from `legacy/claude-fleet/agents/security-reviewer.md` L29–52 (the last bullet's final line is L52) under a `### Security lens (always run — this agent is both reviewers)` subheading | verbatim moves, rename map applied |
 | 5 | `## Output format` | SDE L33–42 (keeps `[caller-flagged]`/`[independent]`, the mandatory independent-P0/P1 count, APPROVE/NITS/REQUEST CHANGES) + security-reviewer's CWE/OWASP + Attack-path + exploitable-vs-theoretical fields (old L69–75) folded in as required fields for security findings | verbatim moves |
 | 6 | `### Worked example (the shape, compressed)` | SDE L44–70 | verbatim move (it already shows a security P0, `hmac.compare_digest`) |
 | 7 | `## Integrity rules` | SDE L72–77 (injection rule; the Bash-hook sentence rewritten, below) + taint-receiver rules from `git show 0971a4d:.claude/skills/handoff-protocol/SKILL.md` — BOTH fields: `Change:` (artifact identity — a review request must pin what is reviewed: `<repo@sha | PR #N (head <sha>) | base..head>`; a review of "the branch" floats, a review of a SHA is evidence) AND `Inputs:` (`[trusted]`/`[UNTRUSTED]` labels; fail-closed receiver default; taint attaches to the claim; "It came from another agent" is not provenance) + the active-compromise handoff from old security-reviewer L86–92 | verbatim moves + one rewrite |
@@ -376,11 +378,12 @@ Load `reviewer` in VS Code Copilot chat (fallback channel from Task 1 Step 4). "
 
 | # | Prompt (verbatim) | PASS looks like | FAIL means |
 |---|---|---|---|
+| 0 | (load) `reviewer` appears in the agent dropdown and accepts a prompt | — | if it fails to load AT ALL, first retry with `handoffs: []` — `sde` doesn't exist until Task 3, and a strict target-validator rejecting the dangling handoff is not a vocabulary failure. Only after that retry does a load failure mean the format/vocabulary is wrong. |
 | 1 | "Read the file README.md and quote its first heading." | quotes `# SRE + SDE Agent Fleet` | grants aren't landing — vocabulary wrong. **Stop.** |
 | 2 | "Search this repo for the string PLUGIN_OK and report which file it is in." | finds this plan | same. **Stop.** |
 | 3 | "Run this shell command and show its output: git status" | refuses / has no execute capability | `tools:` omission fails **open** — read-only-by-absence is dead; reviewer and scribe must be hook-guarded instead. **Stop and amend spec Section 5 before authoring any other agent.** |
 
-Record all three transcripts in the PR description. Also record **which model the picker actually selected** — that is the free Phase-1 model-availability answer that Task 8 writes into `stack-profile`.
+Record the transcripts of all four rows in the PR description. Also record **which model the picker actually selected** — that is the free Phase-1 model-availability answer that Task 8 writes into `stack-profile`.
 
 - [ ] **Step 4: Commit**
 
@@ -700,7 +703,7 @@ Body assembly (rename map: `runbook-template`→`runbook`, `blameless-postmortem
 | 5 | `## Postmortem mode` + method/output | old L65–87, retargeted at `postmortem` (Task 20) | verbatim + rename |
 | 6 | `## Handoffs` | old L88–98 | verbatim + rename map |
 | 7 | old `## Guardrails` (L99–108) | keep "Never identify an individual as the root cause" and "A wrong operational artifact is worse than none" verbatim; the guard-mechanics sentences ("the guard only sees Bash" etc.) are **cut — the guard is gone, tool omission replaced it**; say so in the commit | move + named cuts |
-| 8 | **Doctrine layer + worked example** | "Recommend better, never silently substitute" (if a procedure should be automated rather than documented, say so beside the doc — and the handoff button exists for it) + "Ask the forks" (mode choice is the fork: unclear whether runbook or postmortem ⇒ ask with a recommended default) + the worked example below | verbatim + role-adapt + NEW |
+| 8 | **Doctrine layer + worked example** | the labeling line (sde-fullstack.md L74) + "Recommend better, never silently substitute" (if a procedure should be automated rather than documented, say so beside the doc — and the handoff button exists for it) + "Ask the forks" (mode choice is the fork: unclear whether runbook or postmortem ⇒ ask with a recommended default) + the worked example below | verbatim + role-adapt + NEW |
 | 9 | `## Why you cannot run what you document` | NEW (below) | verbatim from this plan |
 
 New content #8 (the worked example — the shape, compressed):
@@ -762,7 +765,7 @@ never runs them."
 
 ## Phase 2 — The skills (harvest + fix)
 
-**Global rename map** — apply in every Phase-2/3 port on top of each task's own list. Old name (left) appears in carried prose; rewrite to the right. Names not listed here that refer to deleted units get their clause dropped (say so in the commit).
+**Global rename map** — apply in **every port task, Phases 1–3** (the Phase-1 agent tasks reference it explicitly), on top of each task's own list. Old name (left) appears in carried prose; rewrite to the right. Names not listed here that refer to deleted units get their clause dropped (say so in the commit).
 
 | Old | New |
 |---|---|
@@ -892,10 +895,10 @@ description: >-
 The reference files' back-pointers to `skills/backend-craft/SKILL.md` are pointers *up* to an already-loaded file, not bundled-file loads — leave them as code-spans (SPC-2 does not match them).
 
 - [ ] **Step 4: Rewrite `references/stack.md` for the work stack.** Keep the file's shape (greenfield-only scope line, "existing repo's stack always wins", back-pointer); replace the four-language greenfield menu with the work defaults, sourced from the absorbed api-design: Python + FastAPI as the default service (api-design L59–63), deployed to PCF (buildpacks, `/healthz` unauthenticated health endpoint, `cf` routes — api-design's PCF framing), Go for single-binary agents/daemons (kept), and the rule that a service exposes its contract via OpenAPI 3.1 — link the starter: `[OpenAPI starter](../assets/openapi.starter.yaml)`.
-- [ ] **Step 5: Absorb api-design.** Copy `assets/openapi.starter.yaml` verbatim. Move api-design's non-duplicative serving rules into the SDE core's `## Contract first` (append verbatim bullets: RFC 9457 problem+json specifics, "Never `200` with an error in the body", cursor pagination default, Idempotency-Key on unsafe retries, 202 + status resource for long-running ops, "A breaking change to a shipped contract is a principal-altitude change" retargeted at `eng-ladder`). Move its auth bullets (broken-object-level-authz callout, server-is-source-of-truth) into `references/auth.md`. Bullets already present in the SDE core (problem+json example with `req_8f3a2c`) are the duplicates you may drop — name each dropped line in the commit.
-- [ ] **Step 6a: One boundary line into `references/persistence.md`** (Task 24's description states the other half): append — "Operating the database under load or in an incident — slow queries, lock contention, replication lag — is `sre-agents:database-reliability`; this file is for *writing* the data layer."
-- [ ] **Step 6: Absorb ops-stack-integration into `references/consuming-apis.md`.** Verbatim-move its sections `## Every external call`, `## Auth & secrets (on PCF)`, `## Per-integration notes (cite current product names)`, `## Make writes safe`, `## Observe your own tool` beneath the SDE content; dedupe overlapping bullets (timeouts/retries exist in both — keep the SDE phrasing, fold the old file's specifics: 429+Retry-After platform-paging warning, CAPI V3 `pagination.next.href`, VCAP_SERVICES/UAA token refresh, TTL-cached app GUIDs). Rename map applies (`craft (Python)` stays, `tool-design`→`agent-authoring`'s tool-design reference, `production-change-gate` stays).
-- [ ] **Step 7: Run the full SPC** (before-files: all three sources; expected `comm` leakage: frontmatter, titles, rewritten pointer rows, dropped-duplicate bullets named in the commit). Expect `OK` from SPC-2 and `links OK` from SPC-3.
+- [ ] **Step 5: Absorb api-design.** Copy `assets/openapi.starter.yaml` verbatim. Move api-design's non-duplicative serving rules into the SDE core's `## Contract first` (append verbatim bullets: the resource-modeling bullets, the full status-code discipline (400 vs 422 vs 409, 401 vs 403, "Never `200` with an error in the body"), RFC 9457 problem+json specifics, the Collections section's cursor-pagination/filter-allowlist/envelope bullets, the rate-limit bullet, Idempotency-Key on unsafe retries, 202 + status resource for long-running ops, "A breaking change to a shipped contract is a principal-altitude change" retargeted at `eng-ladder`). Move its auth bullets (broken-object-level-authz callout, server-is-source-of-truth) into `references/auth.md`. **Cut (named in the commit):** api-design's `## Definition of done` and `## Handoffs` sections — the SDE core's Testing gate and the agents' handoff edges own those jobs now. Bullets already present in the SDE core (problem+json example with `req_8f3a2c`) are the duplicates you may drop — name each dropped line in the commit.
+- [ ] **Step 5b: One boundary line into `references/persistence.md`** (Task 24's description states the other half): append — "Operating the database under load or in an incident — slow queries, lock contention, replication lag — is `sre-agents:database-reliability`; this file is for *writing* the data layer."
+- [ ] **Step 6: Absorb ops-stack-integration into `references/consuming-apis.md`.** Verbatim-move its sections `## Every external call`, `## Auth & secrets (on PCF)`, `## Per-integration notes (cite current product names)`, `## Make writes safe`, `## Observe your own tool` beneath the SDE content; dedupe overlapping bullets (timeouts/retries exist in both — keep the SDE phrasing, fold the old file's specifics: 429+Retry-After platform-paging warning, CAPI V3 `pagination.next.href`, VCAP_SERVICES/UAA token refresh, TTL-cached app GUIDs). **Cut (named in the commit):** its `## Definition of done` and `## Handoffs` sections, same rationale as Step 5's cuts. Rename map applies (`craft (Python)` stays, `tool-design`→`agent-authoring`'s tool-design reference, `production-change-gate` stays).
+- [ ] **Step 7: Run the full SPC** (before-files: all three sources; expected `comm` leakage: frontmatter, titles, rewritten pointer rows, dropped-duplicate bullets named in the commit, and both sources' cut Definition-of-done/Handoffs sections). Expect `OK` from SPC-2 and `links OK` from SPC-3.
 - [ ] **Step 8: Commit**
 
 ```bash
@@ -964,7 +967,7 @@ storage, CSP from spa-architecture. stack.md gains the PCF serve story.
 - Consumes: `legacy/claude-fleet/skills/craft/**`, `legacy/claude-fleet/skills/{tdd-workflow,safe-refactor}/SKILL.md`.
 - Produces: `references/tdd.md`, `references/refactoring.md` — the targets of every "safe-refactor"/"tdd-workflow" rename-map rewrite in other tasks.
 
-- [ ] **Step 1: SPC-1 snapshot** (craft SKILL.md + 4 kept language refs + tdd-workflow + safe-refactor bodies).
+- [ ] **Step 1: SPC-1 snapshot** (craft SKILL.md + **all six** language refs — react/typescript included, so their deliberate non-port shows up as named leakage in Step 5 — + tdd-workflow + safe-refactor bodies).
 - [ ] **Step 2: Port** SKILL.md + python/bash/powershell/go references. Delete the react/typescript bullets from the SKILL.md language index — **both lines of each bullet** (L24–25 and L26–27). Normalize the four kept index rows' link text to plain words per SPC-2 (`[python](./references/python.md)` …). Fix `references/bash.md` L3: the parenthetical `` `references/python.md` `` becomes `[the Python file](./python.md)`.
 - [ ] **Step 3: Create the process references** — headers below, then the verbatim body of each old skill (minus frontmatter/title):
 
@@ -1052,12 +1055,13 @@ the diagnosis is wrong."
   - SKILL.md L21 ("references paraphrase; the full bar stays the agent file") → "each reference file IS the bar for its tier."
   - SKILL.md Mode 2 L29 (read `agents/<name>.md` / `${CLAUDE_PLUGIN_ROOT}/agents/…`) → "the bar for each tier is its reference file — read the relevant one before scoring."
   - SKILL.md L23's sre-tool/ladder-agent sentence → "The `ops-tooling` skill applies this routing inside its build pipeline."; L25's homelab routing → drop.
-  - builder.md L6–7, principal.md L6, distinguished.md L7 ("The full bar lives in `agents/….md`") → delete the deferral sentence in each; keep the rest.
-  - SKILL.md L21's three tier links keep their targets but their link text normalizes to plain words per SPC-2 (`[builder](./references/builder.md)` …). Plant this task's ASSIGNED canary in the rewritten Mode-2 sentence: "each reference file IS the bar for its tier."
+  - builder.md L6–8, principal.md L6–8, distinguished.md L7–9 (the full deferral sentences — each wraps across three lines, ending "…the agent file is right: fix this file.") → delete the deferral sentence in each; keep the rest.
+  - SKILL.md L21's three tier links keep their targets but their link text normalizes to plain words per SPC-2 (`[builder](./references/builder.md)` …). **The ASSIGNED canary lands via the L21 rewrite itself** — its new sentence reads "each reference file IS the bar for its tier" (the Mode-2/L29 rewrite above is a different sentence; don't put the canary there).
+  - The SDE ladder table's column headers name `sde-fullstack`/`principal-engineer`/`distinguished-architect` — Step 6's index rewrite replaces them with `builder`/`principal`/`distinguished` (tier names, not agent names) and **incorporates the Step-3 sentence rewrites** rather than overwriting them.
   - builder.md L42's escalation code-span `references/principal.md` → `[principal](./principal.md)`; principal.md L29's `references/builder.md` → `[builder](./builder.md)` (5d).
   - Namespaced spawn references (`sde-agents:sde-fullstack` etc.) → rename map (`sre-agents:sde`); "spawned-agent-never-self-promotes" rule stays.
 - [ ] **Step 4: Diff-fold the old sde-ladder tiers.** For each of senior/principal/distinguished vs builder/principal/distinguished: fold in bullets present ONLY in the old file (candidates the inventory flagged: Conventional Commits list, Rule of Three, "Make it work, make it right, make it fast", Hyrum's-Law phrasing differences, SemVer). Name every folded bullet in the commit.
-- [ ] **Step 5: Add the SRE track.** Verbatim-move `golden-signals.md`, `responder.md`, `investigator.md`, `elite.md` from `legacy/claude-fleet/skills/sre-ladder/references/` (rename map applies: `handoff-protocol` load-instruction in responder L29 → "package the handoff per your agent's packet format"; skill names → obs-skill names). Their existing `[golden-signals.md](golden-signals.md)` relative links already satisfy 5d — keep.
+- [ ] **Step 5: Add the SRE track.** Verbatim-move `golden-signals.md`, `responder.md`, `investigator.md`, `elite.md` from `legacy/claude-fleet/skills/sre-ladder/references/` (rename map applies: `handoff-protocol` load-instruction in responder L29 → "package the handoff per your agent's packet format"; skill names → obs-skill names). Their golden-signals links resolve correctly but use code-span link text (`` [`golden-signals.md`](golden-signals.md) ``) — normalize to `[golden signals](./golden-signals.md)` per SPC-2.
 - [ ] **Step 6: Rewrite SKILL.md** as the two-track index (SDE Mode 1/2/3 structure kept; the ladder table gains an SRE row). Description:
 
 ```yaml
@@ -1095,7 +1099,7 @@ sre-ladder. Old sde-ladder folded by diff; folded bullets named below.
 - Produces: nothing later tasks depend on by path.
 
 - [ ] **Step 1: SPC-1 snapshot** (sre-tool + ops-cli SKILL.md + cli_skeleton.py).
-- [ ] **Step 2: Body = sre-tool verbatim** (Phases 0–5: mission transaction, environment card, right-sizing via `eng-ladder`, review-seeding). Rename map: `sde-agents:sde-fullstack`→`sre-agents:sde`, `sde-agents:code-reviewer`→`sre-agents:reviewer`, `sde-agents:homelab-platform` in Phase 5 → "the human release owner (deploys are Tier 2–3; see `/sre-agents:pcf-deploy`)", `service-onboard`→`service-onboarding`, `runbook` stays.
+- [ ] **Step 2: Body = sre-tool verbatim** (Phases 0–5: mission transaction, environment card, right-sizing via `eng-ladder`, review-seeding). Rename map: `sde-agents:sde-fullstack`→`sre-agents:sde`, `sde-agents:code-reviewer`→`sre-agents:reviewer`, `sde-agents:homelab-platform` in Phase 5 → "the human release owner (deploys are Tier 2–3; see `/sre-agents:pcf-deploy`)", `service-onboard`→`service-onboarding`, `runbook` stays — **plus two rewrites the map can't express:** (a) Phase 1's "spawn `sde-agents:principal-engineer` / `distinguished-architect`" → "load `eng-ladder`'s principal/distinguished reference (or return the fork to the caller)" — those agents don't exist in this fleet; (b) Phase 2's parenthetical "(`sde-agents:sde-fullstack` preloads both craft skills … do not name a skill, hand them a path, or tell them to load anything)" → "(`sre-agents:sde` loads the craft skills by description — tell the builder which layer it is touching and let the skill fire; never hand it a SKILL.md path)" — the preload claim is false in this fleet by Task 3's design.
 - [ ] **Step 3: `references/cli-patterns.md`** — header below + the verbatim body of ops-cli's SKILL.md sections (Framework / Exit codes & streams / Safety / Config & secrets / UX / Testing / Definition of done):
 
 ```markdown
@@ -1172,9 +1176,8 @@ bodies now."
 - [ ] **Step 1: SPC-1 snapshot**; port all four files from `legacy/claude-fleet/skills/pcf-ops/`.
 - [ ] **Step 2: Pointer rewrite (5d):** SKILL.md **L20**'s `` `scripts/triage.sh` / `triage.ps1` `` → `[triage.sh](./scripts/triage.sh) / [triage.ps1](./scripts/triage.ps1)` (the FOR-HUMANS-ONLY framing stays); L29's foundations link already Markdown — keep.
 - [ ] **Step 3: De-transcribe the guard — FOUR sites, not one** (the old skill describes the deleted Claude Code denylist; ported verbatim it becomes false doctrine and violates the no-transcription constraint):
-  1. **L21–25 blockquote** ("Read-only agents are behind a `PreToolUse` guard that denies executing any local script… path-based exemption…") → "The command guard denies agents local-script execution; the scripts are for humans. (A path-based exemption was removed on principle: pinning a path does not pin the content.)"
-  2. **L157–158** (the old agents' WebSearch/egress census) → "an agent holding these reads plus any egress channel carries the lethal trifecta" — no agent names, no tool census.
-  3. **L159** (`scripts/readonly-guard.py` now **denies all three**) → "the command guard denies all three reads to guarded agents." — no file name.
+  1. **L21–26 blockquote** (whole sentences — L26 carries the wrapped tail "…commands.") ("Read-only agents are behind a `PreToolUse` guard that denies executing any local script… path-based exemption…") → "The command guard denies agents local-script execution; the scripts are for humans. (A path-based exemption was removed on principle: pinning a path does not pin the content.)"
+  2. **L156–159** (sentence boundaries — L156 opens "These are *reads*, so they used to pass the read-only guard…", itself guard-behavior prose; the passage runs through the L159 guard-file sentence) → "These are reads that leak credentials, and an agent holding them plus any egress channel carries the lethal trifecta — the command guard denies all three to guarded agents." — no agent names, no tool census, no file name.
   4. **L185** ("the `readonly-guard` blocks it for read-only") → "the command guard blocks it for guarded agents."
 - [ ] **Step 4: Rename map** in SKILL.md AND in the triage scripts' "Next steps" epilogues — `triage.sh` names `splunk-triage`, `wavefront-queries`, `rollback-mitigation`, `production-change-gate` → `obs-logs`, `obs-metrics`, `incident-command`, `production-change-gate`; `triage.ps1`'s epilogue has no `rollback-mitigation` mention (verified) — rename only what is there.
 - [ ] **Step 5: Description** (trim the old one to trigger form):
@@ -1226,8 +1229,8 @@ cf map-route checkout-green apps.example.com --hostname checkout-test
 # 3. cut over: map prod onto green, then unmap the old live app
 cf map-route   checkout-green apps.example.com --hostname checkout
 cf unmap-route checkout       apps.example.com --hostname checkout
-# 4. SOAK. Rollback during the soak is instant and real: re-map the prod route to `checkout`
-#    (still running, droplet warm) and unmap green.
+# 4. SOAK. Rollback during the soak is fast and rehearsed — a routes-layer flip: re-map the
+#    prod route to `checkout` (still running, droplet warm) and unmap green.
 # 5. only after the soak, rotate names so the next cycle starts identical:
 cf unmap-route checkout-green apps.example.com --hostname checkout-test
 cf delete checkout -f
@@ -1312,9 +1315,11 @@ platform-deprecation notices.
 ## Output
 
 [P0]–[P3] findings, each with the evidence (command + output) and the one-line fix.
-P0 = exposed without auth, or stateful and unbacked-up. End with the top three things to fix
-this sprint — not a list of thirty.
+P0 = exposed without auth, or stateful and unbacked-up.
+End with the top three things to fix this sprint — not a list of thirty.
 ```
+
+(The last sentence must keep that exact line-wrap: "top three things to fix this sprint" is this skill's registered canary and must sit on one line.)
 
 The two evidence rules and the P0 definition are verbatim moves from `lab-audit` L7/L24; the skip-rule from `service-onboard` L8; the backup line from `lab-audit` L16. Cross-skill links: the step-3 pointer is a real relative link (5d applies across skills too — but note it resolves only inside the installed plugin; if the Task 35 validator rejects cross-skill relative links, change to the plain skill name `obs-pipeline` and record that in the spec).
 - [ ] **Step 3: SPC** (expected leakage: everything home-lab-specific from both sources — Jellyfin/container/compose nouns — named as the deliberate work-reshape). **Commit:**
@@ -1338,7 +1343,7 @@ the LGTM path. disable-model-invocation kept: human-invoked, like pcf-deploy."
 
 - [ ] **Step 1: SPC-1 snapshot** (legacy incident-severity + rollback-mitigation SKILL.md).
 - [ ] **Step 2: Body =** incident-severity verbatim (severity rubric, classify, command roles, status block, comms cadence + templates, downgrade & resolve), then TWO moved sections from rollback-mitigation, inserted after `## Running the incident (command)`:
-  - `## Mitigation (fastest-safe-first)` — the 8-row decision table (L17–26) verbatim, including "blue/green are *roles*, not fixed names" (which now matches Task 17's fixed playbook).
+  - `## Mitigation (fastest-safe-first)` — the 8-row decision table (L17–26) verbatim, **with one edit riding the move:** the parenthetical "colors alternate each deploy" (L19) contradicts Task 17's fixed scheme (the live app is always `checkout`; nothing alternates) — rewrite that clause to "the previous live app keeps running under the stable name until the post-soak rotation; confirm which is live with `cf apps` first". "Blue/green are *roles*, not fixed names" stays — it is exactly the fixed playbook's point.
   - Its `## Rules` (L29–37) verbatim ("Reversible first", "One change at a time", "Restart is a stopgap, not a fix", "Record everything (UTC)", "Confirm before executing").
 - [ ] **Step 3: Rename map** (roles line "Investigation=sre-engineer, Ops=human release owner"→`sre-agents:sre`; `sre-ladder`→`eng-ladder`; `sre-monitor`→`sre-agents:observer`; `blameless-postmortem`→`postmortem`; `runbook-author`→`sre-agents:scribe`; `pcf-ops` stays). Description:
 
@@ -1352,7 +1357,7 @@ description: >-
   agent; the writeup afterwards is sre-agents:postmortem.
 ```
 
-- [ ] **Step 4: SPC + commit** (`"skills: incident-command -- severity+command absorbs the mitigation decision table"`; note in body: rollback-mitigation's table arrives verbatim, and 'blue/green are roles, not fixed names' now agrees with pcf-deploy's rotated scheme).
+- [ ] **Step 4: SPC + commit** (`"skills: incident-command -- severity+command absorbs the mitigation decision table"`; note in body: the table arrives verbatim except the one named clause edit — 'colors alternate' was the old fixed-name scheme's assumption and died with it in Task 17).
 
 ---
 
@@ -1388,7 +1393,7 @@ description: >-
 | Reviewer's independent-P0/P1 count = 0 on a non-trivial diff | Treat the review as unexercised — ask for a second pass before trusting PASS |
 ```
 
-  - Rename map: agent names → new roster; `tdd-workflow`→craft's TDD reference; `safe-refactor`→craft's refactoring reference; `api-design`/`spa-architecture`→layer crafts; `runbook-author`→`sre-agents:scribe`.
+  - Rename map: agent names → new roster; `tdd-workflow`→craft's TDD reference; `safe-refactor`→craft's refactoring reference; `api-design`/`spa-architecture`→layer crafts; `runbook-author`→`sre-agents:scribe`; the 0971a4d insertion's `` (`handoff-protocol`) `` parenthetical → drop it (that doctrine now lives in the reviewer's Change:/Inputs: fields, Task 2 row 7); and the two surviving `Critical/High` severity mentions (legacy L35 and L61, plus the same words inside the 0971a4d Reviewed-item text) → `P0/P1` — the new reviewer never emits Critical/High, and the added rubric already speaks P0–P3.
 - [ ] **Step 3: release-gate:** port verbatim + rename map (`rollback-mitigation`→`incident-command`, `sre-monitor`→`sre-agents:observer`, `github-actions-ci`→`ci-actions`). Keep the gate-topology notes (absorbs merge-gate as precondition; prod pointer to production-change-gate).
 - [ ] **Step 4:** Descriptions — front-load triggers, keep the old boundary sentences (they eval'd well separated):
 
@@ -1469,7 +1474,7 @@ description: >-
 **Files:**
 - Create: `skills/database-reliability/SKILL.md`
 
-- [ ] **Step 1:** SPC-1 snapshot; port verbatim (114 lines: expand→contract migrations, the EXPLAIN-executes warning box with the Oracle licensing note, saturation triage, durability, least privilege). Rename map (`safe-refactor`→craft's refactoring reference, `sde-ladder` principal→`eng-ladder` principal, `pcf-ops` stays, `craft (Python)` stays).
+- [ ] **Step 1:** SPC-1 snapshot; port verbatim (113 lines: expand→contract migrations, the EXPLAIN-executes warning box with the Oracle licensing note, saturation triage, durability, least privilege). Rename map (`safe-refactor`→craft's refactoring reference, `sde-ladder` principal→`eng-ladder` principal, `pcf-ops` stays, `craft (Python)` stays).
 - [ ] **Step 2:** Add the boundary sentence to the body's opening and the description: operating vs writing. Description:
 
 ```yaml
@@ -1482,7 +1487,7 @@ description: >-
   persistence reference.
 ```
 
-- [ ] **Step 3:** SPC + commit (`"skills: database-reliability -- ported verbatim; operate-vs-write boundary pinned in both descriptions"` — the other half is the boundary line Task 9 Step 6a appended to `persistence.md`).
+- [ ] **Step 3:** SPC + commit (`"skills: database-reliability -- ported verbatim; operate-vs-write boundary pinned in both descriptions"` — the other half is the boundary line Task 9 Step 5b appended to `persistence.md`).
 
 ---
 
@@ -1494,13 +1499,13 @@ description: >-
 **Interfaces:**
 - Consumes: legacy `agent-authoring/**` (base — its description is the one measured 3/3 pattern), legacy `tool-design/SKILL.md`, legacy `context-engineering/SKILL.md`, legacy `route-request/references/fan-out.md`, SDE `prompt-craft/SKILL.md`, SDE `agents/prompt-engineer.md` (method), SDE `agents/multi-agent-architect.md` L14–15.
 
-- [ ] **Step 1:** SPC-1 snapshot of all six sources.
+- [ ] **Step 1:** SPC-1 snapshot of all seven sources named in Interfaces.
 - [ ] **Step 2: Base port.** Copy legacy `agent-authoring` (SKILL.md + artifact.md + roster.md) — links already Markdown, but normalize their code-span link text to plain words per SPC-2. Keep the description's shape and trigger list **verbatim** (it baselines 3/3), updating only the tail: `For tools an agent calls use the [tool-design reference]; for injection surfaces use sre-agents:agent-security.` and appending: `Personal-first: build in ~/.copilot/{agents,skills}; promote to the fleet by PR when a second person wants it.`
 - [ ] **Step 3: Fold the SDE method into `references/artifact.md`:** from `prompt-engineer.md` — the 6-step eval-first loop (L13–21) and the form-to-failure additions not already in artifact.md's tables; from `prompt-craft` — "Prohibitions backfire on shaping problems; recipes leave nothing to negotiate" (L29). artifact.md's "In this fleet" section: rewrite to name validator v2 + the routing evals (Task 39) instead of the old file names.
 - [ ] **Step 4: Fold into `references/roster.md`:** fan-out.md's content not already present — the right-sizing band (1 agent lookup / 2–4 comparison / more only for decomposable work), "never fan out coding", "token usage explains ~80% of the variance", the sourced ~15×/~4× cost lines (roster.md already carries the 15× figure — dedupe, keep one). Plus multi-agent-architect's "A single agent with good tools beats a committee."
 - [ ] **Step 5: `references/tool-design.md` + `references/context-engineering.md`:** verbatim moves of the two legacy SKILL.md bodies (minus frontmatter), each with a two-line header naming its trip condition ("Read this when exposing a capability as a tool an agent calls…" / "Read this when an agent's context is filling up…"). Stack-coupled "In this fleet" lines: rename map.
 - [ ] **Step 6: `references/runtime-fields.md`** (replaces prompt-craft's hardcoded Claude-plugin table): the frontmatter quick-reference for BOTH runtimes — VS Code agent files (`tools`/`model` arrays/`agents`/`handoffs`, as pinned by Task 2 Step 1) and Claude-format skills (`disable-model-invocation`, description limits). Source every field from the docs pinned in Task 2 Step 1 + the validator v2 field lists (Task 35); no field is asserted from memory.
-- [ ] **Step 7:** SKILL.md routing lines for all five references as 5d links. SPC + commit (`"skills: agent-authoring -- measured description kept; absorbs tool-design, context-engineering, fan-out cost model, SDE eval-first method"`).
+- [ ] **Step 7:** SKILL.md routing lines for all five references as 5d links. SPC — expected leakage beyond the usual: the **unfolded remainders of the four mined-selectively sources are deliberate cuts** (prompt-craft's method steps that duplicate artifact.md, prompt-engineer.md's Voice/Change-packet/Claude-Code-specifics sections, multi-agent-architect's pattern catalog and packet (roster.md already carries the patterns), fan-out.md's worked-example diagram) — list the cut section headings in the commit. Commit (`"skills: agent-authoring -- measured description kept; absorbs tool-design, context-engineering, fan-out cost model, SDE eval-first method"`).
 
 ---
 
@@ -1552,7 +1557,7 @@ description: >-
 **Files:**
 - Create: `commands/adr.md`
 
-- [ ] **Step 1:** Write the prompt file. **Recorded ledger deviation:** both ledgers say "template asset kept"; prompt files cannot bundle assets, so the template body is inlined instead — the skeleton below embeds `assets/adr-template.md` **verbatim** (its four sections and its append-only HTML comment are the legacy asset's text, unchanged); add this one-line amendment to the spec in Step 2's edit:
+- [ ] **Step 1:** Write the prompt file. **Recorded ledger deviation:** both ledgers say "template asset kept"; prompt files cannot bundle assets, so the template body is inlined instead — the block between the `3.` and `4.` steps below IS `assets/adr-template.md`, embedded verbatim (including its `ADR <NNN>` spelling and append-only comment); add this one-line amendment to the spec in Step 2's edit:
 
 ```markdown
 ---
@@ -1563,24 +1568,27 @@ Create an ADR in this repository. Steps:
 
 1. Find the next number: list `docs/adr/` (create it if absent); NNNN = highest + 1, zero-padded.
 2. Ask for the decision title if not given: $ARGUMENTS.
-3. Write `docs/adr/NNNN-<kebab-slug>.md` exactly in this shape:
+3. Write `docs/adr/NNNN-<kebab-slug>.md` exactly in this shape (the template below, placeholders
+   filled; a new ADR's Status is `proposed` with today's date):
 
-# ADR NNNN: <short decision title>
+# ADR <NNN>: <short decision title>
 
 ## Status
-Proposed <today's date>
+<proposed | accepted | rejected | deprecated | superseded by ADR-NNN>   (<YYYY-MM-DD>)
 
 ## Context
-<the forces: what problem, what constraints, what alternatives were on the table>
+<The issue motivating this decision. The forces at play: technical constraints, requirements, business
+drivers, and the options on the table. State facts, not opinions.>
 
 ## Decision
-<what we will do, stated actively: "We will …">
+<The change we are making, written as "We will …". Be specific.>
 
 ## Consequences
-<what becomes easier, what becomes harder, what we accept>
+<What becomes easier or harder as a result — positive, negative, and neutral. New risks, follow-up work,
+and what this commits us to. What we'd watch to learn this decision was wrong.>
 
-<!-- ADRs are append-only and immutable once accepted. To change a decision, write a new ADR
-and mark this one "superseded by ADR-NNNN". -->
+<!-- ADRs are append-only and immutable once accepted. To change a decision, write a new ADR and mark
+     this one "superseded by ADR-NNN". -->
 
 4. Do not edit previously accepted ADRs — supersede them.
 ```
@@ -1600,16 +1608,16 @@ and mark this one "superseded by ADR-NNNN". -->
 - Create: `skills/obs-logs/SKILL.md`, `references/{spl,logql,splunk-inventory}.md`
 
 - [ ] **Step 1:** SPC-1 snapshot of `legacy/claude-fleet/skills/splunk-triage/**`.
-- [ ] **Step 2: Body** — sections, each 2–4 lines of shape prose (generalized from splunk-triage's like-named sections; the SPL itself moves to the reference): `## Start narrow` (time-box + service first; widen deliberately) · `## Read it over time` (is it a spike; when did it start) · `## Top offenders` (group by the failing dimension) · `## Spike vs baseline` (bucket FIRST, then filter inside the aggregation — a baseline built only from error-containing buckets under-fires; that ordering bug is audit §2.3 and it is dialect-independent) · `## Correlate one request` (trace/correlation id across services) · `## Before vs after a deploy` · `## Extract fields ad hoc`. Dialect table + boundary lines (`obs-metrics`, `obs-alerting`).
-- [ ] **Step 3: `references/spl.md`** — the old SKILL.md body verbatim (all queries, the `#`-is-not-a-comment warning, tips), **with fix §2.3**: replace the raw-count block (old L83–93) with the audit's corrected form, and delete the now-unneeded `| sort 0 _time` line (timechart emits complete, ordered buckets — say so where the three-traps prose referenced it):
+- [ ] **Step 2: Body** — sections, each 2–4 lines of shape prose (generalized from splunk-triage's like-named sections; the SPL itself moves to the reference): `## Start narrow` (time-box + service first; widen deliberately) · `## Read it over time` (is it a spike; when did it start) · `## Top offenders` (group by the failing dimension) · `## Spike vs baseline` — must contain, verbatim (registered canary): **"bucket FIRST, then filter inside the aggregation"** — a baseline built only from error-containing buckets under-fires; that ordering bug is audit §2.3 and it is dialect-independent · `## Correlate one request` (trace/correlation id across services) · `## Before vs after a deploy` · `## Extract fields ad hoc`. Dialect table + boundary lines (`obs-metrics`, `obs-alerting`).
+- [ ] **Step 3: `references/spl.md`** — the old SKILL.md body verbatim (all queries, the `#`-is-not-a-comment warning, tips), **with fix §2.3**, stated precisely: **keep L84's base search** (`index=<app_index> earliest=-24h`) and **replace the pipeline tail L85–92** (the where/bin/stats/sort/streamstats/where chain — the `| sort 0 _time` line dies inside this replacement; timechart emits complete, ordered buckets, so adjust the three-traps prose that referenced sorting) with the audit's corrected form, re-attaching the trailing-window comment to the streamstats line:
 
 ```spl
 | timechart span=5m count(eval(status>=500)) AS errors
-| streamstats window=12 current=f avg(errors) AS baseline stdev(errors) AS sd
+| streamstats window=12 current=f avg(errors) AS baseline stdev(errors) AS sd   ```trailing 1h, EXCLUDING this bucket```
 | where isnotnull(baseline) AND sd>0 AND errors > baseline + 3*sd
 ```
 
-The "trailing 1h" comment is now TRUE (12 rows × 5m exist for every bucket) — keep it. The normalized-rate variant (old L97–104) already bins before filtering — port unchanged.
+The comment is now TRUE (12 rows × 5m exist for every bucket, empty ones included). The normalized-rate variant (old L97–104) already bins before filtering — port unchanged.
 - [ ] **Step 4: `references/logql.md`** — NEW, verified against `grafana.com/docs/loki/latest/query/` before writing. Required sections: stream selectors + line filters · `rate()`/`count_over_time` for the spike question · parsing (`json`/`logfmt`) + correlation by trace/request id · label discipline (canary sentence, include verbatim: **"A label with unbounded values is a cardinality bomb, not a filter."**) · the before/after-deploy comparison. Every query form `[sourced: <doc url>]`.
 - [ ] **Step 5:** `references/splunk-inventory.md` = old `references/indexes.md` verbatim. Two pointer rewrites ride the move (consumed sites, exact): the old SKILL.md L15 link `[references/indexes.md](references/indexes.md)` — now inside `references/spl.md` — becomes `[splunk-inventory](./splunk-inventory.md)`; the L156 bare `` `references/` `` mention becomes prose naming the same link. Description:
 
@@ -1629,7 +1637,7 @@ description: >-
 - Create: `skills/obs-metrics/SKILL.md`, `references/{wql,promql,wavefront-inventory}.md`
 
 - [ ] **Step 1:** SPC-1 snapshot of `legacy/claude-fleet/skills/wavefront-queries/**`.
-- [ ] **Step 2: Body** — shape sections generalized from wavefront-queries: `## Percentile latency` (pre-aggregated percentiles cannot be re-averaged — the average of p95s is not a p95) · `## Error ratio` (the SLI you usually want; depends on counter type) · `## Rates and deltas` · `## Smooth for alerting` · `## Saturation` · `## Missing data` (a missing-data alert that keys on the absent series silently self-resolves — dialect-independent trap). Dialect table + boundaries.
+- [ ] **Step 2: Body** — shape sections generalized from wavefront-queries: `## Percentile latency` — must contain, verbatim (registered canary; the source line moves to wql.md, so the body plants its own copy): **"the average of p95s is not a p95"** · `## Error ratio` (the SLI you usually want; depends on counter type) · `## Rates and deltas` · `## Smooth for alerting` · `## Saturation` · `## Missing data` (a missing-data alert that keys on the absent series silently self-resolves — dialect-independent trap). Dialect table + boundaries.
 - [ ] **Step 3: `references/wql.md`** — old body verbatim **with fix §2.2**: delete the `by`-form bullet and its parentheses caveat (old L24–27) entirely; replace with:
 
 ```markdown
@@ -1659,7 +1667,7 @@ description: >-
 **Files:**
 - Create: `skills/obs-traces/SKILL.md`, `references/{traceql,otel-trace-semantics}.md`
 
-- [ ] **Step 1: Body** — NEW throughout (the old fleet had no tracing skill): `## When a trace is the tool` ("follow one request" — latency localization, error attribution across hops; logs say THAT, traces say WHERE) · `## The span model` (trace/span, parent/child, attributes, span status & kind — concepts only) · `## Investigation shape` (find an exemplar trace from a log line's trace id or a metric exemplar → read the critical path → compare a good trace against a bad one → attribute the gap to a span) · `## Pick your dialect` table · boundaries (`obs-pipeline` owns getting traces to exist; `obs-logs` for the id-correlation entry point).
+- [ ] **Step 1: Body** — NEW throughout (the old fleet had no tracing skill): `## When a trace is the tool` ("follow one request" — latency localization, error attribution across hops; logs say THAT, traces say WHERE) · `## The span model` (trace/span, parent/child, attributes, span status & kind — concepts only) · `## Investigation shape` — must contain, verbatim (registered canary): **"read the critical path"** (find an exemplar trace from a log line's trace id or a metric exemplar → read the critical path → compare a good trace against a bad one → attribute the gap to a span) · `## Pick your dialect` table · boundaries (`obs-pipeline` owns getting traces to exist; `obs-logs` for the id-correlation entry point).
 - [ ] **Step 2: `references/traceql.md`** — NEW, verified against `grafana.com/docs/tempo/latest/traceql/`: span selection `{ }`, attribute/intrinsic matching, duration filters, structural operators (descendant/sibling), aggregates. Canary, verbatim: **"Select on span attributes, filter on trace structure."** `[sourced]` per form.
 - [ ] **Step 3: `references/otel-trace-semantics.md`** — NEW, verified against `opentelemetry.io/docs/specs/semconv/`: span naming, required HTTP/DB attributes, `deployment.environment.name` (renamed in semconv v1.27.0 — this fleet already learned that the hard way), resource vs span attributes. `[sourced]` per claim.
 - [ ] **Step 4:** Description:
@@ -1762,7 +1770,7 @@ burn.add_argument("--windows", choices=sorted(_WINDOW_PAIRS), default="1h/5m",
                   help="window pair; selects the burn threshold it is bound to")
 ```
 
-    and rework the severity ladder to use the selected pair's threshold (the multi-window rule itself — both windows must exceed — stays). An unknown pair is now unrepresentable rather than silently mis-thresholded.
+    and rework the severity ladder to use the selected pair's threshold (the multi-window rule itself — both windows must exceed — stays). An unknown pair is now unrepresentable rather than silently mis-thresholded. **Four print sites outside the ladder also interpolate the old args** (`args.long_window`/`args.short_window` at L158, L163, L168, L185) — derive `long_label, short_label = args.windows.split("/")` once and update all four, or the mandated repro re-run dies with `AttributeError` before it reaches the ladder.
   - **Prove the fix:** re-run the repro command — the output must now carry `NOT proof of health` (and no `within budget` line); then run the happy path (`--slo 99.9 --sli-long 99.99 --sli-short 99.99` → `within budget (both windows < 1x)`). Paste both outputs into the commit.
 - [ ] **Step 5: `references/grafana-alerting.md`** — NEW + moved: Grafana unified alerting verified against `grafana.com/docs/grafana/latest/alerting/` (alert rules, contact points, notification policies, as-code provisioning) + the moved old grafana-dashboards L39–46 content (`runbook_url` annotation, route-to-Moogsoft). Canary, verbatim: **"A notification policy nobody tested is a page nobody gets."**
 - [ ] **Step 6: `references/moogsoft.md`** = moogsoft-correlation SKILL.md verbatim (pipeline, storm method, the four-part cause bar, tuning); `references/moogsoft-inventory.md` = its integrations.md — the old L69 bare code-span `` `references/integrations.md` `` becomes `[moogsoft-inventory](./moogsoft-inventory.md)`. `references/thousandeyes.md` = thousandeyes-network SKILL.md verbatim (incl. `## A path difference is not a cause` — its explicit cross-ref to the Moogsoft cause bar becomes a 5d link `[the cause bar](./moogsoft.md)`); `references/thousandeyes-inventory.md` = its tests.md — the old L48 bare code-span `` `references/tests.md` `` becomes `[thousandeyes-inventory](./thousandeyes-inventory.md)`.
@@ -1855,7 +1863,7 @@ Expected: no `OVER` lines. Trim any offender (trim boundary prose, never the ver
 
 Run: `py -3 -m unittest discover -s tests -v` → **all fixture tests FAIL** (the validator doesn't exist yet in v2 form). Commit the red state (`"validator v2 tests: eleven broken-fleet fixtures, all red"`).
 - [ ] **Step 2: Rewrite `scripts/validate_fleet.py`** (pure stdlib; adapt the SDE v1 as the base — its frontmatter parser, kebab-case/name-vs-filename, description-length, `BUNDLE_REF_RE` existence + orphan checks import directly). New/changed rules, all told by the fixtures: the three 5d link rules (2–4 above); `.agent.md` handling (name = stem minus `.agent`); `KNOWN_AGENT_FIELDS = {name, description, tools, model, agents, handoffs}` + whatever Task 2 Step 1 pinned; tool aliases validated against the pinned set (schema error) AND against each agent's spec-table scope (policy error — two distinct messages, imported discipline); the delegation-graph table as data (edges exactly: sre→{observer,scribe}, sde→{reviewer}, observer→{scribe}, reviewer/scribe→{}; handoffs exactly per spec Section 3); canonical `EVIDENCE_LABEL_STEMS` (`[verified]`/`[sourced]`/`[unverified]`); packet-heading requirement for `sde`, `sre`, `observer`; description ≤1024 chars and ≤150-token estimate; verbatim-trigger lint (each model-invocable skill description contains ≥1 `"quoted phrasing"`); cross-component bare-name lint (needs `sre-agents:` namespace); plugin wiring (`.claude-plugin/plugin.json` integrity; **error if a root `plugin.json` exists**; marketplace source must be the `github`+`ref` form — policy; once Task 37 lands: `hooks/hooks.json` must resolve the guard through `${CLAUDE_PLUGIN_ROOT}` and the guard file must exist — and **no definition anywhere may resolve a fleet file outside the plugin root**, e.g. via `~/.claude/` or a workspace-relative script path); `--write-inventory` regenerating the README fleet table between markers; the `5 agents` / `26 skills` literal-count check in README.
-- [ ] **Step 3:** `py -3 -m unittest discover -s tests -v` → all green; `py -3 scripts/validate_fleet.py` against the real fleet → exit 0 (fix any real findings it surfaces — that is the point of building it now). Note: the old `scripts/test_validate_fleet.py` is superseded; it is deleted in Task 40, not here.
+- [ ] **Step 3:** `py -3 -m unittest discover -s tests -v` → all green. Then **seed the old README before the real-fleet run**: the current README has no inventory markers and no `5 agents`/`26 skills` counts (Task 44 rewrites it properly, nine tasks from now) — insert the two marker comments + a counts line so `--write-inventory` has something to regenerate between, and note the seed in the commit. Now `py -3 scripts/validate_fleet.py` against the real fleet → exit 0 (fix any real findings it surfaces — that is the point of building it now). Note: the old `scripts/test_validate_fleet.py` is superseded; it is deleted in Task 40, not here.
 - [ ] **Step 4:** Commit (`"validator v2: 5d link syntax is an error, delegation graph is data, doctrine is machine-checked -- fixtures first, watched red"`).
 
 ---
@@ -1923,7 +1931,7 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 | runbook | `marked "n/a — why"` |
 | pcf-ops | `not a 5xx at all` |
 | pcf-deploy | `right up until the rollback that doesn't work` |
-| service-onboarding | `top three things to fix this sprint` |
+| service-onboarding | `top three things to fix this sprint` (ASSIGNED — Task 18 authors it; source said "this weekend") |
 | incident-command | `nobody is commanding` |
 | postmortem | `Luck is a preventative action item waiting to be written` |
 | merge-gate | `effective review chunk` |
@@ -1932,10 +1940,10 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 | ci-actions | `pwn request` |
 | database-reliability | `is not always a READ` (the backup line is wrapped across two lines — not greppable) |
 | agent-authoring | `edit it like code` |
-| agent-security | `Read the census from the structure` |
-| obs-logs | `bucket FIRST, then filter inside the aggregation` |
-| obs-metrics | `the average of p95s is not a p95` |
-| obs-traces | `read the critical path` |
+| agent-security | `Read the census from the structure` (ASSIGNED — Task 26's replacement section heading) |
+| obs-logs | `bucket FIRST, then filter inside the aggregation` (ASSIGNED — Task 28 plants it) |
+| obs-metrics | `the average of p95s is not a p95` (ASSIGNED — Task 29 plants it in the body; the source line moves to wql.md) |
+| obs-traces | `read the critical path` (ASSIGNED — Task 30 plants it) |
 | obs-dashboards | `ThousandEyes has no Grafana data-source plugin` |
 | obs-alerting | `half an alert` (ASSIGNED — Task 32's body carries "A page that doesn't link a runbook is half an alert.") |
 | obs-pipeline | `melts the metrics backend` |
@@ -1954,10 +1962,10 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 ### Task 39: Routing evals — clusters with cross-cluster negatives
 
 **Files:**
-- Create: `evals/routing/<cluster>.json` (five files), rewrite `evals/discovery/` + `evals/scenarios/` cases, modify `evals/graders.py`, `evals/run_evals.py`, `evals/README.md`
+- Create: `evals/routing/<cluster>.json` (five files), retarget `evals/scenarios/` cases (the discovery corpus is Task 38's), modify `evals/graders.py`, `evals/run_evals.py`, `evals/README.md`
 - Port: `scripts/eval_routing.py` (from sde-agents) wrapped in `clean_room.clean_env()`
 
-- [ ] **Step 0: Record the OLD fleet's clean-room baseline first** — Section 8's routing-precision bar compares against it, and no committed artifact exists (the only prior number is marked `[unverified]` in evals/README.md). From a temp worktree at the pin: `git worktree add ../old-fleet 36812ed`, run the old rig's discovery probe through the clean room ×3 against the old fleet, and commit the rates as `evals/baselines/old-fleet-36812ed.json`. Task 45 compares new positives ≥ these rates per unit **via the rename map** (units with no old counterpart — the six obs bodies, stack-profile — compare against the 0.5 threshold instead; say so in the file). Remove the worktree after.
+- [ ] **Step 0: Record the OLD fleet's clean-room baseline first** — Section 8's routing-precision bar compares against it, and no committed artifact exists (the only prior number is marked `[unverified]` in evals/README.md). From a temp worktree at the pin: `git worktree add ../old-fleet 36812ed`, run the old rig's discovery probe through the clean room ×3 against the old fleet, and commit the rates as `evals/baselines/old-fleet-36812ed.json`. Task 45 compares new positives ≥ these rates per unit **via the rename map** — except the six obs bodies and stack-profile, which compare against the 0.5 threshold instead: each obs skill is a multi-source merge with a NEW body, so a single old product-skill's rate is not its baseline even though the rename map nominally links them; say so in the file. Remove the worktree after.
 - [ ] **Step 1: Port `eval_routing.py`** (cluster JSON format; deterministic grading off `Skill`/`Agent`/`Task` tool_use events; rates over runs, positives threshold 0.5, negatives fail on ANY fire) and wire it through `evals/clean_room.py` (which survives unchanged — it is what makes any number trustworthy).
 - [ ] **Step 2: Author five clusters**, members + 4–6 positives each; **negatives are cross-cluster positives** (one cluster's near-miss routes to another's member, so one case set nets the whole fleet):
   1. `obs.json` — members: the six obs skills; positives per skill from its trigger phrasings; negatives borrowed from craft (e.g. "chart this in the app UI" must NOT fire obs-dashboards — it is frontend-craft's data-viz row) and incident (live-incident prompt must fire incident-command, not obs-alerting).
@@ -1984,7 +1992,7 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
   3. `${{ matrix.py }} -m unittest discover -s tests -v` (validator fixtures + hook wiring + canary tripwires)
   4. `${{ matrix.py }} scripts/test_copilot_guard.py`
   5. `pip install -r requirements-dev.txt`
-  6. `${{ matrix.py }} -m unittest evals.test_graders evals.test_clean_room`
+  6. `${{ matrix.py }} evals/test_graders.py` and `${{ matrix.py }} evals/test_clean_room.py` — script form, as v1 ran them (`-m unittest` collects zero tests from these script-style files and exits 5)
   7. `${{ matrix.py }} evals/run_evals.py --validate`
   Routing evals are **not** a CI step — by doctrine.
 - [ ] **Step 2: The deletions.** The denylist guard lost (20+ fix commits, a live `-m pip` bypass at the end); its launcher/fail-closed *lessons* live on in Task 37's tests. `ralph-loop.sh`'s owner skill is deleted; nothing drives it. All recoverable from git.
@@ -2000,7 +2008,7 @@ The guard's I/O layer depends on facts the docs under-specify (spec Risk 4). Pro
 - Create: `docs/probes/2026-XX-XX-org-gates.md`
 
 - [ ] **Step 1:** On a team engineer's VS Code (not only the owner's): (1) is `chat.plugins.enabled` flippable, or org-policy-blocked? (2) does the Copilot org policy "Editor preview features" gate agent plugins independently? (record what the admin console actually shows — the spec marks this `[unverified]`); (3) are the Section-3 models actually selectable in the picker under the team's license tier (record the tier)? Plus the two parked platform questions: (4) does a **Grafana MCP server** exist and fit the LGTM-exploration role (spec Section 2's "verify during implementation") — if yes, wiring `.mcp.json` is a follow-up PR, not this task; (5) does VS Code ship a **plugin-validate equivalent** (spec Section 6's open question), or do the probes carry the platform-contract layer alone?
-- [ ] **Step 2:** Record all three answers + screenshots in the probe doc. **Decision line at the bottom: channel = plugin | fallback.** Whatever the answers, the fleet built above ships — that is why these checks waited until now.
+- [ ] **Step 2:** Record all five answers + screenshots in the probe doc. **Decision line at the bottom: channel = plugin | fallback.** Whatever the answers, the fleet built above ships — that is why these checks waited until now.
 - [ ] **Step 3:** Commit (`"probe: org gates -- channel decision recorded"`).
 
 ### Task 42: `setup.ps1` / `setup.sh` + `-Verify`
@@ -2071,7 +2079,7 @@ setup.sh            @OWNER
 ### Task 46: Team rollout + retirement
 
 - [ ] **Step 1:** Promote `main` → `release` (the Task-43 gate); team runs `setup.ps1`; announce with the ≤24h skew note.
-- [ ] **Step 2:** After the pilot bar holds for the team (owner's call on the soak): `git rm -r legacy/claude-fleet` (git-recoverable; the port is done taking from it) and delete the owner's personal `~/.claude` duplicates (`root-cause`, `eng-ladder`, `runbook`) — the shadowing the clean-room rig diagnosed cuts both ways, and the fleet copies are now canonical.
+- [ ] **Step 2:** After the pilot bar holds for the team (owner's call on the soak): `git rm -r legacy/claude-fleet` (git-recoverable; the port is done taking from it) and delete **every `~/.claude/skills` entry that collides with or is superseded by a fleet skill** — today that is `root-cause`, `eng-ladder`, `runbook`, **and the two exact-name collisions `backend-craft` and `frontend-craft`** (plus, optionally, `prompt-craft`/`sre-tool`/`service-onboard`/`lab-audit`, absorbed under new names). The shadowing the clean-room rig diagnosed cuts both ways, and the fleet copies are now canonical; an exact-name personal duplicate keeps competing in every Claude-proxy eval after rollout.
 - [ ] **Step 3: Close the loop on the spec.** Edit `docs/superpowers/specs/2026-07-13-copilot-fleet-redesign-design.md`: `Status:` → `implemented`, and append an **Outcome** section recording: (a) the four blocking-assertion results; (b) whether the reference-read risk held (did conditional references actually get read — full-sweep numbers); (c) the measured always-on token count vs the ≤4.5k bar; (d) the org-gate answers and chosen channel; (e) any spec amendment made mid-implementation (each already recorded in place). Commit (`"spec: record the outcome of the copilot fleet redesign"`).
 
 ---
