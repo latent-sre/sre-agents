@@ -26,7 +26,36 @@ import sys
 # lowercase alnum + single hyphens; no lead/trail/double hyphen
 NAME_RE = re.compile(r'^[a-z0-9]+(-[a-z0-9]+)*$')
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Every frontmatter key Claude Code defines. This exists to close a SILENT-DISARM hole, not for
+# tidiness. An unrecognised key is not an error -- Claude Code drops it on the floor. So a one-
+# character typo does not fail; it DELETES whatever that key configured. On `code-reviewer`,
+# `security-reviewer` and `sre-engineer` the key it would delete is `hooks:`, which is the only
+# thing that makes a Bash-holding agent read-only. Renaming `hooks:` -> `hook:` used to leave the
+# guard gone and the validator printing VALIDATION: PASS.
+KNOWN_AGENT_FIELDS = {
+    'name', 'description', 'tools', 'disallowedTools', 'model', 'permissionMode', 'maxTurns',
+    'skills', 'mcpServers', 'hooks', 'memory', 'background', 'effort', 'isolation', 'color',
+    'initialPrompt',
+}
+# Agent Skills spec fields + Claude Code's skill extensions.
+KNOWN_SKILL_FIELDS = {
+    'name', 'description', 'license', 'allowed-tools', 'metadata', 'compatibility',
+    'disable-model-invocation', 'user-invocable', 'argument-hint',
+}
+# A top-level key: column zero, no leading whitespace. Anchoring matters -- the hook block nests
+# `PreToolUse:`, `matcher:`, `type:` and `command:` underneath `hooks:`, and a check that matched
+# them as top-level keys would reject the real fleet.
+TOP_LEVEL_KEY_RE = re.compile(r'^([A-Za-z_][A-Za-z0-9_-]*)\s*:')
+# The guard script as written in a hook command, e.g.
+#   command: "sh \"${CLAUDE_PROJECT_DIR:-.}/scripts/readonly-guard-hook.sh\""
+GUARD_PATH_RE = re.compile(r'([^\s"\\]*readonly-guard[\w.-]*)')
+ENV_PREFIX_RE = re.compile(r'^\$\{[^}]*\}/')
+
+# The repo being validated. Overridable so the validator can be pointed at a throwaway copy of the
+# fleet -- which is the only way to TEST it (scripts/test_validate_fleet.py mutates a copy and asserts
+# this script rejects it). It had no tests for exactly this reason, and three of its checks were
+# quietly passing inputs they exist to reject. Unset in normal use; CI calls it with no environment.
+ROOT = os.environ.get('FLEET_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def read_lines(path):
@@ -117,6 +146,77 @@ def get_list_field(fm, key):
     return []
 
 
+def top_level_keys(fm):
+    """Frontmatter keys at column zero. Nested config (hooks' PreToolUse/matcher/command) is
+    indented and deliberately excluded."""
+    keys = []
+    for ln in fm:
+        m = TOP_LEVEL_KEY_RE.match(ln)
+        if m:
+            keys.append(m.group(1))
+    return keys
+
+
+def block_lines(fm, key):
+    """The indented lines belonging to a top-level `key:` block (up to the next column-zero key)."""
+    out = []
+    inside = False
+    for ln in fm:
+        if TOP_LEVEL_KEY_RE.match(ln):
+            if inside:
+                break
+            inside = ln.startswith(key + ':')
+            continue
+        if inside:
+            out.append(ln)
+    return out
+
+
+def guard_wiring_issues(fm, root):
+    """Verify the read-only guard is actually WIRED, not merely mentioned.
+
+    The old check was `re.search(r'readonly-guard(-hook\\.sh|\\.py)', body)` -- a substring grep over
+    the whole file. It proves the string appears somewhere; it proves nothing about the hook. It
+    passed a file whose `hooks:` key was misspelled (so Claude Code ignored the block entirely), and
+    it would pass a file that merely discusses the guard in prose. This resolves the wiring instead:
+    a PreToolUse hook, matching Bash, running a guard script that exists on disk.
+    """
+    if 'hooks' not in top_level_keys(fm):
+        return ["declares no 'hooks:' key, so its Bash is unguarded"]
+
+    hook_block = block_lines(fm, 'hooks')
+    if not any(re.match(r'\s*PreToolUse\s*:', ln) for ln in hook_block):
+        return ["hooks: has no PreToolUse -- the guard can only fire before a tool call"]
+
+    # Split the block into `- matcher: X` entries and check the one that matches Bash carries the
+    # guard command. A guard hung on a non-Bash matcher never runs on Bash.
+    entries, current = [], None
+    for ln in hook_block:
+        m = re.match(r'\s*-\s*matcher\s*:\s*(.+?)\s*$', ln)
+        if m:
+            current = {'matcher': m.group(1).strip('\'"'), 'lines': []}
+            entries.append(current)
+        elif current is not None:
+            current['lines'].append(ln)
+
+    bash_entries = [e for e in entries if re.search(r'\bBash\b', e['matcher'])]
+    if not bash_entries:
+        got = ', '.join(repr(e['matcher']) for e in entries) or 'none'
+        return ["PreToolUse has no Bash matcher (matchers: %s) -- Bash is unguarded" % got]
+
+    issues = []
+    for e in bash_entries:
+        cmd = ' '.join(e['lines'])
+        m = GUARD_PATH_RE.search(cmd)
+        if not m:
+            issues.append("PreToolUse Bash matcher runs no readonly-guard command")
+            continue
+        rel = ENV_PREFIX_RE.sub('', m.group(1)).lstrip('./')
+        if not os.path.exists(os.path.join(root, rel)):
+            issues.append("guard script '%s' does not exist -- the hook fails open" % rel)
+    return issues
+
+
 def description_length(fm):
     """Compute the folded-description length the same way the .ps1 does.
 
@@ -191,6 +291,15 @@ def main():
         if desc_len > 1024:
             issues.append("skill '%s': description %d > 1024 chars" % (name_dir, desc_len))
 
+        # Unknown/misspelled top-level keys -- same silent-drop hazard as agents. Misspell
+        # `disable-model-invocation` and a side-effecting skill becomes model-invocable again.
+        for key in top_level_keys(fm):
+            if key not in KNOWN_SKILL_FIELDS:
+                issues.append(
+                    "skill '%s': unknown frontmatter key '%s' -- unrecognised keys are silently "
+                    "IGNORED, so this configures nothing" % (name_dir, key)
+                )
+
         # referenced bundle files exist (references/ assets/ scripts/).
         body = read_raw(sk)
         for m in REF_RE.finditer(body):
@@ -205,6 +314,18 @@ def main():
             # may legitimately reference a SHARED repo-root script (e.g. scripts/readonly-guard.py).
             if not os.path.exists(os.path.join(dfull, rel)) and not os.path.exists(os.path.join(ROOT, rel)):
                 issues.append("skill '%s': references missing file '%s'" % (name_dir, rel))
+
+    # What an agent's `skills:` list may name. A skill that disables model invocation cannot be
+    # preloaded either -- preloading draws from the same set Claude can invoke.
+    skill_names = set(skill_dirs)
+    no_preload_skills = set()
+    for name_dir in skill_dirs:
+        sk_path = os.path.join(skills_dir, name_dir, 'SKILL.md')
+        if not os.path.exists(sk_path):
+            continue  # already reported above; don't crash re-reading it
+        sfm = get_frontmatter(sk_path)
+        if sfm and (get_field(sfm, 'disable-model-invocation') or '').strip().lower() == 'true':
+            no_preload_skills.add(name_dir)
 
     # ---- Agents ----
     agents_dir = os.path.join(ROOT, '.claude', 'agents')
@@ -232,12 +353,37 @@ def main():
         tool_list = get_list_field(fm, 'tools')
         has_tools = has_field_line(fm, 'tools')
         tool_set = set(tool_list)
+        # Unknown/misspelled top-level keys. Claude Code IGNORES an unrecognised key rather than
+        # erroring, so a typo silently deletes whatever it configured -- and on the read-only agents
+        # that is `hooks:`, i.e. the guard itself. See KNOWN_AGENT_FIELDS.
+        for key in top_level_keys(fm):
+            if key not in KNOWN_AGENT_FIELDS:
+                issues.append(
+                    "agent '%s': unknown frontmatter key '%s' -- Claude Code silently IGNORES "
+                    "unrecognised keys, so this configures nothing. Misspelling a real key (e.g. "
+                    "'hooks') removes what it configured with no error." % (a, key)
+                )
+
+        # `skills:` preloads a skill's content at startup. Its VALUES were never checked, so a typo
+        # preloaded nothing and the agent quietly lost the knowledge it was given.
+        for sk_name in get_list_field(fm, 'skills'):
+            if sk_name not in skill_names:
+                issues.append(
+                    "agent '%s': skills: entry '%s' does not resolve to .claude/skills/%s/SKILL.md "
+                    "-- it preloads nothing" % (a, sk_name, sk_name)
+                )
+            elif sk_name in no_preload_skills:
+                issues.append(
+                    "agent '%s': skills: entry '%s' sets disable-model-invocation, and such a skill "
+                    "CANNOT be preloaded (\"preloading draws from the same set of skills Claude can "
+                    "invoke\" -- code.claude.com/docs/en/sub-agents). It preloads nothing." % (a, sk_name)
+                )
+
         if has_tools and 'Bash' in tool_set and not (tool_set & {'Write', 'Edit'}):
-            body = read_raw(afull)
-            # The hook is wired via scripts/readonly-guard-hook.sh (which launches readonly-guard.py).
-            # Accept either spelling; what matters is that a read-only Bash agent declares the guard.
-            if not re.search(r'readonly-guard(-hook\.sh|\.py)', body):
-                issues.append("agent '%s': read-only Bash agent is missing the readonly-guard hook" % a)
+            # Read-only Bash agent: its read-only-ness IS the PreToolUse hook. Verify the wiring
+            # resolves, rather than grepping the file for the word 'readonly-guard'.
+            for problem in guard_wiring_issues(fm, ROOT):
+                issues.append("agent '%s': read-only Bash agent -- %s" % (a, problem))
         # An explicit `tools:` list that omits `Skill` is the DOCUMENTED way to stop a subagent
         # invoking skills at all: "To prevent a subagent from invoking skills entirely, omit `Skill`
         # from the tools list" -- https://code.claude.com/docs/en/sub-agents. Every agent body here
