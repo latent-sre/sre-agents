@@ -1,0 +1,79 @@
+name: Validate fleet
+
+# The repo documented `scripts/validate_fleet.py` as a "CI gate"
+# (.claude/skills/agent-authoring/references/artifact.md) and requirements-dev.txt says "CI installs
+# this before the --validate steps" -- but no CI existed. The validator only ran when someone
+# remembered to run it, which is the same silent-failure mode the validator itself exists to catch.
+# This is that gate.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    # The matrix is not ceremony. scripts/readonly-guard-hook.sh exists *because* the guard's earlier
+    # inline form SILENTLY DISABLED ITSELF on Windows: `command -v python3` resolved to the Microsoft
+    # Store stub, which is not an interpreter, so the hook ran nothing and every Bash call sailed
+    # through unguarded. A Linux-only CI would never have seen it. Hence: run the guard's own tests on
+    # all three OSes, and use `python` on Windows (GitHub's runner ships a real interpreter there;
+    # `python3` is the Store stub).
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            py: python3
+          - os: macos-latest
+            py: python3
+          - os: windows-latest
+            py: python
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Structure: frontmatter, names, descriptions, unknown-key namespace, the read-only guard's
+      # WIRING (not merely a mention of it), and the skills: preload list. Pure stdlib, no install.
+      - name: Validate the fleet
+        run: ${{ matrix.py }} scripts/validate_fleet.py
+
+      # The validator's own tests. Each mutates a throwaway copy of the fleet one way and asserts
+      # rejection -- so a check that stops checking fails here rather than shipping.
+      - name: Test the validator
+        run: ${{ matrix.py }} -m unittest discover -s scripts -p 'test_validate_fleet.py' -v
+
+      # The read-only guard: the actual security control on the Bash-holding agents.
+      - name: Test the read-only guard
+        run: ${{ matrix.py }} scripts/test_readonly_guard.py
+
+      # Everything above is pure stdlib. Everything below needs PyYAML: the graders' layer-2 scenario
+      # tests load scenario files, and they FAIL (not skip) without it. Installing after them -- which
+      # is what the first draft of this workflow did -- passes on any machine that happens to have
+      # pyyaml already and fails on a clean runner. That is the bug this gate exists to prevent, so
+      # the install goes here, before its dependents.
+      - name: Install eval-harness deps
+        run: ${{ matrix.py }} -m pip install -r requirements-dev.txt
+
+      # Eval graders. A broken grader makes every behavioural measurement downstream untrustworthy,
+      # so they are a gate too.
+      - name: Test the eval graders
+        run: |
+          ${{ matrix.py }} evals/test_graders.py
+          ${{ matrix.py }} evals/test_discovery_probe.py
+
+      # The eval SUITE itself: every scenario parses, has its required fields, and names a grader
+      # that actually exists with the right kwargs. No model is invoked. This is the step
+      # requirements-dev.txt means by "CI installs this before the --validate steps".
+      - name: Validate the eval suite
+        run: ${{ matrix.py }} evals/run_evals.py --validate
