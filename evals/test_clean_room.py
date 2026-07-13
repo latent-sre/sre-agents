@@ -132,6 +132,48 @@ def test_is_auth_failure_is_gated_on_exit_code_not_just_text() -> None:
     )
 
 
+def test_discovery_probe_passes_the_clean_env_to_subprocess() -> None:
+    """If a future edit drops env=, the harness silently goes back to measuring the laptop.
+    This is the tripwire for that."""
+    import subprocess
+    import unittest.mock as mock
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import discovery_probe  # noqa: E402
+
+    fake = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    with mock.patch.object(discovery_probe.subprocess, "run", return_value=fake) as m:
+        discovery_probe.run_trial("hi", None, 10, env={"CLAUDE_CONFIG_DIR": "/tmp/room"})
+    kwargs = m.call_args.kwargs
+    check("env" in kwargs and kwargs["env"] is not None,
+          "run_trial passes env= to subprocess.run (else isolation is silently gone)")
+    check((kwargs.get("env") or {}).get("CLAUDE_CONFIG_DIR") == "/tmp/room",
+          "run_trial forwards CLAUDE_CONFIG_DIR unchanged")
+
+
+def test_discovery_probe_aborts_on_an_auth_failure_trace() -> None:
+    """The trial must ERROR, never be scored as a no-route."""
+    import subprocess
+    import unittest.mock as mock
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import discovery_probe  # noqa: E402
+
+    # A real credential-less run: exit 1, a VALID stream-json trace, no Skill() call.
+    trace = (
+        '{"type":"system","subtype":"init"}\n'
+        '{"type":"assistant","error":"authentication_failed"}\n'
+        '{"type":"result","subtype":"success","is_error":true,"result":"Not logged in"}'
+    )
+    fake = subprocess.CompletedProcess(args=[], returncode=1, stdout=trace, stderr="")
+    with mock.patch.object(discovery_probe.subprocess, "run", return_value=fake):
+        try:
+            discovery_probe.run_trial("hi", None, 10, env={"CLAUDE_CONFIG_DIR": "/tmp/room"})
+            check(False, "auth-failure trace must raise, NOT return a scoreable (empty) result")
+        except clean_room.AuthUnavailable:
+            check(True, "auth-failure trace raises AuthUnavailable instead of scoring a no-route")
+
+
 def main() -> int:
     tests = [
         test_clean_env_copies_only_the_credentials,
@@ -140,6 +182,8 @@ def main() -> int:
         test_is_auth_failure_recognises_a_real_not_logged_in_trace,
         test_is_auth_failure_does_not_fire_on_a_healthy_trace,
         test_is_auth_failure_is_gated_on_exit_code_not_just_text,
+        test_discovery_probe_passes_the_clean_env_to_subprocess,
+        test_discovery_probe_aborts_on_an_auth_failure_trace,
     ]
     for t in tests:
         t()
