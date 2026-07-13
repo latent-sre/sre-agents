@@ -71,6 +71,7 @@ jobs:
         run: |
           ${{ matrix.py }} evals/test_graders.py
           ${{ matrix.py }} evals/test_discovery_probe.py
+          ${{ matrix.py }} evals/test_clean_room.py
 
       # The eval SUITE itself: every scenario parses, has its required fields, and names a grader
       # that actually exists with the right kwargs. No model is invoked. This is the step
