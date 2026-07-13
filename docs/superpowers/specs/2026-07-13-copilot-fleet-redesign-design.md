@@ -8,7 +8,9 @@
 
 The current fleet has grown to 46 units (9 agents, 37 skills) and exhibits all four failure modes the owner named:
 
-- **Routing confusion** — one incident prompt loaded six skills at once (recorded probe trace: `incident-severity, pcf-ops, rollback-mitigation, splunk-triage, sre-ladder, …`); four skills have never fired at all on their own on-target prompts (`agent-security`, `ops-cli`, `pcf-deploy`, and — pre-clean-room — `sde-ladder`).
+- **Routing confusion** — one incident prompt loaded six skills at once (recorded probe trace: `incident-severity, pcf-ops, rollback-mitigation, splunk-triage, sre-ladder, …`); **three** skills have never fired on their own on-target prompts (`agent-security`, `ops-cli`, and, pre-clean-room,
+  `sde-ladder`). *(An earlier draft counted four, including `pcf-deploy`. That one sets `disable-model-invocation: true`
+  — its `saw: none` is the flag working as designed, not a discovery failure. Counting it inflated the problem.)*
 - **Context cost** — ~8.3k tokens always-on (AGENTS.md ~3.3k + CLAUDE.md ~1k + 37 skill descriptions ~3.9k) before any work starts.
 - **Maintenance rot** — prose transcribing facts that drift: a fabricated WQL clause, a blue-green playbook that inverts on its second run, a security skill wrong about its own guard. The git history is a parade of `fix(guard)`/`fix(skill)` commits patching a denylist that is permanently behind.
 - **Can't hold it in your head** — 46 units defeats roster-level reasoning.
@@ -47,7 +49,7 @@ marks imported units SDE (from sde-agents), SRE (from this repo's old fleet), or
 
 ## Section 1 — Distribution: plugin-first, clone-and-point fallback
 
-**Primary channel.** This repo becomes an **agent plugin**: `plugin.json` at the root, `agents/`, `skills/`, `hooks/`, `.mcp.json`. Each engineer adds the team repo to `chat.plugins.marketplaces` (any git remote works; private repos supported — VS Code falls back to cloning directly) and installs once from the Extensions view (`@agentPlugins` filter). Marketplace-sourced plugins auto-update every 24h under `extensions.autoUpdate`. Skills arrive as `/sre-agents:<skill>`; agents appear in the chat dropdown; hooks and MCP config ride the same bundle.
+**Primary channel.** This repo becomes an **agent plugin**: **`.claude-plugin/plugin.json`**, the *single* manifest location (matching the sister repo; VS Code auto-detects the Claude plugin format). **There is no second `plugin.json` at the repo root** — "no second source of truth" is one of this fleet's own imported rules. Plus `agents/`, `skills/`, `commands/`, `hooks/`, `.mcp.json`. Each engineer adds the team repo to `chat.plugins.marketplaces` (any git remote works; private repos supported — VS Code falls back to cloning directly) and installs once from the Extensions view (`@agentPlugins` filter). Marketplace-sourced plugins auto-update every 24h under `extensions.autoUpdate`. Skills arrive as `/sre-agents:<skill>`; agents appear in the chat dropdown; hooks and MCP config ride the same bundle.
 *[sourced: code.visualstudio.com/docs/agent-customization/agent-plugins, fetched 2026-07-12]*
 
 **The marketplace layer (was missing — a builder hits this on day one).** A git repo becomes a
@@ -97,9 +99,19 @@ Distribution:
   print the one manual step (Extensions → `@agentPlugins` → Install → accept the trust prompt). **That click is
   deliberately not scriptable** — it is VS Code's publisher-trust gate for code that will run on the machine, and
   given the hook-execution risk above, we *want* it conscious.
-- **Fallback channel (only if the Phase-5 gate checks fail):** clone to a fixed path → write `chat.agentFilesLocations` +
-  `chat.agentSkillsLocations` into it → **`setup.ps1` registers the scheduled task** running `git pull --ff-only`
-  (not the engineer — an unregistered sync means a permanently stale fleet).
+- **Fallback channel (if the Phase-5 gate checks fail):** clone to a fixed path, write `chat.agentFilesLocations` +
+  `chat.agentSkillsLocations` into it, have **`setup.ps1` register the scheduled task** running `git pull --ff-only`
+  (not the engineer — an unregistered sync means a permanently stale fleet), **and register a USER-LEVEL HOOK.**
+- **The fallback channel must carry the guard, or "identical either way" is false in the one dimension that matters.**
+  Section 5 says the hook runs from the plugin's installed copy — but the fallback channel *has no plugin*, so as
+  originally written it would have shipped `sre` and `observer` holding `execute` with **no allowlist at all**, and
+  nothing said so. VS Code reads hooks from **`~/.copilot/hooks`** (user scope, **no plugin required**); they
+  **coexist** with plugin hooks, and `command` may point at an arbitrary script path
+  *[verified: code.visualstudio.com/docs/agent-customization/hooks, fetched 2026-07-13]*. So `setup.ps1`'s fallback
+  path registers a user-level hook pointing at the fixed clone. **Section 5's rule is therefore "never a copy the
+  workspace under review supplies" — not "never outside a plugin"**: a user-controlled clone at a fixed path is not
+  attacker-supplied. Only with this are the two channels equivalent in safety, which is what permits the org gates to
+  wait for Phase 5.
 - **JSONC hazard:** VS Code `settings.json` is **JSONC** — comments and trailing commas are legal. `ConvertFrom-Json`
   either fails or silently strips the engineer's comments on rewrite. Use a comment-tolerant parse + targeted key
   insertion, or instruct a manual paste and confirm with `-Verify`.
@@ -119,7 +131,7 @@ Derivation rule: **each piece of the old fleet moves to the lowest layer that ca
 |---|---|
 | Custom agents (`.agent.md`) | Only lanes with a distinct **tool scope** — the agent-vs-skill rule, machine-enforced by `tools:` |
 | Agent skills | Playbooks, checklists, query patterns — auto-loaded by description or `/invoked` |
-| Prompt files | One-shot workflows (ADR scaffold; Bamboo walkthrough if still needed) |
+| Slash commands (`commands/`) | One-shot workflows (the `adr` scaffold; a Bamboo walkthrough if any migration remains) |
 | Hooks | The read-only guard, rewritten (see Section 5) |
 | MCP servers | Live tooling — a Grafana MCP server is the LGTM-exploration vehicle *(existence/fit: verify during implementation)* |
 | `agents:` + `handoffs:` frontmatter | The old `route-request` + `handoff-protocol` layers, dissolved into native mechanics |
@@ -152,10 +164,10 @@ it to run a shell command. If it can, the vocabulary is wrong or an unrecognized
 primary control is decorative and `reviewer`/`scribe` must be hook-guarded instead. Stop and amend Section 5 before
 authoring the other four; pin the verbatim `tools:` arrays into this spec at that point.
 
-### The delegation graph (was unspecified — Phase 2 cannot start without it)
+### The delegation graph (was unspecified — Phase 1 cannot start without it)
 
 `agents:` = who this agent may **auto-delegate** to (model-initiated subagents). `handoffs:` = **buttons a human
-clicks** to move the conversation to another agent. Default deny: an edge not listed here does not exist.
+clicks** to move the conversation to another agent. Default deny: an edge not listed here does not exist — **`[unverified]` until the Phase-1 probe (assertion 4) proves that omitting `agents:` denies rather than allows all.**
 
 | Agent | `agents:` (may delegate to) | `handoffs:` (human-clickable) |
 |---|---|---|
@@ -194,7 +206,7 @@ told to use Kubernetes. Two mechanisms, both required:
 1. **Every agent body carries one line:** *"Before recommending a runtime, tool, or infrastructure change, load
    `stack-profile`."*
 2. **A canary probe** whose prompt invites an off-stack recommendation and asserts the skill loaded. It is in the
-   canary set built in Phase 5 alongside the other content probes — but it is a **required** canary, not an optional one:
+   canary set built in Phase 4 alongside the other content probes — but it is a **required** canary, not an optional one:
    an unloaded `stack-profile` is a silent correctness regression, so the Acceptance bar (Section 8) fails without it.
 
 **Cut:** `test-engineer` (tool scope identical to sde → its content is sde's testing sections), `researcher` (Copilot `web` tool + native subagents; also held the fleet's widest egress), `prompt-engineer`-as-agent (→ authoring skill pack), `route-request` + `handoff-protocol` (→ native `agents:`/`handoffs:`), the sister repo's ladder agents (altitude stays skill-carried; their method arrives via eng-ladder references, **rewritten self-sovereign** since the agent files they defer to won't exist).
@@ -245,7 +257,7 @@ Boundary note: `frontend-craft/references/data-viz.md` owns **product-UI charts*
 | ops-tooling | body = **SDE `sre-tool` pipeline** (mission transaction, environment card, right-sizing, review-seeding rules); CLI patterns reference absorbs ops-cli |
 | root-cause | **SDE, replaces debug-rca** (measured winner: 2/2 misroutes went *to* it) |
 | eng-ladder | **SDE base** (one skill, three tier references, rewritten self-sovereign) + SRE track content |
-| ci-actions | SRE `github-actions-ci`, `cf auth` argv leak fixed. Bamboo content: **default delete** (recoverable from git); becomes a prompt file only if live migrations remain — confirm in Phase 3 |
+| ci-actions | SRE `github-actions-ci`, `cf auth` argv leak fixed. Bamboo content: **default delete** (recoverable from git); becomes a prompt file only if live migrations remain — confirmed in **Phase 2** (an earlier draft said Phase 3, which no longer exists) |
 | database-reliability | SRE |
 | agent-authoring | SDE `prompt-craft`/`prompt-engineer` method + SRE `agent-authoring`; references absorb tool-design, context-engineering, multi-agent-architect's "should this be multi-agent at all?"; teaches **personal-first, promote-by-PR** and compose-with-fleet-agents |
 | agent-security | SRE, rewritten Copilot-native (tool-scope containment) — ships because teammates *will* build their own agents |
@@ -255,6 +267,8 @@ Prompt files: `adr` (scaffold). The complete fate of every existing unit is the 
 ## Section 5 — Safety model
 
 1. **Primary control: `tools:` omission.** reviewer and scribe physically cannot execute; scribe cannot run what it documents.
+**The VS Code hook contract differs from Claude Code — do not port the exit codes.** VS Code: **exit 0 means stdout is parsed as JSON** (`permissionDecision`: `allow` | `deny` | `ask`); **exit 2 is a blocking error**; other codes are non-blocking warnings; and **"most restrictive wins"** across mechanisms *[verified: hooks reference, fetched 2026-07-13]*. The sister repo's 42/43 positive-ALLOW codes are a *Claude Code* contract and must **not** be copy-ported. The hazard they existed to close still applies, though: **exit 0 with empty stdout reads as ALLOW**, so a missing or broken interpreter would silently permit everything — exactly how the old guard shipped dead on Windows. **The launcher must fail closed: if it cannot start the guard, it emits a `deny` JSON itself.** Probed in Phase 4.
+
 2. **The hook guard — allowlist, imported doctrine.** *"Enumerating the ways a command can write is unbounded and always a step behind; enumerating what an agent needs is bounded, knowable, and fails loud."* (sde-agents; sre-agents' 20+ guard-fix commits are the proof by exhaustion, capped by the live `python -m pip` bypass found 2026-07-12.) The new hook: **allowlist**; **positive-ALLOW protocol** (distinctive exit codes so a stand-in interpreter exiting 0 cannot read as ALLOW; fail closed); **parser humility** (substitution/redirection/subshell → deny by construction); **self-scoping** on the payload's agent identity because **VS Code ignores hook matchers** — hooks fire on every tool, so the script filters on `toolName` itself; **camelCase payloads**; **runs only from the plugin's installed copy**, never a workspace copy (a repo under review could supply its own guard); **never touches non-fleet sessions** — deny-for-the-guarded-agent AND never-touch-anyone-else are both tested, because getting either wrong is worse than no guard.
 3. **Change authority: Tier 0–3** (observe / prepare / reversible-live / destructive-or-access-path), imported from sde-agents `homelab-platform`: classify before acting; approval covers only the commands shown; a material change re-enters the gate; independent Tier 0/1 work continues while approval pends; worked approval-request example (target, diff, exact command, blast radius, verification, rollback). Woven into sre + observer bodies and production-change-gate.
 4. **Prod boundary unchanged:** GitHub branch protection + protected environments, with the gate's `gh api …/protection` check (must return `enforce_admins: true`, 404 = BLOCK).
@@ -266,7 +280,7 @@ Importing "allowlist, not denylist" without writing the list leaves the builder 
 and tests; a guard there would be theater. That is a **trust decision, stated**: `sde` is for code the team authored
 (the untrusted-diff refusal rule from the audit's Tier 4 lives in its body).
 
-| Agent | Allowed (seed set — Phase 5 finalizes against real use) |
+| Agent | Allowed (seed set — Phase 4 finalizes against real use) |
 |---|---|
 | **sre** | `cf` read verbs (`app`, `apps`, `events`, `logs`, `curl`-free), `git log/diff/show/blame/status`, `gh run/pr view|list`, `rg`/`grep`, `ls`/`cat`/`head`/`find` (no `-exec`), `jq`, `dig`, `ss` |
 | **observer** | the `sre` set **plus** config validators it genuinely needs (`promtool check`, `jq empty`, `grafana` CLI lint) — the audit proved the read-only guard denies exactly these, which is why `sre-monitor` could never take the old hook |
@@ -327,7 +341,7 @@ fleet) plus the trifecta note in the agent body. **The alternative** — strip `
 **Phase 1 — THE AGENTS (5).** The first phase, and the first one that produces the product.
 
 *Opens with the scaffolding, which is minutes of work, not a phase of its own:*
-- `.claude-plugin/marketplace.json`, `plugin.json`, empty `agents/`, `skills/`, `hooks/`, `prompts/`, `.mcp.json`.
+- `.claude-plugin/{marketplace.json,plugin.json}` — **one manifest location, no root duplicate** — plus empty `agents/`, `skills/`, `commands/`, `hooks/`, `.mcp.json`.
 - **`git mv .claude/{agents,skills} legacy/claude-fleet/`** — *not cosmetic.* VS Code discovers skills from
   `.claude/skills/` **in any open workspace**, so leaving the old fleet in place means anyone opening this repo
   double-loads **37 old + 26 new** skills — the exact routing confusion the redesign exists to kill, at its worst
@@ -345,14 +359,26 @@ fleet) plus the trifecta note in the agent body. **The alternative** — strip `
 *Then the five agents* — sde-agents bodies + doctrine layer + the delegation matrix, tool arrays, and model arrays
 from Section 3.
 
-**The one blocking check rides on the first agent — no separate spike phase.** Author `reviewer` (`read`, `search`
-only) **first**, load it, and tell it to run a shell command:
-- If it **cannot** — tool scoping holds, "read-only by tool absence" is real, and the rest of Section 5 stands.
-- If it **can** — the vocabulary is wrong *or* an unrecognized alias fails **open**. Either way the primary safety
-  control is decorative, and `reviewer`/`scribe` must be guarded by the hook instead of by tool absence. **Stop and
-  amend Section 5 before authoring the other four.** This is the only platform fact that can invalidate the design
-  rather than cost a frontmatter edit, and the first real agent answers it — from an artifact we keep, not a
-  throwaway.
+**The blocking check rides on the first agent — no separate spike phase.** Author `reviewer` (`read`, `search` only)
+**first**, load it in **VS Code Copilot**, and assert **four** things. "It couldn't run a command" is **not** a pass on
+its own: that is equally consistent with the vocabulary being wrong and the agent getting **nothing at all**.
+
+| # | Assertion | If it fails |
+|---|---|---|
+| 1 | `reviewer` **can read** a file | grants are not landing — the vocabulary is wrong. **Stop.** |
+| 2 | `reviewer` **can search** | same. **Stop.** |
+| 3 | `reviewer` **cannot run a shell command** | `tools:` omission fails **open**, so "read-only by tool absence" is dead and `reviewer`/`scribe` must be hook-guarded instead. **Stop and amend Section 5.** |
+| 4 | `reviewer` **cannot delegate to `sde`** (ask it to) | `agents:` omission fails **open**: a read-only agent can spawn a `tools: all` one, and the read-only model is decorative by a *second, unguarded* route. **Stop.** |
+
+Assertion 4 exists because this spec asserts *"default deny: an edge not listed here does not exist"* — the
+**identical** fail-open assumption we correctly refused to make about `tools:`. The sister repo has direct precedent for
+the class: a scoped grant like `tools: Bash(git diff:*)` *looks* like it narrows Bash and does nothing.
+
+**Where it runs (a real dependency, previously unstated).** `--plugin-dir .` loads into **Claude Code**, which cannot
+evaluate `.agent.md` frontmatter — so the check would never actually execute there. It must run in **VS Code
+Copilot**. Stand up the **fallback channel** on one machine as part of the scaffold (`chat.agentFilesLocations` /
+`chat.agentSkillsLocations` — both **GA, no admin needed**). Minutes of work, and it makes Phase 1's done-when
+genuinely testable.
 
 **Done when:** the five agents load and work against a real repo via `--plugin-dir .` (or the fallback channel).
 **The fleet is usable here**, unguarded — and using it is what teaches Phase 4 the guard allowlist and the canary
@@ -386,7 +412,7 @@ reality finds."
 **Phase 7 — Team rollout** (promote `main` → `release`), then retire `legacy/claude-fleet/` and the owner's personal
 `~/.claude` duplicates (`root-cause`, `eng-ladder`, `runbook` — the shadowing the clean-room rig diagnosed).
 
-### The routing-eval rig needs a decision, or Phase 5 deadlocks
+### The routing-eval rig needs a decision, or Phase 4 deadlocks
 
 The eval harness shells out to `claude -p` and reads which `Skill(...)` fired from stream-json — it measures **Claude
 Code, as a proxy for Copilot**. Against the new Copilot-layout fleet it has nothing to load. **Decision:** keep
@@ -407,11 +433,12 @@ dressed as a milestone — and "silent dark skills" (Risk 3) goes unmeasured, wh
 
 | Dimension | Bar | How measured |
 |---|---|---|
-| **No dark skills** | **0 of 26** fail to fire on their own on-target prompt | canary probe per skill (the old fleet had 4 dark) |
+| **No dark skills** | **0 of 24 model-invocable skills** fail to fire on their own on-target prompt | discovery canary per skill |
+| **Side-effect skills load when called** | `pcf-deploy` and `service-onboarding` (both `disable-model-invocation`) load via `/sre-agents:<name>` and their canary appears | **invocation** canary. By design they *cannot* fire on a prompt, so a discovery bar over all 26 would be unsatisfiable and Phase 6 could never exit. |
 | **Routing precision** | no near-miss negative fires **at all**; positives ≥ old-fleet clean-room baseline | cluster routing evals, rates over runs |
 | **Fan-out** | a single incident prompt loads **≤ 2** fleet skills | routing eval with a `max_skills` assertion (the old fleet loaded **6**) |
 | **Always-on context** | **≤ 4.5k tokens** before any work (was ~8.3k) — and **≤ 150 tokens per description**, so it cannot creep | measured in a real Copilot session |
-| **Guard** | 0 false denies across the pilot; 0 silent load failures | `setup.ps1 -Verify` + hook audit log. The allowlist is *seeded from observed Phase 2–4 usage*, so a false deny means we missed a real command — a one-line fix, loudly. |
+| **Guard** | 0 false denies across the pilot; 0 silent load failures | `setup.ps1 -Verify` + hook audit log. The allowlist is *seeded from observed Phases 1-3 usage|
 | **Pilot exit** | one engineer, **one week** of real work touching **≥ 3 agents**, no unrecovered routing failure, no guard false-positive | pilot log |
 | **Rollout safety** | any acceptance regression in week one → **revert `release`**, team announce | Section 1 rollback runbook |
 
@@ -426,9 +453,21 @@ what the roster can achieve would simply be ignored.
 
 ## Section 9 — Ownership and lifecycle
 
-**Ownership.** The fleet needs a named maintainer — the person who gets pinged when an update breaks the team. State
-it in the README. **CODEOWNERS requires maintainer review on `hooks/`, `scripts/`, `plugin.json`, `.mcp.json`, and
-`.claude-plugin/`** — these execute code on teammates' machines (Section 1).
+**Ownership.** The fleet needs a named maintainer — the person who gets pinged when an update breaks the team.
+**OWNER DECISION, not a builder guess: CODEOWNERS, the README, and the rollback announcement all block on this name.**
+
+**CODEOWNERS — protect everything that executes on a teammate's machine, *and* the gate that protects it:**
+`.claude-plugin/` | `hooks/` | `scripts/` | `.mcp.json` | **`.github/`** | **`skills/*/scripts/`** | **`skills/*/assets/`**.
+The last three were missed, and each is a live hole:
+- **`.github/`** — the CI workflow **is** the `main` to `release` promotion gate. An unreviewed edit to it neuters the
+  gate protecting everything else on this list. That is the audit's own through-line — *"a check that reports success
+  without executing the thing it names"* — reproduced one layer up.
+- **`skills/*/scripts|assets/`** — a top-level `scripts/` glob does **not** match them, and the fleet ships executable
+  content *inside* skill folders (`obs-alerting/scripts/error_budget.py`, `pcf-ops/scripts/triage.{sh,ps1}`,
+  `ops-tooling/assets/cli_skeleton.py`). Same bundle, same machines, unprotected path.
+
+**`release` branch protection must forbid force-push.** The marketplace pins a *branch* (`ref: release`), not a `sha`,
+so the pin is only as strong as the protection on that branch.
 
 **Contribution: personal-first, promote-by-PR.** Teammates build in `~/.copilot/{agents,skills}` (VS Code reads them
 per-user, so this is free). When a second person wants one, it graduates into the fleet by PR. This is **repo policy in
@@ -473,7 +512,12 @@ while the runbook says `/incident-command`. Rules:
 1. **Agent plugins are Preview** — format churn could break the team at once. Mitigations: identical-layout fallback channel; probes catch loading regressions; pin plugin versions if churn appears.
 2. **`chat.plugins.enabled` org-policy-blocked** — fallback channel exists, identical layout; checked in Phase 5, because it changes the channel and never the content.
 3. **No Copilot routing measurement** — descriptions are grounded in the one measured pattern (verbatim triggers) and the Claude proxy; risk of silent dark skills recurring. Probe + canary loading checks partially cover.
-4. **Hook payload details under-documented** — the probe list exists precisely for this; the guard fails closed if the payload shape shifts.
+4. **Hook payload details under-documented** — probed in Phase 4. **Two different failures, two different rulings**
+   (an earlier draft had this contradicting Section 5b): the guard **fails closed** on a *command* it cannot parse; it
+   **no-ops with a loud audit line** on an *agent* it cannot identify (5b explains why — a hook that denies the user's
+   own session gets uninstalled, trading a permanent guard for a temporary one). **That audit line has a reader:**
+   `setup.ps1 -Verify` exits non-zero if the hook log contains an identity-missing entry, which is what makes Section 8's
+   "0 silent load failures" measurable rather than aspirational.
 5. **Reviewer merge could dilute security reviews** — watch review outputs during pilot; split is one file if needed.
 
 ## Provenance summary
@@ -565,7 +609,7 @@ That claim was false: the machinery, the eval corpus, the root docs, and the in-
 
 | Item | Disposition |
 |---|---|
-| `scripts/readonly-guard.py` + `readonly-guard-hook.sh` | **Replaced** by the Copilot allowlist hook (Section 5a). The denylist is not ported — twenty-plus fix commits and a still-live `-m pip` bypass are the argument. Old files deleted at Phase 5, not before (they guard `legacy/`). |
+| `scripts/readonly-guard.py` + `readonly-guard-hook.sh` | **Replaced** by the Copilot allowlist hook (Section 5a). The denylist is not ported — twenty-plus fix commits and a still-live `-m pip` bypass are the argument. Old files deleted in Phase 4. *(An earlier draft kept them to "guard `legacy/`" — dead reasoning: after the Phase-1 `git mv` out of `.claude/`, nothing loads the legacy agents, so there is nothing to guard.)* |
 | `scripts/test_readonly_guard.py` | **Rewritten** for the allowlist. Keeps the launcher + fail-closed cases (they exist because the guard once shipped silently dead on Windows). |
 | `scripts/validate_fleet.py` | **Rewritten** = validator v2 (Section 6). |
 | `scripts/ralph-loop.sh` | **Deleted.** Claude-Code-specific unattended-loop machinery; its owning skill (`self-improve-loop`) is deleted, and nothing in the Copilot fleet drives it. |
