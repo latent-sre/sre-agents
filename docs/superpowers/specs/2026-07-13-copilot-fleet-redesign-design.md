@@ -83,7 +83,7 @@ run code on your machine. Review the plugin contents and publisher before instal
 2. **Copilot org policy — "Editor preview features."** Agent plugins are Preview; an org toggle can gate preview features independently of the VS Code setting. *[unverified — verify here rather than assert]*
 3. **Model availability.** Section 3 pins Claude-first fallback arrays. Anthropic-model access depends on org model policy and license tier. Confirm the named models are actually selectable, and record the assumed tier (Business/Enterprise) as a stated assumption.
 
-**Also in Phase 0 — the platform-contract probes (moved up; see the ordering trap in Section 7).**
+**Also in Phase 0 — the platform-contract probes**, run against a *throwaway spike*, not the fleet (Section 7 explains why the spike/fleet distinction matters).
 
 **Fallback (if policy blocks plugins).** Clone to a fixed path; point the GA settings `chat.agentFilesLocations` / `chat.agentSkillsLocations` into the clone; sync via scheduled `git pull --ff-only` (or a SessionStart hook, preview). **The repo layout is identical for both channels** — choosing the channel is a per-engineer setting, not a repo fork.
 
@@ -185,7 +185,8 @@ told to use Kubernetes. Two mechanisms, both required:
 1. **Every agent body carries one line:** *"Before recommending a runtime, tool, or infrastructure change, load
    `stack-profile`."*
 2. **A canary probe** whose prompt invites an off-stack recommendation and asserts the skill loaded. It is in the
-   Phase-0/1 probe set, not Phase 5 — this is a correctness guarantee, not a nice-to-have.
+   canary set built in Phase 5 alongside the other content probes — but it is a **required** canary, not an optional one:
+   an unloaded `stack-profile` is a silent correctness regression, so the Acceptance bar (Section 8) fails without it.
 
 **Cut:** `test-engineer` (tool scope identical to sde → its content is sde's testing sections), `researcher` (Copilot `web` tool + native subagents; also held the fleet's widest egress), `prompt-engineer`-as-agent (→ authoring skill pack), `route-request` + `handoff-protocol` (→ native `agents:`/`handoffs:`), the sister repo's ladder agents (altitude stays skill-carried; their method arrives via eng-ladder references, **rewritten self-sovereign** since the agent files they defer to won't exist).
 
@@ -298,45 +299,70 @@ fleet) plus the trifecta note in the agent body. **The alternative** — strip `
 
 ## Section 7 — Migration plan (phases; each independently valuable)
 
-**Phase 0 — Gate check + platform-contract probes.** *(The probes moved up. The spec imports "probes written
-first and failing" and then violated it at the phase level: probes were Phase 5 while Phases 1–4 baked in the facts
-they verify. Being wrong about tool scoping after Phase 4 reworks 30+ authored files.)*
+> **Ordering rule: the fleet is the product; the machinery protects it. Content first.**
+> An earlier draft put *all* platform probes in Phase 0 as blocking gates. That creates a loop — you cannot
+> probe "does `tools:` omission actually deny?" without agents to probe *with* — and it is the wrong shape
+> besides: a validator written before the files exist, canary probes for unwritten skills, and a guard
+> allowlist for agents whose real command usage nobody has watched all get **reworked every time a content
+> decision lands.** The distinction that resolves it is **spike vs. fleet**: platform-contract facts are
+> answered by a *throwaway spike* (hours, then deleted); everything else that tests or guards content is
+> written **after** the content it tests. Content also carries standalone value — if distribution turns out
+> policy-blocked, a finished fleet still ships via the fallback channel; a finished validator with no fleet
+> is worth nothing.
+
+**Phase 0 — Spike (throwaway) + gate check.** *Not fleet-building. Two junk agents and one junk skill,
+deleted at the end of the phase.* Answer only the facts that would **invalidate the content** if we guessed
+wrong:
 - The three gate-zero checks (plugins setting · editor-preview policy · model availability) — Section 1.
-- **Blocking probes:** does the plugin load? do agents load? **does `tools:` omission actually deny — and does an
-  unrecognized alias fail closed or open?** does `disable-model-invocation` behave? what is the hook payload shape
-  (camelCase? which agent-identity field?) and do plugin-shipped hooks fire at all? can plugins ship prompt files?
-- Output: the verbatim `tools:` arrays and hook payload contract, pinned into this spec. **Phase 1 does not start
-  until these answer.**
+- **Blocking probes:** does a plugin load at all? do agents load? **does `tools:` omission genuinely deny —
+  and does an *unrecognized alias* fail closed or open?** (If it fails open, the safety model is decorative
+  and the roster's tool grants must be re-thought *before* any agent is authored.) What is the hook payload
+  shape (camelCase? which agent-identity field?) and do plugin-shipped hooks fire? Can plugins ship prompt
+  files (the `adr` home)?
+- **Output:** the verbatim `tools:` array vocabulary and the hook payload contract, pinned into this spec.
+  Then **delete the spike.** Phase 1 does not start until these answer.
 
 **Phase 1 — Scaffold + the coexistence cut.**
-- `.claude-plugin/marketplace.json`, `plugin.json`, `agents/`, `skills/`, `hooks/`, `prompts/`, `.mcp.json`.
-- **`git mv .claude/{agents,skills} legacy/claude-fleet/`** — *this is not cosmetic.* VS Code discovers skills from
-  `.claude/skills/` **in any open workspace**. Leaving the old fleet in place means anyone opening this repo
-  double-loads **37 old + 26 new** skills — the exact routing confusion the redesign exists to kill, at its worst
-  during the very phases used to judge whether the redesign worked. Frozen, not deleted (git-recoverable); fixes land
-  in the new tree only; validator v2 and CI target the new layout only.
-- **Owner's Claude Code story:** the same `.claude-plugin/plugin.json` makes the repo loadable as a Claude Code plugin
-  (`claude --plugin-dir .`), which is also what the routing-eval proxy needs (below). The owner does not lose the fleet.
+- `.claude-plugin/marketplace.json`, `plugin.json`, `agents/`, `skills/`, `hooks/`, `prompts/`, `.mcp.json` —
+  **empty dirs and manifests only.** No validator, no hook, no evals yet.
+- **`git mv .claude/{agents,skills} legacy/claude-fleet/`** — *this is not cosmetic.* VS Code discovers skills
+  from `.claude/skills/` **in any open workspace**. Leaving the old fleet in place means anyone opening this
+  repo double-loads **37 old + 26 new** skills — the exact routing confusion the redesign exists to kill, at
+  its worst during the very phases used to judge whether the redesign worked. Frozen, not deleted
+  (git-recoverable); fixes land in the new tree only.
+- **Owner's Claude Code story:** the same `.claude-plugin/plugin.json` makes the repo loadable as a Claude Code
+  plugin (`claude --plugin-dir .`) — which is also what the routing-eval proxy needs (below). The owner does
+  not lose the fleet.
 
-**Phase 2 — Chassis:** 5 agents (sde-agents bodies + doctrine layer + the delegation matrix, tool arrays, model arrays
-from Section 3).
+**Phase 2 — THE AGENTS (5).** sde-agents bodies + doctrine layer + the delegation matrix, tool arrays, and
+model arrays from Section 3. **This is the first phase that produces the product.** Usable at the end of it:
+load the repo with `--plugin-dir .` (or the fallback channel) and the five agents work, unguarded, against real
+repos. Exercise them — that is what tells you the guard allowlist (Phase 5) and the canary prompts (Phase 5).
 
-**Phase 3 — Skill harvest:** direct imports (root-cause, eng-ladder, runbook, backend/frontend-craft, ops-tooling) →
-SRE domain skills **with the audit's Tier-2 fixes applied — blue-green name rotation, the WQL `by` deletion, SPL
-`timechart` bucketing, `cf auth` argv, error_budget severity, Grafana licence notes. Every fix is specified in
-[`docs/AUDIT-2026-07-12.md`](../../AUDIT-2026-07-12.md); none may be ported as-is.** Confirm the Bamboo decision here.
+**Phase 3 — THE SKILLS (harvest + fix).** Direct imports (root-cause, eng-ladder, runbook, backend/frontend-craft,
+ops-tooling) → SRE domain skills **with the audit's Tier-2 fixes applied — blue-green name rotation, the WQL `by`
+deletion, SPL `timechart` bucketing, `cf auth` argv, error_budget severity, Grafana licence notes. Every fix is
+specified in [`docs/AUDIT-2026-07-12.md`](../../AUDIT-2026-07-12.md); none may be ported as-is.** Confirm the
+Bamboo decision here.
 
-**Phase 4 — Obs restructure:** six by-signal skills; LGTM references written; legacy references carried over
-post-fact-check.
+**Phase 4 — THE OBSERVABILITY SKILLS.** Six by-signal skills; LGTM references written; legacy references carried
+over post-fact-check. **End of Phase 4 the fleet is content-complete** — 5 agents, 26 skills, working. Everything
+after this protects, measures, and delivers it.
 
-**Phase 5 — Machinery:** allowlist hook (Section 5a) + wiring tests, canary/tripwire probes, routing evals
-(see the proxy decision below), `setup.ps1`, CODEOWNERS.
+**Phase 5 — Machinery** *(now it can be written against artifacts that exist, and against observed usage from
+Phases 2–4 — no churn)*: validator v2 · the allowlist hook (Section 5a — **seeded from what `sre`/`observer`
+actually ran**, not guessed) · hook wiring tests · canary + tripwire probes (one per real skill) · routing evals
+rewritten for the real roster · CI extension.
 
-**Phase 6 — Pilot:** one engineer, real work repos. Exit only on the Acceptance bar (Section 8) — not "fix what
+**Phase 6 — Distribution:** `setup.ps1` + `-Verify`, the `release` ref and promotion gate, CODEOWNERS, README,
+the rollback runbook (Section 1).
+
+**Phase 7 — Pilot:** one engineer, real work repos. Exit only on the Acceptance bar (Section 8) — not "fix what
 reality finds."
 
-**Phase 7 — Team rollout** (promote `main` → `release`), then retire `legacy/claude-fleet/` and the owner's personal
-`~/.claude` duplicates (`root-cause`, `eng-ladder`, `runbook` — the shadowing the clean-room rig diagnosed).
+**Phase 8 — Team rollout** (promote `main` → `release`), then retire `legacy/claude-fleet/` and the owner's
+personal `~/.claude` duplicates (`root-cause`, `eng-ladder`, `runbook` — the shadowing the clean-room rig
+diagnosed).
 
 ### The routing-eval rig needs a decision, or Phase 5 deadlocks
 
@@ -350,7 +376,7 @@ measures Copilot's *own* routing until the Copilot-CLI probe (open item) lands.
 
 **Migration ordering rule** (imported): fix internal contradictions first — the one class of change needing no behavioral baseline.
 
-**Implementation-plan format** (imported from sde-agents' plan doc, found in the completion sweep): dependency-ordered tasks with explicit **Interfaces** between them ("Task 5's probe asserts this path — do not rename it"); a **Global Constraints** block carrying machine-specific gotchas (on this machine: **Python is `py -3`, not `python3`** — bakes into setup.ps1, the validator shebang strategy, and CI matrix); **verbatim-move discipline** for content relocations (the plan names the section to move, never re-types it — re-typing invites silent transcription drift); and probes/tests written **first and failing** before the change that makes them pass.
+**Implementation-plan format** (imported from sde-agents' plan doc, found in the completion sweep): dependency-ordered tasks with explicit **Interfaces** between them ("Task 5's probe asserts this path — do not rename it"); a **Global Constraints** block carrying machine-specific gotchas (on this machine: **Python is `py -3`, not `python3`** — bakes into setup.ps1, the validator shebang strategy, and CI matrix); **verbatim-move discipline** for content relocations (the plan names the section to move, never re-types it — re-typing invites silent transcription drift); and probes/tests written **first and failing** before the change that makes them pass — **scoped to the artifact under change.** That discipline governs each phase's *internal* task order (write the failing canary, then the skill); it does **not** mean writing the whole test suite before the whole fleet, which is the loop the ordering rule above forecloses.
 
 ## Section 8 — Acceptance: how we know it worked
 
@@ -363,7 +389,7 @@ dressed as a milestone — and "silent dark skills" (Risk 3) goes unmeasured, wh
 | **Routing precision** | no near-miss negative fires **at all**; positives ≥ old-fleet clean-room baseline | cluster routing evals, rates over runs |
 | **Fan-out** | a single incident prompt loads **≤ 2** fleet skills | routing eval with a `max_skills` assertion (the old fleet loaded **6**) |
 | **Always-on context** | **≤ 3k tokens** before any work (was ~8.3k) | measured in a real Copilot session; skill descriptions are the bulk |
-| **Guard** | 0 false denies across the pilot; 0 silent load failures | `setup.ps1 -Verify` + hook audit log |
+| **Guard** | 0 false denies across the pilot; 0 silent load failures | `setup.ps1 -Verify` + hook audit log. The allowlist is *seeded from observed Phase 2–4 usage*, so a false deny means we missed a real command — a one-line fix, loudly. |
 | **Pilot exit** | one engineer, **one week** of real work touching **≥ 3 agents**, no unrecovered routing failure, no guard false-positive | pilot log |
 | **Rollout safety** | any acceptance regression in week one → **revert `release`**, team announce | Section 1 rollback runbook |
 
