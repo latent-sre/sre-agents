@@ -184,7 +184,7 @@ def _relative_target(raw: str) -> str | None:
     return target.split("#", 1)[0].split("?", 1)[0]
 
 
-def _check_markdown(path: Path, text: str) -> list[str]:
+def _check_markdown(path: Path, text: str, owned_root: Path) -> list[str]:
     failures = []
     visible = _strip_fences(text)
     without_links = LINK_RE.sub("", visible)
@@ -198,6 +198,14 @@ def _check_markdown(path: Path, text: str) -> list[str]:
         if relative is None:
             continue
         destination = path.parent / Path(relative.replace("/", os.sep))
+        lexical_destination = Path(os.path.abspath(destination))
+        try:
+            lexical_destination.relative_to(owned_root.absolute())
+        except ValueError:
+            failures.append(
+                f"{path.as_posix()}: relative link escapes owned skill root: '{relative}'"
+            )
+            continue
         if not destination.exists():
             failures.append(
                 f"{path.as_posix()}: dead link '{relative}'"
@@ -255,14 +263,18 @@ def check(root: Path = ROOT) -> list[str]:
                 continue
             body, frontmatter_failures = _check_skill_frontmatter(skill_path, text)
             failures.extend(frontmatter_failures)
-            failures.extend(_check_markdown(skill_path, body))
+            failures.extend(_check_markdown(skill_path, body, skill_path.parent))
             failures.extend(_check_direct_bundle_links(skill_path, body))
             references = skill_path.parent / "references"
             if references.is_dir():
                 for reference in sorted(references.rglob("*.md")):
                     try:
                         failures.extend(
-                            _check_markdown(reference, reference.read_text(encoding="utf-8"))
+                            _check_markdown(
+                                reference,
+                                reference.read_text(encoding="utf-8"),
+                                skill_path.parent,
+                            )
                         )
                     except (OSError, UnicodeError) as exc:
                         failures.append(f"{reference.as_posix()}: cannot read UTF-8: {exc}")
@@ -270,7 +282,13 @@ def check(root: Path = ROOT) -> list[str]:
     if command_root.is_dir():
         for command in sorted(command_root.glob("*.md")):
             try:
-                failures.extend(_check_markdown(command, command.read_text(encoding="utf-8")))
+                failures.extend(
+                    _check_markdown(
+                        command,
+                        command.read_text(encoding="utf-8"),
+                        command_root,
+                    )
+                )
             except (OSError, UnicodeError) as exc:
                 failures.append(f"{command.as_posix()}: cannot read UTF-8: {exc}")
     return failures

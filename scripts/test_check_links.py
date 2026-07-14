@@ -90,6 +90,12 @@ class LinkCheckerTests(Fixture):
         self.skill("# Probe\n\nRead [missing](./references/missing.md).\n")
         self.assertTrue(any("dead link" in item for item in check_links.check(self.root)))
 
+    def test_existing_relative_link_cannot_escape_the_skill_root(self):
+        self.skill("# Probe\n\nRead [outside](../../outside.md).\n")
+        self.write("outside.md", "untrusted context\n")
+        failures = check_links.check(self.root)
+        self.assertTrue(any("escapes owned skill root" in item for item in failures))
+
     def test_chain_only_bundle_link_is_rejected(self):
         self.skill("# Probe\n\nRead [notes](./references/notes.md).\n")
         self.write(

@@ -14,10 +14,13 @@ import importlib.util
 import json
 import os
 import shutil
+import stat
 import tempfile
 import unittest
 import uuid
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -589,6 +592,79 @@ class ProductionGeneratorContracts(unittest.TestCase):
             self.skipTest(f"hardlink creation unavailable: {exc}")
         with self.assertRaisesRegex(generate_fleet.ManifestError, "hardlink"):
             generate_fleet.write(fleet.root)
+
+    def test_windows_reparse_attribute_is_link_like(self) -> None:
+        metadata = SimpleNamespace(
+            st_mode=stat.S_IFDIR,
+            st_file_attributes=getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400),
+        )
+        with mock.patch.object(Path, "lstat", return_value=metadata):
+            self.assertTrue(generate_fleet._is_link_or_junction(Path("reparse-probe")))
+
+    def test_link_like_canonical_manifest_and_bundle_file_are_rejected(self) -> None:
+        fleet = FleetRoot(self)
+        manifest_path = fleet.root / "canonical" / "fleet.json"
+        original = generate_fleet._is_link_or_junction
+        with mock.patch.object(
+            generate_fleet,
+            "_is_link_or_junction",
+            side_effect=lambda path: Path(path) == manifest_path or original(Path(path)),
+        ):
+            self.assertInvalid(fleet, "link or junction")
+
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate("stack-profile", references={"facts.md": "facts\n"})
+        bundle_path = fleet.root / "skills" / "stack-profile" / "references" / "facts.md"
+        with mock.patch.object(
+            generate_fleet,
+            "_is_link_or_junction",
+            side_effect=lambda path: Path(path) == bundle_path or original(Path(path)),
+        ):
+            self.assertInvalid(fleet, "link or junction")
+
+    @unittest.skipUnless(hasattr(os, "link"), "hardlinks unavailable")
+    def test_hardlinked_canonical_manifest_and_bundle_file_are_rejected(self) -> None:
+        fleet = FleetRoot(self)
+        manifest = fleet.root / "canonical" / "fleet.json"
+        manifest_peer = fleet.root / "manifest-peer.json"
+        try:
+            os.link(manifest, manifest_peer)
+        except OSError as exc:
+            self.skipTest(f"hardlink creation unavailable: {exc}")
+        self.assertInvalid(fleet, "manifest cannot be a hardlink")
+
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate("stack-profile", references={"facts.md": "facts\n"})
+        bundle = fleet.root / "skills" / "stack-profile" / "references" / "facts.md"
+        bundle_peer = fleet.root / "bundle-peer.md"
+        try:
+            os.link(bundle, bundle_peer)
+        except OSError as exc:
+            self.skipTest(f"hardlink creation unavailable: {exc}")
+        self.assertInvalid(fleet, "inventoried file is a hardlink")
+
+    def test_escaping_bundle_path_and_link_like_generated_tree_are_rejected(self) -> None:
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate("stack-profile", references={"facts.md": "facts\n"})
+        fleet.skill_record("stack-profile")["references"] = ["references/../outside.md"]
+        self.assertInvalid(fleet, "invalid POSIX-relative path")
+
+        fleet = FleetRoot(self)
+        generate_fleet.write(fleet.root)
+        generated_tree = fleet.root / "generated" / "copilot" / "agents"
+        original = generate_fleet._is_link_or_junction
+        with mock.patch.object(
+            generate_fleet,
+            "_is_link_or_junction",
+            side_effect=lambda path: Path(path) == generated_tree or original(Path(path)),
+        ):
+            with self.assertRaisesRegex(generate_fleet.ManifestError, "link or junction"):
+                generate_fleet.check(fleet.root)
+            with self.assertRaisesRegex(generate_fleet.ManifestError, "link or junction"):
+                generate_fleet.write(fleet.root)
 
 
 if __name__ == "__main__":
