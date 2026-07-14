@@ -74,11 +74,11 @@ the right runbook automatically — each tool in our stack has a mechanism:
 ### Worked excerpt — tier-marked steps with provenance
 
 > **Trigger**: alert `checkout-p95-burn-fast` (page).
-> **First checks**: `cf app checkout` → expect `6/6 running` [sourced] (incident #2026-07-02 transcript).
+> **First checks**: `cf app checkout` → expect `6/6 running` [unverified] (illustrative; no transcript is bundled).
 > **Procedure step 1** ⚠️ (Tier 2 — needs explicit human approval for this command/target):
 > `cf restart-app-instance checkout <idx>` — restarts ONE instance; the other five keep serving.
 > **Verification**: p95 back under 800 ms within 10 min on the checkout dashboard.
 > **Rollback**: none needed — the restart is the reset. If step 1 ran twice without effect, STOP:
 > restart is a stopgap, not a fix — escalate per the Escalation table.
-> **Provenance**: first checks and procedure step 1 [sourced] from incident #2026-07-02 transcript;
-> any later step is [unverified] until a human tests it before this runbook is trusted at 3 a.m.
+> **Provenance**: this excerpt is illustrative only. First checks, procedure step 1, and any later
+> step remain [unverified] until a human tests and records the exact command, target, actor, and result.
