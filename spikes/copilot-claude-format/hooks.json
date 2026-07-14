@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python3 -c \"import json; print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': 'FORMAT_BOUNDARY_SESSION_START:copilot'}}))\"",
+        "windows": "py -3 -c \"import json; print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': 'FORMAT_BOUNDARY_SESSION_START:copilot'}}))\"",
+        "linux": "python3 -c \"import json; print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': 'FORMAT_BOUNDARY_SESSION_START:copilot'}}))\"",
+        "osx": "python3 -c \"import json; print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': 'FORMAT_BOUNDARY_SESSION_START:copilot'}}))\""
+      }
+    ]
+  }
+}

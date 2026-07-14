@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "plugin": {
+    "name": "format-boundary-spike",
+    "version": "0.0.1",
+    "description": "Copilot and Claude agent-format boundary probe.",
+    "author": {
+      "name": "latent-sre"
+    }
+  },
+  "skills": [
+    {
+      "name": "format-boundary-probe",
+      "directory": "skills/format-boundary-probe",
+      "references": ["references/contract.md"]
+    }
+  ],
+  "agents": [
+    {
+      "name": "format-boundary-coordinator",
+      "description": "Coordinate the Copilot and Claude format-boundary probe by delegating the reference lookup to the terminal format-boundary-worker.",
+      "body": "agents/format-boundary-coordinator.md",
+      "capabilities": ["delegate"],
+      "skills": [],
+      "delegates_to": ["format-boundary-worker"],
+      "handoffs": [
+        {
+          "agent": "format-boundary-worker",
+          "label": "Run the reference probe",
+          "prompt": "Load format-boundary-probe, follow its contract link, and report the marker with evidence.",
+          "send": false
+        }
+      ]
+    },
+    {
+      "name": "format-boundary-worker",
+      "description": "Terminal read-only worker for the format-boundary probe; loads the shared skill and follows its explicit contract reference.",
+      "body": "agents/format-boundary-worker.md",
+      "capabilities": ["read", "search", "skill"],
+      "skills": ["format-boundary-probe"],
+      "delegates_to": [],
+      "handoffs": []
+    }
+  ]
+}

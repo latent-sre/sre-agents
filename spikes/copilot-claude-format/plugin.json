@@ -1,0 +1,10 @@
+{
+  "name": "format-boundary-spike",
+  "version": "0.0.1",
+  "description": "Copilot and Claude agent-format boundary probe.",
+  "author": {
+    "name": "latent-sre"
+  },
+  "agents": "./generated/copilot/agents/",
+  "skills": "./skills/"
+}
