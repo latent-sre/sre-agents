@@ -21,5 +21,5 @@ applications:
       - oncall-secrets
 # Blue-green uses a stable live name: push `oncall-tool-green` beside `oncall-tool`, test, map prod,
 # unmap the stable app, soak, then rotate `oncall-tool-green` to `oncall-tool` after the soak.
-# Production execution requires current human release-owner approval evidence required for the exact
+# Production execution requires current human release-owner approval evidence for the exact
 # target, manifest diff, commands, verification, and rollback.

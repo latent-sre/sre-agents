@@ -40,7 +40,8 @@ authorized live change; an agent never executes it.
 > **Verification**: `cf app checkout` shows `6/6 running`; 502 rate in the dashboard drops within 5 min.
 > **Rollback**: `cf scale checkout -i 4` — the exact inverse, no state carried.
 >
-> This is Tier 2 (reversible live change), so the human release owner needs explicit approval for this specific apply; I do not apply it.
+> This is Tier 2 (reversible live change), so a human release owner needs explicit approval for this
+> specific apply and then executes it; I do not apply live changes.
 > Meanwhile I'll continue the Tier 0 investigation of what changed, which needs no approval.
 
 The example is `[unverified]`: it is the required approval-request shape, not evidence from a foundation.

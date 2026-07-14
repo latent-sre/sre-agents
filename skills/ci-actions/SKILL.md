@@ -123,7 +123,10 @@ GitHub-OIDC→CredHub is **not** a turnkey integration — CredHub authenticates
 JWTs). The target integration remains `[unverified]` until the platform/security owners provide evidence.
 
 ## Tips
-- Validate locally where possible (`act`, or `gh workflow run` + `gh run watch`).
+- Validate workflow syntax with static `actionlint` plus existing trusted CI evidence. Do not execute an
+  imported or candidate workflow locally. An agent may observe an already-approved run with `gh run watch
+  <approved-run-id>`; the human release owner may dispatch only after approval names the exact workflow,
+  ref, and inputs and proves that dispatch cannot reach production.
 - Reproduce a failing run from logs before editing blindly; most failures are env/permission/secret,
   not YAML syntax.
 - The actual deploy step belongs to the human release owner acting from existing approval evidence for

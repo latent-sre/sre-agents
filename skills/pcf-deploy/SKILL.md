@@ -92,16 +92,23 @@ cf cancel-deployment checkout
 
 Support for canary and revisions varies by cf CLI/CAPI version and foundation configuration. It is
 `[unverified]` for the target until the human release owner records version and non-production output.
-Revisions do not capture routes, service bindings, or scale; cancelling a deployment is not rollback.
+
+With app revisions enabled, `cf rollback checkout --version <n>` reverts to a prior droplet + config
+(revisions/rollback are GA in cf CLI v8.10.0+; older v8.x marks them experimental).
 
 > **Revisions capture less than people assume.** A revision holds a droplet, a start command, and
-> environment variables—not routes, service bindings, or scale.
->
-> - The effective rollback window is bounded by retained staged droplets, even when more revision
->   records exist. *[sourced: Cloud Foundry application revisions documentation]*
-> - `cf rollback` deploys a new revision; it does not rewind history.
-> - Cancelling an in-flight deployment does not guarantee zero downtime and does not revert
->   environment-variable or service-binding changes. *[sourced: cf CLI deployment documentation]*
+> environment variables** — *not* routes, service bindings, or scale.
+> - **Your real rollback window is ~5 droplets, not 100 revisions.** CF retains only the **five most
+>   recent staged droplets**; you can roll back only to a revision still backed by one of them. A long
+>   revision history is largely decorative. (CAPI keeps up to 100 revisions by default — the droplet
+>   limit is the binding one.)
+> - `cf rollback` **deploys a new revision** (the counter goes up); it does not rewind history.
+> - **Cancelling ≠ rolling back.** `cf cancel-deployment` "does **not** guarantee zero downtime", and
+>   **changes to environment variables and service bindings are not reverted**.
+
+These target-specific retention and command behaviors remain `[unverified]` until the human release
+owner attaches foundation/version evidence. *[sourced: Cloud Foundry application revisions and cf CLI
+deployment documentation]*
 
 ## Config changes & scaling
 

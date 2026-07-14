@@ -35,6 +35,14 @@ becomes clear.
 - **Time-box the responder.** First on scene and not stabilized in **~15 min**, or the impact is
   growing → declare and assign an incident commander (run the process below); don't keep digging solo.
 
+### Security/integrity carve-out — preserve evidence first
+
+Suspected compromise or a security/integrity event exits the generic reliability-mitigation path.
+Immediately escalate to the human security incident owner and preserve state and forensic evidence.
+Do not restart, redeploy, scale, remap routes, or apply the mitigation table unless that owner directs
+the exact action. The typed `sre` agent is limited to the named read-only signal collection requested by
+that owner; it does not contain, eradicate, or recover the compromised system.
+
 ## Running the incident (command)
 
 Once declared, someone owns the **response** — the **incident commander** (often the on-call lead), who
@@ -93,6 +101,9 @@ typed `scribe` agent the timeline with preserved `[verified]`, `[sourced]`, and 
 **Mitigate before you fully understand.** Stopping user pain comes before root cause. Pick the
 **fastest safe, reversible** action. The decision boundary is explicit: the sre agent recommends; a human
 executes with human sign-off; in a major incident the incident commander owns the decision.
+
+This reliability table excludes suspected compromise and security/integrity events; the carve-out above
+controls those incidents.
 
 The commands below are planning examples, not current foundation evidence; they remain `[unverified]`
 until the human release owner validates the exact target, capability, command, and rollback.

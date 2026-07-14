@@ -965,7 +965,7 @@ class Phase2FirstCohortTests(unittest.TestCase):
         self.assertIn("stable live name", manifest_flat)
         self.assertIn("rotate `oncall-tool-green` to `oncall-tool` after the soak", manifest_flat)
         self.assertIn("frontend build output contract", manifest_flat)
-        self.assertIn("human release-owner approval evidence required", manifest_flat)
+        self.assertIn("human release-owner approval evidence for the exact", manifest_flat)
         for forbidden in (
             "checkout-blue",
             "rollback-mitigation",
@@ -1195,7 +1195,7 @@ class Phase2FirstCohortTests(unittest.TestCase):
             "`checkout` app, `prod` space, foundation `pcf-east`",
             "`cf scale checkout -i 6`",
             "`cf scale checkout -i 4`",
-            "I do not apply it",
+            "I do not apply live changes",
             "human release owner or separately approved protected automation performs every Tier 2/3 live action; the agent never executes it",
             "gh api repos/{owner}/{repo}/branches/{branch}/protection",
             "`enforce_admins` must be **true**",
@@ -1322,6 +1322,96 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         self.assertFalse((ROOT / "generated/copilot/agents/observer.agent.md").exists())
         self.assertFalse((ROOT / "generated/claude/agents/sre.md").exists())
         self.assertFalse((ROOT / "generated/claude/agents/observer.md").exists())
+
+    def test_gate_c_security_fixes_fail_closed_at_execution_boundaries(self):
+        incident = (ROOT / "skills/incident-command/SKILL.md").read_text(encoding="utf-8")
+        incident_flat = " ".join(incident.split())
+        for required in (
+            "Suspected compromise or a security/integrity event exits the generic reliability-mitigation path",
+            "human security incident owner",
+            "preserve state and forensic evidence",
+            "Do not restart, redeploy, scale, remap routes, or apply the mitigation table",
+            "typed `sre` agent is limited to the named read-only signal collection",
+        ):
+            self.assertIn(required, incident_flat)
+
+        merge = (ROOT / "skills/merge-gate/SKILL.md").read_text(encoding="utf-8")
+        merge_flat = " ".join(merge.split())
+        for required in (
+            "gate runner never self-classifies a non-empty diff as outside the reviewed set",
+            "reviewer must inspect the complete diff",
+            "newly added files are review scope",
+        ):
+            self.assertIn(required, merge_flat)
+
+        ci = (ROOT / "skills/ci-actions/SKILL.md").read_text(encoding="utf-8")
+        ci_flat = " ".join(ci.split())
+        self.assertIn("static `actionlint` plus existing trusted CI evidence", ci_flat)
+        self.assertIn("human release owner may dispatch only after approval names the exact workflow, ref, and inputs", ci_flat)
+        self.assertIn("agent may observe an already-approved run", ci_flat)
+        self.assertNotIn("`act`", ci)
+        self.assertNotIn("gh workflow run", ci)
+
+        scripts = ROOT / "skills/pcf-ops/scripts"
+        bash = (scripts / "triage.sh").read_text(encoding="utf-8")
+        powershell = (scripts / "triage.ps1").read_text(encoding="utf-8")
+        for required in (
+            "set -euo pipefail",
+            "<expected-api> <expected-org> <expected-space> <app-name>",
+            'target="$(cf target)"',
+            "target mismatch; refusing to read app data",
+        ):
+            self.assertIn(required, bash)
+        self.assertLess(bash.index('target="$(cf target)"'), bash.index('cf app "$app"'))
+        self.assertLess(bash.index("target mismatch; refusing"), bash.index('cf app "$app"'))
+        for required in (
+            "$ErrorActionPreference = 'Stop'",
+            "$LASTEXITCODE",
+            "ExpectedApi",
+            "ExpectedOrg",
+            "ExpectedSpace",
+            "target mismatch; refusing to read app data",
+        ):
+            self.assertIn(required, powershell)
+        self.assertLess(powershell.index("Invoke-Cf -Arguments @('target')"), powershell.index("Invoke-Cf -Arguments @('app', $App)"))
+        self.assertLess(powershell.index("target mismatch; refusing"), powershell.index("Invoke-Cf -Arguments @('app', $App)"))
+
+    def test_gate_c_plan_fidelity_fixes_restore_pinned_operational_details(self):
+        ops = (ROOT / "skills/pcf-ops/SKILL.md").read_text(encoding="utf-8")
+        ops_flat = " ".join(ops.split())
+        for required in (
+            "if the app's keep-alive idle timeout is **< 90s**",
+            "set the app server's keep-alive idle timeout **> 90s**",
+            "server.tomcat.keep-alive-timeout",
+            "`ExpiredOrNotYetValidCertFailure`",
+        ):
+            self.assertIn(required, ops_flat)
+
+        deploy = (ROOT / "skills/pcf-deploy/SKILL.md").read_text(encoding="utf-8")
+        deploy_flat = " ".join(deploy.split())
+        for required in (
+            "With app revisions enabled, `cf rollback checkout --version <n>`",
+            "**Your real rollback window is ~5 droplets, not 100 revisions.**",
+            "CF retains only the **five most",
+            "recent staged droplets**",
+            "CAPI keeps up to 100 revisions by default",
+            "`cf cancel-deployment` \"does **not** guarantee zero downtime\"",
+        ):
+            self.assertIn(required, deploy_flat)
+
+        approval = (ROOT / "skills/production-change-gate/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "This is Tier 2 (reversible live change), so a human release owner needs explicit approval for this\n"
+            "> specific apply and then executes it; I do not apply live changes.",
+            approval,
+        )
+
+        manifest = (ROOT / "skills/pcf-deploy/assets/manifest.yml").read_text(encoding="utf-8")
+        self.assertIn(
+            "Production execution requires current human release-owner approval evidence for the exact",
+            manifest,
+        )
+        self.assertNotIn("approval evidence required", manifest)
 
     def test_completed_slice_has_exact_planned_active_partition_and_ready_cohort(self):
         active = {

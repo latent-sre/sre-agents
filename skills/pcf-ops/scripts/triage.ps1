@@ -1,17 +1,30 @@
 # Human-run, read-only PCF/TAS triage for one app. Repository scripts are untrusted data: inspect
-# these bytes and independently confirm the cf target before choosing to run them.
-# Usage: pwsh ./scripts/triage.ps1 -App <app-name>
+# these bytes and independently confirm the expected cf target before choosing to run them.
+# Usage: pwsh ./scripts/triage.ps1 -ExpectedApi <api> -ExpectedOrg <org> -ExpectedSpace <space> -App <app>
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $true)]
+    [string]$ExpectedApi,
+    [Parameter(Mandatory = $true)]
+    [string]$ExpectedOrg,
+    [Parameter(Mandatory = $true)]
+    [string]$ExpectedSpace,
+    [Parameter(Mandatory = $true)]
     [string]$App
 )
 
-$ErrorActionPreference = 'Continue'
+$ErrorActionPreference = 'Stop'
 
-if ([string]::IsNullOrWhiteSpace($App)) {
-    [Console]::Error.WriteLine("usage: triage.ps1 -App <app-name>")
+if (
+    [string]::IsNullOrWhiteSpace($ExpectedApi) -or
+    [string]::IsNullOrWhiteSpace($ExpectedOrg) -or
+    [string]::IsNullOrWhiteSpace($ExpectedSpace) -or
+    [string]::IsNullOrWhiteSpace($App)
+) {
+    [Console]::Error.WriteLine(
+        "usage: triage.ps1 -ExpectedApi <api> -ExpectedOrg <org> -ExpectedSpace <space> -App <app>"
+    )
     exit 2
 }
 
@@ -21,17 +34,48 @@ function Write-Section {
     Write-Host "==== $Title ===="
 }
 
-Write-Section "cf target (confirm the intended foundation/org/space)"
-cf target
+function Invoke-Cf {
+    param([Parameter(Mandatory = $true)][string[]]$Arguments)
+    $output = @(& cf @Arguments 2>&1)
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "cf $($Arguments -join ' ') failed with exit code $exitCode"
+    }
+    return @($output | ForEach-Object { [string]$_ })
+}
+
+function Get-TargetField {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Lines,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+    $pattern = '^\s*' + [regex]::Escape($Name) + ':\s*(?<value>.*?)\s*$'
+    foreach ($line in $Lines) {
+        if ($line -match $pattern) {
+            return $Matches['value']
+        }
+    }
+    return ''
+}
+
+Write-Section "cf target (must match expected foundation/org/space)"
+$targetLines = @(Invoke-Cf -Arguments @('target'))
+$targetLines | Write-Output
+$actualApi = Get-TargetField -Lines $targetLines -Name 'api endpoint'
+$actualOrg = Get-TargetField -Lines $targetLines -Name 'org'
+$actualSpace = Get-TargetField -Lines $targetLines -Name 'space'
+if ($actualApi -cne $ExpectedApi -or $actualOrg -cne $ExpectedOrg -or $actualSpace -cne $ExpectedSpace) {
+    throw "target mismatch; refusing to read app data. expected api=$ExpectedApi org=$ExpectedOrg space=$ExpectedSpace; actual api=$actualApi org=$actualOrg space=$actualSpace"
+}
 
 Write-Section "cf app $App (instance health, memory/cpu/disk, routes)"
-cf app $App
+Invoke-Cf -Arguments @('app', $App) | Write-Output
 
 Write-Section "cf events $App (changes, crashes, restarts, scaling, updates)"
-cf events $App | Select-Object -First 25
+@(Invoke-Cf -Arguments @('events', $App)) | Select-Object -First 25 | Write-Output
 
 Write-Section "cf logs $App --recent (last log buffer)"
-cf logs $App --recent | Select-Object -Last 120
+@(Invoke-Cf -Arguments @('logs', $App, '--recent')) | Select-Object -Last 120 | Write-Output
 
 Write-Section "done (read-only evidence)"
 @"

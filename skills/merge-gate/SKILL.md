@@ -32,6 +32,9 @@ everything).
       inspect `git diff <review-sha>..HEAD`. If the diff is empty or touches only files outside the
       reviewed set, re-confirm and record the new SHA. If it touches reviewed code, **the approval is
       stale**; this item is a **NO** until re-review completes.
+      The gate runner never self-classifies a non-empty diff as outside the reviewed set. A reviewer must
+      inspect the complete diff and either re-review it or explicitly record why every changed path is
+      irrelevant to the prior finding; newly added files are review scope.
 - [ ] **Security** — when auth, input handling, secrets, crypto, file/network access, or dependencies
       changed, the reviewer's security lens is present and its P0/P1 findings are closed.
 - [ ] **No secrets** — no credentials, tokens, or keys appear in code, fixtures, artifacts, or logs.

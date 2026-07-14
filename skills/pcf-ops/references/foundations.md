@@ -29,7 +29,8 @@ not execution authority; confirm the active target independently before acting.
 ## Handy read-only one-liners (fill in real names)
 
 The four reads below ARE the triage sequence—run them directly; [triage.sh](../scripts/triage.sh) /
-[triage.ps1](../scripts/triage.ps1) are for humans and just run these same four commands.
+[triage.ps1](../scripts/triage.ps1) are for humans and just run these same four commands. Pass the
+expected API, org, and space explicitly; the helpers stop before app data is read if `cf target` differs.
 
 ```bash
 cf target
