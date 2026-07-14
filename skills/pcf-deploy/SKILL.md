@@ -22,12 +22,18 @@ does not load or run either gate. Show the manifest diff and rollback path befor
 
 > ### ⚠️ What a rollback does NOT reverse
 >
-> A route swap or `cf rollback` reverses **code + start command + revision-scoped environment
-> variables**. It does not reverse data/schema changes, service bindings, routes, scale, app features,
-> or actions consumers already took from the new version's output.
+> A route swap or `cf rollback` reverses **code + start command + (revision-scoped) env vars**. It does
+> **not** reverse:
+> - **data and schema**—the migration the new version ran, and the rows it wrote. *A rollback after
+>   an expand→contract migration's **contract** phase is not a rollback at all*—the column the old
+>   code needs is gone. Sequence values are not returned either. This is the one that causes outages.
+> - **service bindings**, **routes**, **scale** (instances / memory / disk quotas), **app features**—
+>   none of these are captured in a revision.
+> - anything a **consumer** already did with the new version's output (messages published, webhooks
+>   fired, files written).
 >
-> Design database changes with expand → backfill → dual-write → contract, and do not contract
-> until the old code is gone. Ownership map only—not a load: canonical `database-reliability` owns
+> Design the change so it is reversible: expand → backfill → dual-write, and do **not** contract until
+> the old code is gone for good. Ownership map only—not a load: canonical `database-reliability` owns
 > operational migration safety. "We can roll back" remains `[unverified]` until rehearsed evidence
 > proves it for the exact artifact and target.
 
@@ -113,19 +119,26 @@ deployment documentation]*
 ## Config changes & scaling
 
 ```bash
-cf set-env checkout KEY value && cf restart checkout
-cf set-env checkout JBP_CONFIG_X value && cf restage checkout
-cf scale checkout -i 5
-cf scale checkout -m 2G -k 2G
+cf set-env checkout KEY value && cf restart checkout   # runtime-only var: RESTART is enough
+cf set-env checkout JBP_CONFIG_X value && cf restage checkout   # buildpack-consumed: RESTAGE required
+cf scale checkout -i 5            # horizontal: more instances
+cf scale checkout -m 2G -k 2G     # vertical: memory/disk (causes restart)
 ```
 
-These are planning examples, never agent execution authority. The human release owner selects only the
-approved command. Runtime-only variables generally need restart; staging/buildpack variables generally
-need restage. The exact consumer and target behavior remains `[unverified]` until evidenced.
+> **"Env changes require a restage" is folklore.** It depends on **who consumes the variable**:
+> - **`cf restart`** is enough when only the **app** reads it at runtime (feature flags, endpoints,
+>   credentials). Restart reuses the already-compiled droplet—much faster, no rebuild.
+> - **`cf restage`** is genuinely required when the **buildpack** consumes it at **staging** time, because
+>   staging bakes it into the droplet (`JBP_CONFIG_*`, `BP_*`, `PIP_INDEX_URL`, `NODE_ENV` for pruning…).
+>
+> The blanket "TIP: use `cf restage`" that `cf set-env` prints is a **conservative default**—the CLI
+> can't know whether your buildpack reads the var. Restaging when a restart would do costs you a full
+> rebuild on every config flip. *(Note `cf env` shows the new value immediately while the running
+> container still has the old one—the value is injected at container start.)*
 
-The blanket restage tip is conservative because the CLI cannot know who consumes a variable. Runtime
-application settings take effect at container start; buildpack settings are consumed while staging the
-droplet. The plan must name which category applies before choosing restart versus restage.
+These are planning examples, never agent execution authority. `cf env` remains a credential-bearing,
+human-only read. The human release owner selects only the approved command; the exact consumer and
+target behavior remains `[unverified]` until evidenced.
 
 ## Verify every deploy
 

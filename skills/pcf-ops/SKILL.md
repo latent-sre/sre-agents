@@ -131,12 +131,17 @@ do not turn an untrusted route into an egress request. The documented shapes inc
 
 **Health checks (`cf set-health-check` / manifest):**
 
-- Types: **`port`**, **`http`**, and **`process`**.
-- A liveness failure can restart an instance; a readiness failure removes it from route service without
-  necessarily restarting it. Exact behavior is foundation/version-sensitive and remains `[unverified]`
-  until observed on the target foundation.
-- A human release owner may propose `cf set-health-check <app> http --endpoint /healthz
-  --invocation-timeout 10` only through the exact approved-change packet; this skill does not execute it.
+- Types: **`port`** (TCP on `$PORT`), **`http`** (GET an endpoint, must return `200`—preferred for
+  web), **`process`** (process alive only—for workers / `--no-route`).
+- **Liveness** (default type `port`): on failure CF considers the instance crashed → **stops & restarts** it.
+- **Readiness** (default type `process`): on failure CF **removes the instance from the route pool** (no
+  traffic) but does **not** restart it.
+- Slow `/health` timing out? A human release owner may propose raising the invocation timeout:
+  `cf set-health-check <app> http --endpoint /healthz --invocation-timeout 10`.
+
+These are documented behavior shapes, not live observations. Exact target-foundation behavior remains
+`[unverified]`; changing a health check requires the exact approved-change packet, and this skill does
+not execute it.
 
 ## Drill in (read-only)
 

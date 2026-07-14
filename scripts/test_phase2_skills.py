@@ -5,6 +5,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import shutil
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -1386,9 +1390,20 @@ Status: <draft|final>   Authors: <…>   Date: <…>
             "`ExpiredOrNotYetValidCertFailure`",
         ):
             self.assertIn(required, ops_flat)
+        for required in (
+            "**`port`** (TCP on `$PORT`)",
+            "**`http`** (GET an endpoint, must return `200`",
+            "**`process`** (process alive only",
+            "on failure CF considers the instance crashed",
+            "removes the instance from the route pool",
+            "does **not** restart it",
+            "--invocation-timeout 10",
+        ):
+            self.assertIn(required, ops_flat)
 
         deploy = (ROOT / "skills/pcf-deploy/SKILL.md").read_text(encoding="utf-8")
         deploy_flat = " ".join(deploy.split())
+        deploy_prose = deploy_flat.replace("> ", "")
         for required in (
             "With app revisions enabled, `cf rollback checkout --version <n>`",
             "**Your real rollback window is ~5 droplets, not 100 revisions.**",
@@ -1398,6 +1413,19 @@ Status: <draft|final>   Authors: <…>   Date: <…>
             "`cf cancel-deployment` \"does **not** guarantee zero downtime\"",
         ):
             self.assertIn(required, deploy_flat)
+        for required in (
+            "the migration the new version ran, and the rows it wrote",
+            "the column the old code needs is gone",
+            "Sequence values are not returned either",
+            "anything a **consumer** already did with the new version's output",
+            '"Env changes require a restage" is folklore',
+            "Restart reuses the already-compiled droplet",
+            "staging bakes it into the droplet",
+            "`JBP_CONFIG_*`, `BP_*`, `PIP_INDEX_URL`, `NODE_ENV`",
+            "the CLI can't know whether your buildpack reads the var",
+            "the value is injected at container start",
+        ):
+            self.assertIn(required, deploy_prose)
 
         approval = (ROOT / "skills/production-change-gate/SKILL.md").read_text(encoding="utf-8")
         self.assertIn(
@@ -1412,6 +1440,118 @@ Status: <draft|final>   Authors: <…>   Date: <…>
             manifest,
         )
         self.assertNotIn("approval evidence required", manifest)
+
+    def test_gate_c_pcf_triage_helpers_fail_closed_with_fake_cf(self):
+        scripts = ROOT / "skills/pcf-ops/scripts"
+        git_bash = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git/bin/bash.exe"
+        powershell = shutil.which("powershell.exe") or shutil.which("powershell")
+        if os.name == "nt" and not git_bash.is_file():
+            self.skipTest("Git Bash is unavailable for the hermetic Bash helper test")
+        bash = str(git_bash) if os.name == "nt" else (shutil.which("bash") or "")
+        if not bash or not powershell:
+            self.skipTest("Bash and Windows PowerShell are required for cross-helper behavior tests")
+
+        bash_fake = """#!/usr/bin/env bash
+printf '%s\\n' "$*" >> "$TRACE_FILE"
+if [[ "$1" == "target" ]]; then
+  [[ "${CF_TARGET_EXIT:-0}" == "0" ]] || exit "${CF_TARGET_EXIT}"
+  printf 'api endpoint: %s\\n' "$CF_API_VALUE"
+  [[ "${CF_OMIT_ORG:-0}" == "1" ]] || printf 'org: %s\\n' "$CF_ORG_VALUE"
+  [[ "${CF_OMIT_SPACE:-0}" == "1" ]] || printf 'space: %s\\n' "$CF_SPACE_VALUE"
+  exit 0
+fi
+printf 'fake %s output\\n' "$1"
+"""
+        cmd_fake = """@echo off
+echo %*>>"%TRACE_FILE%"
+if "%1"=="target" goto target
+echo fake %1 output
+exit /b 0
+:target
+if not "%CF_TARGET_EXIT%"=="0" exit /b %CF_TARGET_EXIT%
+echo api endpoint: %CF_API_VALUE%
+if not "%CF_OMIT_ORG%"=="1" echo org: %CF_ORG_VALUE%
+if not "%CF_OMIT_SPACE%"=="1" echo space: %CF_SPACE_VALUE%
+exit /b 0
+"""
+        cases = (
+            ("match", "https://api.pcf.example", "apps", "prod", {}, True),
+            ("api-mismatch", "https://wrong.example", "apps", "prod", {}, False),
+            ("org-mismatch", "https://api.pcf.example", "wrong", "prod", {}, False),
+            ("space-mismatch", "https://api.pcf.example", "apps", "wrong", {}, False),
+            ("missing-field", "https://api.pcf.example", "apps", "prod", {"CF_OMIT_SPACE": "1"}, False),
+            ("target-error", "https://api.pcf.example", "apps", "prod", {"CF_TARGET_EXIT": "7"}, False),
+        )
+
+        with tempfile.TemporaryDirectory(prefix="pcf-triage-fake-") as raw_temp:
+            temp = Path(raw_temp)
+            fake_cf = temp / "cf"
+            fake_cf.write_text(bash_fake, encoding="utf-8", newline="\n")
+            fake_cf.chmod(0o755)
+            (temp / "cf.cmd").write_text(cmd_fake, encoding="utf-8", newline="\r\n")
+            base_env = os.environ.copy()
+            base_env.update(
+                {
+                    "PATH": str(temp) + os.pathsep + base_env.get("PATH", ""),
+                    "CF_API_VALUE": "https://api.pcf.example",
+                    "CF_ORG_VALUE": "apps",
+                    "CF_SPACE_VALUE": "prod",
+                    "CF_TARGET_EXIT": "0",
+                    "CF_OMIT_ORG": "0",
+                    "CF_OMIT_SPACE": "0",
+                }
+            )
+
+            for helper in ("bash", "powershell"):
+                for name, expected_api, expected_org, expected_space, overrides, should_pass in cases:
+                    with self.subTest(helper=helper, case=name):
+                        trace = temp / f"{helper}-{name}.trace"
+                        env = base_env | {"TRACE_FILE": str(trace)} | overrides
+                        if helper == "bash":
+                            command = [
+                                bash,
+                                str(scripts / "triage.sh"),
+                                expected_api,
+                                expected_org,
+                                expected_space,
+                                "checkout",
+                            ]
+                        else:
+                            command = [
+                                powershell,
+                                "-NoProfile",
+                                "-ExecutionPolicy",
+                                "Bypass",
+                                "-File",
+                                str(scripts / "triage.ps1"),
+                                "-ExpectedApi",
+                                expected_api,
+                                "-ExpectedOrg",
+                                expected_org,
+                                "-ExpectedSpace",
+                                expected_space,
+                                "-App",
+                                "checkout",
+                            ]
+                        result = subprocess.run(
+                            command,
+                            cwd=ROOT,
+                            env=env,
+                            capture_output=True,
+                            text=True,
+                            timeout=15,
+                            check=False,
+                        )
+                        calls = trace.read_text(encoding="utf-8").splitlines() if trace.exists() else []
+                        if should_pass:
+                            self.assertEqual(0, result.returncode, result.stderr)
+                            self.assertEqual(
+                                ["target", "app checkout", "events checkout", "logs checkout --recent"],
+                                calls,
+                            )
+                        else:
+                            self.assertNotEqual(0, result.returncode)
+                            self.assertEqual(["target"], calls)
 
     def test_completed_slice_has_exact_planned_active_partition_and_ready_cohort(self):
         active = {
