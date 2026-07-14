@@ -207,8 +207,27 @@
       "scripts": []
     },
     { "name": "service-onboarding", "state": "planned", "activate_task": 32 },
-    { "name": "agent-authoring", "state": "planned", "activate_task": 25 },
-    { "name": "agent-security", "state": "planned", "activate_task": 25 },
+    {
+      "name": "agent-authoring",
+      "state": "active",
+      "directory": "skills/agent-authoring",
+      "references": [
+        "references/artifact.md",
+        "references/roster.md",
+        "references/tools.md",
+        "references/context.md"
+      ],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "agent-security",
+      "state": "active",
+      "directory": "skills/agent-security",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "obs-logs", "state": "planned", "activate_task": 27 },
     { "name": "obs-metrics", "state": "planned", "activate_task": 28 },
     { "name": "obs-traces", "state": "planned", "activate_task": 29 },

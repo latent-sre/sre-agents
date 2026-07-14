@@ -214,6 +214,27 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "agent-authoring": {
+        "name": "agent-authoring",
+        "state": "active",
+        "directory": "skills/agent-authoring",
+        "references": [
+            "references/artifact.md",
+            "references/roster.md",
+            "references/tools.md",
+            "references/context.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
+    "agent-security": {
+        "name": "agent-security",
+        "state": "active",
+        "directory": "skills/agent-security",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
