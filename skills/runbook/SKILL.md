@@ -31,7 +31,7 @@ Full fill-in template: [runbook template](./assets/runbook-template.md) — copy
 Rules:
 - Every command copy-pasteable as written — real paths and real names. A `<placeholder>` is allowed only for truly variable values, and then say where to find the value.
 - "Common failures" lists only what has been observed or is clearly plausible for this service — no padding to make the section look complete.
-- If you couldn't verify a command works (service not running, no access), mark it `unverified` rather than presenting it as tested.
+- If you couldn't verify a command works (service not running, no access), mark it `[unverified]` rather than presenting it as tested.
 
 ## Runbook vs playbook vs SOP
 - **Runbook** — steps to handle *one* alert/task/failure mode (this template).
@@ -56,7 +56,7 @@ conditions, and bump `last_verified` after each.
   `severity`, `last_verified`, `version`) so alerts auto-link and a linter can flag any not
   verified in ~90 days.
 - **Verify commands before publishing** — run read-only ones to confirm syntax; never run destructive
-  steps to "test" them; mark anything unverified.
+  steps to "test" them; mark anything `[unverified]`.
 
 ## Alert → runbook links and the Crawl → Walk → Run path
 
@@ -74,11 +74,11 @@ the right runbook automatically — each tool in our stack has a mechanism:
 ### Worked excerpt — tier-marked steps with provenance
 
 > **Trigger**: alert `checkout-p95-burn-fast` (page).
-> **First checks**: `cf app checkout` → expect `6/6 running` [verified: transcript 2026-07-02].
+> **First checks**: `cf app checkout` → expect `6/6 running` [verified] (transcript 2026-07-02).
 > **Procedure step 1** ⚠️ (Tier 2 — needs explicit human approval for this command/target):
 > `cf restart-app-instance checkout <idx>` — restarts ONE instance; the other five keep serving.
 > **Verification**: p95 back under 800 ms within 10 min on the checkout dashboard.
 > **Rollback**: none needed — the restart is the reset. If step 1 ran twice without effect, STOP:
 > restart is a stopgap, not a fix — escalate per the Escalation table.
-> **Provenance**: steps 1–2 [verified] from incident #2026-07-02; step 3 [unverified — never
-> exercised]; a human must test it before this runbook is trusted at 3 a.m.
+> **Provenance**: first checks and procedure step 1 [sourced] from incident #2026-07-02 transcript;
+> any later step is [unverified] until a human tests it before this runbook is trusted at 3 a.m.

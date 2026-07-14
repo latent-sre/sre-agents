@@ -189,10 +189,15 @@ class Phase2FirstCohortTests(unittest.TestCase):
             "**Moogsoft:** enrichment that attaches the runbook URL",
             "### Worked excerpt — tier-marked steps with provenance",
             "⚠️ (Tier 2 — needs explicit human approval for this command/target)",
-            "[verified: transcript 2026-07-02]",
-            "[unverified — never exercised]",
+            "[verified] (transcript 2026-07-02)",
+            "first checks and procedure step 1 [sourced] from incident #2026-07-02 transcript",
+            "any later step is [unverified] until a human tests it",
+            "mark it `[unverified]` rather than presenting it as tested",
+            "mark anything `[unverified]`",
         ):
             self.assertIn(required, normalized)
+        self.assertNotIn("steps 1–2 [verified]", normalized)
+        self.assertNotIn("step 3 [unverified", normalized)
         for required in (
             "Tier 2/3: record explicit human approval for the exact command/target plus rollback evidence before execution",
             "Hand over: trigger, evidence, attempted steps, current state, and the current owner.",
