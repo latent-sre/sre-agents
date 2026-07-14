@@ -8,13 +8,29 @@ import json
 import os
 import shutil
 import subprocess
-import tempfile
 import unittest
+import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 FLEET = ROOT / "canonical" / "fleet.json"
+
+
+@contextmanager
+def workspace_temp_directory(prefix: str):
+    """Create a test directory without tempfile's Windows-only restrictive ACL."""
+    root = ROOT.resolve()
+    path = (root / f"{prefix}{uuid.uuid4().hex}").resolve()
+    if path.parent != root or not path.name.startswith(prefix):
+        raise AssertionError("temporary test directory escaped the repository root")
+    path.mkdir()
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path)
+
 
 _SPEC = importlib.util.spec_from_file_location(
     "production_generate_fleet", ROOT / "scripts" / "generate_fleet.py"
@@ -1442,14 +1458,17 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         self.assertNotIn("approval evidence required", manifest)
 
     def test_gate_c_pcf_triage_helpers_fail_closed_with_fake_cf(self):
+        if os.environ.get("FLEET_ISOLATED_BEHAVIOR_TESTS") != "1":
+            self.skipTest(
+                "requires a credential-less, network-isolated runner; never execute mutable helper "
+                "bytes in an ordinary developer or agent environment"
+            )
         scripts = ROOT / "skills/pcf-ops/scripts"
         git_bash = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git/bin/bash.exe"
         powershell = shutil.which("powershell.exe") or shutil.which("powershell")
-        if os.name == "nt" and not git_bash.is_file():
-            self.skipTest("Git Bash is unavailable for the hermetic Bash helper test")
-        bash = str(git_bash) if os.name == "nt" else (shutil.which("bash") or "")
-        if not bash or not powershell:
-            self.skipTest("Bash and Windows PowerShell are required for cross-helper behavior tests")
+        bash = str(git_bash) if os.name == "nt" and git_bash.is_file() else (shutil.which("bash") or "")
+        if not bash and not powershell:
+            self.skipTest("neither Bash nor Windows PowerShell is available in the isolated runner")
 
         bash_fake = """#!/usr/bin/env bash
 printf '%s\\n' "$*" >> "$TRACE_FILE"
@@ -1483,16 +1502,36 @@ exit /b 0
             ("target-error", "https://api.pcf.example", "apps", "prod", {"CF_TARGET_EXIT": "7"}, False),
         )
 
-        with tempfile.TemporaryDirectory(prefix="pcf-triage-fake-") as raw_temp:
-            temp = Path(raw_temp)
+        with workspace_temp_directory(".tmp-pcf-triage-fake-") as temp:
+            home = temp / "home"
+            home.mkdir()
             fake_cf = temp / "cf"
             fake_cf.write_text(bash_fake, encoding="utf-8", newline="\n")
             fake_cf.chmod(0o755)
             (temp / "cf.cmd").write_text(cmd_fake, encoding="utf-8", newline="\r\n")
-            base_env = os.environ.copy()
+            if os.name == "nt":
+                system_root = os.environ.get("SystemRoot", r"C:\Windows")
+                safe_path_parts = [str(temp), str(Path(system_root) / "System32")]
+                if bash:
+                    safe_path_parts.append(str(Path(bash).parent.parent / "usr/bin"))
+                if powershell:
+                    safe_path_parts.append(str(Path(powershell).parent))
+                base_env = {
+                    "SystemRoot": system_root,
+                    "WINDIR": system_root,
+                    "ComSpec": str(Path(system_root) / "System32/cmd.exe"),
+                    "PATHEXT": ".COM;.EXE;.BAT;.CMD",
+                }
+            else:
+                safe_path_parts = [str(temp), "/usr/bin", "/bin"]
+                base_env = {}
             base_env.update(
                 {
-                    "PATH": str(temp) + os.pathsep + base_env.get("PATH", ""),
+                    "PATH": os.pathsep.join(safe_path_parts),
+                    "HOME": str(home),
+                    "USERPROFILE": str(home),
+                    "TEMP": str(temp),
+                    "TMP": str(temp),
                     "CF_API_VALUE": "https://api.pcf.example",
                     "CF_ORG_VALUE": "apps",
                     "CF_SPACE_VALUE": "prod",
@@ -1501,15 +1540,39 @@ exit /b 0
                     "CF_OMIT_SPACE": "0",
                 }
             )
+            resolved_cf = shutil.which("cf", path=base_env["PATH"])
+            self.assertIsNotNone(resolved_cf)
+            self.assertEqual(temp.resolve(), Path(resolved_cf).resolve().parent)
 
-            for helper in ("bash", "powershell"):
+            for helper, executable in (("bash", bash), ("powershell", powershell)):
+                if not executable:
+                    with self.subTest(helper=helper):
+                        raise unittest.SkipTest(f"{helper} is unavailable in this isolated runner")
+                    continue
+                if helper == "bash":
+                    probe = subprocess.run(
+                        [executable, "-c", "exit 0"],
+                        cwd=temp,
+                        env=base_env,
+                        capture_output=True,
+                        text=True,
+                        timeout=15,
+                        check=False,
+                    )
+                    if probe.returncode != 0:
+                        with self.subTest(helper=helper):
+                            raise unittest.SkipTest(
+                                "Bash cannot start inside this OS isolation boundary: "
+                                f"{probe.stderr.strip()}"
+                            )
+                        continue
                 for name, expected_api, expected_org, expected_space, overrides, should_pass in cases:
                     with self.subTest(helper=helper, case=name):
                         trace = temp / f"{helper}-{name}.trace"
                         env = base_env | {"TRACE_FILE": str(trace)} | overrides
                         if helper == "bash":
                             command = [
-                                bash,
+                                executable,
                                 str(scripts / "triage.sh"),
                                 expected_api,
                                 expected_org,
@@ -1518,7 +1581,7 @@ exit /b 0
                             ]
                         else:
                             command = [
-                                powershell,
+                                executable,
                                 "-NoProfile",
                                 "-ExecutionPolicy",
                                 "Bypass",
@@ -1535,7 +1598,7 @@ exit /b 0
                             ]
                         result = subprocess.run(
                             command,
-                            cwd=ROOT,
+                            cwd=temp,
                             env=env,
                             capture_output=True,
                             text=True,
