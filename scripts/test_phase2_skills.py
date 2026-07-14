@@ -472,10 +472,15 @@ class Phase2FirstCohortTests(unittest.TestCase):
             "a breaking change to a shipped contract is a principal-altitude change",
             "Ownership map only—not a load: canonical `eng-ladder` owns the altitude vocabulary.",
             "Never log secrets, tokens, or full request/response bodies.",
+            "Record only a bounded, redacted evidence excerpt: method/path, status, request ID, "
+            "and schema assertion. Strip Authorization headers, cookies, credentials, PII, and "
+            "full bodies; keep full evidence in an access-controlled local artifact referenced "
+            "by path and content hash.",
         ):
             self.assertIn(required, text)
         self.assertNotIn('{ "error": {', text)
         self.assertNotIn("Same envelope for validation errors", text)
+        self.assertNotIn("request and response pasted in the review packet", text)
 
         stack = (root / "references/stack.md").read_text(encoding="utf-8")
         consuming = (root / "references/consuming-apis.md").read_text(encoding="utf-8")
