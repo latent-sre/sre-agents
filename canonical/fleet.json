@@ -31,7 +31,16 @@
     "claude": null
   },
   "assembly_state": "content-building",
-  "commands": [],
+  "commands": [
+    {
+      "name": "adr",
+      "source": "commands/adr.md",
+      "description": "Scaffold a self-contained Nygard Architecture Decision Record under docs/adr. Invoke manually with sde selected. Triggers: 'create an ADR', 'scaffold an architecture decision record'.",
+      "argument_mode": "required",
+      "argument_usage": "<decision> [probe: <token>]",
+      "invocation_mode": "manual"
+    }
+  ],
   "skills": [
     {
       "name": "stack-profile",

@@ -24,5 +24,7 @@
     "./generated/claude/agents/scribe.md"
   ],
   "skills": "./skills/",
-  "commands": []
+  "commands": [
+    "./generated/claude/commands/adr.md"
+  ]
 }

@@ -245,6 +245,45 @@ class FleetRoot:
         self.flush()
         return agent
 
+    def add_command(
+        self,
+        name: str = "adr",
+        *,
+        description: str | None = None,
+        argument_mode: str = "required",
+        argument_usage: str = "<decision> [probe: <token>]",
+        invocation_mode: str = "manual",
+        body: str | None = None,
+    ) -> dict:
+        self.manifest["assembly_state"] = "content-building"
+        record = {
+            "name": name,
+            "source": f"commands/{name}.md",
+            "description": description
+            or (
+                "Scaffold a self-contained Nygard Architecture Decision Record under "
+                "docs/adr. Invoke manually with sde selected. Triggers: 'create an ADR', "
+                "'scaffold an architecture decision record'."
+            ),
+            "argument_mode": argument_mode,
+            "argument_usage": argument_usage,
+            "invocation_mode": invocation_mode,
+        }
+        self.manifest["commands"].append(record)
+        command_root = self.root / "canonical" / "commands"
+        command_root.mkdir(parents=True, exist_ok=True)
+        if body is None:
+            body = (
+                "# Fail-closed selected-agent preflight\n\n"
+                "Continue only with sde selected and existing edit/write capability.\n\n"
+                "Scaffold the decision: `{{arguments}}`.\n"
+            )
+        (command_root / f"{name}.md").write_text(
+            body, encoding="utf-8", newline="\n"
+        )
+        self.flush()
+        return record
+
 
 class ProductionGeneratorContracts(unittest.TestCase):
     maxDiff = None
@@ -604,6 +643,160 @@ class ProductionGeneratorContracts(unittest.TestCase):
         fleet = FleetRoot(self)
         (fleet.root / "SKILL.md").write_text("orphan\n", encoding="utf-8")
         self.assertInvalid(fleet, "root SKILL.md")
+
+    def test_content_building_commands_require_exact_schema_and_source_inventory(self) -> None:
+        fleet = FleetRoot(self)
+        fleet.add_command()
+        manifest, _ready = generate_fleet.load_and_validate(fleet.root)
+        self.assertEqual("adr", manifest["commands"][0]["name"])
+
+        mutations = (
+            ("unknown key", lambda record: record.update({"extra": True})),
+            ("missing key", lambda record: record.pop("description")),
+            ("source", lambda record: record.update({"source": "commands/wrong.md"})),
+            ("argument_mode", lambda record: record.update({"argument_mode": "optional"})),
+            ("argument_usage", lambda record: record.update({"argument_usage": ""})),
+            ("invocation_mode", lambda record: record.update({"invocation_mode": "auto"})),
+        )
+        for fragment, mutate in mutations:
+            with self.subTest(fragment=fragment):
+                broken = FleetRoot(self)
+                record = broken.add_command()
+                mutate(record)
+                self.assertInvalid(broken, fragment)
+
+        no_argument = FleetRoot(self)
+        no_argument.add_command(
+            name="status",
+            argument_mode="none",
+            argument_usage="",
+            body="# Status\n",
+        )
+        generate_fleet.load_and_validate(no_argument.root)
+
+        for body, fragment in (
+            ("# Missing sentinel\n", "sentinel"),
+            ("{{arguments}} then {{arguments}}\n", "sentinel"),
+            ("{{arguments}} plus $ARGUMENTS\n", "runtime argument expression"),
+            (
+                "{{arguments}} plus ${input:arguments}\n",
+                "runtime argument expression",
+            ),
+            ("{{arguments}} plus ${input:other}\n", "runtime argument expression"),
+            ("{{arguments}} plus ${CLAUDE_SKILL_DIR}\n", "runtime argument expression"),
+            ("{{arguments}} plus $1\n", "runtime argument expression"),
+            ("{{arguments}} plus $ARGUMENTS[0]\n", "runtime argument expression"),
+            ("{{arguments}}. Load `stack-profile` now.\n", "mandatory load"),
+        ):
+            with self.subTest(body=body):
+                broken = FleetRoot(self)
+                broken.add_command(body=body)
+                self.assertInvalid(broken, fragment)
+
+        orphan = FleetRoot(self)
+        orphan.manifest["assembly_state"] = "content-building"
+        command_root = orphan.root / "canonical" / "commands"
+        command_root.mkdir()
+        (command_root / "orphan.md").write_text("orphan\n", encoding="utf-8")
+        self.assertInvalid(orphan, "inventory")
+
+    def test_command_sources_reject_link_like_and_hardlinked_bodies(self) -> None:
+        linked = FleetRoot(self)
+        linked.add_command()
+        command_path = linked.root / "canonical" / "commands" / "adr.md"
+        original = generate_fleet._is_link_or_junction
+        with mock.patch.object(
+            generate_fleet,
+            "_is_link_or_junction",
+            side_effect=lambda path: Path(path) == command_path or original(Path(path)),
+        ):
+            self.assertInvalid(linked, "link or junction")
+
+        if not hasattr(os, "link"):
+            return
+        hardlinked = FleetRoot(self)
+        hardlinked.add_command()
+        command_path = hardlinked.root / "canonical" / "commands" / "adr.md"
+        other = hardlinked.root / "hardlink-source.md"
+        other.write_text("{{arguments}}\n", encoding="utf-8", newline="\n")
+        command_path.unlink()
+        try:
+            os.link(other, command_path)
+        except OSError as exc:
+            self.skipTest(f"hardlink creation unavailable: {exc}")
+        self.assertInvalid(hardlinked, "hardlink")
+
+    def test_command_projections_map_metadata_without_widening_and_preserve_body(self) -> None:
+        fleet = FleetRoot(self)
+        command = fleet.add_command()
+        manifest, ready = generate_fleet.load_and_validate(fleet.root)
+        outputs = generate_fleet.render(fleet.root, manifest, ready)
+        paths = {
+            Path("generated/copilot/commands/adr.md"),
+            Path("generated/copilot/prompts/adr.prompt.md"),
+            Path("generated/claude/commands/adr.md"),
+        }
+        self.assertTrue(paths <= set(outputs))
+        self.assertEqual(
+            "./generated/copilot/commands/",
+            json.loads(outputs[Path("plugin.json")])["commands"],
+        )
+        self.assertEqual(
+            ["./generated/claude/commands/adr.md"],
+            json.loads(outputs[Path(".claude-plugin/plugin.json")])["commands"],
+        )
+
+        canonical = (fleet.root / "canonical" / "commands" / "adr.md").read_text(
+            encoding="utf-8"
+        )
+        expected = {
+            Path("generated/copilot/commands/adr.md"): ("$ARGUMENTS", True, False),
+            Path("generated/copilot/prompts/adr.prompt.md"): (
+                "${input:arguments}", False, True
+            ),
+            Path("generated/claude/commands/adr.md"): ("$ARGUMENTS", True, False),
+        }
+        for path, (argument_expression, explicit_manual, has_name) in expected.items():
+            with self.subTest(path=path.as_posix()):
+                text = outputs[path].decode("utf-8")
+                self.assertTrue(text.startswith("---\n"))
+                frontmatter, body = text[4:].split("\n---\n", 1)
+                self.assertIn(
+                    f"description: {json.dumps(command['description'], ensure_ascii=False)}",
+                    frontmatter,
+                )
+                self.assertIn(
+                    f"argument-hint: {json.dumps(command['argument_usage'])}",
+                    frontmatter,
+                )
+                self.assertEqual(explicit_manual, "disable-model-invocation: true" in frontmatter)
+                self.assertEqual(has_name, "\nname: adr\n" in f"\n{frontmatter}\n")
+                for forbidden in ("\nagent:", "\ntools:", "\nallowed-tools:"):
+                    self.assertNotIn(forbidden, f"\n{frontmatter}")
+                self.assertEqual(1, body.count(argument_expression))
+                self.assertEqual(
+                    canonical,
+                    body.replace(argument_expression, "{{arguments}}"),
+                )
+
+    def test_command_write_removes_all_three_views_when_record_is_removed(self) -> None:
+        fleet = FleetRoot(self)
+        fleet.add_command()
+        generate_fleet.write(fleet.root)
+        projected = (
+            fleet.root / "generated" / "copilot" / "commands" / "adr.md",
+            fleet.root / "generated" / "copilot" / "prompts" / "adr.prompt.md",
+            fleet.root / "generated" / "claude" / "commands" / "adr.md",
+        )
+        self.assertTrue(all(path.is_file() for path in projected))
+
+        fleet.manifest["commands"] = []
+        (fleet.root / "canonical" / "commands" / "adr.md").unlink()
+        fleet.flush()
+        self.assertTrue(generate_fleet.check(fleet.root))
+        generate_fleet.write(fleet.root)
+        self.assertTrue(all(not path.exists() for path in projected))
+        self.assertEqual([], generate_fleet.check(fleet.root))
 
     def test_content_complete_flag_requires_exact_complete_ready_fleet(self) -> None:
         fleet = FleetRoot(self)

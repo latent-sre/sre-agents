@@ -224,6 +224,20 @@ EXPECTED_MODELS = {
     ],
     "claude": None,
 }
+EXPECTED_COMMANDS = [
+    {
+        "name": "adr",
+        "source": "commands/adr.md",
+        "description": (
+            "Scaffold a self-contained Nygard Architecture Decision Record under docs/adr. "
+            "Invoke manually with sde selected. Triggers: 'create an ADR', 'scaffold an "
+            "architecture decision record'."
+        ),
+        "argument_mode": "required",
+        "argument_usage": "<decision> [probe: <token>]",
+        "invocation_mode": "manual",
+    }
+]
 
 FLEET_KEYS = {
     "schema_version",
@@ -623,7 +637,9 @@ class Phase1CanonicalAuthoringTests(unittest.TestCase):
             "assembly_state must be content-building after the Phase-2 open",
         )
         self.assertAuthoringEqual(
-            [], self.fleet.get("commands"), "production commands must remain empty"
+            EXPECTED_COMMANDS,
+            self.fleet.get("commands"),
+            "canonical command inventory drifted",
         )
         self.assertAuthoringEqual(
             EXPECTED_MODELS, self.fleet.get("models"), "canonical model policy drifted"
