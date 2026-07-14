@@ -121,10 +121,17 @@ RELEASE_GATE_DESCRIPTION = (
     "gate\", \"can we release this\". Ownership map only—not a load: merge-gate = ready to merge; "
     "release-gate = ready to ship; production-change-gate = authorized to act on prod."
 )
+PRODUCTION_CHANGE_GATE_DESCRIPTION = (
+    "Authorize a production-facing action only after the exact target, command, approval tier, blast "
+    "radius, verification, rollback, and branch protection are proven. Triggers: 'authorize this "
+    "production change', 'can I run this cf command in prod', 'review this rollback plan'. Ownership "
+    "map only—not a load: canonical `merge-gate` decides merge readiness and canonical `release-gate` "
+    "decides ship readiness; this gate authorizes the prod action."
+)
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
-    "ci-actions", "merge-gate", "release-gate",
+    "ci-actions", "merge-gate", "release-gate", "production-change-gate",
 }
 
 
@@ -1146,6 +1153,55 @@ class Phase2FirstCohortTests(unittest.TestCase):
             "handoff-protocol",
         ):
             self.assertNotIn(forbidden, combined)
+
+    def test_task22_production_change_gate_enforces_tiered_human_authority(self):
+        self.assertEqual(
+            {
+                "name": "production-change-gate",
+                "state": "active",
+                "directory": "skills/production-change-gate",
+                "references": [],
+                "assets": [],
+                "scripts": [],
+            },
+            self.record("production-change-gate"),
+        )
+        self.assert_inventory("production-change-gate", {"SKILL.md"})
+        text = (ROOT / "skills/production-change-gate/SKILL.md").read_text(encoding="utf-8")
+        flat = " ".join(text.split())
+        self.assertEqual(PRODUCTION_CHANGE_GATE_DESCRIPTION, frontmatter_description(text))
+        self.assertLessEqual(len(PRODUCTION_CHANGE_GATE_DESCRIPTION.encode("utf-8")), 600)
+        for required in (
+            "Classify the change: Tier 0 (observe) / Tier 1 (prepare) / Tier 2 (reversible live) / Tier 3 (destructive or access-path)",
+            "Tier 0–1 proceed; Tier 2 needs explicit approval of the exact command shown; Tier 3 needs Tier-2 evidence plus a proven backup/recovery path",
+            "Approval covers only the commands and target shown — a material change re-enters this gate",
+            "Requesting approval for a human release owner to apply a Tier 2 change",
+            "`checkout` app, `prod` space, foundation `pcf-east`",
+            "`cf scale checkout -i 6`",
+            "`cf scale checkout -i 4`",
+            "I do not apply it",
+            "human release owner or separately approved protected automation performs every Tier 2/3 live action; the agent never executes it",
+            "gh api repos/{owner}/{repo}/branches/{branch}/protection",
+            "`enforce_admins` must be **true**",
+            "404s",
+            "**BLOCK**",
+            "[unverified]",
+            "reviewed SHA, green checks, exact release artifact, and named approver",
+            "exact rollback or backout plan",
+            "owned and executed by the human release owner",
+        ):
+            self.assertIn(required, flat)
+        self.assertNotIn("production-change-gate", self.fleet["skill_dependencies"])
+        for forbidden in (
+            "sre-engineer",
+            "sde-engineer",
+            "rollback-mitigation",
+            "CLAUDE.md",
+            "clear `release-gate`",
+            "run `release-gate`",
+            "load `release-gate`",
+        ):
+            self.assertNotIn(forbidden, text)
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {

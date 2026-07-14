@@ -173,7 +173,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "production-change-gate", "state": "planned", "activate_task": 22 },
+    {
+      "name": "production-change-gate",
+      "state": "active",
+      "directory": "skills/production-change-gate",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "incident-command", "state": "planned", "activate_task": 23 },
     { "name": "postmortem", "state": "planned", "activate_task": 23 },
     { "name": "service-onboarding", "state": "planned", "activate_task": 32 },

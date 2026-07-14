@@ -190,6 +190,14 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "production-change-gate": {
+        "name": "production-change-gate",
+        "state": "active",
+        "directory": "skills/production-change-gate",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
