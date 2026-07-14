@@ -98,9 +98,17 @@ DATABASE_RELIABILITY_DESCRIPTION = (
     "canonical `backend-craft` owns persistence code, and canonical `craft` owns safe refactoring "
     "and language idiom."
 )
+CI_ACTIONS_DESCRIPTION = (
+    "Author and fix GitHub Actions CI/CD for this team — reusable workflows, matrix builds, "
+    "environments with deployment protection, OIDC, caching, concurrency, least-privilege "
+    "permissions, self-hosted runners for on-prem/PCF. Triggers: 'set up CI', 'add a deploy job', "
+    "'why is this workflow failing', 'harden the pipeline'. The main→release promotion gate for "
+    "this repo lives here too."
+)
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
+    "ci-actions",
 }
 
 
@@ -984,6 +992,65 @@ class Phase2FirstCohortTests(unittest.TestCase):
             self.assertNotIn(forbidden, text)
         self.assertNotIn("required-skill-dependencies:start", text)
         self.assertNotIn("database-reliability", self.fleet["skill_dependencies"])
+
+    def test_task20_ci_actions_fixes_cf_auth_and_records_default_bamboo_delete(self):
+        self.assertEqual(
+            {
+                "name": "ci-actions",
+                "state": "active",
+                "directory": "skills/ci-actions",
+                "references": [],
+                "assets": ["assets/ci.reusable.yml"],
+                "scripts": [],
+            },
+            self.record("ci-actions"),
+        )
+        self.assert_inventory("ci-actions", {"SKILL.md", "assets/ci.reusable.yml"})
+        root = ROOT / "skills/ci-actions"
+        text = (root / "SKILL.md").read_text(encoding="utf-8")
+        asset = (root / "assets/ci.reusable.yml").read_text(encoding="utf-8")
+        flat = " ".join(text.split())
+        asset_flat = " ".join(asset.split())
+        self.assertEqual(CI_ACTIONS_DESCRIPTION, frontmatter_description(text))
+        self.assertIn("[ci.reusable.yml](./assets/ci.reusable.yml)", text)
+        for required in (
+            "Bamboo is legacy and no migration command is shipped",
+            "Encode the already-approved release criteria as protected-environment checks",
+            "`cf auth` with no arguments reads `CF_USERNAME`/`CF_PASSWORD` from the environment",
+            "[sourced: cf CLI `command/v7/auth_command.go` help text]",
+            "# fed to cf auth via env, never argv",
+            "Require an existing evidence packet for release readiness and the exact approved production action; this skill does not load or run either gate",
+            "authenticated environment, reviewed manifest, health check, rollback job, and current human approval",
+            "actual deploy step belongs to the human release owner acting from existing approval evidence",
+        ):
+            self.assertIn(required, flat)
+        self.assertIn("\n        cf auth\n", text)
+        self.assertIn("CF_PASSWORD: ${{ secrets.CF_PASSWORD }}", text)
+        for forbidden in (
+            'cf auth "$CF_USERNAME" "$CF_PASSWORD"',
+            "takes the password as an argument, so run it only on a locked-down",
+            "residual argv exposure during cf auth",
+            "use these as `release-gate` enforcement",
+            "see pcf-deploy",
+            "clear `release-gate` + `production-change-gate` first",
+            "bamboo-to-actions-migration",
+            "github-actions-ci",
+        ):
+            self.assertNotIn(forbidden, text + asset)
+        for required in (
+            "typed `reviewer` agent",
+            "production deployment requires current human release-owner approval evidence for the exact target and rollback",
+        ):
+            self.assertIn(required, asset_flat)
+        self.assertNotIn("ci-actions", self.fleet["skill_dependencies"])
+        self.assertEqual([], self.fleet["commands"])
+        self.assertFalse((ROOT / "canonical/commands/bamboo-to-actions.md").exists())
+        for generated in (
+            "generated/copilot/commands/bamboo-to-actions.md",
+            "generated/copilot/prompts/bamboo-to-actions.prompt.md",
+            "generated/claude/commands/bamboo-to-actions.md",
+        ):
+            self.assertFalse((ROOT / generated).exists())
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {

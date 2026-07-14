@@ -166,6 +166,14 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "ci-actions": {
+        "name": "ci-actions",
+        "state": "active",
+        "directory": "skills/ci-actions",
+        "references": [],
+        "assets": ["assets/ci.reusable.yml"],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {

@@ -149,7 +149,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "ci-actions", "state": "planned", "activate_task": 20 },
+    {
+      "name": "ci-actions",
+      "state": "active",
+      "directory": "skills/ci-actions",
+      "references": [],
+      "assets": ["assets/ci.reusable.yml"],
+      "scripts": []
+    },
     { "name": "merge-gate", "state": "planned", "activate_task": 21 },
     { "name": "release-gate", "state": "planned", "activate_task": 21 },
     { "name": "production-change-gate", "state": "planned", "activate_task": 22 },
