@@ -424,7 +424,12 @@ def _action_targets(line: str, catalog: tuple[str, ...], *, owner: str | None = 
             if target_at < 0:
                 break
             prefix = lowered[:target_at].replace("not a load", "")
-            if any(re.search(rf"\b{re.escape(stem)}(?=\s)", prefix) for stem in ACTION_STEMS):
+            suffix = lowered[target_at + len(target) :].replace("not a load", "")
+            if any(
+                re.search(rf"\b{re.escape(stem)}(?=\s)", context)
+                for stem in ACTION_STEMS
+                for context in (prefix, suffix)
+            ):
                 targets.append(target)
                 break
             search_from = target_at + len(target)

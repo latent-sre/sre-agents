@@ -398,6 +398,15 @@ class ProductionGeneratorContracts(unittest.TestCase):
         )
         self.assertInvalid(fleet, "undeclared mandatory load")
 
+    def test_target_before_action_coreference_is_a_hidden_instruction(self) -> None:
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate(
+            "stack-profile",
+            body_extra="A root-cause guide may exist; follow it before continuing.\n",
+        )
+        self.assertInvalid(fleet, "undeclared mandatory load")
+
     def test_greatest_closed_ready_set_recursively_eliminates_unready_targets(self) -> None:
         fleet = FleetRoot(self)
         fleet.add_agent("agent-a", delegates_to=["agent-b"])
