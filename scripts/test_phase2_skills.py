@@ -70,9 +70,16 @@ FRONTEND_CRAFT_DESCRIPTION = (
     "only—not a load: backend-craft owns the service behind the UI and obs-dashboards owns Grafana "
     "operations dashboards."
 )
+OPS_TOOLING_DESCRIPTION = (
+    "Build a new operator-facing or SRE tool — dashboard, CLI, automation service, monitor, internal "
+    "web tool — big enough to run requirements → right-sized design → build → review → verify as a "
+    "pipeline. Triggers: 'build a tool that', 'automate this workflow', 'new internal dashboard/CLI'. "
+    "Ownership map only—not a load: backend-craft and frontend-craft own focused single-layer "
+    "implementation."
+)
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
-    "frontend-craft",
+    "frontend-craft", "ops-tooling",
 }
 
 
@@ -620,6 +627,135 @@ class Phase2FirstCohortTests(unittest.TestCase):
             self.assertNotIn(stale_source, all_text)
         self.assertNotIn("required-skill-dependencies:start", all_text)
         self.assertNotIn("frontend-craft", self.fleet["skill_dependencies"])
+
+    def test_task17_ops_tooling_ports_pipeline_and_cli_reference(self):
+        record = self.record("ops-tooling")
+        self.assertEqual(
+            {
+                "name": "ops-tooling",
+                "state": "active",
+                "directory": "skills/ops-tooling",
+                "references": ["references/cli.md"],
+                "assets": ["assets/cli_skeleton.py"],
+                "scripts": [],
+            },
+            record,
+        )
+        self.assert_inventory(
+            "ops-tooling", {"SKILL.md", "references/cli.md", "assets/cli_skeleton.py"}
+        )
+
+        root = ROOT / "skills/ops-tooling"
+        text = (root / "SKILL.md").read_text(encoding="utf-8")
+        cli = (root / "references/cli.md").read_text(encoding="utf-8")
+        asset = (root / "assets/cli_skeleton.py").read_text(encoding="utf-8")
+        self.assertEqual(OPS_TOOLING_DESCRIPTION, frontmatter_description(text))
+        self.assertIn('argument-hint: "[what the tool should do]"', text)
+        self.assertIn(
+            'Announce at start: "Running the ops-tooling pipeline: requirements → right-sized design → build → review → verify."',
+            text,
+        )
+        self.assertIn("→ read [cli](./references/cli.md) when the tool is a CLI", text)
+        self.assertIn(
+            "Starter for CLIs: [cli_skeleton.py](./assets/cli_skeleton.py)", text
+        )
+        dependency_block = (
+            "<!-- required-skill-dependencies:start -->\n"
+            "## Required on-demand skill dependencies\n"
+            "- canonical `eng-ladder`; Copilot `eng-ladder`; Claude `sre-agents:eng-ladder`\n"
+            "<!-- required-skill-dependencies:end -->"
+        )
+        self.assertIn(dependency_block, text)
+        self.assertEqual(1, text.count("required-skill-dependencies:start"))
+        self.assertEqual(["eng-ladder"], self.fleet["skill_dependencies"]["ops-tooling"])
+        self.assertEqual("active", self.record("eng-ladder")["state"])
+
+        for required in (
+            "Use the dependency block to load canonical `eng-ladder` (Copilot `eng-ladder`; "
+            "Claude `sre-agents:eng-ladder`), then read its principal or distinguished reference—or "
+            "return the material fork to your caller.",
+            "Spawn `sde` with the requirements",
+            "one `sde` per component",
+            "tell `sde` which canonical layer the build touches; `sde` resolves that layer through "
+            "its own required-skills block—this skill neither preloads nor loads craft",
+            "stop patching, restate the leading hypothesis and strongest alternative, then run the "
+            "cheapest falsifier before changing code again.",
+            "Spawn `reviewer` with the mission and **threat model**",
+            "Deployment execution belongs to the human release owner after an exact "
+            "target/action/rollback approval; onboarding documentation is part of this tool's "
+            "delivery packet.",
+            "Record it in the repository's runtime-neutral project instruction file, such as "
+            "root `AGENTS.md`",
+        ):
+            self.assertIn(required, text)
+        for stale_source in (
+            "sde-agents:sde-fullstack",
+            "sde-agents:code-reviewer",
+            "sde-agents:principal-engineer",
+            "sde-agents:distinguished-architect",
+            "sde-fullstack preloads both craft skills",
+            "switch to root-cause",
+            "If the tool lands on the lab, hand off to `sde-agents:homelab-platform` with the "
+            "`service-onboard` checklist and the tool's runbook as acceptance criteria — "
+            "built-but-never-onboarded is not done.",
+            "CLAUDE.md",
+            "Claude Code loads",
+            "Running the sre-tool pipeline",
+        ):
+            self.assertNotIn(stale_source, text)
+
+        self.assertTrue(
+            cli.startswith(
+                "Read this when the tool is a CLI — exit codes, streams, --dry-run, "
+                "confirm-before-destruct are the scripting contract.\n\n"
+                "This file owns CLI shape; language idiom remains the caller's responsibility—"
+                "canonical `craft` is an ownership label, not a load."
+            )
+        )
+        self.assertIn("Starter: [cli_skeleton.py](../assets/cli_skeleton.py).", cli)
+        for heading in (
+            "## Framework",
+            "## Exit codes & streams (the scripting contract)",
+            "## Safety (state-changing CLIs)",
+            "## Config & secrets",
+            "## UX",
+            "## Testing",
+            "## Definition of done",
+        ):
+            self.assertIn(heading, cli)
+        for required in (
+            "version the JSON contract and preserve or explicitly migrate consumers before changing it",
+            "External calls set connect/read timeouts, bounded retry/backoff, pagination limits, and "
+            "response-schema validation.",
+            "Write the failing exit/output/side-effect assertion first; tools include `pytest` + "
+            "Typer/Click runner, `bats`, or `Pester`.",
+        ):
+            self.assertIn(required, cli)
+        self.assertNotIn("## Handoffs", cli)
+
+        for required in (
+            "Starter skeleton for an ops CLI — copy and adapt. Embodies the ops-tooling rules.",
+            "class Exit(IntEnum):",
+            "class Plan:",
+            "def decide(app_name: str, want: int) -> Plan:",
+            "def apply(plan: Plan) -> None:",
+            "@app.command()",
+            'if not os.getenv("CF_TOKEN"):',
+            'if __name__ == "__main__":',
+        ):
+            self.assertIn(required, asset)
+
+        all_text = text + "\n" + cli + "\n" + asset
+        for stale_name in (
+            "ops-cli",
+            "ops-stack-integration",
+            "safe-refactor",
+            "tdd-workflow",
+            "sre-tool",
+            "service-onboard",
+            "homelab-platform",
+        ):
+            self.assertNotIn(stale_name, all_text)
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {

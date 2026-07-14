@@ -134,6 +134,14 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "ops-tooling": {
+        "name": "ops-tooling",
+        "state": "active",
+        "directory": "skills/ops-tooling",
+        "references": ["references/cli.md"],
+        "assets": ["assets/cli_skeleton.py"],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {

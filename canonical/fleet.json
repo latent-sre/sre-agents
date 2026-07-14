@@ -117,7 +117,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "ops-tooling", "state": "planned", "activate_task": 17 },
+    {
+      "name": "ops-tooling",
+      "state": "active",
+      "directory": "skills/ops-tooling",
+      "references": ["references/cli.md"],
+      "assets": ["assets/cli_skeleton.py"],
+      "scripts": []
+    },
     { "name": "pcf-ops", "state": "planned", "activate_task": 18 },
     { "name": "pcf-deploy", "state": "planned", "activate_task": 18 },
     { "name": "database-reliability", "state": "planned", "activate_task": 19 },
