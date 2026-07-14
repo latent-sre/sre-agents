@@ -74,6 +74,22 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": ["assets/runbook-template.md"],
         "scripts": [],
     },
+    "eng-ladder": {
+        "name": "eng-ladder",
+        "state": "active",
+        "directory": "skills/eng-ladder",
+        "references": [
+            "references/builder.md",
+            "references/principal.md",
+            "references/distinguished.md",
+            "references/responder.md",
+            "references/investigator.md",
+            "references/elite.md",
+            "references/golden-signals.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {

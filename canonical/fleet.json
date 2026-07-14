@@ -57,7 +57,22 @@
       "assets": ["assets/runbook-template.md"],
       "scripts": []
     },
-    { "name": "eng-ladder", "state": "planned", "activate_task": 13 },
+    {
+      "name": "eng-ladder",
+      "state": "active",
+      "directory": "skills/eng-ladder",
+      "references": [
+        "references/builder.md",
+        "references/principal.md",
+        "references/distinguished.md",
+        "references/responder.md",
+        "references/investigator.md",
+        "references/elite.md",
+        "references/golden-signals.md"
+      ],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "craft", "state": "planned", "activate_task": 14 },
     { "name": "backend-craft", "state": "planned", "activate_task": 15 },
     { "name": "frontend-craft", "state": "planned", "activate_task": 16 },
