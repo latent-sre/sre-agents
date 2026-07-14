@@ -77,9 +77,22 @@ OPS_TOOLING_DESCRIPTION = (
     "Ownership map only—not a load: backend-craft and frontend-craft own focused single-layer "
     "implementation."
 )
+PCF_OPS_DESCRIPTION = (
+    "Investigate application-side PCF/TAS failures with cf app, events, logs, and routes, and "
+    "distinguish app faults from platform-wide symptoms. Triggers: 'the app is crashing', 'why is "
+    "my app 502-ing', 'exit code 137', 'X-Cf-RouterError'. Ownership map only—not a load: canonical "
+    "`stack-profile` supplies boundary facts; widespread Diego/Gorouter failures go to the platform "
+    "team with evidence."
+)
+PCF_DEPLOY_DESCRIPTION = (
+    "Plan human-approved VMware TAS/PCF application deploys, blue-green cutovers, scaling, and "
+    "rollback verification. Triggers: 'deploy this app to PCF', 'design a blue-green deploy', "
+    "'scale this PCF app'. Ownership map only—not a load: canonical `release-gate` decides "
+    "readiness and canonical `incident-command` owns rollback decisions."
+)
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
-    "frontend-craft", "ops-tooling",
+    "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy",
 }
 
 
@@ -770,6 +783,148 @@ class Phase2FirstCohortTests(unittest.TestCase):
             "homelab-platform",
         ):
             self.assertNotIn(stale_name, all_text)
+
+    def test_task18_pcf_ops_and_deploy_are_audit_clean_and_dependency_free(self):
+        pcf_ops_inventory = {
+            "SKILL.md",
+            "references/foundations.md",
+            "scripts/triage.sh",
+            "scripts/triage.ps1",
+        }
+        pcf_deploy_inventory = {"SKILL.md", "assets/manifest.yml"}
+        self.assertEqual(
+            {
+                "name": "pcf-ops",
+                "state": "active",
+                "directory": "skills/pcf-ops",
+                "references": ["references/foundations.md"],
+                "assets": [],
+                "scripts": ["scripts/triage.sh", "scripts/triage.ps1"],
+            },
+            self.record("pcf-ops"),
+        )
+        self.assertEqual(
+            {
+                "name": "pcf-deploy",
+                "state": "active",
+                "directory": "skills/pcf-deploy",
+                "references": [],
+                "assets": ["assets/manifest.yml"],
+                "scripts": [],
+            },
+            self.record("pcf-deploy"),
+        )
+        self.assert_inventory("pcf-ops", pcf_ops_inventory)
+        self.assert_inventory("pcf-deploy", pcf_deploy_inventory)
+
+        ops_root = ROOT / "skills/pcf-ops"
+        deploy_root = ROOT / "skills/pcf-deploy"
+        ops = (ops_root / "SKILL.md").read_text(encoding="utf-8")
+        foundations = (ops_root / "references/foundations.md").read_text(encoding="utf-8")
+        triage_sh = (ops_root / "scripts/triage.sh").read_text(encoding="utf-8")
+        triage_ps1 = (ops_root / "scripts/triage.ps1").read_text(encoding="utf-8")
+        deploy = (deploy_root / "SKILL.md").read_text(encoding="utf-8")
+        manifest = (deploy_root / "assets/manifest.yml").read_text(encoding="utf-8")
+        ops_flat = " ".join(ops.split())
+        deploy_flat = " ".join(deploy.split())
+        manifest_flat = " ".join(manifest.split())
+
+        self.assertEqual(PCF_OPS_DESCRIPTION, frontmatter_description(ops))
+        self.assertEqual(PCF_DEPLOY_DESCRIPTION, frontmatter_description(deploy))
+        for link in (
+            "[triage.sh](./scripts/triage.sh)",
+            "[triage.ps1](./scripts/triage.ps1)",
+            "[references/foundations.md](./references/foundations.md)",
+        ):
+            self.assertIn(link, ops)
+        self.assertIn("[triage.sh](../scripts/triage.sh)", foundations)
+        self.assertIn("[triage.ps1](../scripts/triage.ps1)", foundations)
+        for required in (
+            "We operate **our apps**; the **platform**",
+            "escalate with evidence",
+            "Fleet agents never run `cf env`, `cf service-key`, or `CF_TRACE` output",
+            "canonical `incident-command` owns mitigation choice",
+            "the human-invoked `/pcf-deploy` workflow owns deployment execution",
+            "already-approved Tier-2/3 evidence packet",
+            "`cf set-health-check` / `cf restart`",
+        ):
+            self.assertIn(required, ops_flat)
+        self.assertIn("The four reads below ARE the triage sequence", foundations)
+
+        runtime_outputs = triage_sh + "\n" + triage_ps1
+        runtime_outputs_flat = " ".join(runtime_outputs.split())
+        for required in (
+            "timestamp and correlation ID",
+            "logs, metrics, and traces",
+            "human release owner",
+            "exact approved target/action/rollback evidence",
+        ):
+            self.assertIn(required, runtime_outputs_flat)
+        for forbidden in (
+            "readonly-guard",
+            "PreToolUse",
+            "splunk-triage",
+            "wavefront-queries",
+            "rollback-mitigation",
+            "production-change-gate",
+            "sre-engineer",
+            "sre-ladder",
+            ".claude/skills",
+        ):
+            self.assertNotIn(forbidden, ops + foundations + runtime_outputs)
+
+        self.assertIn("disable-model-invocation: true", deploy)
+        self.assertIn(
+            "# Deploys are human-initiated: invoke explicitly as Copilot `/pcf-deploy` or "
+            "Claude `/sre-agents:pcf-deploy`; never auto-load.",
+            deploy,
+        )
+        self.assertIn("**Agents never execute deployment.**", deploy)
+        self.assertIn("[manifest.yml](./assets/manifest.yml)", deploy)
+        expected_rotation = "\n".join(
+            (
+                "cf push checkout-green -f manifest.yml --no-route",
+                "cf map-route checkout-green apps.example.com --hostname checkout-test",
+                "cf map-route checkout-green apps.example.com --hostname checkout",
+                "cf unmap-route checkout apps.example.com --hostname checkout",
+                "cf unmap-route checkout-green apps.example.com --hostname checkout-test",
+                "cf delete checkout -f",
+                "cf rename checkout-green checkout",
+            )
+        )
+        compact_deploy = "\n".join(
+            line.split("#", 1)[0].rstrip() for line in deploy.splitlines()
+            if line.lstrip().startswith("cf ")
+        )
+        self.assertIn(expected_rotation, compact_deploy)
+        for required in (
+            "The live app keeps the stable name (`checkout`); green is always the disposable one.",
+            "Rollback before the rotation is route re-mapping; after `cf delete`, rollback is a fresh push",
+            "[unverified] Manifest-name interaction",
+            "real foundation",
+            "human release owner",
+            "evidence packet showing the release and production-change gates were completed",
+            "After cutover, record traffic, errors, latency, and saturation",
+        ):
+            self.assertIn(required, deploy_flat)
+        self.assertIn("stable live name", manifest_flat)
+        self.assertIn("rotate `oncall-tool-green` to `oncall-tool` after the soak", manifest_flat)
+        self.assertIn("frontend build output contract", manifest_flat)
+        self.assertIn("human release-owner approval evidence required", manifest_flat)
+        for forbidden in (
+            "checkout-blue",
+            "rollback-mitigation",
+            "clear `release-gate`",
+            "golden-signals reference in `sre-ladder`",
+            "spa-architecture",
+            "unmap the old app's route and delete it",
+        ):
+            self.assertNotIn(forbidden, deploy + manifest)
+        self.assertNotIn("required-skill-dependencies:start", ops + deploy)
+        self.assertGreaterEqual(ops.count("[sourced:"), 3)
+        self.assertIn("[unverified]", ops)
+        self.assertNotIn("pcf-ops", self.fleet["skill_dependencies"])
+        self.assertNotIn("pcf-deploy", self.fleet["skill_dependencies"])
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {

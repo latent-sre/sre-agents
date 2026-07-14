@@ -125,8 +125,22 @@
       "assets": ["assets/cli_skeleton.py"],
       "scripts": []
     },
-    { "name": "pcf-ops", "state": "planned", "activate_task": 18 },
-    { "name": "pcf-deploy", "state": "planned", "activate_task": 18 },
+    {
+      "name": "pcf-ops",
+      "state": "active",
+      "directory": "skills/pcf-ops",
+      "references": ["references/foundations.md"],
+      "assets": [],
+      "scripts": ["scripts/triage.sh", "scripts/triage.ps1"]
+    },
+    {
+      "name": "pcf-deploy",
+      "state": "active",
+      "directory": "skills/pcf-deploy",
+      "references": [],
+      "assets": ["assets/manifest.yml"],
+      "scripts": []
+    },
     { "name": "database-reliability", "state": "planned", "activate_task": 19 },
     { "name": "ci-actions", "state": "planned", "activate_task": 20 },
     { "name": "merge-gate", "state": "planned", "activate_task": 21 },

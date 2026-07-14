@@ -52,6 +52,15 @@ class LinkCheckerTests(Fixture):
         self.write("skills/probe-skill/assets/template.txt", "template\n")
         self.assertEqual([], check_links.check(self.root))
 
+    def test_top_level_frontmatter_comment_is_allowed(self):
+        frontmatter = CLEAN_FRONTMATTER.replace(
+            'argument-hint: "[the probe]"',
+            '# Human-invoked skill; this comment is model-visible context.\n'
+            'argument-hint: "[the probe]"',
+        )
+        self.write("skills/probe-skill/SKILL.md", frontmatter + "\n# Probe\n")
+        self.assertEqual([], check_links.check(self.root))
+
     def test_frontmatter_contract_rejects_each_silent_load_failure(self):
         cases = {
             "unknown": CLEAN_FRONTMATTER.replace(

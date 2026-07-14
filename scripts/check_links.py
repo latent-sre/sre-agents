@@ -112,6 +112,9 @@ def _frontmatter(text: str, path: Path) -> tuple[dict[str, str], str, list[str]]
         if not line.strip():
             index += 1
             continue
+        if line.startswith("#"):
+            index += 1
+            continue
         match = KEY_RE.fullmatch(line)
         if not match:
             failures.append(f"{where}:{index + 1}: malformed top-level frontmatter")

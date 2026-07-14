@@ -142,6 +142,22 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": ["assets/cli_skeleton.py"],
         "scripts": [],
     },
+    "pcf-ops": {
+        "name": "pcf-ops",
+        "state": "active",
+        "directory": "skills/pcf-ops",
+        "references": ["references/foundations.md"],
+        "assets": [],
+        "scripts": ["scripts/triage.sh", "scripts/triage.ps1"],
+    },
+    "pcf-deploy": {
+        "name": "pcf-deploy",
+        "state": "active",
+        "directory": "skills/pcf-deploy",
+        "references": [],
+        "assets": ["assets/manifest.yml"],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
