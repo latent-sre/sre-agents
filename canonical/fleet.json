@@ -88,7 +88,21 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "backend-craft", "state": "planned", "activate_task": 15 },
+    {
+      "name": "backend-craft",
+      "state": "active",
+      "directory": "skills/backend-craft",
+      "references": [
+        "references/stack.md",
+        "references/consuming-apis.md",
+        "references/background-work.md",
+        "references/live-data.md",
+        "references/persistence.md",
+        "references/auth.md"
+      ],
+      "assets": ["assets/openapi.starter.yaml"],
+      "scripts": []
+    },
     { "name": "frontend-craft", "state": "planned", "activate_task": 16 },
     { "name": "ops-tooling", "state": "planned", "activate_task": 17 },
     { "name": "pcf-ops", "state": "planned", "activate_task": 18 },

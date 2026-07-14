@@ -56,7 +56,16 @@ CRAFT_DESCRIPTION = (
     "Ownership map only—not a load: backend-craft owns API/resiliency design and frontend-craft owns "
     "TypeScript/React UI design."
 )
-EXPECTED_ACTIVE = {"stack-profile", "root-cause", "runbook", "eng-ladder", "craft"}
+BACKEND_CRAFT_DESCRIPTION = (
+    "Build or change an API or backend service — HTTP endpoints, workers, schedulers, the service "
+    "behind a UI — and consume third-party APIs safely (clients, SDK wrappers, sync jobs, webhooks), "
+    "including our platform/obs APIs. Triggers: 'add an endpoint', 'wrap X behind an API', 'write a "
+    "client for Y'. Ownership map only—not a load: frontend-craft owns UI work, database-reliability "
+    "owns live-data operations, and craft owns language idiom."
+)
+EXPECTED_ACTIVE = {
+    "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft"
+}
 
 
 def frontmatter_description(text: str) -> str:
@@ -394,6 +403,116 @@ class Phase2FirstCohortTests(unittest.TestCase):
         self.assertNotIn("React craft", all_text)
         self.assertNotIn("required-skill-dependencies:start", all_text)
         self.assertNotIn("craft", self.fleet["skill_dependencies"])
+
+    def test_task15_backend_craft_imports_whole_and_absorbs_work_api_rules(self):
+        references = [
+            "references/stack.md",
+            "references/consuming-apis.md",
+            "references/background-work.md",
+            "references/live-data.md",
+            "references/persistence.md",
+            "references/auth.md",
+        ]
+        record = self.record("backend-craft")
+        self.assertEqual(
+            {
+                "name": "backend-craft",
+                "state": "active",
+                "directory": "skills/backend-craft",
+                "references": references,
+                "assets": ["assets/openapi.starter.yaml"],
+                "scripts": [],
+            },
+            record,
+        )
+        self.assert_inventory(
+            "backend-craft", {"SKILL.md", *references, "assets/openapi.starter.yaml"}
+        )
+
+        root = ROOT / "skills/backend-craft"
+        text = (root / "SKILL.md").read_text(encoding="utf-8")
+        self.assertEqual(BACKEND_CRAFT_DESCRIPTION, frontmatter_description(text))
+        self.assertIn('argument-hint: "[the API or service to build or change]"', text)
+        for relative in [*references, "assets/openapi.starter.yaml"]:
+            self.assertIn(f"(./{relative})", text)
+        self.assertGreaterEqual(text.count("(./references/persistence.md)"), 2)
+        self.assertGreaterEqual(text.count("(./references/consuming-apis.md)"), 2)
+        self.assertIn(
+            "Starter contract: [openapi.starter.yaml](./assets/openapi.starter.yaml) — "
+            "problem+json, cursor pagination, bearer auth.",
+            text,
+        )
+        for required in (
+            "Model **nouns as resources**",
+            "`400` (malformed) vs `422` (valid shape, bad value) vs `409` (conflict)",
+            "`401` (who are you) vs `403` (not allowed)",
+            "Never `200` with an error in the body",
+            "## Errors — RFC 9457 problem+json",
+            '"type": "https://errors.example.internal/upstream-timeout"',
+            '"status": 504',
+            '"request_id": "req_8f3a2c"',
+            "## Collections",
+            "Idempotency-Key",
+            "return `202` + a status resource",
+            "a breaking change to a shipped contract is a principal-altitude change",
+            "Ownership map only—not a load: canonical `eng-ladder` owns the altitude vocabulary.",
+        ):
+            self.assertIn(required, text)
+        self.assertNotIn('{ "error": {', text)
+        self.assertNotIn("Same envelope for validation errors", text)
+
+        stack = (root / "references/stack.md").read_text(encoding="utf-8")
+        consuming = (root / "references/consuming-apis.md").read_text(encoding="utf-8")
+        auth = (root / "references/auth.md").read_text(encoding="utf-8")
+        persistence = (root / "references/persistence.md").read_text(encoding="utf-8")
+        asset = (root / "assets/openapi.starter.yaml").read_text(encoding="utf-8")
+        self.assertIn("Read this when starting a **greenfield** service.", stack)
+        self.assertIn("On any conflict, SKILL.md wins.", stack)
+        self.assertIn("## Framework & observability", stack)
+        self.assertIn("## Auth & secrets (on PCF)", stack)
+        self.assertNotIn("## Stack", stack)
+        for heading in (
+            "## Every external call",
+            "## Per-integration notes (cite current product names)",
+            "## Make writes safe",
+            "## Observe your own tool",
+        ):
+            self.assertIn(heading, consuming)
+        self.assertIn(
+            "If output feeds an agent/LLM, keep it in a data-only field, delimit it from "
+            "instructions, validate its schema and size, and never pass it through as executable "
+            "prompt text.",
+            consuming,
+        )
+        self.assertIn("broken object-level authorization", auth)
+        self.assertIn("The server is the source of truth", auth)
+        self.assertIn(
+            "Ownership map only—not a load: this file owns **writing** the data layer (drivers, "
+            "pools, migrations, transactions); canonical `database-reliability` owns **operating** "
+            "it—slow queries, lock contention, replication lag, and pool exhaustion during an incident.",
+            persistence,
+        )
+        self.assertIn("backend contract starter", asset)
+        self.assertIn("UI consumer contract", asset)
+        self.assertNotIn("api-design", asset)
+        self.assertNotIn("spa-architecture", asset)
+
+        all_text = "\n".join(
+            path.read_text(encoding="utf-8") for path in sorted(root.rglob("*")) if path.is_file()
+        )
+        for stale_source in (
+            "load `sde-ladder`",
+            "load `database-reliability`",
+            "load `agent-security`",
+            "production-change-gate",
+            "`craft` (Python)",
+            "instrument-service",
+            "pcf-deploy",
+            "security-reviewer",
+            "sde-agents:sde-fullstack",
+        ):
+            self.assertNotIn(stale_source, all_text)
+        self.assertNotIn("backend-craft", self.fleet["skill_dependencies"])
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {

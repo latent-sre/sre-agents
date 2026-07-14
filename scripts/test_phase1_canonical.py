@@ -105,6 +105,21 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "backend-craft": {
+        "name": "backend-craft",
+        "state": "active",
+        "directory": "skills/backend-craft",
+        "references": [
+            "references/stack.md",
+            "references/consuming-apis.md",
+            "references/background-work.md",
+            "references/live-data.md",
+            "references/persistence.md",
+            "references/auth.md",
+        ],
+        "assets": ["assets/openapi.starter.yaml"],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
