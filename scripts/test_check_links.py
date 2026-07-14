@@ -64,6 +64,15 @@ class LinkCheckerTests(Fixture):
             "list-hint": CLEAN_FRONTMATTER.replace(
                 'argument-hint: "[the probe]"', "argument-hint: [the probe]"
             ),
+            "boolean-hint": CLEAN_FRONTMATTER.replace(
+                'argument-hint: "[the probe]"', "argument-hint: false"
+            ),
+            "number-hint": CLEAN_FRONTMATTER.replace(
+                'argument-hint: "[the probe]"', "argument-hint: 123"
+            ),
+            "null-hint": CLEAN_FRONTMATTER.replace(
+                'argument-hint: "[the probe]"', "argument-hint: null"
+            ),
             "missing-triggers": CLEAN_FRONTMATTER.replace("Triggers:", "Use when"),
             "one-trigger": CLEAN_FRONTMATTER.replace(
                 ', "inspect this probe"', ""

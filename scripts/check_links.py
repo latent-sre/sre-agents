@@ -31,6 +31,15 @@ ALLOWED_KEYS = {
     "compatibility",
 }
 MANUAL_ONLY = {"pcf-deploy", "service-onboarding"}
+YAML_NON_STRING = re.compile(
+    r"^(?:"
+    r"~|null|true|false|yes|no|on|off|"
+    r"[-+]?(?:0|[1-9][0-9_]*|0o[0-7_]+|0x[0-9a-f_]+)|"
+    r"[-+]?(?:(?:[0-9][0-9_]*)?\.[0-9_]+|[0-9][0-9_]*[eE][-+]?[0-9]+|\.inf|\.nan)|"
+    r"[0-9]{4}-[0-9]{2}-[0-9]{2}(?:[Tt ][0-9:.+\-Zz ]+)?"
+    r")$",
+    re.IGNORECASE,
+)
 
 
 def _strip_fences(text: str) -> str:
@@ -79,6 +88,9 @@ def _yaml_string(raw: str, where: str, failures: list[str]) -> str | None:
             failures.append(f"{where}: value must be one nonblank YAML string")
             return None
         return value
+    if YAML_NON_STRING.fullmatch(raw):
+        failures.append(f"{where}: value must be a YAML string, not an implicit scalar")
+        return None
     return raw
 
 
