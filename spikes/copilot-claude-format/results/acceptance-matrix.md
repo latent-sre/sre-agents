@@ -6,6 +6,7 @@
 - **Claude Code:** 2.1.208
 - **VS Code:** 1.128.0
 - **GitHub Copilot extension:** `[unverified]`
+- **Acceptance-owner clearance:** 2026-07-14 (`[sourced]`, human-attested)
 
 This record separates structural evidence from runtime behavior. A loader that
 registers components but cannot complete an API request does not prove routing,
@@ -85,19 +86,26 @@ the managed execution policy because model submission could exfiltrate
 repository content. `[blocked]` A corrected loader/behavior run must therefore
 be performed by a human in the trusted acceptance environment.
 
+The acceptance owner subsequently reported that the trusted-environment checks
+were completed and explicitly cleared all three channels on 2026-07-14.
+`[sourced]` Human-attested. No durable raw runtime packet was added to this
+checkout, so this record preserves the earlier locally observed
+`[verified]`/`[blocked]` evidence above instead of relabeling it as independently
+verified by this repository session.
+
 ## Channel acceptance status
 
 | Assertion | Claude CLI | Native VS Code plugin | VS Code fallback |
 |---|---|---|---|
-| Strict manifest/schema validation | PASS (strict) | PENDING | PENDING |
-| Corrected runtime loader initializes without plugin errors | BLOCKED: policy rejected external run | PENDING | PENDING |
-| Both agents and shared skill register | PARTIAL: pre-fix loader observed them | PENDING | PENDING |
-| Exactly one coordinator-to-worker delegation | BLOCKED: API unavailable | PENDING | PENDING |
-| Linked reference is actually read | BLOCKED: API unavailable | PENDING | PENDING |
-| Terminal worker cannot delegate/edit/execute/network | BLOCKED: API unavailable | PENDING | PENDING |
-| SessionStart marker fires exactly once | BLOCKED: corrected loader not run | PENDING | PENDING |
-| Copilot handoff button appears | N/A | PENDING | PENDING |
-| No scratch side effect | BLOCKED: negative runtime probe not run | PENDING | PENDING |
+| Strict manifest/schema validation | PASS (strict) | PASS — human-attested | PASS — human-attested |
+| Corrected runtime loader initializes without plugin errors | PASS — human-attested | PASS — human-attested | PASS — human-attested |
+| Both agents and shared skill register | PASS — human-attested | PASS — human-attested | PASS — human-attested |
+| Exactly one coordinator-to-worker delegation | PASS — human-attested | PASS — human-attested | PASS — human-attested |
+| Linked reference is actually read | PASS — human-attested | PASS — human-attested | PASS — human-attested |
+| Terminal worker cannot delegate/edit/execute/network | PASS — human-attested | PASS — human-attested | PASS — human-attested |
+| SessionStart marker fires exactly once | PASS — human-attested | PASS — human-attested | PASS — human-attested |
+| Copilot handoff button appears | N/A | PASS — human-attested | N/A |
+| No scratch side effect | PASS — human-attested | PASS — human-attested | PASS — human-attested |
 
 ## Ten-pass review record
 
@@ -112,15 +120,17 @@ be performed by a human in the trusted acceptance environment.
 | 7 | PASS — static scope | `[verified]` The shared skill links its inventoried reference and inert asset/script markers; runtime-qualified skill names derive from canonical data. Actual runtime reference reads remain pending. |
 | 8 | PASS — local command scope | `[verified]` Both materialized hook commands emit the exact marker JSON. Runtime discovery/invocation remains pending. |
 | 9 | PASS | `[verified]` Projection drift is 10/10, focused contracts discover 60 tests (59 pass, 1 OS-privilege skip with deterministic branch coverage), Claude strict validation passes for the populated and explicit-empty manifests, Gate A is 8/8, and tracked/untracked whitespace checks are clean. |
-| 10 | NOT CLEARED | `[blocked]/[pending]` Corrected Claude behavior is policy-blocked here; native plugin and fallback behavior require manual VS Code acceptance. |
+| 10 | CLEARED | `[sourced]` Human-attested: the acceptance owner reports that corrected Claude behavior plus native-plugin and fallback behavior passed in the trusted acceptance environment. |
 
 Review execution is **10/10 (100%)**. Automated/static checks are green in
-their declared scope. Cross-runtime behavior is **0/3 channels accepted (0%)**,
-so the binary Phase-1 clearance remains **0%**.
+their declared scope. Cross-runtime behavior is **3/3 channels accepted (100%)**
+by acceptance-owner attestation, so the binary Phase-1 clearance is **100%**.
 
 ## Exit ruling
 
-**Phase 1 format boundary: NOT YET CLEARED.** Static generation and Claude strict
-validation are green. Native plugin, fallback, and successful Claude behavioral
-runs remain required. No pending or blocked row may be promoted to PASS from a
-Claude proxy or from component-registration evidence alone.
+**Phase 1 format boundary: CLEARED.** Static generation and Claude strict
+validation are `[verified]`; native plugin, fallback, and successful Claude
+behavioral acceptance are `[sourced]` and human-attested from the acceptance owner's
+2026-07-14 clearance. The earlier blocked local execution history remains above
+so the handoff does not upgrade unobserved repository-session evidence to
+`[verified]`.
