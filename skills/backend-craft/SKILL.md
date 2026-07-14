@@ -96,6 +96,7 @@ These are the system-wide principles. The client-side mechanics for *calling oth
 - Explicit CORS allowlist (never `*` with credentials); rate limiting on anything exposed (token bucket, return `Retry-After`).
 - Require `Idempotency-Key` for unsafe retries of non-idempotent writes; bind the stored result to the caller and request fingerprint.
 - **Rate-limit** per principal and route, set request/time limits, and return `429` with `Retry-After`.
+- Never log secrets, tokens, or full request/response bodies.
 - **Bound what you accept**: request-body size caps, server-side request timeouts, and bounded query params (max page size, max array length). Inbound requests can do unbounded damage exactly like unbounded outbound calls — input *validation* itself lives under Resiliency.
 
 ## Testing & quality gate

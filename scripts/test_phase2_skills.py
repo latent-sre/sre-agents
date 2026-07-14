@@ -464,6 +464,7 @@ class Phase2FirstCohortTests(unittest.TestCase):
             "return `202` + a status resource",
             "a breaking change to a shipped contract is a principal-altitude change",
             "Ownership map only—not a load: canonical `eng-ladder` owns the altitude vocabulary.",
+            "Never log secrets, tokens, or full request/response bodies.",
         ):
             self.assertIn(required, text)
         self.assertNotIn('{ "error": {', text)
