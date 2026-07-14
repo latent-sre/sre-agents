@@ -175,7 +175,7 @@ Generate minimal empty root `hooks.json` (Copilot format) and `hooks/hooks.json`
 
 `.mcp.json`: `{ "mcpServers": {} }` (the Grafana MCP server is evaluated in Task 30 — existence/fit unverified; do not pre-wire it). Create empty canonical/generated agent directories and shared `skills/`/`commands/` directories with `.gitkeep` files as needed.
 
-- [ ] **Step 4: Keep Gate A meaningful (the trap the spec's review caught).** The old validator cannot validate `.agent.md` Copilot frontmatter, and its layout probe would otherwise resolve to the new near-empty root dirs. Until validator v2 (Task 34), Gate A's fleet-structure step validates the **frozen legacy tree** — a tripwire against accidental legacy edits — via the `FLEET_ROOT` env var the validator already honors (`validate_fleet.py:58`).
+- [ ] **Step 4: Keep Gate A meaningful (the trap the spec's review caught).** The old validator cannot validate `.agent.md` Copilot frontmatter, and its layout probe would otherwise resolve to the new near-empty root dirs. Until validator v2 (Task 37), Gate A's fleet-structure step validates the **frozen legacy tree** — a tripwire against accidental legacy edits — via the `FLEET_ROOT` env var the validator already honors (`validate_fleet.py:58`).
 
   (a) `scripts/validate_fleet.py:439` — the `roster_docs` entry hardcodes the old layout. Change:
 
@@ -1167,7 +1167,7 @@ Output: `[P0]`–`[P3]` findings, each with the evidence (command + output) and 
 - [ ] **Step 2: Description sweep.** Every description against the format contract (triggers verbatim, boundaries stated, ≤150 tokens ≈ 600 chars — measure with `wc -c`). Fix in place.
 - [ ] **Step 3: Gate A** — `py -3 scripts/gate_a.py`: all steps green; "No ported regressions" now guards 20 ported skills; "5d links" guards every pointer.
 - [ ] **Step 4: Gate C** — three reviewers; the spec-conformance reviewer checks this phase against Section 4's roster table and the Disposition ledger rows for the 20 skills + the audit's Fix lines (§2.1, 2.5 applied; §2.2, 2.3, 2.4, 2.6 pending in Phase 3 — say so). Every stack-specific claim labeled.
-- [ ] **Step 5: Rebase, assert only-phase-commits, PR** (same commands as Task 8 Step 4, branch `phase-2-skills`).
+- [ ] **Step 5: Rebase, assert only-phase-commits, PR** (same commands as Task 8 Step 5, branch `phase-2-skills`).
 
 ---
 
