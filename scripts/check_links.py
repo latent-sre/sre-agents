@@ -229,10 +229,8 @@ def _check_direct_bundle_links(skill_path: Path, body: str) -> list[str]:
     visible = _strip_fences(body)
     links = _links(visible)
     resolved = set()
-    searchable = []
-    for label, raw_target in links:
+    for _label, raw_target in links:
         relative = _relative_target(raw_target)
-        searchable.append((label.replace("\\", "/"), _target(raw_target).replace("\\", "/")))
         if relative is not None:
             try:
                 resolved.add((skill_path.parent / relative).resolve().relative_to(skill_root.resolve()).as_posix())
@@ -241,8 +239,6 @@ def _check_direct_bundle_links(skill_path: Path, body: str) -> list[str]:
     for bundle in _bundle_files(skill_root):
         relative = bundle.relative_to(skill_root).as_posix()
         if relative in resolved:
-            continue
-        if any(relative in label or relative in target for label, target in searchable):
             continue
         failures.append(
             f"{skill_path.as_posix()}: bundled file not linked directly from SKILL.md body: {relative}"

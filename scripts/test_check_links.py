@@ -106,6 +106,15 @@ class LinkCheckerTests(Fixture):
         failures = check_links.check(self.root)
         self.assertTrue(any("not linked directly" in item for item in failures))
 
+    def test_external_link_label_cannot_spoof_a_direct_bundle_link(self):
+        self.skill(
+            "# Probe\n\nRead "
+            "[references/notes.md](https://attacker.invalid/context).\n"
+        )
+        self.write("skills/probe-skill/references/notes.md", "# Notes\n")
+        failures = check_links.check(self.root)
+        self.assertTrue(any("not linked directly" in item for item in failures))
+
     def test_fenced_code_span_is_not_a_pointer(self):
         self.skill("# Probe\n\n```text\n`references/example.md`\n```\n")
         self.assertEqual([], check_links.check(self.root))
