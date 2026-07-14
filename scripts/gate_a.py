@@ -43,6 +43,8 @@ STEPS = [
      ["scripts/check_links.py"], None),
     ("No stale unit names",
      ["scripts/check_stale_names.py"], None),
+    ("Phase-2 skill content contracts",
+     ["scripts/test_phase2_skills.py"], None),
     ("Validator's own tests",
      ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_validate_fleet.py"], None),
     ("Phase-1 canonical authoring",

@@ -49,6 +49,17 @@ EXPECTED_SKILLS = [
     ("obs-pipeline", 32),
 ]
 
+EXPECTED_PHASE2_ACTIVE = {
+    "stack-profile": {
+        "name": "stack-profile",
+        "state": "active",
+        "directory": "skills/stack-profile",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
+}
+
 EXPECTED_MODELS = {
     "copilot": [
         "Claude Sonnet 5 (copilot)",
@@ -463,13 +474,15 @@ class Phase1CanonicalAuthoringTests(unittest.TestCase):
         )
 
         expected_records = [
-            {"name": name, "state": "planned", "activate_task": task}
+            EXPECTED_PHASE2_ACTIVE.get(
+                name, {"name": name, "state": "planned", "activate_task": task}
+            )
             for name, task in EXPECTED_SKILLS
         ]
         self.assertAuthoringEqual(
             expected_records,
             self.fleet.get("skills"),
-            "the exact 26-entry planned skill catalog drifted",
+            "the exact 26-entry planned/active skill catalog drifted",
         )
 
     def test_exact_skill_dependency_rows_and_edges(self):

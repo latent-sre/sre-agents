@@ -33,7 +33,14 @@
   "assembly_state": "content-building",
   "commands": [],
   "skills": [
-    { "name": "stack-profile", "state": "planned", "activate_task": 10 },
+    {
+      "name": "stack-profile",
+      "state": "active",
+      "directory": "skills/stack-profile",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "root-cause", "state": "planned", "activate_task": 11 },
     { "name": "runbook", "state": "planned", "activate_task": 12 },
     { "name": "eng-ladder", "state": "planned", "activate_task": 13 },

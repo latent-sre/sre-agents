@@ -19,6 +19,6 @@
     "observability"
   ],
   "agents": [],
-  "skills": [],
+  "skills": "./skills/",
   "commands": []
 }
