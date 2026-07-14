@@ -120,6 +120,20 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": ["assets/openapi.starter.yaml"],
         "scripts": [],
     },
+    "frontend-craft": {
+        "name": "frontend-craft",
+        "state": "active",
+        "directory": "skills/frontend-craft",
+        "references": [
+            "references/stack.md",
+            "references/data-views.md",
+            "references/data-viz.md",
+            "references/forms.md",
+            "references/auth.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {

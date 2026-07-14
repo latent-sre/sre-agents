@@ -103,7 +103,20 @@
       "assets": ["assets/openapi.starter.yaml"],
       "scripts": []
     },
-    { "name": "frontend-craft", "state": "planned", "activate_task": 16 },
+    {
+      "name": "frontend-craft",
+      "state": "active",
+      "directory": "skills/frontend-craft",
+      "references": [
+        "references/stack.md",
+        "references/data-views.md",
+        "references/data-viz.md",
+        "references/forms.md",
+        "references/auth.md"
+      ],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "ops-tooling", "state": "planned", "activate_task": 17 },
     { "name": "pcf-ops", "state": "planned", "activate_task": 18 },
     { "name": "pcf-deploy", "state": "planned", "activate_task": 18 },

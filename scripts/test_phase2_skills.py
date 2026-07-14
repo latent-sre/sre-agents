@@ -63,8 +63,16 @@ BACKEND_CRAFT_DESCRIPTION = (
     "client for Y'. Ownership map only—not a load: frontend-craft owns UI work, database-reliability "
     "owns live-data operations, and craft owns language idiom."
 )
+FRONTEND_CRAFT_DESCRIPTION = (
+    "Build or change a web UI — pages, dashboards-as-app-features, forms, admin panels — from a "
+    "single page to a full SPA, including serving it on PCF. Owns TypeScript/React idiom whole. "
+    "Triggers: 'build a UI for', 'add a page/form/table', 'make this dashboard page'. Ownership map "
+    "only—not a load: backend-craft owns the service behind the UI and obs-dashboards owns Grafana "
+    "operations dashboards."
+)
 EXPECTED_ACTIVE = {
-    "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft"
+    "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
+    "frontend-craft",
 }
 
 
@@ -513,6 +521,104 @@ class Phase2FirstCohortTests(unittest.TestCase):
         ):
             self.assertNotIn(stale_source, all_text)
         self.assertNotIn("backend-craft", self.fleet["skill_dependencies"])
+
+    def test_task16_frontend_craft_imports_whole_and_absorbs_spa_rules(self):
+        references = [
+            "references/stack.md",
+            "references/data-views.md",
+            "references/data-viz.md",
+            "references/forms.md",
+            "references/auth.md",
+        ]
+        record = self.record("frontend-craft")
+        self.assertEqual(
+            {
+                "name": "frontend-craft",
+                "state": "active",
+                "directory": "skills/frontend-craft",
+                "references": references,
+                "assets": [],
+                "scripts": [],
+            },
+            record,
+        )
+        self.assert_inventory("frontend-craft", {"SKILL.md", *references})
+
+        root = ROOT / "skills/frontend-craft"
+        text = (root / "SKILL.md").read_text(encoding="utf-8")
+        self.assertEqual(FRONTEND_CRAFT_DESCRIPTION, frontmatter_description(text))
+        self.assertIn('argument-hint: "[the UI to build or change]"', text)
+        for row in (
+            "| choosing a stack for a greenfield UI | [stack](./references/stack.md) |",
+            "| a table, list, or grid of records | [data views](./references/data-views.md) |",
+            "| a chart, graph, or metric visualization | [data visualization](./references/data-viz.md) |",
+            "| a form or any user input to submit | [forms](./references/forms.md) |",
+            "| login, tokens, or route guarding | [auth](./references/auth.md) |",
+        ):
+            self.assertIn(row, text)
+        for relative in references:
+            self.assertIn(f"(./{relative})", text)
+        for required in (
+            "`openapi-typescript`/`orval`",
+            "generate against the versioned server contract and fail CI on incompatible schema drift",
+            "React Testing Library + MSW component/contract tests",
+            "Write the failing regression first",
+            "Playwright critical-path test",
+        ):
+            self.assertIn(required, text)
+
+        auth = (root / "references/auth.md").read_text(encoding="utf-8")
+        stack = (root / "references/stack.md").read_text(encoding="utf-8")
+        data_viz = (root / "references/data-viz.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "Read this for any UI a teammate can reach — at work that is all of them.",
+            auth,
+        )
+        self.assertNotIn("localhost-only", auth)
+        for required in (
+            "## Auth & web security",
+            "Authorization Code + PKCE",
+            "httpOnly-cookie",
+            "Content-Security-Policy",
+            "SameSite",
+            "CSRF token",
+            "server-side CORS allowlist",
+            "Hand sensitive flows to the `reviewer` agent.",
+        ):
+            self.assertIn(required, auth)
+        for required in (
+            "## Build & serve on PCF",
+            "Build hashed static assets (`vite build`)",
+            "SPA fallback",
+            "static route",
+            "health endpoint",
+            "deployment execution belongs to the human release owner",
+            "browser error, latency, and navigation telemetry",
+            "approved correlation fields",
+        ):
+            self.assertIn(required, stack)
+        self.assertIn(
+            "Ownership map only—not a load: this file owns **product-UI charts** "
+            "(Recharts/uPlot inside the app); canonical `obs-dashboards` owns Grafana operations "
+            "dashboards—never rebuild those as app UIs.",
+            data_viz,
+        )
+
+        all_text = "\n".join(
+            path.read_text(encoding="utf-8") for path in sorted(root.rglob("*.md"))
+        )
+        for stale_source in (
+            "`api-design` backend cannot silently drift",
+            "Ship with `pcf-deploy`",
+            "via `instrument-service`",
+            "Hand sensitive flows to `security-reviewer`",
+            "`craft` (React)",
+            "`tdd-workflow`",
+            "sde-agents",
+        ):
+            self.assertNotIn(stale_source, all_text)
+        self.assertNotIn("required-skill-dependencies:start", all_text)
+        self.assertNotIn("frontend-craft", self.fleet["skill_dependencies"])
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {
