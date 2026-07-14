@@ -66,6 +66,14 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "runbook": {
+        "name": "runbook",
+        "state": "active",
+        "directory": "skills/runbook",
+        "references": [],
+        "assets": ["assets/runbook-template.md"],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {

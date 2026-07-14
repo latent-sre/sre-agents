@@ -34,7 +34,14 @@ ROOT_CAUSE_DESCRIPTION = (
     "not work'. For a production incident with an unknown cause, the `sre` agent owns the investigation; "
     "this skill is the method it (and sde) load."
 )
-EXPECTED_ACTIVE = {"stack-profile", "root-cause"}
+RUNBOOK_DESCRIPTION = (
+    "Write or update an operational runbook or operating doc — how to check, restart, and recover a "
+    "service, written for the stressed 3am reader. Triggers: 'write a runbook', 'document this "
+    "procedure', 'how do we handle X at 3am'. Every slot is filled or marked 'n/a — why'; commands "
+    "carry evidence labels. Ownership map only—not a load: canonical `postmortem` owns post-incident "
+    "retrospective structure."
+)
+EXPECTED_ACTIVE = {"stack-profile", "root-cause", "runbook"}
 
 
 def frontmatter_description(text: str) -> str:
@@ -88,7 +95,9 @@ class Phase2FirstCohortTests(unittest.TestCase):
         self.assert_inventory("stack-profile", {"SKILL.md"})
         text = (ROOT / "skills/stack-profile/SKILL.md").read_text(encoding="utf-8")
         self.assertEqual(STACK_DESCRIPTION, frontmatter_description(text))
-        normalized = " ".join(text.split())
+        normalized = " ".join(
+            line.strip().removeprefix("> ").strip() for line in text.splitlines()
+        )
         for required in (
             "# Stack profile — current facts, not aspirations",
             "On-prem servers + PCF (VMware Tanzu Application Service)",
@@ -136,6 +145,60 @@ class Phase2FirstCohortTests(unittest.TestCase):
         self.assertNotIn("debug-rca", text)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual([], ready)
+
+    def test_task12_runbook_merges_sde_body_and_linked_sre_template(self):
+        record = self.record("runbook")
+        self.assertEqual(
+            {
+                "name": "runbook",
+                "state": "active",
+                "directory": "skills/runbook",
+                "references": [],
+                "assets": ["assets/runbook-template.md"],
+                "scripts": [],
+            },
+            record,
+        )
+        self.assert_inventory("runbook", {"SKILL.md", "assets/runbook-template.md"})
+        text = (ROOT / "skills/runbook/SKILL.md").read_text(encoding="utf-8")
+        asset = (ROOT / "skills/runbook/assets/runbook-template.md").read_text(encoding="utf-8")
+        self.assertEqual(RUNBOOK_DESCRIPTION, frontmatter_description(text))
+        self.assertIn('argument-hint: "[service or tool]"', text)
+        normalized = " ".join(
+            line.strip().removeprefix("> ").strip() for line in text.splitlines()
+        )
+        for required in (
+            "Full fill-in template: [runbook template](./assets/runbook-template.md) — copy it to start.",
+            "## Runbook vs playbook vs SOP",
+            "## Authoring rules",
+            "Machine-linkable frontmatter",
+            "verified in ~90 days",
+            "Ownership map only—not a load: canonical `incident-command` owns live-incident coordination",
+            "Crawl → Walk → Run",
+            "**Splunk:** `... | lookup instructions_lookup alert_type OUTPUT runbook_url`.",
+            "**Grafana:** a `runbook_url` annotation",
+            "**Wavefront:** the alert's resolution/runbook link",
+            "**Moogsoft:** enrichment that attaches the runbook URL",
+            "### Worked excerpt — tier-marked steps with provenance",
+            "⚠️ (Tier 2 — needs explicit human approval for this command/target)",
+            "[verified: transcript 2026-07-02]",
+            "[unverified — never exercised]",
+        ):
+            self.assertIn(required, normalized)
+        for required in (
+            "Tier 2/3: record explicit human approval for the exact command/target plus rollback evidence before execution",
+            "Hand over: trigger, evidence, attempted steps, current state, and the current owner.",
+            "after recovery, hand the timeline and evidence to the `scribe` agent for retrospective documentation.",
+        ):
+            self.assertIn(required, asset)
+        for forbidden in (
+            "production-change-gate",
+            "handoff-protocol",
+            "incident-severity",
+            "sre-monitor",
+            "sde-engineer",
+        ):
+            self.assertNotIn(forbidden, text + asset)
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {

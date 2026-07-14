@@ -49,7 +49,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "runbook", "state": "planned", "activate_task": 12 },
+    {
+      "name": "runbook",
+      "state": "active",
+      "directory": "skills/runbook",
+      "references": [],
+      "assets": ["assets/runbook-template.md"],
+      "scripts": []
+    },
     { "name": "eng-ladder", "state": "planned", "activate_task": 13 },
     { "name": "craft", "state": "planned", "activate_task": 14 },
     { "name": "backend-craft", "state": "planned", "activate_task": 15 },
