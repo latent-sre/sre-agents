@@ -157,8 +157,22 @@
       "assets": ["assets/ci.reusable.yml"],
       "scripts": []
     },
-    { "name": "merge-gate", "state": "planned", "activate_task": 21 },
-    { "name": "release-gate", "state": "planned", "activate_task": 21 },
+    {
+      "name": "merge-gate",
+      "state": "active",
+      "directory": "skills/merge-gate",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "release-gate",
+      "state": "active",
+      "directory": "skills/release-gate",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "production-change-gate", "state": "planned", "activate_task": 22 },
     { "name": "incident-command", "state": "planned", "activate_task": 23 },
     { "name": "postmortem", "state": "planned", "activate_task": 23 },

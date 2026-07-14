@@ -105,10 +105,26 @@ CI_ACTIONS_DESCRIPTION = (
     "'why is this workflow failing', 'harden the pipeline'. The main→release promotion gate for "
     "this repo lives here too."
 )
+MERGE_GATE_DESCRIPTION = (
+    "Quality gate that must pass before a code change merges. Use after code review and testing, "
+    "before declaring a change done or merging a PR. A pass/fail checklist covering tests, review, "
+    "security, coverage, secrets, compatibility, and docs. Invoke explicitly as Copilot `/merge-gate` "
+    "or Claude `/sre-agents:merge-gate`. Triggers: \"is this ready to merge\", \"run the merge gate\", "
+    "\"can I merge this PR\". Ownership map only—not a load: merge-gate = ready to merge; release-gate "
+    "= ready to ship; production-change-gate = authorized to act on prod."
+)
+RELEASE_GATE_DESCRIPTION = (
+    "Pre-release **readiness** gate — is this build ready to ship? Use as the checkpoint before "
+    "deploying/releasing a build to an environment (especially prod): verifies recorded merge-gate "
+    "PASS evidence, the artifact is promotable, migrations and flags are ready, monitoring is in "
+    "place, and a tested rollback exists. Triggers: \"is this build ready to ship\", \"run the release "
+    "gate\", \"can we release this\". Ownership map only—not a load: merge-gate = ready to merge; "
+    "release-gate = ready to ship; production-change-gate = authorized to act on prod."
+)
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
-    "ci-actions",
+    "ci-actions", "merge-gate", "release-gate",
 }
 
 
@@ -1051,6 +1067,85 @@ class Phase2FirstCohortTests(unittest.TestCase):
             "generated/claude/commands/bamboo-to-actions.md",
         ):
             self.assertFalse((ROOT / generated).exists())
+
+    def test_task21_merge_and_release_gates_keep_distinct_evidence_boundaries(self):
+        expected = {
+            "merge-gate": MERGE_GATE_DESCRIPTION,
+            "release-gate": RELEASE_GATE_DESCRIPTION,
+        }
+        for name, description in expected.items():
+            self.assertEqual(
+                {
+                    "name": name,
+                    "state": "active",
+                    "directory": f"skills/{name}",
+                    "references": [],
+                    "assets": [],
+                    "scripts": [],
+                },
+                self.record(name),
+            )
+            self.assert_inventory(name, {"SKILL.md"})
+            text = (ROOT / f"skills/{name}/SKILL.md").read_text(encoding="utf-8")
+            self.assertEqual(description, frontmatter_description(text))
+            self.assertLessEqual(len(description.encode("utf-8")), 600)
+            self.assertNotIn(name, self.fleet["skill_dependencies"])
+
+        merge = (ROOT / "skills/merge-gate/SKILL.md").read_text(encoding="utf-8")
+        merge_flat = " ".join(merge.split())
+        for required in (
+            "`HEAD` means the tip commit of the branch being merged",
+            "record the SHA it ran at",
+            "Record the SHA the review ran against",
+            "git diff <review-sha>..HEAD",
+            "the approval is stale",
+            "re-review",
+            'Dismiss stale pull request approvals when new commits are pushed',
+            "P0/P1 findings",
+            "P2",
+            "P3 / style",
+            "independently-found P0/P1 count of zero",
+            "two-lens packet",
+            "regression test that fails without the fix",
+            "compatibility, API-contract, and UI-state checks",
+            "typed `scribe` agent handoff",
+            "preserved evidence and taint labels",
+        ):
+            self.assertIn(required, merge_flat)
+        self.assertIn("Copilot `/merge-gate` or Claude `/sre-agents:merge-gate`", merge_flat)
+
+        release = (ROOT / "skills/release-gate/SKILL.md").read_text(encoding="utf-8")
+        release_flat = " ".join(release.split())
+        for required in (
+            "recorded PASS from canonical `merge-gate`",
+            "missing evidence is a blocking item",
+            "does not load or execute that sibling gate",
+            "separate, later canonical `production-change-gate`",
+            "human release owner",
+            "existing evidence",
+            "typed `observer` agent",
+            "Ownership map only—not a load: canonical `ci-actions`",
+        ):
+            self.assertIn(required, release_flat)
+
+        combined = merge + release
+        for forbidden in (
+            "Critical/High",
+            "AGENTS.md",
+            "test-engineer",
+            "code-reviewer",
+            "security-reviewer",
+            "tdd-workflow",
+            "safe-refactor",
+            "api-design",
+            "spa-architecture",
+            "runbook-author",
+            "rollback-mitigation",
+            "sre-monitor",
+            "github-actions-ci",
+            "handoff-protocol",
+        ):
+            self.assertNotIn(forbidden, combined)
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {

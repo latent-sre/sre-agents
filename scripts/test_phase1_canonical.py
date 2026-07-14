@@ -174,6 +174,22 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": ["assets/ci.reusable.yml"],
         "scripts": [],
     },
+    "merge-gate": {
+        "name": "merge-gate",
+        "state": "active",
+        "directory": "skills/merge-gate",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
+    "release-gate": {
+        "name": "release-gate",
+        "state": "active",
+        "directory": "skills/release-gate",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
