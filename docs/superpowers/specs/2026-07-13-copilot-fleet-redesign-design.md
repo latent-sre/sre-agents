@@ -183,18 +183,23 @@ refresh without the protected `release` promotion and installed-source handshake
 
 **Release discipline (consequence of the above).**
 - The marketplace pins **`ref: release`**. `main` is the working branch; **`release` is what engineers run.**
-- Promotion `main` → `release` requires green CI, human + Code Owner review, and the complete protection contract. **Every path is workstation-security input**, including future root Python startup files and default-discovery locations, so CODEOWNERS begins with `* @maintainer`; a current-path allowlist is not sufficient.
-- `release` is created once, after Phase 5, at the exact clean reviewed green `origin/main` SHA under a pre-existing ruleset. It is never snapshotted from a feature branch. That protected `0.9.0` ref is what the pilot installs; later changes are ordinary reviewed `main → release` promotions.
-- **Rollback/freshness:** revert on `release` and announce. Scheduled `setup --refresh` verifies protected release at least daily; brokered execution enters maintenance deny when the last successful protected fetch is older than 26 hours or when remote/active/runtime differ. An old-plugin/old-guard pair is not silently called healthy.
+- Unpublished plugin/runtime/setup behavior is tested only from unique immutable `canary/<phase>/<full-sha>` refs registered in a sacrificial profile with full SHA pins. Canary CI is a workflow definition dispatched from protected `main` with the candidate SHA; it checks out unreviewed code without persisted credentials, secrets, OIDC, or a writable token, and records its own trusted workflow blob. Candidate-authored workflow YAML is never the harness. Controlled refresh evidence uses two distinct green SHA/version states A→B (or protected release A→canary B), not a self-refresh. The production marketplace remains `ref: release`; setup/refresh rejects canary sources. Changed bytes get a new ref/evidence. Pre-merge canaries provide review evidence; because merge/squash/rebase may change SHA, every canary-required promotion freezes reviewed `main` and runs/cleans a final canary at that exact merged-main commit. Final Phase-5, pilot runtime/control-plane fixes, rollback, and 1.0 all follow both stages. After probes, disable/unregister every state, prove no active source points at it, retain evidence, and delete every ref. Canary evidence never substitutes for reviewed-main CI.
+- Promotion requires green CI and current human + Code Owner review on `main`. **Every path is workstation-security input**, including future root Python startup files and default-discovery locations, so CODEOWNERS begins with `* @maintainer`; a current-path allowlist is not sufficient. `main` dismisses stale approvals and requires approval of the latest reviewable push.
+- `release` is a derived exact-SHA ref, not a second authoring/review branch. A Code-Owned manual promotion workflow, dispatched by a named release operator and separately approved by the maintainer through a protected environment, creates or fast-forwards it to the **identical current reviewed green `origin/main` SHA** with `force: false`. One ruleset restricts release/version-tag creation and update with the dedicated GitHub App as its sole bypass; a separate no-bypass invariant ruleset denies force-push/deletion even to the App. The repository-scoped App token unavoidably needs `Contents: write` and is not ref-scoped, so it is short-lived, absent from `main` bypass, denied workflow/admin/secrets/environment permissions, and other refs are protected against it. Common checks bind current main SHA/tree, final review/check, and generation. Canary evidence is also a workflow predicate: bootstrap always requires it; normal promotion defaults to required whenever any changed path is runtime/control-plane/unknown or the runtime digest changes. Omission is allowed only through a tested narrow non-runtime-documentation classification recorded in the result. When required, the workflow queries a protected-main canary run and later cleanup run, requires the recorded canary commit SHA **equal current reviewed `origin/main`**, verifies harness blob/run/green matrix/full-tree/runtime digests, verifies authenticated inactive-profile evidence, and rechecks remote ref deletion. Bootstrap is an explicit `expected_old_release_sha=ABSENT` branch: it twice proves release ref/version tag/release object absence, version `0.9.0`, the Phase-1–5 merged-PR/audit ledger, Gate A/C, and maintainer bootstrap approval; it never dereferences an old ref. Normal promotion requires the expected old full SHA, twice-fetched equality, old→candidate ancestry/range provenance, a version increase, and absence of the new version tag/release. The workflow re-fetches/asserts final equality and creates no merge/squash/rebase commit. Humans/admins have no release-update bypass. `release` is created once after Phase 5 at `0.9.0`; promoted pilot fixes, rollbacks, and later releases use the same pre-review canary → reviewed `main` → exact-main canary → workflow path. *[sourced: GitHub ruleset bypass applies only within that ruleset; Git ref writes require `Contents: write`; normal PR merge methods do not provide an exact-SHA ref-move invariant]*
+- Every successful transition has a durable machine-verifiable record: deterministic `promotion-record.json` is bound to repository/ref, old and candidate SHAs, version/tag, source PR/final review, check, runtime digest, exact workflow blob/run, environment/approver, App identity, final remote equality, and the complete canary decision. That decision records classifier version/changed paths and either `canary_required=false`, or validation/cleanup run IDs, protected-main harness blob, canary SHA, tree/runtime digests, matrix results, cleanup identity/result, and ref-absence observation. A full-SHA-pinned GitHub attestation action signs it with a custom predicate; the asset is published in an immutable `fleet-v<version>` GitHub Release whose tag/assets also receive GitHub's release attestation. Setup independently verifies release, asset, signer workflow, signature, and every field. Mutable repository JSON and expiring Actions artifacts are not authoritative. Records remain for the supported-client lifetime plus rollback window; missing/deleted/conflicting evidence fails safe. A ref move followed by record-finalization failure is not blessed in place—clients stay disabled/safe and recovery is a new reviewed version fast-forward. Availability of immutable releases and custom attestations on the repository's actual GitHub plan is a Phase-5 STOP gate; an unavailable feature requires an approved durable external signer/store and a design amendment, not a silent weakening.
+- **Rollback/freshness:** roll forward a revert/fix through reviewed `main` and the same promotion workflow; never reset, force-push, directly revert, or create a release-only commit. Disable discovery for prompt/control-plane compromise, or select the verified safe projection for an execution-boundary failure, while the reviewed rollback is prepared. Freeze unrelated merges to `main` until rollback promotion; after merge run/clean the exact-main canary, then re-fetch before dispatch. If main moves, repeat exact-main evidence; changed bytes also require rebase/review/version/pre-review-canary again. Scheduled `setup --refresh` independently verifies protected release and its immutable/custom-attested promotion record at least daily; stale, missing, or mismatched state switches/disables discovery rather than calling an old-plugin/old-guard pair healthy.
 - Bump `version` in `canonical/fleet.json` on every promotion and regenerate both manifests + Copilot safe-recovery + runtime-tree projections; direct projection edits are forbidden.
 
-**The gate checks (three, not one — they run in Phase 5, Distribution).** An earlier draft called `chat.plugins.enabled`
-"the design's only admin dependency," and fronted the plan with it. Both were wrong: there are three gates, and none of
-them gates *content* — they decide which channel delivers a fleet that is identical either way. They belong with
-Distribution:
+**The distribution gates (two product/channel gates, one model-configuration gate, plus two client-policy admission gates).** An earlier draft called
+`chat.plugins.enabled` "the design's only admin dependency." It is not. These gates do not change canonical content;
+they independently select delivery channel and execution mode:
 1. **`chat.plugins.enabled`** — defaults false, **org-managed**. Flippable, or policy-blocked? (Decides channel.)
 2. **Copilot org policy — "Editor preview features."** Agent plugins are Preview; an org toggle can gate preview features independently of the VS Code setting. *[unverified — verify here rather than assert]*
 3. **Model availability.** Section 3 pins Claude-first fallback arrays. Anthropic-model access depends on org model policy and license tier. Confirm the named models are actually selectable, and record the assumed tier (Business/Enterprise) as a stated assumption.
+4. **Client pin + plugin refresh.** Brokered mode requires the exact VS Code build and Copilot extension managed/pinned, effective `update.mode: none`, enterprise policy `ExtensionsAutoUpdate` producing effective `extensions.autoUpdate: "off"`, the Copilot extension's distinct per-extension Auto Update off, and attempted updates unable to replace either. Boolean `false` is not the documented current string-valued setting, and `extensions.autoCheckUpdates` is not a substitute. Every plugin delivery mode independently requires managed global auto-update off so background plugin checks cannot race the updater, plus a controlled noninteractive A→B refresh that reaches protected release within 26 hours while pins remain. If global off cannot be enforced or A→B cannot be proven, plugin delivery is STOP/fallback. *[sourced: VS Code documents application, global extension, and per-extension update controls separately, and agent-plugin automatic update checks depend on `extensions.autoUpdate`; rechecked 2026-07-14]*
+5. **Hook policy.** Brokered mode requires managed `ChatHooks=true` actually applied/enforced, locked effective `chat.useHooks: true`, known policy provenance, and an observed marker event. If agent-scoped hooks are used, `chat.useCustomAgentHooks: true` must also be policy-manageable/locked against the hostile workspace and client-drift model; a mutable local true setting does not qualify. False, absent/not-applied, unknown, policy-unresolved, mutable custom-hook state, or liveness failure selects a separately proven hook scope or safe mode before discovery. A named policy owner switches clients safe before changing either control; scheduled detection cannot protect the interval after hooks stop running. *[sourced: VS Code enterprise AI settings says `ChatHooks=false` ignores hook configurations; hooks docs require `chat.useCustomAgentHooks` for agent-scoped hooks; rechecked 2026-07-14]*
+
+Model availability is separate from both decisions. If canonical model fallbacks are not selectable, correct canonical configuration, regenerate, and repeat runtime evidence—or STOP. Safe mode cannot repair an unavailable model.
 
 **The format contract is a Phase-1 blocking preflight, not an inference.** Before any fleet agent is authored, a nonempty spike must load one coordinator, one delegated terminal agent, one shared skill/reference, and one inert hook through three separately recorded paths: native Copilot plugin discovery, Copilot fallback discovery, and Claude Code. Claude evidence never substitutes for either Copilot path. The hook-payload probes for the production guard still run in Phase 4, where they are first needed. See Section 7.
 
@@ -208,13 +213,15 @@ Distribution:
   A checkout-local script cannot authenticate itself after it starts. Setup still refuses unless its own bytes/path
   equal the fetched release copy.
 - **Preflight:** `git`/`gh auth`/settings found; absolute owner-approved outer executor, hash utility, isolated-capable
-  Python, and broker tools found. The verification clone has canonical origin and clean `HEAD == origin/release`.
-  The API response must prove review count, Code Owner review, exact Gate-A context, administrators enforced, and
-  force-push/deletion disabled. Version text or one protection boolean is insufficient.
+  Python, and broker tools found. The verification clone has canonical origin and clean `HEAD == origin/release`;
+  canary/feature/local sources are rejected. The immutable-release asset and custom promotion attestation must
+  independently verify and bind release to the reviewed-main SHA with no release-only commit. API responses prove
+  current `main` review/latest-push/Gate-A rules, every layered `release`/version-tag ruleset, immutable-release state,
+  App/environment contract, and force-push/deletion denial including the App, with human/admin bypass denied.
 - **Selected execution mode:** Phase 4 records `safe` or a brokered candidate only after both Copilot delivery paths
   pass hostile-workspace precedence/location, outer-spawn, nested identity, updated-input, terminal poisoning, and
   shell-grammar probes. Phase 5 reruns the complete suite through the selected channel on a team client and may only
-  downgrade to safe. Setup installs the finally proven hook scope, guard, shell-free broker, typed source adapter, and
+  downgrade to safe. Brokered admission also requires the exact client pin/update and hook-policy gates above. Setup installs the finally proven hook scope, guard, shell-free broker, typed source adapter, and
   maintenance record before discovery. Safe mode instead verifies that `sre`/`observer` wrappers omit execute and
   installs no guard.
 - **Installed updater:** setup atomically installs/hash-records itself and every helper under `~/.sre-agents/bin|lib`;
@@ -222,25 +229,30 @@ Distribution:
   workspace, or plugin-cache script. Python uses isolated/no-site/no-bytecode startup and sanitized environment.
 - **Channel exclusivity:** setup proves the unselected plugin/fallback registration and any same-name workspace
   definitions are inactive before enabling the chosen source; `-Verify` rejects dual registration or ambiguous source.
-- **Plugin channel:** additionally requires the proven adapter to identify the currently active root and verify exact
-  version/SHA/runtime-tree contents, then prints the conscious Extensions trust step. A stale cache is not evidence.
-  Before brokered plugin delivery is selectable, a real team client must also prove that the installed updater can
+- **Plugin channel:** additionally requires managed global `extensions.autoUpdate: "off"`, the proven adapter to identify
+  the currently active root and verify exact version/SHA/runtime-tree contents, plus a controlled noninteractive A→B
+  refresh while background extension auto-update is disabled, then prints the conscious Extensions trust step. A
+  self-refresh, stale cache, or manual update hope is not evidence. Before **any** plugin delivery is selectable, a real
+  team client must also prove that the installed updater can
   noninteractively disable/unregister that active plugin and atomically activate/reload the preverified fallback-safe
   paths, with no duplicate definitions, and reverse the transition only after full requalification. Fixture-only
-  switching cannot close this gate; if the real transition is unavailable, brokered plugin delivery is STOP.
+  switching cannot close this gate; if the real transition is unavailable, plugin delivery is STOP and fallback is used.
 - **Fallback channel:** installs the versioned exact-inventory tree above and changes JSONC settings only after runtime
   preparation. Comments/trailing commas are preserved by targeted edits, not `ConvertFrom-Json` rewriting.
-- **Refresh transaction:** fetch/verify/stage under a lock. Remote skew, freshness expiry, plugin lag/ahead, client-version
-  skew, or a partial fault switches/disables active discovery to the preverified no-execute recovery projection; plugin
+- **Refresh transaction:** fetch/verify/stage under a lock. It independently verifies the immutable release asset and
+  custom promotion attestation. Remote/promotion skew, missing/conflicting evidence, freshness expiry, plugin lag/ahead,
+  client-version/global-or-per-extension-update-policy skew, hook-policy/setting/liveness drift, or a partial fault switches/disables active discovery to the preverified no-execute recovery projection; plugin
   mode uses the separately acceptance-gated plugin-to-fallback-safe transition, while fallback switches versioned paths. A
-  maintenance record alone is not protection if the client stopped invoking hooks. Only complete source/tree/runtime/
+  maintenance record alone is not protection if the client stopped invoking hooks or background updates ceased to be
+  policy-disabled. Only complete source/tree/runtime/
   updater/client convergence clears it. Safe mode still refreshes verified content, but its structural protection is
   execute omission.
 - **JSONC hazard:** VS Code `settings.json` is **JSONC** — comments and trailing commas are legal. `ConvertFrom-Json`
   either fails or silently strips the engineer's comments on rewrite. Use a comment-tolerant parse + targeted key
   insertion, or instruct a manual paste and confirm with `-Verify`.
-- **`setup.ps1 -Verify`** reports the bootstrap hash, channel, execution mode, full active-tree/version/SHA/freshness
-  handshake, every protection field, installed updater/helper/interpreter/tool hashes, isolation state, distributed-hook
+- **`setup.ps1 -Verify`** reports the bootstrap hash, channel, execution mode, full active-tree/version/SHA/freshness/
+  promotion handshake, every protection field/actor, installed updater/helper/interpreter/tool hashes, isolation state,
+  exact client/extension versions, effective update settings, controlled plugin-refresh result, applied hook-policy source/settings/liveness, distributed-hook
   emptiness, skills, auth, and probe skew. Brokered mode reruns boundary/liveness/current+nested-identity tests; safe mode
   reruns direct+nested execute-denial tests. Any failure exits nonzero. `setup.sh` is the POSIX behavioral twin.
 
@@ -399,13 +411,13 @@ Prompt files: `adr` (scaffold). The complete fate of every existing unit is the 
 ## Section 5 — Safety model
 
 1. **Primary control, conditional on the Phase-1 runtime gate: `tools:` omission.** The intended contract is that reviewer and scribe cannot execute and scribe cannot run what it documents. Treat that as `[unverified]` until the native-plugin, fallback, and Claude denial probes each pass for their own projection; if omission fails open anywhere, stop and amend this safety model before authoring the fleet. The same omission is the mandatory fallback for `sre` and `observer`: Phase 4 may retain their Copilot execute tool only after the execution-boundary viability gate passes through **both** native-plugin and fallback delivery in a hostile workspace, and Phase 5 requalifies the selected channel on a team client's real policy before setup. That later gate may only downgrade brokered to safe. Their Claude projections omit execute; this design does not claim a non-managed Claude hook can survive project-level hook disabling.
-**The VS Code hook contract differs from Claude Code — do not port the exit codes.** VS Code: **exit 0 means stdout is parsed as JSON** (`permissionDecision`: `allow` | `deny` | `ask`); **exit 2 is a blocking error**; other codes are non-blocking warnings; and **"most restrictive wins"** among hooks that actually run *[verified: hooks reference, fetched 2026-07-14]*. The sister repo's 42/43 outcomes may survive only as an internal guard-to-launcher protocol explicitly mapped to VS Code output. The outer boundary comes first: VS Code also documents workspace-hook precedence and configurable hook locations, and no launcher can emit deny if VS Code never starts it. Therefore a user-hook smoke test is not an enforcement proof. Phase 4 must show that an agent-scoped hook—or managed scope proven to invoke only for source-qualified fleet definitions—cannot be suppressed by hostile workspace hooks/settings, that same-name workspace definitions cannot impersonate it, that an outer spawn failure blocks, and that `updatedInput` is applied exactly. A global hook that sees unrelated sessions fails the non-fleet contract. Any failure selects safe mode (`execute` omitted); it never degrades silently to audit-only.
+**The VS Code hook contract differs from Claude Code — do not port the exit codes.** VS Code: **exit 0 means stdout is parsed as JSON** (`permissionDecision`: `allow` | `deny` | `ask`); **exit 2 is a blocking error**; other codes are non-blocking warnings; and **"most restrictive wins"** among hooks that actually run *[verified: hooks reference, fetched 2026-07-14]*. The sister repo's 42/43 outcomes may survive only as an internal guard-to-launcher protocol explicitly mapped to VS Code output. The outer boundary comes first: VS Code also documents workspace-hook precedence and configurable hook locations, and no launcher can emit deny if VS Code never starts it. Organization policy is earlier still: `ChatHooks=false` makes VS Code ignore hook configurations. Brokered admission therefore requires applied/enforced `ChatHooks=true`, locked `chat.useHooks`, and—when agent-scoped—policy-manageable/locked `chat.useCustomAgentHooks`; absent/not-applied, mutable, false/unknown policy, or a failed live marker forces a separately proven scope or safe mode before discovery. Therefore a user-hook smoke test is not an enforcement proof. Phase 4 must show that an agent-scoped hook—or managed scope proven to invoke only for source-qualified fleet definitions—cannot be suppressed by hostile workspace hooks/settings, that same-name workspace definitions cannot impersonate it, that an outer spawn failure blocks, and that `updatedInput` is applied exactly. A global hook that sees unrelated sessions fails the non-fleet contract. Any failure selects safe mode (`execute` omitted); it never degrades silently to audit-only.
 
 2. **The hook + broker — allowlist doctrine without shell-name theater.** *"Enumerating the ways a command can write is unbounded and always a step behind; enumerating what an agent needs is bounded, knowable, and fails loud."* The sister guard is evidence and a regression corpus, not a parser to copy: its POSIX `shlex` model accepts PowerShell array subexpressions, and its name-only reader bucket admits execution/write flags. In brokered mode, the guard strictly parses JSON and a tiny cross-platform token grammar, identifies the **current nested agent**, applies a positive per-command argv grammar, and replaces tool input with one absolute installed broker plus a base64url argv payload. The broker revalidates, verifies absolute tool hashes, strips helper/config/Python-startup environment, and calls an argv array with `shell=False`. It never resolves PATH, aliases, functions, pagers, preprocessors, compressors, external diffs, or terminal profiles. Any inability to prove this exact transformation selects safe mode.
 
-3. **Installed/runtime integrity.** The portable hook files remain empty. In brokered mode setup installs the guard, broker, renderer/updater helpers, and runtime record under `~/.sre-agents/`; Python runs isolated/no-site/no-bytecode. The generated runtime-tree manifest inventories and hashes every active agent/skill/reference/asset/script/command/hook/manifest file and rejects unexpected default-discovery content. Every execute decision checks that tree—not just Git HEAD—plus fleet version, protected `release` SHA, installed component/tool hashes, and a successful protected fetch no older than 26 hours. Once the proven outer executor starts, missing/tampered state, audit I/O failure, source/tree/freshness skew, or an unexpected internal outcome denies every invocation within the fleet scope. If the client or outer executor drifts so the hook might not start, the updater atomically disables brokered discovery or selects the preinstalled safe-recovery projection; if that transition cannot be proved, fleet discovery stays disabled. If the outer executor itself cannot be made blocking when absent, brokered mode is unavailable.
+3. **Installed/runtime integrity.** The portable hook files remain empty. In brokered mode setup installs the guard, broker, renderer/updater helpers, and runtime record under `~/.sre-agents/`; Python runs isolated/no-site/no-bytecode. The generated runtime-tree manifest inventories and hashes every active agent/skill/reference/asset/script/command/hook/manifest file and rejects unexpected default-discovery content. Every execute decision checks that tree—not just Git HEAD—plus fleet version, the independently verified immutable-release asset/custom promotion attestation, installed component/tool hashes, enforced client/update/hook-policy state, and a successful protected fetch no older than 26 hours. Canary/feature sources and release-only commits are invalid. Once the proven outer executor starts, missing/tampered state, audit I/O failure, source/tree/freshness/policy skew, or an unexpected internal outcome denies every invocation within the fleet scope. If the client, policy, or outer executor drifts so the hook might not start, the updater atomically disables brokered discovery or selects the preinstalled safe-recovery projection; if that transition cannot be proved, fleet discovery stays disabled. If the outer executor itself cannot be made blocking when absent, brokered mode is unavailable.
 4. **Change authority: Tier 0–3** (observe / prepare / reversible-live / destructive-or-access-path), imported from sde-agents `homelab-platform`: classify before acting; approval covers only the commands shown; a material change re-enters the gate; independent Tier 0/1 work continues while approval pends; worked approval-request example (target, diff, exact command, blast radius, verification, rollback). Woven into sre + observer bodies and production-change-gate.
-5. **Prod boundary unchanged:** GitHub branch protection + protected environments, with the gate's `gh api …/protection` check. The verifier checks required review count, Code Owner review, the exact Gate-A context, `enforce_admins`, and force-push/deletion prohibitions; one `enforce_admins` boolean is not the whole control.
+5. **Prod boundary:** `main` is the sole review boundary: current Code Owner review, stale-approval dismissal, latest-push approval, exact Gate-A context, administrators included/no bypass, and force-push/deletion denial. `release` is a derived exact-SHA ref: one ruleset restricts creation/update to the dedicated promotion App through a distinctly dispatched/maintainer-approved environment, while a second no-bypass ruleset denies force-push/deletion even to that App. The App is absent from `main` and holds short-lived repository-level `Contents: write` only in the privileged job because GitHub cannot natively scope ref-write permission to one branch. Humans/admins cannot write release. The verifier checks all matching contracts plus the immutable release/custom attestation; one `enforce_admins` boolean or one ruleset is not the whole control.
 
 ### 5a. The allowlist, actually enumerated (doctrine is not a list)
 
@@ -462,7 +474,7 @@ incident genuinely needs to look up a vendor status page or an error code, and r
 cost at 3am. Containment is the **outbound network allowlist** (the load-bearing control, unchanged from the old
 fleet) plus the trifecta note in the agent body. **The alternative** — strip `web` from `sre`, look-ups go to the human
 — is one line to apply if you'd rather not carry the risk. Either way it is now *recorded*, not silent.
-5. **Probed, not assumed—and no live brokered auto-upgrade.** Platform facts the safety model rests on get re-run through both delivery paths after every VS Code/Copilot upgrade. Brokered mode requires the exact client/extension versions to be managed and pinned with automatic updates blocked; if that cannot be enforced, safe mode is mandatory. The upgrade procedure first switches/disables brokered discovery and proves the safe projection while the old client still runs, then updates and requalifies before restoring brokered mode. The list includes payload/tool fields; current direct+nested/source-qualified identity; same-name workspace collisions; hostile workspace/settings and hook-disable precedence; fleet-invocation-scoped hook behavior; outer spawn failure; exact `updatedInput`; PowerShell/cmd/POSIX parsing; terminal PATH/profile/environment poisoning; active plugin root/tree and fallback installed tree; plugin/fallback skill and agent loading; distributed-hook emptiness; and `disable-model-invocation`. A scheduled maintenance record is not credited as protection after a client stops invoking the hook.
+5. **Probed, not assumed—and no live brokered auto-upgrade.** Platform facts the safety model rests on get re-run through both delivery paths after every VS Code/Copilot upgrade. Brokered mode requires exact managed/pinned editor and Copilot-extension versions, effective `update.mode: none`, managed global `extensions.autoUpdate: "off"`, Copilot per-extension Auto Update off, applied/enforced `ChatHooks=true`/locked `chat.useHooks` (plus policy-manageable custom-agent hooks when used), known policy sources, and a live marker; failure or ambiguity selects safe mode. Every plugin channel separately requires globally enforced auto-update-off and a controlled noninteractive A→B refresh; otherwise fallback is mandatory. The named policy owner/change procedure first switches/disables brokered discovery and proves the safe projection while the old client/hook still runs, then changes app, extension, plugin, or hook policy and requalifies before restoring brokered mode. The list includes payload/tool fields; current direct+nested/source-qualified identity; same-name workspace collisions; hostile workspace/settings and hook-disable precedence; fleet-invocation-scoped hook behavior; outer spawn failure; exact `updatedInput`; PowerShell/cmd/POSIX parsing; terminal PATH/profile/environment poisoning; active plugin root/tree and fallback installed tree; plugin/fallback skill and agent loading; controlled A→B plugin refresh; distributed-hook emptiness; and `disable-model-invocation`. A scheduled maintenance record is not credited as protection after a client stops invoking the hook or background plugin updates cease to be policy-disabled.
 
 ## Section 5d — Reference files: the pattern is right for Claude Code and BROKEN for VS Code
 
@@ -606,23 +618,36 @@ validator v2 · the hostile-runtime execution viability gate · safe-mode omissi
 command broker with bounded argv grammars · runtime-tree/freshness checks · canary/tripwire probes · routing evals · CI.
 The payload, nested identity, workspace precedence, outer spawn, updated-input, and terminal-shell facts are probed here.
 
-**Phase 5 — Distribution** *(and only here do the org gates matter — they decide which Copilot channel delivers the
-same generated Copilot projection, never the canonical content)*:
-- **The three gate checks**, on one engineer's machine: `chat.plugins.enabled` flippable, or policy-blocked? The
-  Copilot org **"Editor preview features"** policy? Are the named Claude **models** selectable under the team's
-  license tier? *(Whatever the answers, the fleet built above still ships — plugin channel or fallback.)*
-- **A separate plugin-safety prerequisite:** prove that setup can read the currently active plugin's manifest version
-  protected SHA + full runtime tree, not merely find a stale cache. Without that fingerprint, plugin delivery is STOP and
-  fallback is used. Both channels update only through serialized installed `setup --refresh`.
-- Land wildcard CODEOWNERS + full ruleset on reviewed `main`; then create protected `release` once at that exact green
-  Phase-5 SHA (`0.9.0`), publish bootstrap hashes, and run the first real setup/Verify. The branch does not predate setup.
+**Phase 5 — Distribution** *(and only here do the org gates matter — plugin/update policy chooses Copilot channel,
+client/hook policy chooses safe/brokered execution, and failed model availability corrects canonical config or stops)*:
+- Run the two product/channel gates, independent model-configuration gate, and client-pin/plugin-refresh + hook-policy admission gates on a team
+  engineer's machine. A structurally safe fallback can ship only after the independent model gate passes.
+- Publish unpublished plugin evidence from full-SHA-pinned disposable `canary/phase-5/<sha>` sources in a sacrificial
+  profile, validated by a protected-main workflow rather than candidate YAML. Use distinct A→B states for refresh;
+  repeat after the Phase-5 PR merges with a final canary at the exact merged-main SHA that promotion consumes.
+  Production marketplace stays on `release`, setup rejects canary, and every canary is proven inactive/deleted after evidence.
+- Prove active-plugin fingerprint, managed global auto-update-off, controlled A→B refresh, and plugin↔fallback-safe
+  recovery. Without any one, plugin delivery is STOP and fallback is used. Both channels update only through serialized
+  installed `setup --refresh`.
+- Land wildcard CODEOWNERS, current-review protection on `main`, the Code-Owned exact-SHA promotion workflow, protected
+  environment, layered update/no-bypass rulesets, immutable releases, and promotion App. After the Phase-5 PR merges,
+  run the exact-main canary/cleanup, multi-path Code Owner, and effective-App-denial probes; then let the workflow create
+  `release` at that identical green reviewed `origin/main` Phase-5 SHA (`0.9.0`) and publish its immutable custom-attested promotion record. Publish
+  bootstrap hashes and run the first real setup/Verify.
 - `setup.ps1|sh`, deterministic refresh tests, README, and rollback runbook (Section 1).
 
 **Phase 6 — Pilot:** one engineer, real work repos. Exit only on the Acceptance bar (Section 8) — not "fix what
-reality finds."
+reality finds." Every promoted fix uses a short-lived branch from current `main`, mandatory pre-review and exact-merged-main
+canaries for runtime/setup/update/control-plane behavior (omitted only through the mechanical non-runtime-doc classifier),
+a version bump/regeneration, current Code-Owner-reviewed PR to `main`, exact-main-SHA workflow plus attested record,
+refresh/Verify, and restart of the affected pilot interval. Unrelated main merges pause for the short promotion window;
+if main moves, exact-main evidence repeats, and changed bytes also repeat review/version/pre-review canary. No direct release edit or long-lived pilot branch exists.
 
-**Phase 7 — Team rollout** (promote reviewed `1.0.0` from `main` → existing `release`), then retire `legacy/claude-fleet/` and the owner's personal
-`~/.claude` duplicates (`root-cause`, `eng-ladder`, `runbook` — the shadowing the clean-room rig diagnosed).
+**Phase 7 — Team rollout:** prepare `1.0.0`, retire the legacy repo artifacts, and record outcomes on `phase-7-rollout`;
+run a pre-review canary, merge the current Code-Owner-approved PR to `main`, then run/clean a second canary and controlled
+`0.9.x`→`1.0.0` fingerprint test at the exact merged-main SHA. Promote that identical reviewed green SHA through the
+protected workflow and independently verify its immutable attestation. Announce, retire the owner's personal `~/.claude` duplicates (`root-cause`, `eng-ladder`,
+`runbook`—the shadowing the clean-room rig diagnosed), and instrument the week-one watch.
 
 ### Routing evidence is runtime-specific
 
@@ -651,7 +676,7 @@ dressed as a milestone — and "silent dark skills" (Risk 3) goes unmeasured, wh
 | **Always-on context** | **≤ 4.5k tokens** before any work (was ~8.3k) — and **≤ 150 tokens per description**, so it cannot creep | measured in a real Copilot session |
 | **Execution boundary** | brokered mode: 0 unresolved false denies, 0 silent boundary/load failures, freshness ≤26h; safe mode: direct + nested execute denial | `setup -Verify`, native-plugin + fallback hostile-workspace probes, broker audit/runtime tree; or structural tool-omission probes. |
 | **Pilot exit** | one engineer, **one week** touching **≥ 3 agents**, no unrecovered routing failure; brokered mode has no unresolved false deny, safe mode has no execute exposure | pilot log |
-| **Rollout safety** | any acceptance regression in week one → **revert `release`**, team announce | Section 1 rollback runbook |
+| **Rollout safety** | any acceptance regression in week one → disable/safe first, then roll-forward revert/fix through reviewed `main` + exact-SHA promotion; team announce | Section 1 rollback runbook |
 
 **The token bar, honestly (an earlier draft said ≤3k, which this design makes impossible).** The always-on cost is
 31 descriptions (26 skills + 5 agents) — and the discoverability fix *requires them to be longer*: verbatim user
@@ -664,18 +689,29 @@ what the roster can achieve would simply be ignored.
 
 ## Section 9 — Ownership and lifecycle
 
-**Ownership.** The fleet needs a named maintainer — the person who gets pinged when an update breaks the team.
-**OWNER DECISION, not a builder guess: CODEOWNERS, the README, and the rollback announcement all block on this name.**
+**Ownership.** The fleet needs a named maintainer — the person who gets pinged when an update breaks the team — and a
+distinct release operator. **OWNER DECISION, not a builder guess:** CODEOWNERS, protected-environment self-review
+prevention, the README, and rollback announcement block on both identities. The operator dispatches promotion; the
+maintainer separately approves the environment.
 
 **CODEOWNERS protects the whole repository by default:** `* @<maintainer>`. A path census cannot own a future root
-`sitecustomize.py`, new workflow, dependency file, or default-discovery directory that does not exist yet. Optional
-exceptions are allowed only after proving the path is neither execution, prompt, runtime, setup, nor gate input; the
-initial design has none. This single rule includes canonical/generated artifacts, `.github/`, tests/evals/spikes,
-dependencies, auto-loaded instructions, skills/references/assets/scripts, commands, hooks, manifests, and future files.
+`sitecustomize.py`, new workflow, dependency file, or default-discovery directory that does not exist yet. The initial
+design has no exceptions; Gate A rejects any later rule that removes the maintainer from a prompt/control-plane input.
+This explicitly includes canonical agent bodies/capability graphs; generated wrappers/runtime manifests; complete skill
+trees (`SKILL.md`, references, assets, executable scripts); commands; hooks; plugin/marketplace/MCP manifests; setup,
+updater, generator, validator, guard, broker and probes; `.github/` workflows/CODEOWNERS; tests/evals/spikes; dependencies,
+startup and auto-loaded instruction files; and future discovery paths. A representative multi-path probe PR proves the
+effective owner after `main` activates the rule; a root-test-only probe is insufficient.
 
-**Protection on `main` and `release` is a complete asserted contract:** required review count, Code Owner review, exact
-Gate-A status context, administrators enforced/no bypass, force-push disabled, and deletion disabled. Setup and refresh
-query every field. The marketplace pins a branch, so a partial ruleset or one checked boolean is not a security boundary.
+**`main` and `release` have distinct complete protection contracts.** `main` requires a PR, current Code Owner review,
+stale-approval dismissal, approval of the latest reviewable push, exact Gate-A success on final bytes, administrators
+included/no human bypass, and force-push/deletion denial. For `release` and `fleet-v*`, one ruleset restricts
+creation/update to the dedicated promotion App; a separate no-bypass ruleset denies force-push/deletion even to that
+App. Its repository-scoped `Contents: write` token is minted only after the distinct operator/maintainer environment
+handshake, and the App is not a `main` bypass actor. Humans/admins/teams cannot write release. The Code-Owned workflow
+alone verifies reviewed-main identity, fast-forwards without a commit, and publishes an immutable release plus custom
+attested promotion record. Setup/refresh query every matching rule/actor/environment and independently verify release,
+asset, signer workflow, and record fields. A partial ruleset, mutable record, or one boolean is not a security boundary.
 
 **Contribution: personal-first, promote-by-PR.** Teammates build in `~/.copilot/{agents,skills}` (VS Code reads them
 per-user, so this is free). When a second person wants one, it graduates into the fleet by PR. This is **repo policy in
@@ -691,8 +727,8 @@ mid-incident, one teammate may temporarily be on `/incident-severity` while the 
 - Renames on the **incident path** need a team ack before merge.
 - The marketplace's `renames` map handles *plugin* renames automatically — **not skill renames**, which is why the
   stub is needed.
-- Onboarding states the 26-hour freshness boundary explicitly. The installed `-Refresh`/`-Verify` path is authoritative;
-  *Extensions: Check for Extension Updates* may accelerate plugin availability but cannot clear maintenance by itself.
+- Onboarding states the 26-hour freshness boundary explicitly. The installed controlled `-Refresh`/`-Verify` path and
+  active fingerprint are authoritative; background or manual extension/plugin checks cannot clear maintenance by themselves.
 
 ## Glossary (terms this spec uses that are not self-evident)
 
@@ -715,20 +751,21 @@ mid-incident, one teammate may temporarily be on `/incident-severity` while the 
 
 - GCP skills (trigger: onboarding becomes real → `references/gcp.md` additions)
 - Extension packaging (trigger: #304721 closes + private channel exists)
-- Enterprise-managed plugins / org-level anything (trigger: org adoption)
+- Org-wide managed distribution beyond the required policy diagnostics, client pins, and release-promotion App/environment (trigger: org adoption)
 - Automated/headless Copilot routing measurement (native manual probes remain required; revisit if a documented CLI interface lands)
 - Old-fleet content named **deleted** in either ledger (Appendix 1 = agents/skills, Appendix 2 = machinery). Nothing is dropped by silence — the catch-all is gone.
 
 ## Risks (ranked) and open questions
 
-1. **Agent plugins are Preview** — format churn could break the team at once. Mitigations: one canonical model, generated/drift-checked runtime projections, native-plugin + fallback probes, and pinned plugin versions if churn appears.
+1. **Agent plugins are Preview** — format/update churn could break the team at once. Mitigations: one canonical model, generated/drift-checked runtime projections, native-plugin + fallback probes, mandatory pinned client/extension versions for brokered mode, managed global extension auto-update-off for every plugin mode, controlled A→B plugin refresh with active fingerprinting, and fallback-safe recovery.
 2. **`chat.plugins.enabled` org-policy-blocked** — fallback channel consumes the same generated Copilot projection; checked in Phase 5, because it changes the channel and never the canonical content.
 3. **No automated Copilot routing measurement** — native Copilot routing/canary runs remain manual and runtime-labeled. Claude runs cover Claude only; treating them as Copilot evidence is prohibited.
 4. **Copilot's command/hook boundary may be unenforceable** — workspace precedence can suppress user hooks; outer spawn
    failure may be nonblocking; nested identity and PowerShell command strings are under-documented; an uncontrolled
-   client update can stop invoking the guard while wrappers still expose execute. Phase 4 treats all of these as a
-   viability gate and requires both a managed version pin and a real-client atomic plugin-to-fallback-safe recovery proof
-   for brokered plugin mode. Failure is not audit-only: execute is omitted. If brokered mode passes, post-launch
+   client update or `ChatHooks=false` policy can stop invoking the guard while wrappers still expose execute. Phase 4 treats runtime mechanics and Phase 5 treats effective client/update/hook policy as
+   a viability gate and requires applied/enforced hook policy, locked settings, and managed version/update controls.
+   Every plugin mode separately requires a real-client atomic plugin-to-fallback-safe recovery proof. Failure is not
+   audit-only: policy failure omits execute; plugin-control failure selects fallback. If brokered mode passes, post-launch
    integrity/parser ambiguity denies before scope, while a well-formed missing fleet identity enters maintenance-deny
    with durable audit and makes `setup -Verify` fail. Section 5b defines the layer ordering.
 5. **Reviewer merge could dilute security reviews** — watch review outputs during pilot; split is one file if needed.
@@ -826,7 +863,7 @@ That claim was false: the machinery, the eval corpus, the root docs, and the in-
 | `scripts/test_readonly_guard.py` | **Replaced** by viability, strict-guard, shell-free-broker, runtime-wiring, and setup-refresh suites. The old corpus is retained as regression input; PowerShell/name/PATH bypasses are added first. |
 | `scripts/validate_fleet.py` | **Rewritten** = validator v2 (Section 6). |
 | `scripts/ralph-loop.sh` | **Deleted.** Claude-Code-specific unattended-loop machinery; its owning skill (`self-improve-loop`) is deleted, and nothing in the Copilot fleet drives it. |
-| `.github/workflows/validate.yml` | **Survives, extended** to validator v2 + the new tests. Gains the `main` → `release` promotion gate (Section 1). |
+| `.github/workflows/validate.yml` | **Survives, extended** to validator v2 + the new tests and reviewed `main`/`release` triggers. Unreviewed refs never supply their own CI definition: a separate `validate-canary.yml` dispatched with `ref: main` checks out a full candidate SHA without persisted credentials/secrets/writable token. A separate Code-Owned `promote-release.yml` performs the sole exact-main-SHA transition and publishes its immutable attested record (Section 1). |
 | `requirements-dev.txt` | **Survives.** Machine constraint: on Windows `python3` is the Microsoft Store stub, not an interpreter — use `python` or `py -3`. **Moot in practice:** every gate goes through `scripts/gate_a.py`, which re-invokes its sub-steps under `sys.executable` and is therefore correct under all three. Don't reintroduce a hardcoded interpreter name. |
 
 ### Root docs
