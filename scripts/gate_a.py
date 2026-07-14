@@ -30,28 +30,34 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# (label, argv-after-the-interpreter). Ordered cheapest-and-most-foundational first: a broken validator
+# (label, argv-after-the-interpreter, environment additions). Ordered cheapest-and-most-foundational
+# first: a broken validator
 # makes every downstream result meaningless, so it fails before we spend time on the eval harness.
+LEGACY = {"FLEET_ROOT": "legacy/claude-fleet"}
 STEPS = [
-    ("Fleet structure",
-     ["scripts/validate_fleet.py"]),
+    ("Fleet structure (legacy, frozen)",
+     ["scripts/validate_fleet.py"], LEGACY),
     ("Validator's own tests",
-     ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_validate_fleet.py"]),
+     ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_validate_fleet.py"], None),
     ("Phase-1 canonical authoring",
-     ["scripts/test_phase1_canonical.py"]),
+     ["scripts/test_phase1_canonical.py"], None),
     ("Format-spike projection contracts",
      ["-m", "unittest", "discover", "-s", "spikes/copilot-claude-format/tests",
-      "-p", "test_*.py", "-v"]),
+      "-p", "test_*.py", "-v"], None),
+    ("Generated fleet contract",
+     ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_generate_fleet.py"], None),
+    ("Generated fleet is current",
+     ["scripts/generate_fleet.py", "--check"], None),
     ("Read-only guard",
-     ["scripts/test_readonly_guard.py"]),
+     ["scripts/test_readonly_guard.py"], None),
     ("Eval graders",
-     ["evals/test_graders.py"]),
+     ["evals/test_graders.py"], None),
     ("Discovery probe",
-     ["evals/test_discovery_probe.py"]),
+     ["evals/test_discovery_probe.py"], None),
     ("Clean-room rig",
-     ["evals/test_clean_room.py"]),
-    ("Eval suite parses",
-     ["evals/run_evals.py", "--validate"]),
+     ["evals/test_clean_room.py"], None),
+    ("Eval suite parses (legacy targets)",
+     ["evals/run_evals.py", "--validate"], LEGACY),
 ]
 
 
@@ -79,11 +85,12 @@ def main():
         return 1
 
     failed = []
-    for label, argv in STEPS:
+    for label, argv, env_extra in STEPS:
         print("\n=== %s ===" % label, flush=True)
         # Run every step even after one fails: an agent fixing the fleet wants the whole list of what
         # is broken, not a bisect through one failure at a time.
-        rc = subprocess.call([sys.executable] + argv, cwd=ROOT)
+        env = dict(os.environ, **env_extra) if env_extra else None
+        rc = subprocess.call([sys.executable] + argv, cwd=ROOT, env=env)
         if rc != 0:
             failed.append(label)
 

@@ -23,10 +23,14 @@ IGNORE = shutil.ignore_patterns('.git', '__pycache__', '*.pyc', '.probe-tmp')
 
 
 def copy_fleet(dest):
-    """A throwaway copy of the whole repo. The validator reads .claude/ AND the roster docs
-    (README.md, AGENTS.md, docs/), so a partial copy would fail for the wrong reason."""
+    """Copy the repo and return its frozen legacy-fleet root.
+
+    Task 1 moves the validator's temporary target out of ``.claude``.  The
+    fixture still copies the whole repo so every referenced file exists, then
+    mutates the same self-contained legacy root Gate A validates.
+    """
     shutil.copytree(REPO, dest, ignore=IGNORE, dirs_exist_ok=True)
-    return dest
+    return os.path.join(dest, 'legacy', 'claude-fleet')
 
 
 def run_validator(root):
@@ -50,10 +54,10 @@ class FleetFixture(unittest.TestCase):
         shutil.rmtree(self._tmp, ignore_errors=True)
 
     def agent(self, name):
-        return os.path.join(self.root, '.claude', 'agents', name + '.md')
+        return os.path.join(self.root, 'agents', name + '.md')
 
     def skill(self, name):
-        return os.path.join(self.root, '.claude', 'skills', name, 'SKILL.md')
+        return os.path.join(self.root, 'skills', name, 'SKILL.md')
 
     def edit(self, path, old, new, count=1):
         with open(path, encoding='utf-8') as fh:

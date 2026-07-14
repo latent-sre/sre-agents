@@ -55,7 +55,10 @@ ENV_PREFIX_RE = re.compile(r'^\$\{[^}]*\}/')
 # fleet -- which is the only way to TEST it (scripts/test_validate_fleet.py mutates a copy and asserts
 # this script rejects it). It had no tests for exactly this reason, and three of its checks were
 # quietly passing inputs they exist to reject. Unset in normal use; CI calls it with no environment.
-ROOT = os.environ.get('FLEET_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.abspath(
+    os.environ.get('FLEET_ROOT')
+    or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 
 
 # Where the fleet's skills/ and agents/ live UNDER that root. This is resolved, not hardcoded, because
@@ -436,7 +439,7 @@ def main():
     roster_docs = [
         'AGENTS.md',
         'README.md',
-        os.path.join('.claude', 'skills', 'route-request', 'SKILL.md'),
+        os.path.join(skills_dir, 'route-request', 'SKILL.md'),
     ]
     agent_names = [a[:-3] for a in agent_files]
     for doc in roster_docs:

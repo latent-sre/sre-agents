@@ -1,0 +1,25 @@
+{
+  "name": "sre-agents",
+  "displayName": "SRE Agents",
+  "description": "SRE + SDE fleet — 5 agents, 26 skills, incident-to-code.",
+  "version": "0.1.0",
+  "author": {
+    "name": "latent-sre",
+    "url": "https://github.com/latent-sre"
+  },
+  "homepage": "https://github.com/latent-sre/sre-agents",
+  "repository": "https://github.com/latent-sre/sre-agents",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "skills",
+    "sre",
+    "copilot",
+    "claude",
+    "pcf",
+    "observability"
+  ],
+  "agents": [],
+  "skills": [],
+  "commands": []
+}

@@ -44,7 +44,7 @@ try:
 except ModuleNotFoundError:
     sys.exit("evals: PyYAML required — `python -m pip install pyyaml`")
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(os.environ.get("FLEET_ROOT") or Path(__file__).resolve().parent.parent).resolve()
 SCENARIOS_DIR = Path(__file__).resolve().parent / "scenarios"
 REQUIRED = ("id", "target", "prompt", "graders")
 
