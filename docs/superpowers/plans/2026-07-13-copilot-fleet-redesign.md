@@ -681,12 +681,12 @@ The generator enforces the Copilot contract: because `delegates_to` is nonempty,
 Body assembly:
 1. **Edited move** from `legacy/claude-fleet/agents/sre-engineer.md`: **`## Match your altitude` (29–44) FIRST [grafted from PR #61 — 63 dropped it silently]**, retargeted at `eng-ladder`'s SRE track (responder / investigator / elite) with stack-skill names repointed per the ledger (splunk-triage→obs-logs, etc.). This is the move that satisfies Task 13's stated interface ("`sre`'s method references them"); without it the SRE tier files are dark for their primary consumer, because `eng-ladder`'s own triggers are not incident phrasings. Then `## Operating principles` (51), `## Method (triage → investigate)` (62), `## Output contract` (88), and the post-PR-#53 compromise-handling guardrails from `## Guardrails` (115) — the containment/evidence-preservation bullets move unchanged. **Mandatory-load correction:** replace every source sentence shaped like "load the relevant tool/stack skill" with *"use the required-skills block to load the runtime identity for canonical `<name>`"*, where `<name>` is the one required owner selected by the method (`eng-ladder`, `pcf-ops`, `database-reliability`, or the applicable `obs-*` owner). A bare sibling name may remain a label, never the operand of `load`, `invoke`, `read`, or `use this skill`; no method may introduce a dependency outside the pinned `sre` row. **Two Guardrails rulings ride the move [grafted from PR #61]:** fold *"Don't declare root cause prematurely — separate what we know from what we suspect"* (118) into the moved `## Output contract`; the "Read-only on production" bullet is **superseded by Tier 0–3** (item 3) — cut it and say so in the commit.
 2. `## Investigation toolbox (read-only)` (78) — **EDITED during the move**: strike sentences describing the Claude Bash guard mechanics; the toolbox's command list itself moves verbatim (it seeds Task 38's allowlist). Add one line: *"Follow the generated runtime policy: when execute is absent, request human-run evidence; only the separately proven brokered Copilot mode routes these reads through its machine-local broker, and Claude's projection remains no-execute for this lane."*
-3. NEW `## Change authority — classify before acting`: **verbatim move** of the Tier 0–3 ladder from `C:/Users/hawkins/sde-agents/agents/homelab-platform.md` lines 22–28 (the four tier definitions and the scope-of-approval sentence: "Approval covers only the commands and target shown. A material command, target, or blast-radius change re-enters the gate. While approval is pending, continue only independent Tier 0 or Tier 1 work.") — followed by this NEW worked example (cf-flavored; the shape is homelab-platform's, the content is ours):
+3. NEW `## Change authority — classify before acting`: **security-edited move** of the Tier 0–3 ladder from `C:/Users/hawkins/sde-agents/agents/homelab-platform.md` lines 22–28. Preserve the Tier 0/1 definitions and the ladder's classification/evidence shape. Rewrite Tier 2/3 as recommendation-and-handoff only: a human release owner or separately approved protected automation performs the live action, and the agent never applies it. Extend the scope sentence to bind the applying actor and state explicitly that approval does not grant this agent live-change authority. The canonical authoring test pins this complete literal block for both `sre` and `observer`. Follow it with this NEW worked example (cf-flavored; the shape is homelab-platform's, the content is ours):
 
 ````markdown
 ### Worked example — a Tier 2 request (the shape, compressed)
 
-> **Requesting approval to apply a Tier 2 change.**
+> **Requesting approval for a human release owner to apply a Tier 2 change.**
 >
 > **Target**: `checkout` app, `prod` space, foundation `pcf-east`.
 > **Change**: scale from 4 → 6 instances to absorb the 502 burst while the root cause is investigated.
@@ -696,7 +696,7 @@ Body assembly:
 > **Verification**: `cf app checkout` shows `6/6 running`; 502 rate in the dashboard drops within 5 min.
 > **Rollback**: `cf scale checkout -i 4` — the exact inverse, no state carried.
 >
-> This is Tier 2 (reversible live change), so I need explicit approval for this specific apply.
+> This is Tier 2 (reversible live change), so the human release owner needs explicit approval for this specific apply; I do not apply it.
 > Meanwhile I'll continue the Tier 0 investigation of what changed, which needs no approval.
 ````
 
@@ -751,12 +751,12 @@ At Task 6, only the `observer → sre` handoff is resolvable. Defer the displaye
 
 Body assembly:
 1. **Verbatim move** from `legacy/claude-fleet/agents/sre-monitor.md`: `## Operating principles` (25), `## Method` (40), `## Output contract` (62) — striking any sentence that names Wavefront/Splunk as *the* stack (the by-signal skills own backend specifics now; the body stays signal-shaped).
-2. NEW `## Change authority` — the same Tier 0–3 verbatim block as Task 5 Step 1 item 3 (ladder + scope-of-approval sentence), followed by this NEW worked example:
+2. NEW `## Change authority` — the exact same security-edited Tier 0–3 literal block as Task 5 Step 1 item 3, followed by this NEW worked example:
 
 ````markdown
 ### Worked example — a Tier 2 request (the shape, compressed)
 
-> **Requesting approval to apply a Tier 2 change.**
+> **Requesting approval for a human release owner to apply a Tier 2 change.**
 >
 > **Target**: Grafana folder `payments`, alert rule `checkout-5xx-burn`.
 > **Change**: raise the short-window burn threshold 2x → 6x; the rule paged 11 times this week on

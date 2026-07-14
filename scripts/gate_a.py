@@ -37,6 +37,8 @@ STEPS = [
      ["scripts/validate_fleet.py"]),
     ("Validator's own tests",
      ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_validate_fleet.py"]),
+    ("Phase-1 canonical authoring",
+     ["scripts/test_phase1_canonical.py"]),
     ("Format-spike projection contracts",
      ["-m", "unittest", "discover", "-s", "spikes/copilot-claude-format/tests",
       "-p", "test_*.py", "-v"]),
