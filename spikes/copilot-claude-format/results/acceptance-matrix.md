@@ -1,6 +1,7 @@
 # Format-boundary acceptance evidence
 
-- **Evidence date:** 2026-07-13
+- **Evidence window:** 2026-07-13 through 2026-07-14
+- **Final hardening rerun:** 2026-07-14
 - **Branch:** `codex/copilot-claude-format-spike`
 - **Claude Code:** 2.1.208
 - **VS Code:** 1.128.0
@@ -14,11 +15,14 @@ delegation, skill/reference loading, or tool denial.
 
 | Check | Result | Evidence |
 |---|---|---|
-| Red-first generator contract | OBSERVED / `[unverified—no durable raw log]` | 14/14 tests were observed erroring against the intentional stub before implementation, but the console transcript was not persisted. |
-| Final generator contract | PASS | `[verified]` 28/28 focused tests passed, including execution of both materialized current-OS hook commands, rejection of misnamed/orphan canonical agent bodies, and canonical derivation of compatibility names. |
+| Red-first generator contract | OBSERVED / `[unverified—no durable raw log]` | The original 28/28 contracts stayed green while all 9 new reusable-generator test methods failed against the old implementation (17 failures and 6 errors across their subtests); the console transcript was observed in-session but not persisted as a repository artifact. |
+| Adversarial red-first contract | OBSERVED / `[unverified—no durable raw log]` | After read-only review, 48 tests reproduced 19 failures and 4 errors for default-path discovery, recursive stale files, non-convergent writes, link/path containment, unsafe model strings, body exactness, and ambiguous compatibility counts. One real Windows symlink fixture initially skipped for missing privilege; its parent setup was corrected before the green run. |
+| Supply-chain red-first contract | OBSERVED / `[unverified—no durable raw log]` | Six new focused methods failed in the intended gaps (10 subtest failures and 2 errors): command inventory, canonical-root/manifest redirection, Windows reparse detection, atomic replacement, and trimmed single-line frontmatter validation. The same six methods passed after implementation. |
+| Final generator contract | PASS | `[verified]` 60 focused tests were discovered: 59 passed and the real Windows symlink-creation case skipped because this account lacks symlink privilege; deterministic tests cover fail-closed link/junction/reparse rejection and prove link-like directories are pruned before traversal. Coverage includes explicit agent/command default suppression, validator-enforced exact-empty skill inventory, delegation/skill authority derived from canonical edges, production execute/edit/web capability mapping, atomic/convergent writes, recursive any-suffix drift, exact command/reference/asset/script inventory, canonical-authority/POSIX/link/hardlink containment, runtime-specific model projection, materialized hook commands, and malformed canonical input. |
 | Projection drift | PASS | `[verified]` `generate.py --check`: 10 generated files match `canonical/fleet.json`. |
-| Model-field boundary | NOT IN SPIKE | `[sourced]` `compatibility.json` records that `model` is omitted so both runtimes inherit the session model; production mapping remains a separate generator/runtime gate. |
-| Claude strict plugin schema | PASS | `[verified]` `claude plugin validate spikes/copilot-claude-format --strict`: `Validation passed`. Strict schema validation is not runtime-loader evidence. |
+| Model-field boundary | PASS — structural | `[verified]` The checked-in spike explicitly configures an empty Copilot list and null Claude value, so both wrappers inherit. Temporary fixtures prove a Copilot array is emitted only to Copilot, a Claude scalar only to Claude, and crossed/blank/duplicate/agent-local shapes fail. Named-model runtime availability remains pending. |
+| Claude strict plugin schema | PASS | `[verified]` `claude plugin validate spikes/copilot-claude-format --strict`: `Validation passed`, including explicit `commands: []`. Strict schema validation is not runtime-loader evidence. |
+| Empty-registration Claude schema | PASS | `[verified]` The checked-in `tests/fixtures/empty-plugin` scaffold with explicit empty agents/skills/commands passed `claude plugin validate spikes/copilot-claude-format/tests/fixtures/empty-plugin --strict`. Native Copilot behavior remains a separate runtime row. |
 | Repository Gate A | PASS | 8/8 structural steps green, including the spike suite. |
 | Diff whitespace | PASS | `[verified]` `git diff --check` produced no tracked-diff findings; `rg -n "[ \\t]+$"` produced no findings across the untracked spike and modified docs/scripts. |
 
@@ -101,13 +105,13 @@ be performed by a human in the trusted acceptance environment.
 |---:|---|---|
 | 1 | PASS | `[verified]` Branch base and current remote `main` are both `1cfe7cbd08d54fa8c9dac0f5ca1a10587d5575e3`. |
 | 2 | PASS | `[sourced]` Compared current [VS Code custom-agent](https://code.visualstudio.com/docs/agent-customization/custom-agents), [agent-plugin](https://code.visualstudio.com/docs/agent-customization/agent-plugins), [hook](https://code.visualstudio.com/docs/agent-customization/hooks), [Claude subagent](https://code.claude.com/docs/en/sub-agents), and [Claude plugin](https://code.claude.com/docs/en/plugins-reference) contracts. |
-| 3 | PASS | `[verified]` Canonical identity, exact body/skill/reference inventory, dependency parity, and orphan rejection are covered by the focused suite. |
+| 3 | PASS | `[verified]` Canonical identity, exact body/command/skill/reference/asset/script inventory, explicit agent/command default suppression, exact-empty Claude skill-tree control, canonical-root/link/reparse/hardlink containment, dependency parity, wrong-extension/orphan rejection, and atomic/convergent writes are covered by the focused suite. |
 | 4 | PASS — static scope | `[verified]` Copilot root manifest uses an agent directory; Claude manifest uses explicit files and passes Claude strict validation. Native Copilot loading remains pending. |
 | 5 | PASS — static scope | `[verified]` Every generated wrapper has an explicit name and byte-identical canonical body; suffix/frontmatter differences are generated. |
 | 6 | PASS — static scope | `[verified]` Copilot emits `agent` + `agents`; Claude emits `Agent(target)`; the worker omits delegation in both. Behavioral enforcement remains pending. |
-| 7 | PASS — static scope | `[verified]` The shared skill links the inventoried reference and runtime-qualified skill names derive from canonical data. Actual runtime reference reads remain pending. |
+| 7 | PASS — static scope | `[verified]` The shared skill links its inventoried reference and inert asset/script markers; runtime-qualified skill names derive from canonical data. Actual runtime reference reads remain pending. |
 | 8 | PASS — local command scope | `[verified]` Both materialized hook commands emit the exact marker JSON. Runtime discovery/invocation remains pending. |
-| 9 | PASS | `[verified]` Projection drift is 10/10, focused contracts are 28/28, Claude strict validation passes, Gate A is 8/8, and tracked/untracked whitespace checks are clean. |
+| 9 | PASS | `[verified]` Projection drift is 10/10, focused contracts discover 60 tests (59 pass, 1 OS-privilege skip with deterministic branch coverage), Claude strict validation passes for the populated and explicit-empty manifests, Gate A is 8/8, and tracked/untracked whitespace checks are clean. |
 | 10 | NOT CLEARED | `[blocked]/[pending]` Corrected Claude behavior is policy-blocked here; native plugin and fallback behavior require manual VS Code acceptance. |
 
 Review execution is **10/10 (100%)**. Automated/static checks are green in

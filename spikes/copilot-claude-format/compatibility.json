@@ -2,10 +2,21 @@
   "schema_version": 1,
   "generated_from": "canonical/fleet.json",
   "plugin_name": "format-boundary-spike",
-  "two_agent_wrappers_required": true,
+  "canonical_agent_count": 2,
+  "generated_wrapper_count": 4,
+  "canonical_command_count": 0,
   "model_projection": {
-    "spike": "omitted-to-inherit-session-model",
-    "production_mapping": "separately generator-tested and runtime-probed"
+    "spike": "wrapper-model-fields-omitted-to-inherit-session-model",
+    "copilot": {
+      "shape": "list",
+      "configured": [],
+      "emitted": false
+    },
+    "claude": {
+      "shape": "scalar",
+      "configured": null,
+      "emitted": false
+    }
   },
   "copilot": {
     "agent_suffix": ".agent.md",

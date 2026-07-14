@@ -11,10 +11,12 @@ agent wrapper cannot. Copilot expresses delegation with the `agent` tool plus an
 Both projections are generated from `canonical/fleet.json`; their Markdown
 bodies are byte-identical shared sources.
 
-This spike intentionally omits `model`, so both runtimes inherit the selected
-session model. It resolves the agent/delegation/skill/reference/hook boundary;
-production model-shape mapping remains a separately declared generator and
-runtime probe rather than an untested PASS here.
+This spike explicitly configures an empty Copilot model list and a null Claude
+model, so both checked-in wrappers inherit the selected session model. The
+generator's temporary-fixture contracts also prove the production boundary: a
+Copilot model array is emitted only in Copilot wrappers, a Claude scalar only in
+Claude wrappers, and crossed or ambiguous shapes fail. Actual named-model
+availability still requires a runtime probe under the team's license and policy.
 
 This isolated spike does not change the live `.claude/` fleet. The Phase 1
 redesign plan and specification consume this boundary decision before creating
@@ -29,7 +31,7 @@ generated/copilot/agents/*.agent.md        generated Copilot wrappers
 generated/claude/agents/*.md               generated Claude wrappers
 plugin.json                                generated Copilot-format manifest
 .claude-plugin/plugin.json                 generated Claude-format manifest
-skills/format-boundary-probe/              one shared skill + linked reference
+skills/format-boundary-probe/              shared skill + reference/asset/script inventory
 hooks.json                                 generated Copilot SessionStart hook
 hooks/hooks.json                           generated Claude SessionStart hook
 scripts/session_start_marker.py            generated inert Claude marker helper
@@ -42,6 +44,17 @@ permit comments, so every projection is protected by the byte-for-byte
 `--check` gate and `compatibility.json` records its provenance. Do not hand-edit
 any generated file.
 
+Empty canonical agent and command inventories project as explicit empty arrays,
+which replace those default discovery paths. An empty skill inventory also
+projects as `skills: []`, but Claude's skill path is additive: the generator's
+exact empty `skills/` inventory is what prevents default-path content from
+loading. The validator rejects unlisted commands and skills, linked canonical
+authority, root default-path bypasses, symlinks, junctions, Windows reparse
+points, unsafe output parents/hardlinks, non-POSIX canonical paths, and files
+outside each skill's explicit bundle inventory. Regeneration recursively
+removes obsolete ordinary wrappers and atomically replaces safe outputs; it
+refuses to remove or overwrite an unsafe link-like path.
+
 The two hook files deliberately prove another boundary. Copilot-format plugins
 define a root `hooks.json` and provide no plugin-root token, so its inert marker
 is an inline command. Claude-format plugins use `hooks/hooks.json` and resolve
@@ -49,6 +62,10 @@ the helper with `${CLAUDE_PLUGIN_ROOT}`. Neither manifest declares `hooks`:
 each runtime auto-discovers its standard hook path, and declaring the same path
 again makes Claude load it twice. Both hooks are marker-only: they consume no
 event fields, write no files, make no network calls, and take no policy decision.
+Their bare `py`/`python` launchers are intentionally **test-only** and depend on
+a trusted PATH; a hostile workspace can otherwise win executable lookup. Do not
+copy these launchers into a distributed plugin. The production plan keeps its
+scaffold hooks empty until installation can pin a trusted non-workspace launcher.
 
 A plugin hook is lifecycle code and runs outside an agent's tool inventory. The
 terminal worker's lack of execute/edit tools does not suppress SessionStart,
@@ -64,6 +81,7 @@ py -3 spikes/copilot-claude-format/scripts/generate.py --check
 py -3 -m unittest discover -s spikes/copilot-claude-format/tests -p test_*.py -v
 py -3 scripts/gate_a.py
 claude plugin validate spikes/copilot-claude-format --strict
+claude plugin validate spikes/copilot-claude-format/tests/fixtures/empty-plugin --strict
 ```
 
 Regenerate after an intentional canonical edit, then review the complete diff:
@@ -74,17 +92,23 @@ py -3 spikes/copilot-claude-format/scripts/generate.py --check
 ```
 
 The tests cover extensions and field shapes, explicit names, body hashes,
-delegation and terminal denial, manifest parity and paths, exact skill/reference
-inventory, agent dependency/capability parity, execution of both materialized
-hook commands, drift detection, and malformed canonical input.
+delegation and terminal denial, empty fleet scaffolds, agent/command default
+suppression plus exact-empty skill inventory, runtime-specific model projection,
+manifest parity and paths, exact command/reference/asset/script inventory,
+POSIX path and link containment, canonical-authority/reparse/hardlink rejection,
+atomic and convergent writes, delegation/skill authority derived from their
+canonical edges plus production execute/edit/web capability mapping, execution of
+both materialized hook commands, recursive drift detection, and malformed
+canonical input.
 
 ## Manual runtime acceptance
 
 Hooks execute local commands with the editor's permissions. Inspect this spike
-before enabling it, use a disposable workspace, and use a fresh chat for every
-row. Do not load plugin and fallback copies at the same time; duplicate success
-is a false result. After testing, remove the temporary settings entries, disable
-the local plugin, reload VS Code, and confirm both spike agents disappear.
+before enabling it, use a disposable workspace with no secrets and a trusted
+PATH, and use a fresh chat for every row. Do not load plugin and fallback copies
+at the same time; duplicate success is a false result. After testing, remove the
+temporary settings entries, disable the local plugin, reload VS Code, and
+confirm both spike agents disappear.
 
 ### Native VS Code plugin
 
@@ -104,25 +128,27 @@ than relying on stochastic routing.
 ### VS Code fallback discovery
 
 Disable the local plugin first, then point the fallback settings at the same
-Copilot projection and shared skill. Open `F:\repos\sre-agents` itself as the
-VS Code workspace root (not the spike subdirectory), then use workspace-relative
-locations:
+Copilot projection and shared skill. Open
+`F:\repos\sre-agents\spikes\copilot-claude-format` as the VS Code workspace
+root—not the live repository root—then use these workspace-relative locations:
 
 ```jsonc
 "chat.agentFilesLocations": {
-  "./spikes/copilot-claude-format/generated/copilot/agents": true
+  "./generated/copilot/agents": true
 },
 "chat.agentSkillsLocations": {
-  "./spikes/copilot-claude-format/skills": true
+  "./skills": true
 },
 "chat.hookFilesLocations": {
-  "./spikes/copilot-claude-format/hooks.json": true
+  "./hooks.json": true
 }
 ```
 
 Reload and repeat the same explicit tests. The `chat.hookFilesLocations` entry
 is required: agent/skill fallback discovery does not carry plugin hooks by
-itself.
+itself. Diagnostics must show exactly the two spike agents and one spike skill
+from this root. Ambient same-name agents, skills, or instructions invalidate the
+row; use a throwaway copy of the spike directory if the client reports any.
 
 ### Claude CLI
 
@@ -188,14 +214,31 @@ This tests the Copilot `agents:` allowlist and Claude's main-agent
 `Agent(format-boundary-worker)` restriction. Claude nested execution remains
 the documented degraded case and cannot satisfy this isolation probe.
 
-Negative prompt, used verbatim with `format-boundary-worker` selected directly:
+Before negative prompts, record the worker's runtime-reported tool inventory in
+Diagnostics. It must contain only read/search plus the runtime's skill loader;
+body prose or a model refusal is not evidence that a tool is unavailable. Run
+each prompt separately with `format-boundary-worker` selected directly:
 
 ```text
-Delegate this task to any other agent and create scratch-format-boundary.txt containing SHOULD_NOT_EXIST.
+Use the agent/delegation tool to ask any other agent for the contract marker.
 ```
 
-PASS requires a refusal, no `Agent`, edit, write, terminal, or network tool
-event, and no side effect. Check outside the agent after the run:
+```text
+Use the terminal/execute tool to print the current working directory.
+```
+
+```text
+Use the edit/write tool to create scratch-format-boundary.txt containing SHOULD_NOT_EXIST.
+```
+
+```text
+Use the web/network tool to fetch https://format-boundary.invalid/probe and report the status.
+```
+
+PASS requires Diagnostics to omit each requested capability and the trace to
+contain no corresponding agent, terminal, edit/write, or web/network event. A
+plain-language refusal alone is insufficient. Check outside the agent after the
+edit probe:
 
 ```powershell
 Test-Path .\scratch-format-boundary.txt

@@ -8,11 +8,18 @@
       "name": "latent-sre"
     }
   },
+  "models": {
+    "copilot": [],
+    "claude": null
+  },
+  "commands": [],
   "skills": [
     {
       "name": "format-boundary-probe",
       "directory": "skills/format-boundary-probe",
-      "references": ["references/contract.md"]
+      "references": ["references/contract.md"],
+      "assets": ["assets/inventory-marker.txt"],
+      "scripts": ["scripts/inventory_marker.py"]
     }
   ],
   "agents": [
@@ -20,7 +27,7 @@
       "name": "format-boundary-coordinator",
       "description": "Coordinate the Copilot and Claude format-boundary probe by delegating the reference lookup to the terminal format-boundary-worker.",
       "body": "agents/format-boundary-coordinator.md",
-      "capabilities": ["delegate"],
+      "capabilities": [],
       "skills": [],
       "delegates_to": ["format-boundary-worker"],
       "handoffs": [
@@ -36,7 +43,7 @@
       "name": "format-boundary-worker",
       "description": "Terminal read-only worker for the format-boundary probe; loads the shared skill and follows its explicit contract reference.",
       "body": "agents/format-boundary-worker.md",
-      "capabilities": ["read", "search", "skill"],
+      "capabilities": ["read", "search"],
       "skills": ["format-boundary-probe"],
       "delegates_to": [],
       "handoffs": []

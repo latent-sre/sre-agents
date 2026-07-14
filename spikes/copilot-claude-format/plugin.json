@@ -6,5 +6,6 @@
     "name": "latent-sre"
   },
   "agents": "./generated/copilot/agents/",
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "commands": []
 }
