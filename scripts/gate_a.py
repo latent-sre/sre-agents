@@ -37,6 +37,8 @@ LEGACY = {"FLEET_ROOT": "legacy/claude-fleet"}
 STEPS = [
     ("Fleet structure (legacy, frozen)",
      ["scripts/validate_fleet.py"], LEGACY),
+    ("No ported regressions (Gate B)",
+     ["scripts/test_no_regressions.py"], None),
     ("Validator's own tests",
      ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_validate_fleet.py"], None),
     ("Phase-1 canonical authoring",
