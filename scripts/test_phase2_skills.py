@@ -27,6 +27,14 @@ STACK_DESCRIPTION = (
     "\"can we move this to Kubernetes / the cloud\", \"which backend do I query\". One file changes when the "
     "ground shifts."
 )
+ROOT_CAUSE_DESCRIPTION = (
+    "Use when debugging any bug, test failure, or unexpected behavior — before proposing a fix — and "
+    "especially after a fix attempt has already failed, or when guessing has started (\"maybe it's X, "
+    "let me try changing it\"). Triggers: 'debug this failure', 'why did this test fail', 'the fix did "
+    "not work'. For a production incident with an unknown cause, the `sre` agent owns the investigation; "
+    "this skill is the method it (and sde) load."
+)
+EXPECTED_ACTIVE = {"stack-profile", "root-cause"}
 
 
 def frontmatter_description(text: str) -> str:
@@ -96,9 +104,51 @@ class Phase2FirstCohortTests(unittest.TestCase):
             self.assertIn(required, normalized)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual([], ready)
-        active = [record for record in self.fleet["skills"] if record["state"] == "active"]
-        planned = [record for record in self.fleet["skills"] if record["state"] == "planned"]
-        self.assertEqual((1, 25), (len(active), len(planned)))
+
+    def test_task11_root_cause_preserves_the_winner_and_legacy_example(self):
+        record = self.record("root-cause")
+        self.assertEqual(
+            {
+                "name": "root-cause",
+                "state": "active",
+                "directory": "skills/root-cause",
+                "references": [],
+                "assets": [],
+                "scripts": [],
+            },
+            record,
+        )
+        self.assert_inventory("root-cause", {"SKILL.md"})
+        text = (ROOT / "skills/root-cause/SKILL.md").read_text(encoding="utf-8")
+        self.assertEqual(ROOT_CAUSE_DESCRIPTION, frontmatter_description(text))
+        self.assertIn('argument-hint: "[the bug or unexpected behavior]"', text)
+        for required in (
+            'Announce at start: "Using root-cause: reproduce → evidence → hypothesis → verify → fix."',
+            "## The loop",
+            "## The three-strikes rule",
+            "## Red flags — stop and restart the loop",
+            "## Worked example (the hypothesis table is the method)",
+            "CI uses a different TZ → date assertion off by one",
+            "Causal chain: *unpinned test clock → asserts a localized date → passes in ET, fails in UTC CI.*",
+            "**regression test** asserts the export under a fixed TZ",
+        ):
+            self.assertIn(required, text)
+        self.assertNotIn("debug-rca", text)
+        _manifest, ready = generate_fleet.load_and_validate(ROOT)
+        self.assertEqual([], ready)
+
+    def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
+        active = {
+            record["name"] for record in self.fleet["skills"] if record["state"] == "active"
+        }
+        planned = {
+            record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
+        }
+        self.assertEqual(EXPECTED_ACTIVE, active)
+        self.assertEqual(26 - len(EXPECTED_ACTIVE), len(planned))
+        self.assertEqual(set(), active & planned)
+        _manifest, ready = generate_fleet.load_and_validate(ROOT)
+        self.assertEqual([], ready)
 
 
 if __name__ == "__main__":

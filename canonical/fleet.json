@@ -41,7 +41,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "root-cause", "state": "planned", "activate_task": 11 },
+    {
+      "name": "root-cause",
+      "state": "active",
+      "directory": "skills/root-cause",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "runbook", "state": "planned", "activate_task": 12 },
     { "name": "eng-ladder", "state": "planned", "activate_task": 13 },
     { "name": "craft", "state": "planned", "activate_task": 14 },

@@ -58,6 +58,14 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "root-cause": {
+        "name": "root-cause",
+        "state": "active",
+        "directory": "skills/root-cause",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
