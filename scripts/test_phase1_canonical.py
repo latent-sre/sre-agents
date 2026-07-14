@@ -451,9 +451,9 @@ class Phase1CanonicalAuthoringTests(unittest.TestCase):
             "0.1.0", plugin.get("version"), "Phase-1 plugin version drifted"
         )
         self.assertAuthoringEqual(
-            "boundary-only",
+            "content-building",
             self.fleet.get("assembly_state"),
-            "assembly_state must remain boundary-only through Tasks 3-7",
+            "assembly_state must be content-building after the Phase-2 open",
         )
         self.assertAuthoringEqual(
             [], self.fleet.get("commands"), "production commands must remain empty"

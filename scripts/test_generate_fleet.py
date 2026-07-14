@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Contracts for the canonical fleet generator.
 
-The real Phase-1 tree is intentionally boundary-only: five canonical agent
-definitions exist, all 26 skills are planned, and no runtime wrapper is
-allowed to appear.  Temporary roots exercise later construction states without
+The real construction tree has five canonical agent definitions and derives
+runtime visibility from the planned/active skill catalog and closed agent graph.
+Temporary roots exercise later construction states without
 publishing those fixtures through either runtime's discovery path.
 """
 

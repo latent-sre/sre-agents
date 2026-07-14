@@ -30,7 +30,7 @@
     ],
     "claude": null
   },
-  "assembly_state": "boundary-only",
+  "assembly_state": "content-building",
   "commands": [],
   "skills": [
     { "name": "stack-profile", "state": "planned", "activate_task": 10 },
