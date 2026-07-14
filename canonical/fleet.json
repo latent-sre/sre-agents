@@ -73,7 +73,21 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "craft", "state": "planned", "activate_task": 14 },
+    {
+      "name": "craft",
+      "state": "active",
+      "directory": "skills/craft",
+      "references": [
+        "references/python.md",
+        "references/bash.md",
+        "references/powershell.md",
+        "references/go.md",
+        "references/tdd.md",
+        "references/safe-refactor.md"
+      ],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "backend-craft", "state": "planned", "activate_task": 15 },
     { "name": "frontend-craft", "state": "planned", "activate_task": 16 },
     { "name": "ops-tooling", "state": "planned", "activate_task": 17 },

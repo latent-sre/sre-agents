@@ -49,7 +49,14 @@ ENG_LADDER_DESCRIPTION = (
     "be', 'review this at the principal level', 'what tier is this incident work'. Read exactly one "
     "tier file."
 )
-EXPECTED_ACTIVE = {"stack-profile", "root-cause", "runbook", "eng-ladder"}
+CRAFT_DESCRIPTION = (
+    "Write, review, test, debug, or safely refactor Python, Bash, PowerShell, and Go using "
+    "language-specific conventions plus the bundled tests-first and behavior-preserving-refactoring "
+    "processes. Triggers: 'write this in Python', 'review this Bash script', 'refactor this Go code'. "
+    "Ownership map only—not a load: backend-craft owns API/resiliency design and frontend-craft owns "
+    "TypeScript/React UI design."
+)
+EXPECTED_ACTIVE = {"stack-profile", "root-cause", "runbook", "eng-ladder", "craft"}
 
 
 def frontmatter_description(text: str) -> str:
@@ -312,6 +319,81 @@ class Phase2FirstCohortTests(unittest.TestCase):
         self.assertEqual(1, all_text.count("Hyrum's"))
         self.assertEqual(1, all_text.count("SemVer"))
         self.assertEqual(1, all_text.count("**Conventional Commits**"))
+
+    def test_task14_craft_ports_four_languages_and_bundles_both_processes(self):
+        references = [
+            "references/python.md",
+            "references/bash.md",
+            "references/powershell.md",
+            "references/go.md",
+            "references/tdd.md",
+            "references/safe-refactor.md",
+        ]
+        record = self.record("craft")
+        self.assertEqual(
+            {
+                "name": "craft",
+                "state": "active",
+                "directory": "skills/craft",
+                "references": references,
+                "assets": [],
+                "scripts": [],
+            },
+            record,
+        )
+        self.assert_inventory("craft", {"SKILL.md", *references})
+
+        root = ROOT / "skills/craft"
+        text = (root / "SKILL.md").read_text(encoding="utf-8")
+        self.assertEqual(CRAFT_DESCRIPTION, frontmatter_description(text))
+        self.assertIn("# Craft — pick the language", text)
+        self.assertIn("the file for the language you're touching.", text)
+        for relative in references:
+            self.assertIn(f"(./{relative})", text)
+        for required in (
+            "→ [tests first](./references/tdd.md)",
+            "→ [safe refactoring](./references/safe-refactor.md)",
+        ):
+            self.assertIn(required, text)
+        for forbidden in (
+            "TypeScript**",
+            "React**",
+            "references/typescript.md",
+            "references/react.md",
+        ):
+            self.assertNotIn(forbidden, text)
+
+        tdd = (root / "references/tdd.md").read_text(encoding="utf-8")
+        safe_refactor = (root / "references/safe-refactor.md").read_text(encoding="utf-8")
+        self.assertTrue(
+            tdd.startswith(
+                "Read this when writing tests-first or after any bug fix "
+                "(the regression test is non-negotiable).\n\n## Red → green → refactor"
+            )
+        )
+        self.assertTrue(
+            safe_refactor.startswith(
+                "Read this before a behavior-preserving reshape — rename, move, contract change "
+                "with no observable change.\n\n## Before you touch anything"
+            )
+        )
+        self.assertIn("[safe refactoring process](./safe-refactor.md)", tdd)
+        self.assertIn("[tests-first process](./tdd.md)", safe_refactor)
+        self.assertNotIn("tdd-workflow", tdd + safe_refactor)
+        self.assertEqual(4, safe_refactor.count("\n## "))
+
+        for language in ("python", "bash", "powershell", "go"):
+            language_text = (root / f"references/{language}.md").read_text(encoding="utf-8")
+            self.assertIn("See the [tests-first process](./tdd.md).", language_text)
+            self.assertNotIn("tdd-workflow", language_text)
+
+        all_text = "\n".join(
+            path.read_text(encoding="utf-8") for path in sorted(root.rglob("*.md"))
+        )
+        self.assertNotIn("TypeScript craft", all_text)
+        self.assertNotIn("React craft", all_text)
+        self.assertNotIn("required-skill-dependencies:start", all_text)
+        self.assertNotIn("craft", self.fleet["skill_dependencies"])
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {

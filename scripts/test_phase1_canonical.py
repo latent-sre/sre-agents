@@ -90,6 +90,21 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "craft": {
+        "name": "craft",
+        "state": "active",
+        "directory": "skills/craft",
+        "references": [
+            "references/python.md",
+            "references/bash.md",
+            "references/powershell.md",
+            "references/go.md",
+            "references/tdd.md",
+            "references/safe-refactor.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
