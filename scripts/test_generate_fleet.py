@@ -398,12 +398,81 @@ class ProductionGeneratorContracts(unittest.TestCase):
         )
         self.assertInvalid(fleet, "undeclared mandatory load")
 
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate(
+            "stack-profile",
+            body_extra="Ownership only—not a load: load root-cause before continuing.\n",
+        )
+        self.assertInvalid(fleet, "undeclared mandatory load")
+
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate(
+            "stack-profile",
+            body_extra=(
+                "Ownership only—not a load: root-cause owns diagnosis, but load it "
+                "anyway.\n"
+            ),
+        )
+        self.assertInvalid(fleet, "undeclared mandatory load")
+
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate(
+            "stack-profile",
+            body_extra=(
+                "Ownership only—not a load: root-cause owns diagnosis, but load "
+                "eng-ladder before continuing.\n"
+            ),
+        )
+        self.assertInvalid(fleet, "undeclared mandatory load")
+
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate(
+            "stack-profile",
+            body_extra=(
+                "Ownership only—not a load: root-cause, but load root-cause "
+                "before continuing.\n"
+            ),
+        )
+        self.assertInvalid(fleet, "undeclared mandatory load")
+
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate(
+            "stack-profile",
+            body_extra=(
+                "Ownership only—not a load: root-cause owns diagnosis. "
+                "Follow it anyway.\n"
+            ),
+        )
+        self.assertInvalid(fleet, "undeclared mandatory load")
+
     def test_target_before_action_coreference_is_a_hidden_instruction(self) -> None:
         fleet = FleetRoot(self)
         fleet.manifest["assembly_state"] = "content-building"
         fleet.activate(
             "stack-profile",
             body_extra="A root-cause guide may exist; follow it before continuing.\n",
+        )
+        self.assertInvalid(fleet, "undeclared mandatory load")
+
+    def test_wrapped_target_before_action_coreference_is_a_hidden_instruction(self) -> None:
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate(
+            "stack-profile",
+            body_extra="A root-cause guide may exist.\nFollow it before continuing.\n",
+        )
+        self.assertInvalid(fleet, "undeclared mandatory load")
+
+        fleet = FleetRoot(self)
+        fleet.manifest["assembly_state"] = "content-building"
+        fleet.activate(
+            "stack-profile",
+            body_extra="Follow the canonical\nroot-cause method before continuing.\n",
         )
         self.assertInvalid(fleet, "undeclared mandatory load")
 

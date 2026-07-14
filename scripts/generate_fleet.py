@@ -415,6 +415,13 @@ def _block(text: str, start: str, end: str, where: str) -> tuple[str, str]:
 def _action_targets(line: str, catalog: tuple[str, ...], *, owner: str | None = None) -> list[str]:
     lowered = line.lower()
     targets: list[str] = []
+
+    def has_action(value: str) -> bool:
+        return any(
+            re.search(rf"\b{re.escape(stem)}(?=\s)", value)
+            for stem in ACTION_STEMS
+        )
+
     for target in catalog:
         if target == owner:
             continue
@@ -423,17 +430,79 @@ def _action_targets(line: str, catalog: tuple[str, ...], *, owner: str | None = 
             target_at = lowered.find(target, search_from)
             if target_at < 0:
                 break
-            prefix = lowered[:target_at].replace("not a load", "")
-            suffix = lowered[target_at + len(target) :].replace("not a load", "")
-            if any(
-                re.search(rf"\b{re.escape(stem)}(?=\s)", context)
-                for stem in ACTION_STEMS
-                for context in (prefix, suffix)
+            prefix = lowered[:target_at]
+            suffix = lowered[target_at + len(target) :]
+            prefix_sentence = re.split(r"[.!?]", prefix)[-1]
+            suffix_sentence = re.split(r"[.!?]", suffix, maxsplit=1)[0]
+            qualifier_at = prefix_sentence.rfind("not a load")
+            qualifier_tail = (
+                prefix_sentence[qualifier_at + len("not a load") :]
+                if qualifier_at >= 0
+                else ""
+            )
+            qualifier_head = prefix_sentence[:qualifier_at] if qualifier_at >= 0 else ""
+            qualified_non_action = (
+                qualifier_at >= 0
+                and re.search(r"\b(?:ownership|handoff)\b", qualifier_head)
+                and not has_action(qualifier_tail)
+                and not any(candidate in qualifier_tail for candidate in catalog)
+            )
+            coreference_action = re.search(
+                r"(?:[.,;!?]\s*|\b(?:then|but|and|so)\s+|\bhowever,?\s+)"
+                r"(?:load|invoke|read|use|see|consult|follow|switch\s+to)\s+it\b",
+                suffix,
+            )
+            if (
+                (not qualified_non_action and has_action(prefix_sentence))
+                or (not qualified_non_action and has_action(suffix_sentence))
+                or coreference_action
             ):
                 targets.append(target)
                 break
             search_from = target_at + len(target)
     return targets
+
+
+def _instruction_contexts(text: str) -> list[tuple[int, str]]:
+    """Join wrapped guidance without widening across Markdown block boundaries."""
+    contexts: list[tuple[int, str]] = []
+    buffered: list[str] = []
+    start_line = 0
+    in_fence = False
+
+    def flush() -> None:
+        nonlocal buffered, start_line
+        if buffered:
+            contexts.append((start_line, " ".join(buffered)))
+            buffered = []
+            start_line = 0
+
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        stripped = line.strip()
+        if re.match(r"^(?:```|~~~)", stripped):
+            flush()
+            in_fence = not in_fence
+            continue
+        if not stripped:
+            flush()
+            continue
+        if not in_fence and stripped in {"---", "..."}:
+            flush()
+            continue
+        if not in_fence and re.match(r"^#{1,6}\s", stripped):
+            flush()
+            contexts.append((line_number, stripped))
+            continue
+        if not in_fence and re.match(r"^(?:[-*+]|\d+[.)])\s+", line):
+            flush()
+            buffered = [stripped]
+            start_line = line_number
+            continue
+        if not buffered:
+            start_line = line_number
+        buffered.append(stripped)
+    flush()
+    return contexts
 
 
 def _validate_dependency_identities(text: str, owner: str, targets: list[str]) -> str:
@@ -547,18 +616,18 @@ def _validate_active_skill(
             continue
         if relative == "SKILL.md":
             decoded = scan_skill_text
-        for line_number, line in enumerate(decoded.splitlines(), start=1):
-            for target in _action_targets(line, catalog, owner=name):
+        for line_number, context in _instruction_contexts(decoded):
+            for target in _action_targets(context, catalog, owner=name):
                 if target not in targets:
                     raise ManifestError(
                         f"skill '{name}' {relative}:{line_number}: undeclared mandatory load '{target}'"
                     )
                 paired = (
-                    f"`{target}`" in line and f"`sre-agents:{target}`" in line
+                    f"`{target}`" in context and f"`sre-agents:{target}`" in context
                 )
                 block_directed = (
-                    "dependency block" in line.lower()
-                    or "required-skill-dependencies" in line.lower()
+                    "dependency block" in context.lower()
+                    or "required-skill-dependencies" in context.lower()
                 )
                 if not paired and not block_directed:
                     raise ManifestError(
@@ -667,8 +736,8 @@ def _validate_required_identities(
     if pairs != expected:
         raise ManifestError(f"agent '{name}': required-skill identities do not match canonical list")
     declared = set(required_skills)
-    for line_number, line in enumerate(outside.splitlines(), start=1):
-        for target in _action_targets(line, catalog):
+    for line_number, context in _instruction_contexts(outside):
+        for target in _action_targets(context, catalog):
             if target not in declared:
                 raise ManifestError(
                     f"agent '{name}' body:{line_number}: undeclared mandatory load '{target}'"
