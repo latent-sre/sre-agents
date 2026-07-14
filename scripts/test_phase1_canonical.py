@@ -198,6 +198,22 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "incident-command": {
+        "name": "incident-command",
+        "state": "active",
+        "directory": "skills/incident-command",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
+    "postmortem": {
+        "name": "postmortem",
+        "state": "active",
+        "directory": "skills/postmortem",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
@@ -639,14 +655,29 @@ class Phase1CanonicalAuthoringTests(unittest.TestCase):
         )
 
     def test_canonical_drafts_stay_out_of_default_discovery_paths(self):
-        for relative in (
-            Path("generated/copilot/agents"),
-            Path("generated/claude/agents"),
-        ):
+        expected_generated = {
+            Path("generated/copilot/agents"): {
+                "generated/copilot/agents/reviewer.agent.md",
+                "generated/copilot/agents/sde.agent.md",
+                "generated/copilot/agents/scribe.agent.md",
+            },
+            Path("generated/claude/agents"): {
+                "generated/claude/agents/reviewer.md",
+                "generated/claude/agents/sde.md",
+                "generated/claude/agents/scribe.md",
+            },
+        }
+        for relative, expected in expected_generated.items():
             path = ROOT / relative
-            files = [item for item in path.rglob("*") if item.is_file()] if path.exists() else []
+            files = (
+                {item.relative_to(ROOT).as_posix() for item in path.rglob("*") if item.is_file()}
+                if path.exists()
+                else set()
+            )
             self.assertAuthoringEqual(
-                [], files, f"override leaked a generated production wrapper under {relative}"
+                expected,
+                files,
+                f"Task-23 generated wrapper inventory drifted under {relative}",
             )
 
         canonical_names = set(EXPECTED_AGENTS)

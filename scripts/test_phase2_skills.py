@@ -128,10 +128,26 @@ PRODUCTION_CHANGE_GATE_DESCRIPTION = (
     "map only—not a load: canonical `merge-gate` decides merge readiness and canonical `release-gate` "
     "decides ship readiness; this gate authorizes the prod action."
 )
+INCIDENT_COMMAND_DESCRIPTION = (
+    "Run a live incident — classify SEV1–SEV4 by user impact × scope × trend, assign roles, keep the "
+    "authoritative timeline, drive to mitigation (fastest reversible action: route remap, rollback, "
+    "restart, scale, flag flip), send initial/update/resolution comms. Triggers: 'declare an incident', "
+    "'what severity is this', 'send a status update', 'should we roll back'. Mitigation is executed by "
+    "a human; the sre agent investigates."
+)
+POSTMORTEM_DESCRIPTION = (
+    "Structure and principles for a blameless postmortem after an incident. Use after an incident is "
+    "resolved to write up what happened, the systemic cause and contributing factors, the timeline, "
+    "and owned, dated action items. Covers the blameless stance and the standard sections. Pairs with "
+    "incident-command (the incident timeline) and the sre agent (root cause). Triggers: \"write the "
+    "incident postmortem\", \"document what happened\", \"create follow-up actions\"."
+)
+EXPECTED_READY = ["reviewer", "sde", "scribe"]
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
     "ci-actions", "merge-gate", "release-gate", "production-change-gate",
+    "incident-command", "postmortem",
 }
 
 
@@ -203,7 +219,7 @@ class Phase2FirstCohortTests(unittest.TestCase):
         ):
             self.assertIn(required, normalized)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
-        self.assertEqual([], ready)
+        self.assertEqual(EXPECTED_READY, ready)
 
     def test_task11_root_cause_preserves_the_winner_and_legacy_example(self):
         record = self.record("root-cause")
@@ -235,7 +251,7 @@ class Phase2FirstCohortTests(unittest.TestCase):
             self.assertIn(required, text)
         self.assertNotIn("debug-rca", text)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
-        self.assertEqual([], ready)
+        self.assertEqual(EXPECTED_READY, ready)
 
     def test_task12_runbook_merges_sde_body_and_linked_sre_template(self):
         record = self.record("runbook")
@@ -1203,7 +1219,111 @@ class Phase2FirstCohortTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, text)
 
-    def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
+    def test_task23_incident_and_postmortem_activate_exact_closed_cohort(self):
+        expected = {
+            "incident-command": INCIDENT_COMMAND_DESCRIPTION,
+            "postmortem": POSTMORTEM_DESCRIPTION,
+        }
+        for name, description in expected.items():
+            self.assertEqual(
+                {
+                    "name": name,
+                    "state": "active",
+                    "directory": f"skills/{name}",
+                    "references": [],
+                    "assets": [],
+                    "scripts": [],
+                },
+                self.record(name),
+            )
+            self.assert_inventory(name, {"SKILL.md"})
+            text = (ROOT / f"skills/{name}/SKILL.md").read_text(encoding="utf-8")
+            self.assertEqual(description, frontmatter_description(text))
+            self.assertNotIn(name, self.fleet["skill_dependencies"])
+
+        incident = (ROOT / "skills/incident-command/SKILL.md").read_text(encoding="utf-8")
+        incident_flat = " ".join(incident.split())
+        for required in (
+            "## Severity rubric (round up when unsure)",
+            "## How to classify",
+            "## Running the incident (command)",
+            "## Communications cadence",
+            "## Downgrade & resolve",
+            "## Choose the mitigation (the rollback decision)",
+            "the sre agent recommends; a human executes",
+            "blue/green are *roles*, not fixed names",
+            "the previous live app keeps running under the stable name until the post-soak rotation; confirm which app is live with `cf apps` first",
+            "typed `observer` agent",
+            "typed `scribe` agent",
+            "Ownership map only—not a load: canonical `eng-ladder` owns response altitude and canonical `postmortem` owns the durable retrospective",
+            "[unverified]",
+        ):
+            self.assertIn(required, incident_flat)
+        self.assertNotIn("colors alternate each deploy", incident)
+        self.assertNotIn("checkout-blue", incident)
+
+        postmortem = (ROOT / "skills/postmortem/SKILL.md").read_text(encoding="utf-8")
+        postmortem_flat = " ".join(postmortem.split())
+        for required in (
+            "## Blameless stance",
+            "## Structure",
+            "## Action items that actually prevent recurrence",
+            "## Lessons — include \"where we got lucky\"",
+            "Ownership map only—not a load: canonical `incident-command` owns the live incident; the `sre` agent supplies investigation evidence",
+            "typed `sre` agent",
+            "typed `observer` agent",
+            "typed `scribe` agent",
+            "human release owner",
+            "[unverified]",
+        ):
+            self.assertIn(required, postmortem_flat)
+        expected_structure = """# Postmortem: <incident title>   (SEV-n)
+Status: <draft|final>   Authors: <…>   Date: <…>
+
+## Summary            — 3–5 sentences: what happened, impact, how it was resolved.
+## Impact             — who/what, how long, magnitude (users, % traffic, $ if known), SLO/budget hit.
+## Timeline (UTC)     — detection → diagnosis → mitigation → resolution; key decisions; from the IC log.
+## Root cause & contributing factors — the systemic cause + the factors that aligned (usually several).
+## Detection          — how we found out, and how fast. Could typed `observer` evidence have paged sooner?
+## Response           — what went well, what was slow/hard (diagnosis, mitigation, comms, tooling).
+## Five whys          — chain from symptom to systemic cause.
+## Action items       — table: action | type (mitigative/preventative) | owner | due | tracking link.
+## Lessons            — what went well / what went wrong / where we got lucky.
+"""
+        self.assertIn(f"## Structure\n```\n{expected_structure}```", postmortem)
+
+        combined = incident + postmortem
+        for forbidden in (
+            "incident-severity",
+            "rollback-mitigation",
+            "blameless-postmortem",
+            "sre-engineer",
+            "sre-monitor",
+            "runbook-author",
+            "sre-ladder",
+            "see `pcf-ops`",
+            "schedule the `",
+            "load `",
+            "invoke `",
+        ):
+            self.assertNotIn(forbidden, combined)
+
+        _manifest, ready = generate_fleet.load_and_validate(ROOT)
+        self.assertEqual(EXPECTED_READY, ready)
+        copilot = sorted((ROOT / "generated/copilot/agents").glob("*.agent.md"))
+        claude = sorted((ROOT / "generated/claude/agents").glob("*.md"))
+        self.assertEqual(["reviewer.agent.md", "scribe.agent.md", "sde.agent.md"], [p.name for p in copilot])
+        self.assertEqual(["reviewer.md", "scribe.md", "sde.md"], [p.name for p in claude])
+        for path in claude:
+            frontmatter = path.read_text(encoding="utf-8").split("\n---\n", 1)[0]
+            self.assertIn("Skill", frontmatter)
+            self.assertNotIn("\nskills:", frontmatter)
+        self.assertFalse((ROOT / "generated/copilot/agents/sre.agent.md").exists())
+        self.assertFalse((ROOT / "generated/copilot/agents/observer.agent.md").exists())
+        self.assertFalse((ROOT / "generated/claude/agents/sre.md").exists())
+        self.assertFalse((ROOT / "generated/claude/agents/observer.md").exists())
+
+    def test_completed_slice_has_exact_planned_active_partition_and_ready_cohort(self):
         active = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "active"
         }
@@ -1214,7 +1334,7 @@ class Phase2FirstCohortTests(unittest.TestCase):
         self.assertEqual(26 - len(EXPECTED_ACTIVE), len(planned))
         self.assertEqual(set(), active & planned)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
-        self.assertEqual([], ready)
+        self.assertEqual(EXPECTED_READY, ready)
 
 
 if __name__ == "__main__":

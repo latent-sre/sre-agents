@@ -254,20 +254,44 @@ class ProductionGeneratorContracts(unittest.TestCase):
         with self.assertRaisesRegex(generate_fleet.ManifestError, fragment):
             generate_fleet.load_and_validate(fleet.root)
 
-    def test_real_phase1_tree_is_canonical_but_projects_zero_agents(self) -> None:
+    def test_real_phase2_core_cohort_projects_exactly_three_agents(self) -> None:
         manifest, ready = generate_fleet.load_and_validate(ROOT)
-        self.assertEqual([], ready)
+        self.assertEqual(["reviewer", "sde", "scribe"], ready)
         outputs = generate_fleet.render(ROOT, manifest, ready)
         wrapper_paths = {
             path.as_posix()
             for path in outputs
             if path.as_posix().startswith("generated/") and "/agents/" in path.as_posix()
         }
-        self.assertEqual(set(), wrapper_paths)
-        self.assertEqual([], json.loads(outputs[Path("plugin.json")])["agents"])
         self.assertEqual(
-            [], json.loads(outputs[Path(".claude-plugin/plugin.json")])["agents"]
+            {
+                "generated/copilot/agents/reviewer.agent.md",
+                "generated/copilot/agents/sde.agent.md",
+                "generated/copilot/agents/scribe.agent.md",
+                "generated/claude/agents/reviewer.md",
+                "generated/claude/agents/sde.md",
+                "generated/claude/agents/scribe.md",
+            },
+            wrapper_paths,
         )
+        self.assertEqual(
+            "./generated/copilot/agents/",
+            json.loads(outputs[Path("plugin.json")])["agents"],
+        )
+        self.assertEqual(
+            [
+                "./generated/claude/agents/reviewer.md",
+                "./generated/claude/agents/sde.md",
+                "./generated/claude/agents/scribe.md",
+            ],
+            json.loads(outputs[Path(".claude-plugin/plugin.json")])["agents"],
+        )
+        for name in ready:
+            frontmatter = outputs[
+                Path(f"generated/claude/agents/{name}.md")
+            ].decode("utf-8").split("\n---\n", 1)[0]
+            self.assertIn("Skill", frontmatter)
+            self.assertNotIn("\nskills:", frontmatter)
 
     def test_catalog_is_exact_and_planned_active_shapes_do_not_cross(self) -> None:
         mutations = []

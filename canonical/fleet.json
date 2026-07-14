@@ -181,8 +181,22 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "incident-command", "state": "planned", "activate_task": 23 },
-    { "name": "postmortem", "state": "planned", "activate_task": 23 },
+    {
+      "name": "incident-command",
+      "state": "active",
+      "directory": "skills/incident-command",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "postmortem",
+      "state": "active",
+      "directory": "skills/postmortem",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "service-onboarding", "state": "planned", "activate_task": 32 },
     { "name": "agent-authoring", "state": "planned", "activate_task": 25 },
     { "name": "agent-security", "state": "planned", "activate_task": 25 },

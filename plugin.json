@@ -19,7 +19,7 @@
     "pcf",
     "observability"
   ],
-  "agents": [],
+  "agents": "./generated/copilot/agents/",
   "skills": "./skills/",
   "commands": []
 }

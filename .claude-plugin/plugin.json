@@ -18,7 +18,11 @@
     "pcf",
     "observability"
   ],
-  "agents": [],
+  "agents": [
+    "./generated/claude/agents/reviewer.md",
+    "./generated/claude/agents/sde.md",
+    "./generated/claude/agents/scribe.md"
+  ],
   "skills": "./skills/",
   "commands": []
 }
