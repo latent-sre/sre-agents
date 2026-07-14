@@ -90,9 +90,17 @@ PCF_DEPLOY_DESCRIPTION = (
     "'scale this PCF app'. Ownership map only—not a load: canonical `release-gate` decides "
     "readiness and canonical `incident-command` owns rollback decisions."
 )
+DATABASE_RELIABILITY_DESCRIPTION = (
+    "Diagnose and improve data-layer reliability: slow queries, lock contention, replication lag, "
+    "connection pools, schema migrations, and recovery evidence. Triggers: 'this query is slow', "
+    "'plan this schema migration', 'the connection pool is exhausted'. Ownership map only—not a "
+    "load: canonical `pcf-ops` owns app-side triage, canonical `obs-alerting` owns burn alerts, "
+    "canonical `backend-craft` owns persistence code, and canonical `craft` owns safe refactoring "
+    "and language idiom."
+)
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
-    "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy",
+    "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
 }
 
 
@@ -925,6 +933,57 @@ class Phase2FirstCohortTests(unittest.TestCase):
         self.assertIn("[unverified]", ops)
         self.assertNotIn("pcf-ops", self.fleet["skill_dependencies"])
         self.assertNotIn("pcf-deploy", self.fleet["skill_dependencies"])
+
+    def test_task19_database_reliability_preserves_operating_boundary_and_typed_handoffs(self):
+        self.assertEqual(
+            {
+                "name": "database-reliability",
+                "state": "active",
+                "directory": "skills/database-reliability",
+                "references": [],
+                "assets": [],
+                "scripts": [],
+            },
+            self.record("database-reliability"),
+        )
+        self.assert_inventory("database-reliability", {"SKILL.md"})
+        text = (ROOT / "skills/database-reliability/SKILL.md").read_text(encoding="utf-8")
+        flat = " ".join(text.split())
+        self.assertEqual(DATABASE_RELIABILITY_DESCRIPTION, frontmatter_description(text))
+        for required in (
+            "## Migrations must be safe and reversible",
+            "**Expand → contract**",
+            "`EXPLAIN ANALYZE` (Postgres) and the \"actual execution plan\" (MS SQL) RUN THE STATEMENT",
+            "Oracle AWR/ADDM/ASH require the Diagnostics Pack",
+            "Backups **exist, are monitored, and — crucially — restores are tested**",
+            "existing human-approved exact change and rollback packet",
+            "hand the query/ORM implementation to the `sde` agent",
+            "hand the SLO and burn-evidence request to the `observer` agent",
+            "hand the incident evidence to the `sre` agent",
+            "the human release owner acts from the current incident packet",
+            "Ownership map only—not a load: canonical `craft` owns call-site/contract analysis and safe refactoring; canonical `eng-ladder` owns principal altitude; canonical `pcf-ops` owns app-side triage. This skill contains the database method it requires.",
+            "Canonical `backend-craft` owns writing persistence and migration code",
+        ):
+            self.assertIn(required, flat)
+        persistence = (ROOT / "skills/backend-craft/references/persistence.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("this file owns **writing** the data layer", persistence)
+        self.assertIn("canonical `database-reliability` owns **operating** it", persistence)
+        for forbidden in (
+            "production-change-gate",
+            "sde-engineer",
+            "sre-engineer",
+            "sre-monitor",
+            "slo-error-budget",
+            "rollback-mitigation",
+            "safe-refactor",
+            "sde-ladder",
+            "See also:",
+        ):
+            self.assertNotIn(forbidden, text)
+        self.assertNotIn("required-skill-dependencies:start", text)
+        self.assertNotIn("database-reliability", self.fleet["skill_dependencies"])
 
     def test_completed_slice_has_exact_planned_active_partition_and_zero_ready_agents(self):
         active = {

@@ -141,7 +141,14 @@
       "assets": ["assets/manifest.yml"],
       "scripts": []
     },
-    { "name": "database-reliability", "state": "planned", "activate_task": 19 },
+    {
+      "name": "database-reliability",
+      "state": "active",
+      "directory": "skills/database-reliability",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "ci-actions", "state": "planned", "activate_task": 20 },
     { "name": "merge-gate", "state": "planned", "activate_task": 21 },
     { "name": "release-gate", "state": "planned", "activate_task": 21 },

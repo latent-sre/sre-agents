@@ -158,6 +158,14 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": ["assets/manifest.yml"],
         "scripts": [],
     },
+    "database-reliability": {
+        "name": "database-reliability",
+        "state": "active",
+        "directory": "skills/database-reliability",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
