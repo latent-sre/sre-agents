@@ -206,7 +206,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "service-onboarding", "state": "planned", "activate_task": 32 },
+    {
+      "name": "service-onboarding",
+      "state": "active",
+      "directory": "skills/service-onboarding",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
     {
       "name": "agent-authoring",
       "state": "active",
@@ -273,7 +280,14 @@
       "assets": [],
       "scripts": ["scripts/error_budget.py"]
     },
-    { "name": "obs-pipeline", "state": "planned", "activate_task": 32 }
+    {
+      "name": "obs-pipeline",
+      "state": "active",
+      "directory": "skills/obs-pipeline",
+      "references": ["references/alloy.md", "references/otel-sdk.md"],
+      "assets": [],
+      "scripts": []
+    }
   ],
   "skill_dependencies": {
     "ops-tooling": [

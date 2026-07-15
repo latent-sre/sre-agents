@@ -253,15 +253,16 @@ TASK31_REFERENCE_CANARIES = {
     "skills/obs-alerting/references/moogsoft.md": "q_oamoog_6f3a",
     "skills/obs-alerting/references/thousandeyes.md": "q_oate_9b52",
 }
-EXPECTED_READY = ["reviewer", "sde", "scribe"]
+EXPECTED_READY = ["reviewer", "sde", "sre", "observer", "scribe"]
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
     "ci-actions", "merge-gate", "release-gate", "production-change-gate",
     "incident-command", "postmortem", "agent-authoring", "agent-security", "obs-logs",
-    "obs-metrics", "obs-traces", "obs-dashboards", "obs-alerting",
+    "obs-metrics", "obs-traces", "obs-dashboards", "obs-alerting", "obs-pipeline",
+    "service-onboarding",
 }
-EXPECTED_PLANNED = {"service-onboarding", "obs-pipeline"}
+EXPECTED_PLANNED = set()
 
 
 def frontmatter_description(text: str) -> str:
@@ -1052,6 +1053,8 @@ class Phase2FirstCohortTests(unittest.TestCase):
             "We operate **our apps**; the **platform**",
             "escalate with evidence",
             "Fleet agents never run `cf env`, `cf service-key`, or `CF_TRACE` output",
+            "`sre` and `observer` are structurally projected in the unregistered content-building Task 32 tree",
+            "no discovery channel is active",
             "canonical `incident-command` owns mitigation choice",
             "the human-invoked `/pcf-deploy` workflow owns deployment execution",
             "already-approved Tier-2/3 evidence packet",
@@ -1468,16 +1471,18 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         self.assertEqual(EXPECTED_READY, ready)
         copilot = sorted((ROOT / "generated/copilot/agents").glob("*.agent.md"))
         claude = sorted((ROOT / "generated/claude/agents").glob("*.md"))
-        self.assertEqual(["reviewer.agent.md", "scribe.agent.md", "sde.agent.md"], [p.name for p in copilot])
-        self.assertEqual(["reviewer.md", "scribe.md", "sde.md"], [p.name for p in claude])
+        self.assertEqual(
+            ["observer.agent.md", "reviewer.agent.md", "scribe.agent.md", "sde.agent.md", "sre.agent.md"],
+            [p.name for p in copilot],
+        )
+        self.assertEqual(
+            ["observer.md", "reviewer.md", "scribe.md", "sde.md", "sre.md"],
+            [p.name for p in claude],
+        )
         for path in claude:
             frontmatter = path.read_text(encoding="utf-8").split("\n---\n", 1)[0]
             self.assertIn("Skill", frontmatter)
             self.assertNotIn("\nskills:", frontmatter)
-        self.assertFalse((ROOT / "generated/copilot/agents/sre.agent.md").exists())
-        self.assertFalse((ROOT / "generated/copilot/agents/observer.agent.md").exists())
-        self.assertFalse((ROOT / "generated/claude/agents/sre.md").exists())
-        self.assertFalse((ROOT / "generated/claude/agents/observer.md").exists())
 
     def test_task24_adr_is_self_contained_lane_safe_and_has_exact_three_views(self):
         self.assertEqual([ADR_RECORD], self.fleet["commands"])
@@ -2289,11 +2294,7 @@ Status: <draft|final>   Authors: <…>   Date: <…>
                 path.stem.removesuffix(".agent")
                 for path in (ROOT / "generated" / runtime / "agents").glob("*.md")
             }
-            self.assertEqual({"reviewer", "sde", "scribe"}, wrappers)
-        self.assertFalse((ROOT / "generated/copilot/agents/sre.agent.md").exists())
-        self.assertFalse((ROOT / "generated/copilot/agents/observer.agent.md").exists())
-        self.assertFalse((ROOT / "generated/claude/agents/sre.md").exists())
-        self.assertFalse((ROOT / "generated/claude/agents/observer.md").exists())
+            self.assertEqual(set(EXPECTED_READY), wrappers)
 
     def test_task30_obs_dashboards_activates_grafana13_as_code_with_current_licensing(self):
         self.assertEqual(
@@ -2863,11 +2864,7 @@ Status: <draft|final>   Authors: <…>   Date: <…>
                 path.stem.removesuffix(".agent")
                 for path in (ROOT / "generated" / runtime / "agents").glob("*.md")
             }
-            self.assertEqual({"reviewer", "sde", "scribe"}, wrappers)
-        self.assertFalse((ROOT / "generated/copilot/agents/sre.agent.md").exists())
-        self.assertFalse((ROOT / "generated/copilot/agents/observer.agent.md").exists())
-        self.assertFalse((ROOT / "generated/claude/agents/sre.md").exists())
-        self.assertFalse((ROOT / "generated/claude/agents/observer.md").exists())
+            self.assertEqual(set(EXPECTED_READY), wrappers)
 
     def test_tasks27_to_29_every_inventoried_reference_has_one_global_terminal_canary(self):
         inventoried = set()
@@ -3213,6 +3210,13 @@ exit /b 0
             pcf_ops,
         )
         self.assertIn("`[unverified/pending Task 38]`", pcf_ops)
+        self.assertNotIn("`sre` and `observer` are not projected yet", pcf_ops)
+        self.assertIn(
+            "`sre` and `observer` are structurally projected in the unregistered "
+            "content-building Task 32 tree",
+            pcf_ops_normalized,
+        )
+        self.assertIn("no discovery channel is active", pcf_ops_normalized)
         self.assertIn("do not infer brokered or safe mode", pcf_ops_normalized)
 
 

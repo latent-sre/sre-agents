@@ -21,6 +21,8 @@
   "agents": [
     "./generated/claude/agents/reviewer.md",
     "./generated/claude/agents/sde.md",
+    "./generated/claude/agents/sre.md",
+    "./generated/claude/agents/observer.md",
     "./generated/claude/agents/scribe.md"
   ],
   "skills": "./skills/",
