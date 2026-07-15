@@ -2364,9 +2364,9 @@ Status: <draft|final>   Authors: <…>   Date: <…>
 
         for product_fact in (
             "`grafana-wavefront-datasource`",
-            "catalog-classified **Enterprise**",
-            "Grafana Cloud Free, Advanced, or Trial",
-            "activated self-managed Grafana Enterprise licence",
+            "**Enterprise** plugin",
+            "Grafana Cloud Pro or Advanced",
+            "activated on-prem Grafana Enterprise licence",
             "`grafana-splunk-datasource`",
             "Grafana Cloud Pro or Advanced",
             "self-managed Grafana Enterprise licence that includes the plugin",
@@ -2376,6 +2376,8 @@ Status: <draft|final>   Authors: <…>   Date: <…>
             "PromQL, not WQL",
         ):
             self.assertIn(product_fact, body_flat)
+        self.assertNotIn("Grafana Cloud Free, Advanced, or Trial", body_flat)
+        self.assertNotIn("[sourced inference]", body)
         for source in (
             "https://grafana.com/docs/grafana/latest/whatsnew/whats-new-in-v13-0/",
             "https://grafana.com/docs/plugins/grafana-wavefront-datasource/latest/",

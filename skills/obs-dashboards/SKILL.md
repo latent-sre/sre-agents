@@ -61,16 +61,15 @@ active licence and plugin allowlist with the Grafana administrator before provis
 
 - **Wavefront / VMware Aria Operations for Applications — `[sourced]` (reviewed 2026-07-14).** The
   [official plugin documentation](https://grafana.com/docs/plugins/grafana-wavefront-datasource/latest/)
-  identifies `grafana-wavefront-datasource` and the Grafana catalogue classifies it as
-  catalog-classified **Enterprise**. Its current availability card lists Grafana Cloud Free, Advanced,
-  or Trial; self-managed use requires an activated self-managed Grafana Enterprise licence. Keep WQL
-  queries in Wavefront-backed panels.
+  identifies `grafana-wavefront-datasource` as an **Enterprise** plugin. Its current requirements list
+  Grafana Cloud Pro or Advanced; self-managed use requires an activated on-prem Grafana Enterprise
+  licence. Keep WQL queries in Wavefront-backed panels.
 - **Splunk — `[sourced]` (reviewed 2026-07-14).** The
   [official installation page](https://grafana.com/docs/plugins/grafana-splunk-datasource/latest/install/)
   identifies `grafana-splunk-datasource`. It is available with Grafana Cloud Pro or Advanced, or a
   self-managed Grafana Enterprise licence that includes the plugin; Cloud Free and Starter do not
   include it. Keep SPL in Splunk-backed panels.
-- **ThousandEyes — `[sourced inference]` (reviewed 2026-07-14).** No named ThousandEyes Grafana
+- **ThousandEyes — `[sourced]` (reviewed 2026-07-14).** No named ThousandEyes Grafana
   data-source plugin was found in the official product documentation or Grafana catalogue, so do not
   invent a plugin type or UID. Cisco's
   [documented Grafana path](https://docs.thousandeyes.com/product-documentation/integration-guides/opentelemetry/observability-platforms/grafana)
