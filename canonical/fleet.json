@@ -228,7 +228,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "obs-logs", "state": "planned", "activate_task": 27 },
+    {
+      "name": "obs-logs",
+      "state": "active",
+      "directory": "skills/obs-logs",
+      "references": ["references/spl.md", "references/logql.md", "references/indexes.md"],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "obs-metrics", "state": "planned", "activate_task": 28 },
     { "name": "obs-traces", "state": "planned", "activate_task": 29 },
     { "name": "obs-dashboards", "state": "planned", "activate_task": 30 },

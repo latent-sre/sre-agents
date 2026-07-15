@@ -191,12 +191,19 @@ AGENT_SECURITY_DESCRIPTION = (
     "logs'. Report structural controls separately from prose and label any unprobed runtime "
     "boundary unverified."
 )
+OBS_LOGS_DESCRIPTION = (
+    "The answer is in the logs — find error spikes, read them over time, correlate one "
+    "request across services, compare before/after a deploy. Backends: Splunk (SPL) and "
+    "Loki (LogQL) — the reference teaches the dialect. Triggers: 'search the logs', 'why "
+    "are there 500s', 'grep production for', 'build a log alert'. Ownership map only—not "
+    "a load: obs-metrics owns metrics and obs-dashboards owns dashboards."
+)
 EXPECTED_READY = ["reviewer", "sde", "scribe"]
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
     "ci-actions", "merge-gate", "release-gate", "production-change-gate",
-    "incident-command", "postmortem", "agent-authoring", "agent-security",
+    "incident-command", "postmortem", "agent-authoring", "agent-security", "obs-logs",
 }
 
 
@@ -1836,8 +1843,80 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(19, len(active))
-        self.assertEqual(7, len(planned))
+        self.assertEqual(20, len(active))
+        self.assertEqual(6, len(planned))
+        _manifest, ready = generate_fleet.load_and_validate(ROOT)
+        self.assertEqual(EXPECTED_READY, ready)
+
+    def test_task27_obs_logs_activates_bucket_first_signal_skill(self):
+        self.assertEqual(
+            {
+                "name": "obs-logs",
+                "state": "active",
+                "directory": "skills/obs-logs",
+                "references": [
+                    "references/spl.md",
+                    "references/logql.md",
+                    "references/indexes.md",
+                ],
+                "assets": [],
+                "scripts": [],
+            },
+            self.record("obs-logs"),
+        )
+        self.assert_inventory(
+            "obs-logs",
+            {
+                "SKILL.md",
+                "references/spl.md",
+                "references/logql.md",
+                "references/indexes.md",
+            },
+        )
+
+        body = (ROOT / "skills/obs-logs/SKILL.md").read_text(encoding="utf-8")
+        self.assertEqual(OBS_LOGS_DESCRIPTION, frontmatter_description(body))
+        self.assertLessEqual(len(OBS_LOGS_DESCRIPTION.encode("utf-8")), 600)
+        for row in (
+            "| Splunk or SPL | [SPL](./references/spl.md) |",
+            "| Loki or LogQL | [LogQL](./references/logql.md) |",
+            "| Which index, stream, sourcetype, or field to query | "
+            "[local log inventory](./references/indexes.md) |",
+        ):
+            self.assertIn(row, body)
+
+        spl = (ROOT / "skills/obs-logs/references/spl.md").read_text(encoding="utf-8")
+        fixed = (
+            "index=<app_index> earliest=-24h\n"
+            "| timechart span=5m count(eval(status>=500)) AS errors\n"
+            "| streamstats window=12 current=f avg(errors) AS baseline stdev(errors) AS sd\n"
+            "| where isnotnull(baseline) AND sd>0 AND errors > baseline + 3*sd"
+        )
+        self.assertIn(fixed, spl)
+        self.assertNotIn("| where status>=500\n| bin _time span=5m", spl)
+        self.assertNotIn("| stats count by _time", spl)
+
+        canaries = {
+            "spl.md": "q_ol_spl_3f7a",
+            "logql.md": "q_ol_loki_8c2d",
+            "indexes.md": "q_ol_idx_5e1b",
+        }
+        self.assertEqual(len(canaries), len(set(canaries.values())))
+        for filename, canary in canaries.items():
+            text = (ROOT / "skills/obs-logs/references" / filename).read_text(
+                encoding="utf-8"
+            )
+            self.assertEqual(1, text.count(canary))
+            self.assertIn(canary, "\n".join(text.rstrip().splitlines()[-8:]))
+
+        active = {
+            record["name"] for record in self.fleet["skills"] if record["state"] == "active"
+        }
+        planned = {
+            record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
+        }
+        self.assertEqual(20, len(active))
+        self.assertEqual(6, len(planned))
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
 

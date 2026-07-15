@@ -235,6 +235,18 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "obs-logs": {
+        "name": "obs-logs",
+        "state": "active",
+        "directory": "skills/obs-logs",
+        "references": [
+            "references/spl.md",
+            "references/logql.md",
+            "references/indexes.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
