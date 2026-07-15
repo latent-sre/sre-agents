@@ -270,6 +270,17 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "obs-dashboards": {
+        "name": "obs-dashboards",
+        "state": "active",
+        "directory": "skills/obs-dashboards",
+        "references": [
+            "references/provisioning.md",
+            "references/wavefront-legacy.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {

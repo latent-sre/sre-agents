@@ -211,6 +211,13 @@ OBS_TRACES_DESCRIPTION = (
     "'where did the latency go', 'follow this correlation id'. Ownership map only—not a "
     "load: obs-pipeline owns trace instrumentation."
 )
+OBS_DASHBOARDS_DESCRIPTION = (
+    "Grafana 13 dashboards as code — layout for the 3am reader (top-level health → drill-down), "
+    "panel hygiene, variables, provisioning, and data-source licence facts. Triggers: 'build a "
+    "dashboard', 'what should we dashboard', 'dashboard as code', 'add a panel for'. Ownership "
+    "map only—not a load: frontend-craft owns product-UI data visualizations and obs-alerting "
+    "owns alert rules."
+)
 SENSITIVE_PACKET_RULE = (
     "Minimize copied telemetry. Redact credentials, tokens, secrets, personal data, "
     "authentication or session values, user identifiers, sensitive headers, request bodies, "
@@ -227,14 +234,19 @@ PHASE_A_REFERENCE_CANARIES = {
     "skills/obs-traces/references/traceql.md": "q_otql_7b3e",
     "skills/obs-traces/references/otel-semantics.md": "q_otel_c4a9",
 }
+TASK30_REFERENCE_CANARIES = {
+    "skills/obs-dashboards/references/provisioning.md": "q_odprov_91c4",
+    "skills/obs-dashboards/references/wavefront-legacy.md": "q_odwf_6a2e",
+}
 EXPECTED_READY = ["reviewer", "sde", "scribe"]
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
     "ci-actions", "merge-gate", "release-gate", "production-change-gate",
     "incident-command", "postmortem", "agent-authoring", "agent-security", "obs-logs",
-    "obs-metrics", "obs-traces",
+    "obs-metrics", "obs-traces", "obs-dashboards",
 }
+EXPECTED_PLANNED = {"service-onboarding", "obs-alerting", "obs-pipeline"}
 
 
 def frontmatter_description(text: str) -> str:
@@ -1873,8 +1885,8 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(22, len(active))
-        self.assertEqual(4, len(planned))
+        self.assertEqual(EXPECTED_ACTIVE, active)
+        self.assertEqual(EXPECTED_PLANNED, planned)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
 
@@ -1981,8 +1993,8 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(22, len(active))
-        self.assertEqual(4, len(planned))
+        self.assertEqual(EXPECTED_ACTIVE, active)
+        self.assertEqual(EXPECTED_PLANNED, planned)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
 
@@ -2075,8 +2087,8 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(22, len(active))
-        self.assertEqual(4, len(planned))
+        self.assertEqual(EXPECTED_ACTIVE, active)
+        self.assertEqual(EXPECTED_PLANNED, planned)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
 
@@ -2251,11 +2263,8 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(22, len(active))
-        self.assertEqual(
-            {"service-onboarding", "obs-dashboards", "obs-alerting", "obs-pipeline"},
-            planned,
-        )
+        self.assertEqual(EXPECTED_ACTIVE, active)
+        self.assertEqual(EXPECTED_PLANNED, planned)
         self.assertEqual("content-building", self.fleet["assembly_state"])
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
@@ -2270,6 +2279,178 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         self.assertFalse((ROOT / "generated/copilot/agents/observer.agent.md").exists())
         self.assertFalse((ROOT / "generated/claude/agents/sre.md").exists())
         self.assertFalse((ROOT / "generated/claude/agents/observer.md").exists())
+
+    def test_task30_obs_dashboards_activates_grafana13_as_code_with_current_licensing(self):
+        self.assertEqual(
+            {
+                "name": "obs-dashboards",
+                "state": "active",
+                "directory": "skills/obs-dashboards",
+                "references": [
+                    "references/provisioning.md",
+                    "references/wavefront-legacy.md",
+                ],
+                "assets": [],
+                "scripts": [],
+            },
+            self.record("obs-dashboards"),
+        )
+        self.assert_inventory(
+            "obs-dashboards",
+            {
+                "SKILL.md",
+                "references/provisioning.md",
+                "references/wavefront-legacy.md",
+            },
+        )
+
+        body = (ROOT / "skills/obs-dashboards/SKILL.md").read_text(encoding="utf-8")
+        body_flat = " ".join(body.split())
+        self.assertEqual(OBS_DASHBOARDS_DESCRIPTION, frontmatter_description(body))
+        self.assertLessEqual(len(OBS_DASHBOARDS_DESCRIPTION.encode("utf-8")), 600)
+        for heading in (
+            "# Grafana 13 operations dashboards as code",
+            "## Layout — top to bottom",
+            "## Panel hygiene",
+            "## Variables",
+            "## Data sources — licence facts first",
+            "## As code",
+        ):
+            self.assertIn(heading, body)
+        for health_field in (
+            "traffic",
+            "errors",
+            "latency",
+            "saturation",
+            "SLI",
+            "target",
+            "current burn",
+            "budget remaining",
+        ):
+            self.assertIn(health_field, body)
+        self.assertIn(
+            "This skill owns Grafana operations dashboards; product-UI charts inside the "
+            "application remain frontend work.",
+            body_flat,
+        )
+        self.assertIn(
+            "Hand the reviewed dashboard definition and target-validation gaps to the `observer` agent.",
+            body_flat,
+        )
+        self.assertNotIn("## Alerting", body)
+
+        for row in (
+            "| Dashboard provisioning, JSON models, UIDs, folders, or PR review | "
+            "[Grafana 13 provisioning](./references/provisioning.md) |",
+            "| Existing Wavefront or Splunk dashboard inventory | "
+            "[legacy data-source inventory](./references/wavefront-legacy.md) |",
+        ):
+            self.assertIn(row, body)
+
+        for product_fact in (
+            "`grafana-wavefront-datasource`",
+            "catalog-classified **Enterprise**",
+            "Grafana Cloud Free, Advanced, or Trial",
+            "activated self-managed Grafana Enterprise licence",
+            "`grafana-splunk-datasource`",
+            "Grafana Cloud Pro or Advanced",
+            "self-managed Grafana Enterprise licence that includes the plugin",
+            "Cloud Free and Starter do not include it",
+            "No named ThousandEyes Grafana data-source plugin was found",
+            "Prometheus/Mimir, Tempo, or Loki",
+            "PromQL, not WQL",
+        ):
+            self.assertIn(product_fact, body_flat)
+        for source in (
+            "https://grafana.com/docs/grafana/latest/whatsnew/whats-new-in-v13-0/",
+            "https://grafana.com/docs/plugins/grafana-wavefront-datasource/latest/",
+            "https://grafana.com/docs/plugins/grafana-splunk-datasource/latest/install/",
+            "https://docs.thousandeyes.com/product-documentation/integration-guides/"
+            "opentelemetry/observability-platforms/grafana",
+        ):
+            self.assertIn(source, body)
+        self.assertNotIn("| ThousandEyes |", body)
+        self.assertNotIn("thousandeyes-datasource", body.lower())
+
+        provisioning = (
+            ROOT / "skills/obs-dashboards/references/provisioning.md"
+        ).read_text(encoding="utf-8")
+        provisioning_flat = " ".join(provisioning.split())
+        for source in (
+            "https://grafana.com/docs/grafana/latest/administration/provisioning/",
+            "https://grafana.com/docs/grafana/latest/visualizations/dashboards/"
+            "build-dashboards/view-dashboard-json-model/",
+            "https://grafana.com/docs/grafana/latest/as-code/observability-as-code/"
+            "git-sync/provisioned-dashboards/",
+        ):
+            self.assertIn(source, provisioning)
+        for requirement in (
+            "`provisioning/dashboards`",
+            "`foldersFromFilesStructure: true`",
+            "`allowUiUpdates: false`",
+            "stable `uid`",
+            "data-source UIDs",
+            "pull request",
+            "source update overwrites the database copy",
+            "rollback",
+        ):
+            self.assertIn(requirement, provisioning_flat)
+
+        legacy = (
+            ROOT / "skills/obs-dashboards/references/wavefront-legacy.md"
+        ).read_text(encoding="utf-8")
+        for heading in (
+            "## Data sources",
+            "## Dashboard inventory",
+            "## Conventions we standardize on",
+            "## Alert inventory",
+            "## Provisioning",
+        ):
+            self.assertIn(heading, legacy)
+        self.assertIn("Wavefront/WQL", legacy)
+        self.assertIn("Splunk/SPL", legacy)
+        self.assertIn("`grafana-wavefront-datasource`", legacy)
+        self.assertIn("`grafana-splunk-datasource`", legacy)
+        self.assertNotIn("ThousandEyes", legacy)
+        self.assertNotIn("grafana-dashboards", body + provisioning + legacy)
+
+        tokens = list(TASK30_REFERENCE_CANARIES.values())
+        self.assertEqual(len(tokens), len(set(tokens)))
+        for relative_path, token in TASK30_REFERENCE_CANARIES.items():
+            with self.subTest(reference=relative_path):
+                text = (ROOT / relative_path).read_text(encoding="utf-8")
+                self.assertEqual(1, text.count(token))
+                self.assertIn(token, "\n".join(text.rstrip().splitlines()[-8:]))
+
+        mcp = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            {
+                "mcpServers": {
+                    "grafana": {
+                        "command": "uvx",
+                        "args": ["mcp-grafana@0.17.2", "--disable-write"],
+                    }
+                }
+            },
+            mcp,
+        )
+        self.assertNotIn("env", mcp["mcpServers"]["grafana"])
+
+        design = (
+            ROOT / "docs/superpowers/specs/2026-07-13-copilot-fleet-redesign-design.md"
+        ).read_text(encoding="utf-8")
+        for evidence in (
+            "`.mcp.json`",
+            "**Adopted in Task 30**",
+            "`grafana/mcp-grafana` v0.17.2",
+            "`mcp-grafana@0.17.2`",
+            "`--disable-write`",
+            "2026-07-14",
+            "https://github.com/grafana/mcp-grafana/releases/tag/v0.17.2",
+            "https://grafana.com/docs/grafana/latest/developer-resources/mcp/",
+            "no credential is tracked",
+        ):
+            self.assertIn(evidence, design)
 
     def test_tasks27_to_29_every_inventoried_reference_has_one_global_terminal_canary(self):
         inventoried = set()

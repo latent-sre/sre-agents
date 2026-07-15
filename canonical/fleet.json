@@ -252,7 +252,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "obs-dashboards", "state": "planned", "activate_task": 30 },
+    {
+      "name": "obs-dashboards",
+      "state": "active",
+      "directory": "skills/obs-dashboards",
+      "references": ["references/provisioning.md", "references/wavefront-legacy.md"],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "obs-alerting", "state": "planned", "activate_task": 31 },
     { "name": "obs-pipeline", "state": "planned", "activate_task": 32 }
   ],
