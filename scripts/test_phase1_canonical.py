@@ -281,6 +281,19 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "obs-alerting": {
+        "name": "obs-alerting",
+        "state": "active",
+        "directory": "skills/obs-alerting",
+        "references": [
+            "references/grafana-alerting.md",
+            "references/burn-rate.md",
+            "references/moogsoft.md",
+            "references/thousandeyes.md",
+        ],
+        "assets": [],
+        "scripts": ["scripts/error_budget.py"],
+    },
 }
 
 EXPECTED_MODELS = {

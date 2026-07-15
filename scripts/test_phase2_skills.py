@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import os
 import re
 import shutil
 import subprocess
+import sys
 import unicodedata
 import unittest
 import uuid
@@ -218,6 +220,13 @@ OBS_DASHBOARDS_DESCRIPTION = (
     "map only—not a load: frontend-craft owns product-UI data visualizations and obs-alerting "
     "owns alert rules."
 )
+OBS_ALERTING_DESCRIPTION = (
+    "Design alerting that pages on symptoms — SLIs/SLOs and multi-window burn rates, Grafana "
+    "unified alerting as code, Moogsoft correlation, and ThousandEyes synthetics. Triggers: "
+    "'define an SLO', 'this alert is too noisy', 'what should page', 'design a synthetic check'. "
+    "Every alert links a runbook. Ownership map only—not a load: obs-metrics/obs-logs own queries "
+    "and obs-dashboards owns dashboards."
+)
 SENSITIVE_PACKET_RULE = (
     "Minimize copied telemetry. Redact credentials, tokens, secrets, personal data, "
     "authentication or session values, user identifiers, sensitive headers, request bodies, "
@@ -238,15 +247,21 @@ TASK30_REFERENCE_CANARIES = {
     "skills/obs-dashboards/references/provisioning.md": "q_odprov_91c4",
     "skills/obs-dashboards/references/wavefront-legacy.md": "q_odwf_6a2e",
 }
+TASK31_REFERENCE_CANARIES = {
+    "skills/obs-alerting/references/grafana-alerting.md": "q_oagraf_4d2b",
+    "skills/obs-alerting/references/burn-rate.md": "q_oaburn_8c71",
+    "skills/obs-alerting/references/moogsoft.md": "q_oamoog_6f3a",
+    "skills/obs-alerting/references/thousandeyes.md": "q_oate_9b52",
+}
 EXPECTED_READY = ["reviewer", "sde", "scribe"]
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
     "ci-actions", "merge-gate", "release-gate", "production-change-gate",
     "incident-command", "postmortem", "agent-authoring", "agent-security", "obs-logs",
-    "obs-metrics", "obs-traces", "obs-dashboards",
+    "obs-metrics", "obs-traces", "obs-dashboards", "obs-alerting",
 }
-EXPECTED_PLANNED = {"service-onboarding", "obs-alerting", "obs-pipeline"}
+EXPECTED_PLANNED = {"service-onboarding", "obs-pipeline"}
 
 
 def frontmatter_description(text: str) -> str:
@@ -2452,6 +2467,406 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         ):
             self.assertIn(evidence, design)
 
+    def test_task31_obs_alerting_binds_thresholds_to_exact_window_pairs(self):
+        self.assertEqual(
+            {
+                "name": "obs-alerting",
+                "state": "active",
+                "directory": "skills/obs-alerting",
+                "references": [
+                    "references/grafana-alerting.md",
+                    "references/burn-rate.md",
+                    "references/moogsoft.md",
+                    "references/thousandeyes.md",
+                ],
+                "assets": [],
+                "scripts": ["scripts/error_budget.py"],
+            },
+            self.record("obs-alerting"),
+        )
+        self.assert_inventory(
+            "obs-alerting",
+            {
+                "SKILL.md",
+                "references/grafana-alerting.md",
+                "references/burn-rate.md",
+                "references/moogsoft.md",
+                "references/thousandeyes.md",
+                "scripts/error_budget.py",
+            },
+        )
+
+        body = (ROOT / "skills/obs-alerting/SKILL.md").read_text(encoding="utf-8")
+        body_flat = " ".join(body.split())
+        self.assertEqual(OBS_ALERTING_DESCRIPTION, frontmatter_description(body))
+        self.assertLessEqual(len(OBS_ALERTING_DESCRIPTION.encode("utf-8")), 600)
+        for heading in (
+            "# Alert, correlate, page",
+            "## SLI — the measurement",
+            "## SLO — the target over a window",
+            "## Burn-rate alerts",
+            "## Don't",
+        ):
+            self.assertIn(heading, body)
+        for rule in (
+            "good events / valid events",
+            "define the numerator and denominator",
+            "preserve the exact query as evidence",
+            "BOTH the long and short windows",
+            "Every alert links a runbook",
+            "Hand the reviewed alert definition and target-validation gaps to the `observer` agent.",
+        ):
+            self.assertIn(rule, body_flat)
+        self.assertIn(
+            "Ownership map only—not a load: obs-metrics/obs-logs own queries and obs-dashboards "
+            "owns dashboards.",
+            OBS_ALERTING_DESCRIPTION,
+        )
+
+        for row in (
+            "| SLI, SLO, budget status, or multi-window burn rate | "
+            "[burn-rate method](./references/burn-rate.md) |",
+            "| Grafana rule groups, contact points, or notification policies | "
+            "[Grafana 13 alerting](./references/grafana-alerting.md) |",
+            "| Alert storm, event correlation, deduplication, or Moogsoft | "
+            "[Moogsoft correlation](./references/moogsoft.md) |",
+            "| Synthetic test, DNS, BGP, path, or external reachability | "
+            "[ThousandEyes synthetics](./references/thousandeyes.md) |",
+            "| Calculate budget status or a permitted burn-rate pair | "
+            "[error_budget.py](./scripts/error_budget.py) |",
+        ):
+            self.assertIn(row, body)
+
+        references = {
+            name: (ROOT / "skills/obs-alerting/references" / name).read_text(encoding="utf-8")
+            for name in ("grafana-alerting.md", "burn-rate.md", "moogsoft.md", "thousandeyes.md")
+        }
+        all_references = "\n".join(references.values())
+        for retired_or_hidden_load in (
+            "slo-error-budget",
+            "grafana-dashboards",
+            "moogsoft-correlation",
+            "thousandeyes-network",
+            "sre-monitor",
+            "sre-ladder",
+            "sde-engineer",
+            "blameless-postmortem",
+            "pcf-ops",
+            "splunk-triage",
+            "wavefront-queries",
+            "researcher",
+        ):
+            self.assertNotIn(retired_or_hidden_load, body + all_references)
+        for sibling in ("obs-metrics", "obs-logs", "obs-dashboards", "obs-pipeline"):
+            self.assertNotIn(sibling, all_references)
+
+        grafana = references["grafana-alerting.md"]
+        grafana_flat = " ".join(grafana.split())
+        for fact in (
+            "Grafana-managed",
+            "data source-managed",
+            "rule groups",
+            "provisioning/alerting",
+            "notification policies",
+            "contact points",
+            "`runbook_url`",
+            "no credentials",
+            "entire notification policy tree as one resource",
+            "cannot provision a subset",
+            "overwrites all policies",
+            "Export the full current tree",
+        ):
+            self.assertIn(fact, grafana_flat)
+        for source in (
+            "https://grafana.com/docs/grafana/latest/alerting/alerting-rules/",
+            "https://grafana.com/docs/grafana/latest/alerting/set-up/"
+            "provision-alerting-resources/file-provisioning/",
+            "https://grafana.com/docs/grafana/latest/alerting/fundamentals/"
+            "alert-rules/annotation-label/",
+        ):
+            self.assertIn(source, grafana)
+
+        burn = references["burn-rate.md"]
+        burn_flat = " ".join(burn.split())
+        self.assertIn("[error_budget.py](../scripts/error_budget.py)", burn)
+        self.assertIn("https://sre.google/workbook/alerting-on-slos/", burn)
+        for pair in (
+            "| 1h | 5m | 14.4x | PAGE (fast burn) |",
+            "| 6h | 30m | 6.0x | PAGE (slow burn) |",
+            "| 3d | 6h | 1.0x | TICKET (slow leak) |",
+        ):
+            self.assertIn(pair, burn)
+        self.assertIn("both windows must meet the pair's one threshold", burn_flat)
+        self.assertIn("does not prove that the service is within budget", burn_flat)
+        self.assertNotIn("1x–3x", burn)
+        self.assertNotIn("or 24h", burn)
+
+        moogsoft = references["moogsoft.md"]
+        moogsoft_flat = " ".join(moogsoft.split())
+        for heading in (
+            "## The pipeline",
+            "## During an alert storm",
+            "## The bar for asserting cause",
+            "## Reducing noise",
+            "## Event sources / integrations",
+            "## Dedup signatures",
+            "## Sigaliser tuning",
+            "## Enrichment and routing",
+            "## Maintenance windows",
+            "## Health metrics",
+        ):
+            self.assertIn(heading, moogsoft)
+        self.assertIn("https://docs.moogsoft.com/v9/en/clustering-algorithm-guide.html", moogsoft)
+        self.assertIn("https://docs.moogsoft.com/v9/en/data-ingestion.html", moogsoft)
+        self.assertIn(
+            "https://docs.moogsoft.com/v9/en/schedule-maintenance-downtime.html", moogsoft
+        )
+        self.assertIn("event `signature`", moogsoft)
+        self.assertIn("alerts tagged `In Maintenance`", moogsoft_flat)
+        self.assertIn("by default those alerts are omitted from Situations", moogsoft_flat)
+        self.assertIn("Hand the ranked evidence to the `sre` agent", moogsoft_flat)
+        self.assertIn(
+            "after resolution, hand the ranked timeline to the `scribe` agent.", moogsoft_flat
+        )
+        self.assertIn("Hand correlation tuning to the `observer` agent", moogsoft_flat)
+
+        thousandeyes = references["thousandeyes.md"]
+        thousandeyes_flat = " ".join(thousandeyes.split())
+        self.assertIn(
+            "Cisco/ThousandEyes-managed, globally distributed public vantage points",
+            thousandeyes_flat,
+        )
+        for heading in (
+            "## Agents",
+            "## Test types",
+            "## Reading results during an incident",
+            "## Designing checks",
+            "## A path difference is not a cause",
+            "## Enterprise agents",
+            "## Test inventory",
+            "## Critical user journeys and dependencies",
+            "## BGP and routing monitors",
+            "## Automation",
+        ):
+            self.assertIn(heading, thousandeyes)
+        for source in (
+            "https://docs.thousandeyes.com/product-documentation/tests",
+            "https://docs.thousandeyes.com/product-documentation/getting-started/"
+            "getting-started-with-cloud-and-enterprise-agents",
+            "https://docs.thousandeyes.com/product-documentation/getting-started/"
+            "getting-started-with-the-thousandeyes-api",
+        ):
+            self.assertIn(source, thousandeyes)
+        for handoff in (
+            "Hand incident evidence to the `sre` agent",
+            "Hand steady-state test tuning to the `observer` agent",
+            "Hand approved automation to the `sde` agent and a human release owner",
+        ):
+            self.assertIn(handoff, thousandeyes_flat)
+        for evidence in ("`cf app`", "application logs", "timestamps", "blast radius"):
+            self.assertIn(evidence, thousandeyes_flat)
+
+        tokens = list(TASK31_REFERENCE_CANARIES.values())
+        self.assertEqual(len(tokens), len(set(tokens)))
+        for relative_path, token in TASK31_REFERENCE_CANARIES.items():
+            with self.subTest(reference=relative_path):
+                text = (ROOT / relative_path).read_text(encoding="utf-8")
+                self.assertEqual(1, text.count(token))
+                self.assertIn(token, "\n".join(text.rstrip().splitlines()[-8:]))
+
+        script_path = ROOT / "skills/obs-alerting/scripts/error_budget.py"
+        script = script_path.read_text(encoding="utf-8")
+        tree = ast.parse(script)
+        pair_assignments = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == "_WINDOW_PAIRS"
+                for target in node.targets
+            )
+        ]
+        self.assertEqual(1, len(pair_assignments))
+        pairs = ast.literal_eval(pair_assignments[0].value)
+        self.assertEqual(
+            {
+                ("1h", "5m"): (14.4, "PAGE (fast burn)"),
+                ("6h", "30m"): (6.0, "PAGE (slow burn)"),
+                ("3d", "6h"): (1.0, "TICKET (slow leak)"),
+            },
+            pairs,
+        )
+        self.assertIn("both = min(burn_long, burn_short)", script)
+        self.assertIn("if both >= threshold:", script)
+        self.assertIn("NOT an all-clear: budget status is unknown", script)
+        self.assertIn("some budget may already have been ", script)
+        self.assertIn("This says nothing about the ", script)
+        self.assertIn("budget already consumed", script)
+        for forbidden in (
+            "_PAGE_FAST",
+            "_PAGE_SLOW",
+            "_TICKET",
+            "label for the long window",
+            "label for the short window",
+            "within budget",
+        ):
+            self.assertNotIn(forbidden, script)
+
+        def run_cli(*arguments: str) -> subprocess.CompletedProcess[str]:
+            return subprocess.run(
+                [sys.executable, str(script_path), *arguments],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=15,
+                check=False,
+            )
+
+        default_pair = run_cli(
+            "--slo", "99.9", "--sli-long", "99.45", "--sli-short", "99.95"
+        )
+        self.assertEqual(0, default_pair.returncode, default_pair.stderr)
+        self.assertIn("burn (1h):  SLI 99.45%  ->  5.50x", default_pair.stdout)
+        self.assertIn("burn (5m): SLI 99.95%  ->  0.50x", default_pair.stdout)
+        self.assertIn(
+            "below the 14.4x threshold for the 1h/5m pair. This says nothing about the "
+            "budget already consumed",
+            default_pair.stdout,
+        )
+        self.assertNotIn("within budget", default_pair.stdout.lower())
+
+        ticket_pair = run_cli(
+            "--slo", "99.9", "--sli-long", "99.45", "--sli-short", "99.8",
+            "--long-window", "3d", "--short-window", "6h",
+        )
+        self.assertEqual(0, ticket_pair.returncode, ticket_pair.stderr)
+        self.assertIn("burn (3d):  SLI 99.45%  ->  5.50x", ticket_pair.stdout)
+        self.assertIn("burn (6h): SLI 99.8%  ->  2.00x", ticket_pair.stdout)
+        self.assertIn(
+            "severity: TICKET (slow leak) -- both windows >= 1.0x", ticket_pair.stdout
+        )
+
+        slow_page_pair = run_cli(
+            "--slo", "99.9", "--sli-long", "99.3", "--sli-short", "99.3",
+            "--long-window", "6h", "--short-window", "30m",
+        )
+        self.assertEqual(0, slow_page_pair.returncode, slow_page_pair.stderr)
+        self.assertIn(
+            "severity: PAGE (slow burn) -- both windows >= 6.0x", slow_page_pair.stdout
+        )
+
+        long_recovered = run_cli(
+            "--slo", "99.9", "--sli-long", "99.45", "--sli-short", "99.95",
+            "--long-window", "3d", "--short-window", "6h",
+        )
+        self.assertEqual(0, long_recovered.returncode, long_recovered.stderr)
+        self.assertIn(
+            "severity: no page -- long window at 5.50x but the short window (0.50x) has "
+            "recovered. NOT an all-clear: budget status is unknown; some budget may already "
+            "have been consumed. Run the budget-status mode.",
+            long_recovered.stdout,
+        )
+
+        short_spike = run_cli(
+            "--slo", "99.9", "--sli-long", "99.95", "--sli-short", "98"
+        )
+        self.assertEqual(0, short_spike.returncode, short_spike.stderr)
+        self.assertIn(
+            "severity: no page -- short-window spike (20.00x) the long window (0.50x) "
+            "hasn't confirmed. Re-check in minutes; a real burn trips both.",
+            short_spike.stdout,
+        )
+
+        one_window = run_cli("--slo", "99.9", "--sli-long", "99.45")
+        self.assertEqual(0, one_window.returncode, one_window.stderr)
+        self.assertIn(
+            "severity: NOT EVALUATED -- pass --sli-short; one window cannot emit PAGE or TICKET",
+            one_window.stdout,
+        )
+        for non_alert in (default_pair, long_recovered, short_spike, one_window):
+            self.assertNotIn("within budget", non_alert.stdout.lower())
+
+        time_status = run_cli(
+            "--slo", "99.9", "--window-days", "28", "--bad-minutes", "12"
+        )
+        self.assertEqual(0, time_status.returncode, time_status.stderr)
+        self.assertIn("[time-based SLI] over 28d the budget is 40.3 min", time_status.stdout)
+        self.assertIn("consumed:  12.0 min  (29.8% of budget)  [ok]", time_status.stdout)
+        self.assertIn("remaining: 28.3 min", time_status.stdout)
+
+        request_status = run_cli(
+            "--slo", "99.9", "--bad-events", "4120", "--total-events", "9300000"
+        )
+        self.assertEqual(0, request_status.returncode, request_status.stderr)
+        self.assertIn(
+            "[request-based SLI] 9,300,000 requests  ->  budget = 9,300 failed requests",
+            request_status.stdout,
+        )
+        self.assertIn("consumed:  4,120 bad  (44.3% of budget)  [ok]", request_status.stdout)
+        self.assertIn("remaining: 5,180 bad requests", request_status.stdout)
+        self.assertIn("observed availability: 99.9557%", request_status.stdout)
+
+        time_exhausted = run_cli(
+            "--slo", "99", "--window-days", "1", "--bad-minutes", "14.4"
+        )
+        self.assertEqual(0, time_exhausted.returncode, time_exhausted.stderr)
+        self.assertIn("consumed:  14.4 min  (100.0% of budget)  [EXHAUSTED]", time_exhausted.stdout)
+        self.assertIn("remaining: 0.0 min", time_exhausted.stdout)
+
+        request_exhausted = run_cli(
+            "--slo", "99", "--bad-events", "1", "--total-events", "100"
+        )
+        self.assertEqual(0, request_exhausted.returncode, request_exhausted.stderr)
+        self.assertIn("consumed:  1 bad  (100.0% of budget)  [EXHAUSTED]", request_exhausted.stdout)
+
+        request_over = run_cli(
+            "--slo", "99", "--bad-events", "2", "--total-events", "100"
+        )
+        self.assertEqual(0, request_over.returncode, request_over.stderr)
+        self.assertIn("consumed:  2 bad  (200.0% of budget)  [OVER BUDGET]", request_over.stdout)
+
+        rejected_status_inputs = (
+            (
+                ("--slo", "99.9", "--bad-minutes", "1", "--bad-events", "1", "--total-events", "10"),
+                "cannot be combined",
+            ),
+            (("--slo", "99.9", "--bad-events", "1"), "needs BOTH"),
+            (
+                ("--slo", "99.9", "--bad-events", "11", "--total-events", "10"),
+                "cannot exceed",
+            ),
+            (("--slo", "99.9", "--bad-minutes", "nan"), "must be a finite number"),
+            (("--slo", "99.9", "--window-days", "0"), "must be > 0"),
+            (("--slo", "100"), "must be < 100"),
+        )
+        for arguments, message in rejected_status_inputs:
+            with self.subTest(rejected_arguments=arguments):
+                rejected = run_cli(*arguments)
+                self.assertEqual(2, rejected.returncode)
+                self.assertIn(message, rejected.stderr)
+
+        invalid_pair = run_cli(
+            "--slo", "99.9", "--long-window", "3d", "--short-window", "5m"
+        )
+        self.assertEqual(2, invalid_pair.returncode)
+        self.assertIn(
+            "--long-window/--short-window must be one of: 1h/5m, 6h/30m, 3d/6h",
+            invalid_pair.stderr,
+        )
+
+        _manifest, ready = generate_fleet.load_and_validate(ROOT)
+        self.assertEqual(EXPECTED_READY, ready)
+        for runtime in ("copilot", "claude"):
+            wrappers = {
+                path.stem.removesuffix(".agent")
+                for path in (ROOT / "generated" / runtime / "agents").glob("*.md")
+            }
+            self.assertEqual({"reviewer", "sde", "scribe"}, wrappers)
+        self.assertFalse((ROOT / "generated/copilot/agents/sre.agent.md").exists())
+        self.assertFalse((ROOT / "generated/copilot/agents/observer.agent.md").exists())
+        self.assertFalse((ROOT / "generated/claude/agents/sre.md").exists())
+        self.assertFalse((ROOT / "generated/claude/agents/observer.md").exists())
+
     def test_tasks27_to_29_every_inventoried_reference_has_one_global_terminal_canary(self):
         inventoried = set()
         for name in ("obs-logs", "obs-metrics", "obs-traces"):
@@ -2754,7 +3169,7 @@ exit /b 0
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
         self.assertEqual(EXPECTED_ACTIVE, active)
-        self.assertEqual(26 - len(EXPECTED_ACTIVE), len(planned))
+        self.assertEqual(EXPECTED_PLANNED, planned)
         self.assertEqual(set(), active & planned)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
