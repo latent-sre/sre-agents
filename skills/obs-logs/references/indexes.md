@@ -2,7 +2,7 @@
 
 Concrete values for the `obs-logs` skill. The agent loads this on demand.
 
-> Names and links only — no credentials.
+> Names and access-controlled links only — no credentials, tokens, user/session values, or raw payloads.
 
 ## Indexes / sourcetypes by app
 

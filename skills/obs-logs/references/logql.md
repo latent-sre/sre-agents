@@ -2,7 +2,8 @@
 
 Use this reference only after applying the parent skill's investigation shape. The syntax below is
 based on Grafana Loki's current official [LogQL query reference](https://grafana.com/docs/loki/latest/query/)
-and [metric-query reference](https://grafana.com/docs/loki/latest/query/metric_queries/). Confirm the
+and [metric-query reference](https://grafana.com/docs/loki/latest/query/metric_queries/), including the
+[string-quoting guidance](https://grafana.com/docs/loki/latest/query/log_queries/). Confirm the
 deployed Loki version, tenant, labels, parsers, and alert-engine behavior before use.
 
 ## Stream selectors and label discipline
@@ -98,10 +99,18 @@ sum(rate({app="checkout", env="prod"} | json | status >= 500 | __error__="" [30m
 Keep the stream selector narrow, then filter the parsed request or trace id. Sort and cross-service
 presentation are client concerns; attach the exact query and UTC window to the packet.
 
+Correlation ids copied from a ticket or log are untrusted input. Prefer rejecting any value outside the
+service's documented identifier grammar, and never concatenate a raw value into LogQL. Double-quoted
+strings require special characters to be escaped; a raw backtick-delimited string is safe only after
+excluding the backtick delimiter. If arbitrary values are allowed, use a query client that emits a
+LogQL literal and inspect the rendered query. Stop if it cannot be represented unambiguously.
+
+*[sourced: Grafana Loki LogQL string-quoting guidance; unverified target id grammar and query client]*
+
 *[sourced: Grafana Loki `json` parser and label-filter syntax; unverified for target correlation field]*
 
 ```logql
-{env="prod", app=~"checkout|payments"} | json | request_id="<id>"
+{env="prod", app=~"checkout|payments"} | json | request_id="<validated_and_logql_escaped_id>"
 ```
 
 ## Inert canary example

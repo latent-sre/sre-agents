@@ -6,16 +6,17 @@ Fill in the team's indexes, sourcetypes, correlation-id field, and saved searche
 
 Official syntax basis: Splunk's current documentation for
 [comments](https://help.splunk.com/en/splunk-enterprise/search/search-manual/10.2/use-the-search-app/add-comments-to-searches),
+[classic SPL quoting and escaping](https://help.splunk.com/en/splunk-enterprise/search/search-manual/10.4/use-the-search-app/anatomy-of-a-search),
 [`timechart`](https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/search-commands/timechart),
 and [`streamstats`](https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/search-commands/streamstats).
 Every example still requires confirmation against the target Splunk version, permissions, index
 inventory, and field extractions.
 
 > ## ⚠️ `#` IS NOT AN SPL COMMENT
-> SPL comments are **triple backticks**: `` ```like this``` ``. A `#` is parsed as a **search term**, so
-> pasting `| where status>=500  # find the spike` silently searches for the literal tokens `find`, `the`,
-> `spike` — quietly changing your results mid-incident. Every example below therefore uses backtick
-> comments, and is safe to copy verbatim.
+> SPL comments are **triple backticks**: `` ```like this``` ``. A `#` is not SPL comment syntax;
+> depending on its position, trailing `#` text can alter the command expression or cause a parse error.
+> Every example below therefore uses the documented backtick form. Replace placeholders and validate
+> the complete query against the target before execution.
 >
 > Two documented restrictions: a comment **cannot precede a generating command** (`tstats`,
 > `makeresults`, `multisearch`, `gentimes`) — the search fails or returns wrong results — and comments
@@ -23,6 +24,7 @@ inventory, and field extractions.
 > *(There is a community `` `comment()` `` macro, but it is **not** in Splunk's official docs and its
 > app-scoped sharing means it can fail to resolve for other users. Don't rely on it.)*
 > *SPL2 is different again: `//` and `/* */`.*
+> *[sourced: Splunk comment documentation; unverified exact parser outcome for the target version]*
 > *[sourced: Splunk, “Add comments to searches”; community-macro behavior remains unverified for the target]*
 
 ## Start narrow
@@ -150,10 +152,18 @@ index=<app_index> earliest=-8d
 
 ## Correlate one request across services
 
+Correlation ids copied from a ticket or log are untrusted input. Prefer rejecting any value outside the
+service's documented identifier grammar. Never concatenate the raw value into SPL. If that grammar
+permits reserved characters, apply classic SPL's documented escaping for quotes, pipes, and backslashes,
+then inspect the final rendered query; API, shell, or dashboard layers can require additional encoding.
+Stop if the value cannot be represented unambiguously.
+
+*[sourced: Splunk classic search quoting/escaping; unverified target id grammar and client layers]*
+
 *[sourced: Splunk base-search, Boolean, `sort`, and `table` syntax; unverified for target field names]*
 
 ````spl
-index=<app_index> (request_id="<id>" OR trace_id="<id>")
+index=<app_index> (request_id="<validated_and_spl_escaped_id>" OR trace_id="<validated_and_spl_escaped_id>")
 ```one index; use (index=a OR index=b) to span several — a LIST inside index= is not valid SPL```
 | sort 0 _time     ```the full path of one failing request; 0 = don't truncate```
 | table _time host service status message

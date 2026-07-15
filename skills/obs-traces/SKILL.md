@@ -73,6 +73,11 @@ trace ids, critical-path span table, status/protocol interpretation, missing hop
 confidence label. Separate observations from hypotheses. Ownership map only—not a load: canonical
 `obs-pipeline` owns changes to instrumentation, propagation, collection, and export.
 
+Minimize copied telemetry. Redact credentials, tokens, secrets, personal data, authentication or session
+values, user identifiers, sensitive headers, request bodies, and database query literals. Prefer an
+access-controlled source link plus the smallest necessary excerpt; do not paste raw payloads into the
+packet.
+
 ## Pick the reference — read it before writing the query
 
 | If the question involves… | Read first |

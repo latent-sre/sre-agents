@@ -211,6 +211,22 @@ OBS_TRACES_DESCRIPTION = (
     "'where did the latency go', 'follow this correlation id'. Ownership map only—not a "
     "load: obs-pipeline owns trace instrumentation."
 )
+SENSITIVE_PACKET_RULE = (
+    "Minimize copied telemetry. Redact credentials, tokens, secrets, personal data, "
+    "authentication or session values, user identifiers, sensitive headers, request bodies, "
+    "and database query literals. Prefer an access-controlled source link plus the smallest "
+    "necessary excerpt; do not paste raw payloads into the packet."
+)
+PHASE_A_REFERENCE_CANARIES = {
+    "skills/obs-logs/references/spl.md": "q_ol_spl_3f7a",
+    "skills/obs-logs/references/logql.md": "q_ol_loki_8c2d",
+    "skills/obs-logs/references/indexes.md": "q_ol_idx_5e1b",
+    "skills/obs-metrics/references/wql.md": "q_omwql_7b31",
+    "skills/obs-metrics/references/promql.md": "q_ompr_4e9a",
+    "skills/obs-metrics/references/metrics.md": "q_ommet_c2d8",
+    "skills/obs-traces/references/traceql.md": "q_otql_7b3e",
+    "skills/obs-traces/references/otel-semantics.md": "q_otel_c4a9",
+}
 EXPECTED_READY = ["reviewer", "sde", "scribe"]
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
@@ -1891,6 +1907,12 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         body = (ROOT / "skills/obs-logs/SKILL.md").read_text(encoding="utf-8")
         self.assertEqual(OBS_LOGS_DESCRIPTION, frontmatter_description(body))
         self.assertLessEqual(len(OBS_LOGS_DESCRIPTION.encode("utf-8")), 600)
+        body_flat = " ".join(body.split())
+        self.assertIn(
+            "Treat identifiers copied from tickets or logs as untrusted data.", body_flat
+        )
+        self.assertIn("never concatenate a raw value into a query", body_flat)
+        self.assertIn(SENSITIVE_PACKET_RULE, body_flat)
         for row in (
             "| Splunk or SPL | [SPL](./references/spl.md) |",
             "| Loki or LogQL | [LogQL](./references/logql.md) |",
@@ -1900,6 +1922,18 @@ Status: <draft|final>   Authors: <…>   Date: <…>
             self.assertIn(row, body)
 
         spl = (ROOT / "skills/obs-logs/references/spl.md").read_text(encoding="utf-8")
+        self.assertIn("A `#` is not SPL comment syntax", spl)
+        self.assertIn(
+            "depending on its position, trailing `#` text can alter the command expression or "
+            "cause a parse error",
+            " ".join(spl.split()),
+        )
+        self.assertNotIn("silently searches for the literal tokens", spl)
+        self.assertNotIn("safe to copy verbatim", spl)
+        spl_flat = " ".join(spl.split())
+        self.assertIn("Never concatenate the raw value into SPL.", spl_flat)
+        self.assertIn("escaping for quotes, pipes, and backslashes", spl_flat)
+        self.assertIn("<validated_and_spl_escaped_id>", spl)
         fixed = (
             "index=<app_index> earliest=-24h\n"
             "| timechart span=5m count(eval(status>=500)) AS errors\n"
@@ -1909,6 +1943,24 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         self.assertIn(fixed, spl)
         self.assertNotIn("| where status>=500\n| bin _time span=5m", spl)
         self.assertNotIn("| stats count by _time", spl)
+
+        logql = (ROOT / "skills/obs-logs/references/logql.md").read_text(
+            encoding="utf-8"
+        )
+        logql_flat = " ".join(logql.split())
+        self.assertIn("never concatenate a raw value into LogQL", logql_flat)
+        self.assertIn(
+            "Double-quoted strings require special characters to be escaped", logql_flat
+        )
+        self.assertIn("excluding the backtick delimiter", logql_flat)
+        self.assertIn("<validated_and_logql_escaped_id>", logql)
+
+        indexes = (ROOT / "skills/obs-logs/references/indexes.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "no credentials, tokens, user/session values, or raw payloads", indexes
+        )
 
         canaries = {
             "spl.md": "q_ol_spl_3f7a",
@@ -2073,6 +2125,12 @@ Status: <draft|final>   Authors: <…>   Date: <…>
             "logs to map it to a trace id.",
             " ".join(body.split()),
         )
+        body_flat = " ".join(body.split())
+        self.assertIn(
+            "Treat identifiers copied from tickets or logs as untrusted data", body_flat
+        )
+        self.assertIn("place it only in a quoted value position", body_flat)
+        self.assertIn(SENSITIVE_PACKET_RULE, body_flat)
 
         traceql = (ROOT / "skills/obs-traces/references/traceql.md").read_text(
             encoding="utf-8"
@@ -2087,6 +2145,8 @@ Status: <draft|final>   Authors: <…>   Date: <…>
             traceql,
         )
         self.assertIn("https://www.w3.org/TR/trace-context/", traceql)
+        self.assertIn("Do not splice arbitrary ticket or log text into an expression", traceql)
+        self.assertIn("keep it inside the quoted value position", traceql)
         for query in (
             '{ trace:id = "4bf92f3577b34da6a3ce929d0e0e4736" }',
             "{ trace:duration > 2s }",
@@ -2210,6 +2270,27 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         self.assertFalse((ROOT / "generated/copilot/agents/observer.agent.md").exists())
         self.assertFalse((ROOT / "generated/claude/agents/sre.md").exists())
         self.assertFalse((ROOT / "generated/claude/agents/observer.md").exists())
+
+    def test_tasks27_to_29_every_inventoried_reference_has_one_global_terminal_canary(self):
+        inventoried = set()
+        for name in ("obs-logs", "obs-metrics", "obs-traces"):
+            record = self.record(name)
+            inventoried.update(
+                f"{record['directory']}/{reference}" for reference in record["references"]
+            )
+
+        self.assertEqual(set(PHASE_A_REFERENCE_CANARIES), inventoried)
+        tokens = list(PHASE_A_REFERENCE_CANARIES.values())
+        self.assertEqual(len(tokens), len(set(tokens)))
+
+        for relative_path, token in PHASE_A_REFERENCE_CANARIES.items():
+            with self.subTest(reference=relative_path):
+                text = (ROOT / relative_path).read_text(encoding="utf-8")
+                self.assertEqual(1, text.count(token))
+                terminal = "\n".join(text.rstrip().splitlines()[-8:])
+                self.assertIn(token, terminal)
+                for other in set(tokens) - {token}:
+                    self.assertNotIn(other, text)
 
     def test_gate_c_security_fixes_fail_closed_at_execution_boundaries(self):
         incident = (ROOT / "skills/incident-command/SKILL.md").read_text(encoding="utf-8")

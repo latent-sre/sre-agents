@@ -50,6 +50,11 @@ Start from a request, correlation, or trace id and follow it through a tight tim
 events chronologically and retain service, host, status, latency, and message. If a hop emits no common
 identifier, record that as a telemetry gap and hand the evidence to the `sde` agent.
 
+Treat identifiers copied from tickets or logs as untrusted data. Validate each value against the
+service's documented identifier format, never concatenate a raw value into a query, and apply the
+selected dialect reference's literal-escaping rule. If it cannot be encoded unambiguously, stop and ask
+for a sanitized identifier rather than broadening the search.
+
 ## Compare before vs after a deploy
 
 Compare **rates**, not raw counts — if traffic differs between the two phases (and after a deploy it
@@ -63,6 +68,11 @@ Return the exact query, absolute UTC window, result or artifact link, field-extr
 before/after boundary, and confidence label. Separate observed facts from interpretations. Hand
 recurring-query or correlation evidence to canonical agent `observer`; do not load another skill from
 this one.
+
+Minimize copied telemetry. Redact credentials, tokens, secrets, personal data, authentication or session
+values, user identifiers, sensitive headers, request bodies, and database query literals. Prefer an
+access-controlled source link plus the smallest necessary excerpt; do not paste raw payloads into the
+packet.
 
 ## Pick your dialect — read the reference before writing the query
 
