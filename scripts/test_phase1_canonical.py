@@ -259,6 +259,17 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "obs-traces": {
+        "name": "obs-traces",
+        "state": "active",
+        "directory": "skills/obs-traces",
+        "references": [
+            "references/traceql.md",
+            "references/otel-semantics.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {

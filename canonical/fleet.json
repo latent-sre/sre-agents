@@ -244,7 +244,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "obs-traces", "state": "planned", "activate_task": 29 },
+    {
+      "name": "obs-traces",
+      "state": "active",
+      "directory": "skills/obs-traces",
+      "references": ["references/traceql.md", "references/otel-semantics.md"],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "obs-dashboards", "state": "planned", "activate_task": 30 },
     { "name": "obs-alerting", "state": "planned", "activate_task": 31 },
     { "name": "obs-pipeline", "state": "planned", "activate_task": 32 }

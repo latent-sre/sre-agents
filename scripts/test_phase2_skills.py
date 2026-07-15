@@ -204,13 +204,20 @@ OBS_METRICS_DESCRIPTION = (
     "'query the metrics', 'graph the error rate', 'is latency up', 'write a metric alert query'. "
     "Ownership map only—not a load: obs-alerting owns alert design and obs-logs owns logs."
 )
+OBS_TRACES_DESCRIPTION = (
+    "Follow one request across services — when logs say 'slow' and metrics say 'sometimes', "
+    "the trace says where. Read waterfalls, find the span that ate latency, and correlate "
+    "trace ids with logs. Backend: Tempo (TraceQL). Triggers: 'trace this request', "
+    "'where did the latency go', 'follow this correlation id'. Ownership map only—not a "
+    "load: obs-pipeline owns trace instrumentation."
+)
 EXPECTED_READY = ["reviewer", "sde", "scribe"]
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
     "ci-actions", "merge-gate", "release-gate", "production-change-gate",
     "incident-command", "postmortem", "agent-authoring", "agent-security", "obs-logs",
-    "obs-metrics",
+    "obs-metrics", "obs-traces",
 }
 
 
@@ -1850,8 +1857,8 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(21, len(active))
-        self.assertEqual(5, len(planned))
+        self.assertEqual(22, len(active))
+        self.assertEqual(4, len(planned))
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
 
@@ -1922,8 +1929,8 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(21, len(active))
-        self.assertEqual(5, len(planned))
+        self.assertEqual(22, len(active))
+        self.assertEqual(4, len(planned))
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
 
@@ -2016,10 +2023,193 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(21, len(active))
-        self.assertEqual(5, len(planned))
+        self.assertEqual(22, len(active))
+        self.assertEqual(4, len(planned))
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
+
+    def test_task29_obs_traces_activates_source_correct_trace_reading_skill(self):
+        self.assertEqual(
+            {
+                "name": "obs-traces",
+                "state": "active",
+                "directory": "skills/obs-traces",
+                "references": [
+                    "references/traceql.md",
+                    "references/otel-semantics.md",
+                ],
+                "assets": [],
+                "scripts": [],
+            },
+            self.record("obs-traces"),
+        )
+        self.assert_inventory(
+            "obs-traces",
+            {
+                "SKILL.md",
+                "references/traceql.md",
+                "references/otel-semantics.md",
+            },
+        )
+
+        body = (ROOT / "skills/obs-traces/SKILL.md").read_text(encoding="utf-8")
+        self.assertEqual(OBS_TRACES_DESCRIPTION, frontmatter_description(body))
+        self.assertLessEqual(len(OBS_TRACES_DESCRIPTION.encode("utf-8")), 600)
+        for row in (
+            "| Tempo or TraceQL | [TraceQL](./references/traceql.md) |",
+            "| Span kinds, status, attributes, propagation, or sampling | "
+            "[OpenTelemetry semantics](./references/otel-semantics.md) |",
+        ):
+            self.assertIn(row, body)
+        for product_syntax in (
+            "trace:id",
+            "trace:duration",
+            "span:status",
+            "resource.service.name",
+        ):
+            self.assertNotIn(product_syntax, body)
+        self.assertIn(
+            "A generic request or correlation id is not automatically a trace id: first use the "
+            "logs to map it to a trace id.",
+            " ".join(body.split()),
+        )
+
+        traceql = (ROOT / "skills/obs-traces/references/traceql.md").read_text(
+            encoding="utf-8"
+        )
+        traceql_flat = " ".join(traceql.split())
+        self.assertIn(
+            "https://grafana.com/docs/tempo/latest/traceql/construct-traceql-queries/",
+            traceql,
+        )
+        self.assertIn(
+            "https://grafana.com/docs/grafana/latest/datasources/tempo/query-editor/traceql-search/",
+            traceql,
+        )
+        self.assertIn("https://www.w3.org/TR/trace-context/", traceql)
+        for query in (
+            '{ trace:id = "4bf92f3577b34da6a3ce929d0e0e4736" }',
+            "{ trace:duration > 2s }",
+            '{ resource.service.name = "checkout" && '
+            "span.http.response.status_code >= 500 }",
+            '{ resource.service.name = "checkout" } && '
+            "{ span.db.system.name != nil }",
+            '{ resource.service.name = "orders" && span:status = error } '
+            "| count() > 1",
+        ):
+            self.assertIn(query, traceql)
+        self.assertIn(
+            "Conditions inside one pair of braces must match the same span", traceql_flat
+        )
+        self.assertIn(
+            "two spansets joined with `&&` may match different spans in one trace",
+            traceql_flat,
+        )
+        ownership = (
+            "Ownership map only—not a load: canonical obs-pipeline owns trace instrumentation."
+        )
+        self.assertIn(ownership, traceql)
+        self.assertNotIn("span.http.status_code", traceql)
+        self.assertNotIn("span.db.system =", traceql)
+
+        otel = (ROOT / "skills/obs-traces/references/otel-semantics.md").read_text(
+            encoding="utf-8"
+        )
+        otel_flat = " ".join(otel.split())
+        for source in (
+            "https://opentelemetry.io/docs/specs/otel/trace/api/",
+            "https://opentelemetry.io/docs/specs/semconv/http/http-spans/",
+            "https://opentelemetry.io/docs/specs/semconv/db/database-spans/",
+            "https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/",
+            "https://opentelemetry.io/docs/concepts/sampling/",
+            "https://www.w3.org/TR/trace-context/",
+        ):
+            self.assertIn(source, otel)
+        for semantic in (
+            "`SERVER` — inbound request/response handling",
+            "`CLIENT` — outbound request/response call",
+            "`PRODUCER` — initiates or schedules deferred work",
+            "`CONSUMER` — processes deferred work",
+            "`INTERNAL` — in-process work",
+            "The default span status is `Unset`",
+            "server-side 4xx is normally `Unset`; client-side 4xx should be `Error`",
+            "`http.response.status_code`",
+            "`url.full`",
+            "`db.system.name`",
+            "`db.namespace`",
+            "`db.collection.name`",
+            "`db.operation.name`",
+            "`db.response.status_code`",
+            "`error.type`",
+            "traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+            "No trace found does not prove the request did not occur",
+            "A missing span does not prove the call did not occur",
+        ):
+            self.assertIn(semantic, otel_flat)
+        for migration in (
+            "| `http.method` | `http.request.method` |",
+            "| `http.status_code` | `http.response.status_code` |",
+            "| `db.system` | `db.system.name` |",
+            "| `db.name` | `db.namespace` |",
+            "| `db.operation` | `db.operation.name` |",
+        ):
+            self.assertIn(migration, otel)
+        self.assertNotIn("Which HTTP peer/port?", otel)
+        self.assertIn(
+            "Before copying it into an evidence packet, redact userinfo credentials and scrub "
+            "known tokens, secrets, personal data, and sensitive query values",
+            otel_flat,
+        )
+        self.assertIn(
+            "`server.address` identifies the server's logical host/address, not a generic "
+            "network peer.",
+            otel_flat,
+        )
+        self.assertIn(
+            "A valid `traceparent` carries correlation context; it does not prove correct "
+            "end-to-end propagation",
+            otel_flat,
+        )
+        self.assertNotIn("Propagation proves", otel)
+        self.assertIn(ownership, otel)
+
+        canaries = {
+            "traceql.md": "q_otql_7b3e",
+            "otel-semantics.md": "q_otel_c4a9",
+        }
+        self.assertEqual(len(canaries), len(set(canaries.values())))
+        for filename, canary in canaries.items():
+            text = (ROOT / "skills/obs-traces/references" / filename).read_text(
+                encoding="utf-8"
+            )
+            self.assertEqual(1, text.count(canary))
+            self.assertIn(canary, "\n".join(text.rstrip().splitlines()[-8:]))
+
+        active = {
+            record["name"] for record in self.fleet["skills"] if record["state"] == "active"
+        }
+        planned = {
+            record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
+        }
+        self.assertEqual(22, len(active))
+        self.assertEqual(
+            {"service-onboarding", "obs-dashboards", "obs-alerting", "obs-pipeline"},
+            planned,
+        )
+        self.assertEqual("content-building", self.fleet["assembly_state"])
+        _manifest, ready = generate_fleet.load_and_validate(ROOT)
+        self.assertEqual(EXPECTED_READY, ready)
+
+        for runtime in ("copilot", "claude"):
+            wrappers = {
+                path.stem.removesuffix(".agent")
+                for path in (ROOT / "generated" / runtime / "agents").glob("*.md")
+            }
+            self.assertEqual({"reviewer", "sde", "scribe"}, wrappers)
+        self.assertFalse((ROOT / "generated/copilot/agents/sre.agent.md").exists())
+        self.assertFalse((ROOT / "generated/copilot/agents/observer.agent.md").exists())
+        self.assertFalse((ROOT / "generated/claude/agents/sre.md").exists())
+        self.assertFalse((ROOT / "generated/claude/agents/observer.md").exists())
 
     def test_gate_c_security_fixes_fail_closed_at_execution_boundaries(self):
         incident = (ROOT / "skills/incident-command/SKILL.md").read_text(encoding="utf-8")
