@@ -19,6 +19,9 @@ An **agent** exists when it needs a **distinct tool-scope**. A distinct guard po
 routing and live coordination stay in the main session because a coordinator subagent only adds a
 round-trip for a low-context decision the main session can make inline. Apply this test before adding
 any agent, and record the justification in the agent's own file (or an ADR if it reshapes the roster).
+That routing choice is a reasoned default, not a measured result: neither shape has been A/B tested for
+this fleet. Apply the bar symmetrically and change the architecture if a controlled A/B shows that a
+coordinator agent outperforms the in-session skill after token, latency, and routing quality are counted.
 
 ## Orchestration shapes
 
@@ -58,8 +61,12 @@ waste · runaway loops with no dry-out condition · missing return contracts.
 ## Deliverable
 
 A roster delta or design: each agent's lane, trigger description, tool authority, handoff edges,
-context budget, and failure handling. Agents inherit the session's model — don't add a model pin
-unless one agent genuinely needs a different tier. Hand single-artifact wording to
+context budget, and failure handling. Claude agents inherit the session model unless canonical policy
+sets one; Copilot model choices are centralized in canonical policy rather than copied into each agent.
+That removes per-agent synchronization and lineup maintenance, but it also prevents cheaply tiering
+routine agents separately from judgment-heavy agents. Accept the shared tier by default. A distinct tier
+requires a reviewed canonical schema/policy design change plus regenerated projections, justified only
+when the cost of a wrong call exceeds that maintenance overhead. Hand single-artifact wording to
 [artifact guidance](./artifact.md), approved implementation to the typed `sde` agent, independent
 findings to the typed `reviewer` agent, and authorization to the human release owner with existing
 approval evidence naming the exact target, action, and rollback.

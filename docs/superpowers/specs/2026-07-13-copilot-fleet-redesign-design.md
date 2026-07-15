@@ -344,6 +344,12 @@ Code ignores the parenthesized target list when that definition is itself a nest
 compatibility report must label that degradation; terminal agents remain terminal by omitting `Agent` entirely.
 Default-deny claims are runtime claims and stay `[unverified]` until the matching Phase-1 probe proves them.
 
+Routing stays in the main session through native descriptions, delegation, and handoffs; incident coordination
+stays a skill. A coordinator subagent would add a round-trip, tokens, and latency to a low-context decision before
+the main session can act. The reason is cost, not a nested-agent capability limit or presumed context loss. This is
+a reasoned default, not a measured result: reverse it if a controlled A/B shows that a coordinator produces better
+routing after quality, token use, and latency are counted.
+
 | Agent | `agents:` (may delegate to) | `handoffs:` (human-clickable) |
 |---|---|---|
 | **sre** | `observer` (pull a dashboard/alert), `scribe` (read an existing runbook) | → `scribe` *"write this up"* (investigate→document) · → `sde` *"fix the root cause"* |

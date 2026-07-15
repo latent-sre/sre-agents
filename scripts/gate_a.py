@@ -58,6 +58,8 @@ STEPS = [
      ["scripts/generate_fleet.py", "--check"], None),
     ("Fleet content complete",
      ["scripts/generate_fleet.py", "--require-content-complete"], None),
+    ("Root document split",
+     ["scripts/test_root_docs.py"], None),
     ("Read-only guard",
      ["scripts/test_readonly_guard.py"], None),
     ("Eval graders",
