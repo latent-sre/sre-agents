@@ -206,7 +206,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "service-onboarding", "state": "planned", "activate_task": 32 },
+    {
+      "name": "service-onboarding",
+      "state": "active",
+      "directory": "skills/service-onboarding",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
     {
       "name": "agent-authoring",
       "state": "active",
@@ -228,12 +235,59 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "obs-logs", "state": "planned", "activate_task": 27 },
-    { "name": "obs-metrics", "state": "planned", "activate_task": 28 },
-    { "name": "obs-traces", "state": "planned", "activate_task": 29 },
-    { "name": "obs-dashboards", "state": "planned", "activate_task": 30 },
-    { "name": "obs-alerting", "state": "planned", "activate_task": 31 },
-    { "name": "obs-pipeline", "state": "planned", "activate_task": 32 }
+    {
+      "name": "obs-logs",
+      "state": "active",
+      "directory": "skills/obs-logs",
+      "references": ["references/spl.md", "references/logql.md", "references/indexes.md"],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "obs-metrics",
+      "state": "active",
+      "directory": "skills/obs-metrics",
+      "references": ["references/wql.md", "references/promql.md", "references/metrics.md"],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "obs-traces",
+      "state": "active",
+      "directory": "skills/obs-traces",
+      "references": ["references/traceql.md", "references/otel-semantics.md"],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "obs-dashboards",
+      "state": "active",
+      "directory": "skills/obs-dashboards",
+      "references": ["references/provisioning.md", "references/wavefront-legacy.md"],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "obs-alerting",
+      "state": "active",
+      "directory": "skills/obs-alerting",
+      "references": [
+        "references/grafana-alerting.md",
+        "references/burn-rate.md",
+        "references/moogsoft.md",
+        "references/thousandeyes.md"
+      ],
+      "assets": [],
+      "scripts": ["scripts/error_budget.py"]
+    },
+    {
+      "name": "obs-pipeline",
+      "state": "active",
+      "directory": "skills/obs-pipeline",
+      "references": ["references/alloy.md", "references/otel-sdk.md"],
+      "assets": [],
+      "scripts": []
+    }
   ],
   "skill_dependencies": {
     "ops-tooling": [

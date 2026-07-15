@@ -170,6 +170,11 @@ DEPENDENCY_LINE = re.compile(
     r"Copilot `(?P<copilot>[a-z0-9-]+)`; "
     r"Claude `sre-agents:(?P<claude>[a-z0-9-]+)`$"
 )
+OWNER_LOAD_PAIR = re.compile(
+    r"^load the owner: copilot `(?P<copilot>[a-z0-9-]+)`; "
+    r"claude `sre-agents:(?P<claude>[a-z0-9-]+)`$"
+)
+MANUAL_ONLY_SKILLS = frozenset({"pcf-deploy", "service-onboarding"})
 ACTION_STEMS = (
     "load",
     "invoke",
@@ -408,19 +413,40 @@ def _validate_plugin(manifest: dict) -> None:
         _require_string(keyword, f"plugin.keywords[{index}]")
 
 
-def _skill_frontmatter_name(text: str, path: Path) -> str:
+def _skill_frontmatter_fields(text: str, path: Path) -> dict[str, list[str]]:
     if not text.startswith("---\n"):
         raise ManifestError(f"skill frontmatter missing: {path}")
     end = text.find("\n---\n", 4)
     if end < 0:
         raise ManifestError(f"skill frontmatter is not closed: {path}")
-    names: list[str] = []
+    fields: dict[str, list[str]] = {}
     for line in text[4:end].splitlines():
-        if line.startswith("name:"):
-            names.append(line.split(":", 1)[1].strip())
+        if not line or line.startswith((" ", "\t", "#")):
+            continue
+        match = re.fullmatch(r"([A-Za-z][A-Za-z0-9-]*):(?:[ \t]*(.*))?", line)
+        if match is not None:
+            fields.setdefault(match.group(1), []).append((match.group(2) or "").strip())
+    return fields
+
+
+def _validate_skill_frontmatter_controls(text: str, path: Path, name: str) -> None:
+    fields = _skill_frontmatter_fields(text, path)
+    names = fields.get("name", [])
     if len(names) != 1:
         raise ManifestError(f"skill frontmatter must contain one name: {path}")
-    return names[0]
+    if names[0] != name:
+        raise ManifestError(f"skill '{name}': frontmatter name does not match inventory")
+
+    manual_values = fields.get("disable-model-invocation", [])
+    if name in MANUAL_ONLY_SKILLS:
+        if manual_values != ["true"]:
+            raise ManifestError(
+                f"skill '{name}': frontmatter must contain disable-model-invocation: true"
+            )
+    elif manual_values:
+        raise ManifestError(
+            "only pcf-deploy and service-onboarding may disable model invocation"
+        )
 
 
 def _block(text: str, start: str, end: str, where: str) -> tuple[str, str]:
@@ -457,6 +483,24 @@ def _action_targets(line: str, catalog: tuple[str, ...], *, owner: str | None = 
             suffix = lowered[target_at + len(target) :]
             prefix_sentence = re.split(r"[.!?]", prefix)[-1]
             suffix_sentence = re.split(r"[.!?]", suffix, maxsplit=1)[0]
+            parenthetical = re.match(r"\s*\((?P<body>[^)]*)\)", suffix_sentence)
+            if parenthetical is not None:
+                nested = parenthetical.group("body")
+                owner_pair = OWNER_LOAD_PAIR.fullmatch(nested)
+                paired_target = (
+                    owner_pair.group("copilot") if owner_pair is not None else None
+                )
+                exact_different_owner = (
+                    owner_pair is not None
+                    and paired_target == owner_pair.group("claude")
+                    and paired_target in catalog
+                    and paired_target != target
+                )
+                if exact_different_owner:
+                    # "link to a runbook (load the alerting owner: ...)" loads the
+                    # exact paired owner, not the noun before the parenthesis. Any
+                    # extra text/action makes the full match fail closed.
+                    suffix_sentence = suffix_sentence[parenthetical.end() :]
             qualifier_at = prefix_sentence.rfind("not a load")
             qualifier_tail = (
                 prefix_sentence[qualifier_at + len("not a load") :]
@@ -604,8 +648,7 @@ def _validate_active_skill(
         skill_text = skill_path.read_text(encoding="utf-8")
     except UnicodeError as exc:
         raise ManifestError(f"skill '{name}' SKILL.md must be UTF-8") from exc
-    if _skill_frontmatter_name(skill_text, skill_path) != name:
-        raise ManifestError(f"skill '{name}': frontmatter name does not match inventory")
+    _validate_skill_frontmatter_controls(skill_text, skill_path, name)
 
     targets = dependencies.get(name, [])
     planned_targets = [target for target in targets if target not in active_names]

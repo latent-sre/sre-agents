@@ -13,6 +13,7 @@ import copy
 import importlib.util
 import json
 import os
+import re
 import shutil
 import stat
 import tempfile
@@ -72,6 +73,78 @@ PINNED_SKILL_DEPENDENCIES = {
         "runbook",
     ],
 }
+
+TASK32_DEPENDENCIES = PINNED_SKILL_DEPENDENCIES["service-onboarding"]
+TASK32_INVENTORIES = {
+    "obs-pipeline": {
+        "references": ["references/alloy.md", "references/otel-sdk.md"],
+        "assets": [],
+        "scripts": [],
+    },
+    "service-onboarding": {
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
+}
+TASK32_SERVICE_DESCRIPTION = (
+    "Onboard a service onto the platform and the observability stack — or audit an existing one "
+    "against the standard. Invoke explicitly as Copilot `/service-onboarding` or Claude "
+    "`/sre-agents:service-onboarding`. Triggers: 'onboard this service', 'bring X up to standard', "
+    "'audit this service'. Works the checklist in order; audit mode reports evidence-cited "
+    "findings and the top three fixes."
+)
+TASK32_SERVICE_INVOCATION_COMMENT = (
+    "# Side-effect-shaped: invoke explicitly as Copilot `/service-onboarding` or Claude "
+    "`/sre-agents:service-onboarding`; never auto-load."
+)
+TASK32_SERVICE_CHASSIS = """Work through every step in order; when one is skipped, say so explicitly and why — silence reads
+as "done." This checklist grants no permission of its own — a step being on the list is not
+approval to run it. Before any prod-facing step, load its gate from the dependency block below
+(Copilot `production-change-gate`; Claude `sre-agents:production-change-gate`) and re-enter it.
+
+<!-- required-skill-dependencies:start -->
+## Required on-demand skill dependencies
+- canonical `production-change-gate`; Copilot `production-change-gate`; Claude `sre-agents:production-change-gate`
+- canonical `obs-pipeline`; Copilot `obs-pipeline`; Claude `sre-agents:obs-pipeline`
+- canonical `obs-dashboards`; Copilot `obs-dashboards`; Claude `sre-agents:obs-dashboards`
+- canonical `obs-alerting`; Copilot `obs-alerting`; Claude `sre-agents:obs-alerting`
+- canonical `ci-actions`; Copilot `ci-actions`; Claude `sre-agents:ci-actions`
+- canonical `runbook`; Copilot `runbook`; Claude `sre-agents:runbook`
+<!-- required-skill-dependencies:end -->
+
+Before each dependent checklist step, load that row's runtime identity from this block; the paired
+names below are executable identity requirements, not decorative cross-references.
+
+1. **Manifest & health** — version-controlled `manifest.yml`; http health-check endpoint; ≥2 instances.
+2. **Instrument** — OTel SDK wired (metrics + traces + structured logs); RED metrics named per
+   convention; cardinality reviewed. [read the runtime identity before this step: Copilot
+   `obs-pipeline`; Claude `sre-agents:obs-pipeline`]
+3. **Ship telemetry** — Alloy/collector config routes logs → Loki (and Splunk where required),
+   metrics → Mimir, traces → Tempo. Prove arrival with one query per signal, quoted.
+4. **Dashboard** — the service page in Grafana: top-level health → drill-down (load the owner:
+   Copilot `obs-dashboards`; Claude `sre-agents:obs-dashboards`).
+5. **Alerts** — burn-rate alert on the SLI + one saturation alert; each linked to a runbook
+   (load the owner: Copilot `obs-alerting`; Claude `sre-agents:obs-alerting`). No runbook, no alert.
+6. **SLO** — SLI formula + target + window recorded where the team keeps them.
+7. **CI/CD** — build + deploy via Actions (Copilot `ci-actions`; Claude
+   `sre-agents:ci-actions`); promotion gates on.
+8. **Runbook** — check/restart/recover doc exists (Copilot `runbook`; Claude
+   `sre-agents:runbook`); on-call knows where it is.
+
+**Audit mode** (bringing an existing service up to standard): run the checks below and report like
+a code review of the service — severity-ranked, evidence-cited, **no finding without the command
+output that proves it**. End with the top three fixes — not a list of thirty.
+
+Checks (run what applies; list what you couldn't run and why): route/auth exposure · app hygiene
+(crash counts, instance flapping, memory headroom via `cf app`) · certificate expiry ·
+service-backup existence (**a backup that has never been restored is a hope, not a backup**) ·
+monitoring gaps (steps 3–7 above, absent) · manifest drift vs running config · capacity headroom ·
+platform-deprecation notices.
+
+Output: `[P0]`–`[P3]` findings, each with the evidence (command + output) and the one-line fix.
+**P0 = exposed without auth, or stateful and unbacked-up.**
+"""
 
 
 def _plugin() -> dict:
@@ -135,6 +208,52 @@ def _dependency_block(skills: list[str]) -> str:
     return "\n".join(lines)
 
 
+def _markdown_section(text: str, heading: str) -> str:
+    """Return one level-two Markdown section without the following section."""
+    lines = text.splitlines()
+    start = lines.index(heading)
+    end = next(
+        (index for index in range(start + 1, len(lines)) if lines[index].startswith("## ")),
+        len(lines),
+    )
+    return "\n".join(lines[start:end]).strip()
+
+
+def _skill_parts(text: str) -> tuple[dict[str, str], list[str], str]:
+    """Parse the small frontmatter subset needed by production content contracts."""
+    if not text.startswith("---\n"):
+        raise AssertionError("skill frontmatter is missing")
+    end = text.find("\n---\n", 4)
+    if end < 0:
+        raise AssertionError("skill frontmatter is not closed")
+    lines = text[4:end].splitlines()
+    values: dict[str, str] = {}
+    comments: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if line.startswith("#"):
+            comments.append(line)
+            index += 1
+            continue
+        match = re.fullmatch(r"([A-Za-z][A-Za-z0-9-]*):(?:[ \t]*(.*))?", line)
+        if match is None:
+            index += 1
+            continue
+        key, raw = match.group(1), (match.group(2) or "")
+        if raw in {">", ">-", "|", "|-"}:
+            chunks: list[str] = []
+            index += 1
+            while index < len(lines) and lines[index].startswith((" ", "\t")):
+                chunks.append(lines[index].strip())
+                index += 1
+            values[key] = " ".join(chunks)
+            continue
+        values[key] = raw.strip()
+        index += 1
+    return values, comments, text[end + len("\n---\n") :]
+
+
 class FleetRoot:
     def __init__(self, testcase: unittest.TestCase):
         # Python's TemporaryDirectory applies a Windows ACL/mode combination
@@ -185,10 +304,16 @@ class FleetRoot:
         skill_root = self.root / "skills" / name
         skill_root.mkdir(parents=True, exist_ok=True)
         dependency_names = self.manifest["skill_dependencies"].get(name, [])
+        manual_only = (
+            "disable-model-invocation: true\n"
+            if name in generate_fleet.MANUAL_ONLY_SKILLS
+            else ""
+        )
         body = (
             "---\n"
             f"name: {name}\n"
             f"description: Exercise {name}. Triggers: \"use {name}\", \"run {name}\".\n"
+            f"{manual_only}"
             "---\n\n"
             f"# {name}\n\n"
             f"{_dependency_block(dependency_names) if dependency_names else ''}"
@@ -293,9 +418,168 @@ class ProductionGeneratorContracts(unittest.TestCase):
         with self.assertRaisesRegex(generate_fleet.ManifestError, fragment):
             generate_fleet.load_and_validate(fleet.root)
 
-    def test_real_phase2_core_cohort_projects_exactly_three_agents(self) -> None:
+    def test_task32_obs_pipeline_preserves_the_planned_disposition(self) -> None:
+        skill_path = ROOT / "skills" / "obs-pipeline" / "SKILL.md"
+        alloy_path = skill_path.parent / "references" / "alloy.md"
+        otel_path = skill_path.parent / "references" / "otel-sdk.md"
+        self.assertTrue(skill_path.is_file(), "Task 32 obs-pipeline source is missing")
+        self.assertTrue(alloy_path.is_file(), "Task 32 Alloy reference is missing")
+        self.assertTrue(otel_path.is_file(), "Task 32 OTel SDK reference is missing")
+
+        source = (ROOT / "legacy/claude-fleet/skills/instrument-service/SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        skill_text = skill_path.read_text(encoding="utf-8")
+        otel_text = otel_path.read_text(encoding="utf-8")
+        alloy_text = alloy_path.read_text(encoding="utf-8")
+
+        expected_steps = _markdown_section(source, "## Steps").replace(
+            'the "saturation → latency → errors" cascade in the `sre-ladder` golden-signals reference.',
+            "the saturation → latency → errors cascade.",
+        ).replace(
+            "**no secrets/PII** (see `craft` (Python)).",
+            "redact secrets and PII before serialization; carry only approved trace/span correlation fields.",
+        )
+        expected_done = _markdown_section(source, "## Done")
+        self.assertEqual(f"{expected_steps}\n\n{expected_done}\n", otel_text)
+        self.assertEqual(["## Steps", "## Done"], re.findall(r"^## .+$", otel_text, re.MULTILINE))
+        self.assertNotIn("## Where it lands", otel_text)
+
+        naming_replacement = (
+            "Wavefront receives dot-delimited names plus bounded point tags; this section owns "
+            "the emitted naming/tag contract."
+        )
+        expected_naming = _markdown_section(
+            source, "## Naming — OTel uses DOTS, not underscores"
+        ).replace(
+            "discipline\n  (see `wavefront-queries`).",
+            f"discipline.\n  {naming_replacement}",
+        ).replace(
+            "discipline (see `wavefront-queries`).",
+            f"discipline. {naming_replacement}",
+        )
+        self.assertEqual(
+            _markdown_section(source, "## The cardinality rule (this is what blows up metric stores)"),
+            _markdown_section(
+                skill_text, "## The cardinality rule (this is what blows up metric stores)"
+            ),
+        )
+        self.assertEqual(
+            expected_naming,
+            _markdown_section(skill_text, "## Naming — OTel uses DOTS, not underscores"),
+        )
+
+        expected_signal_rows = (
+            "| Structured logs | approved JSON fields plus trace/span correlation | "
+            "OTLP or file receiver → redact/filter/batch → route | Loki; Splunk where required |",
+            "| Metrics | OTel instruments with bounded attributes | OTLP receiver → "
+            "resource/attribute processing → route | Mimir and the current Wavefront path |",
+            "| Traces | spans with propagated W3C trace context | OTLP receiver → "
+            "sampling/batch → route | Tempo |",
+        )
+        for row in expected_signal_rows:
+            with self.subTest(signal_row=row):
+                self.assertEqual(1, skill_text.count(row))
+
+        loss_section = _markdown_section(skill_text, "## Where a missing signal gets lost")
+        loss_boundaries = re.findall(
+            r"(?ms)^(\d+)\. .*?(?=^\d+\. |\Z)", loss_section
+        )
+        self.assertEqual(["1", "2", "3", "4"], loss_boundaries)
+        loss_chunks = re.findall(r"(?ms)^\d+\. .*?(?=^\d+\. |\Z)", loss_section)
+        self.assertEqual(4, len(loss_chunks))
+        for number, chunk in enumerate(loss_chunks, start=1):
+            with self.subTest(loss_boundary=number):
+                self.assertEqual(1, chunk.count("Tier-0:"))
+
+        for required in (
+            "app → SDK/agent → collector/Alloy → backend",
+            "Loki",
+            "Mimir",
+            "Tempo",
+            "Splunk",
+            "Wavefront",
+            "Tier-0",
+            "receivers",
+            "processors",
+            "exporters",
+            "health",
+            "GCP exporters",
+            "q_opalloy_6d4c",
+            "[unverified]",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, skill_text + alloy_text)
+
+    def test_task32_service_onboarding_has_exact_dependency_identities_and_chassis(self) -> None:
+        path = ROOT / "skills" / "service-onboarding" / "SKILL.md"
+        self.assertTrue(path.is_file(), "Task 32 service-onboarding source is missing")
+        text = path.read_text(encoding="utf-8")
+        frontmatter, comments, body = _skill_parts(text)
+        normalized = " ".join(text.split())
+
+        self.assertEqual("service-onboarding", frontmatter["name"])
+        self.assertEqual(TASK32_SERVICE_DESCRIPTION, frontmatter["description"])
+        self.assertEqual("true", frontmatter["disable-model-invocation"])
+        self.assertEqual([TASK32_SERVICE_INVOCATION_COMMENT], comments)
+
+        chassis_at = body.index("Work through every step in order;")
+        evidence_prologue = body[:chassis_at]
+        self.assertEqual(TASK32_SERVICE_CHASSIS, body[chassis_at:])
+        self.assertTrue(
+            all(not line or line.startswith(">") for line in evidence_prologue.splitlines()),
+            "only the repository evidence prologue may precede the plan-supplied chassis",
+        )
+        evidence_normalized = " ".join(
+            line[2:] if line.startswith("> ") else line
+            for line in evidence_prologue.splitlines()
+        )
+        evidence_normalized = " ".join(evidence_normalized.split())
+        for required in (
+            "sanitized commands",
+            "minimal redacted output excerpt",
+            "identify every redaction",
+            "[REDACTED:token]",
+            "access-controlled source link",
+            "smallest excerpt needed",
+            "Never run or request credential-bearing reads",
+            "`cf env`",
+            "`cf service-key`",
+            "`CF_TRACE`",
+            "credential endpoints",
+        ):
+            with self.subTest(evidence_boundary=required):
+                self.assertIn(required, evidence_normalized)
+
+        self.assertEqual(
+            ["## Required on-demand skill dependencies"],
+            re.findall(r"^#{1,6} .+$", body, re.MULTILINE),
+        )
+        self.assertEqual(1, text.count("<!-- required-skill-dependencies:start -->"))
+        self.assertEqual(1, text.count("<!-- required-skill-dependencies:end -->"))
+        block_start = body.index("<!-- required-skill-dependencies:start -->")
+        block_end = body.index("<!-- required-skill-dependencies:end -->") + len(
+            "<!-- required-skill-dependencies:end -->"
+        )
+        self.assertEqual(_dependency_block(TASK32_DEPENDENCIES).rstrip(), body[block_start:block_end])
+        self.assertIn("**no finding without the command output that proves it**", normalized)
+        self.assertIn("top three fixes — not a list of thirty", normalized)
+        self.assertIn("**P0 = exposed without auth, or stateful and unbacked-up.**", text)
+
+    def test_real_task32_dependency_slice_projects_all_five_agents(self) -> None:
         manifest, ready = generate_fleet.load_and_validate(ROOT)
-        self.assertEqual(["reviewer", "sde", "scribe"], ready)
+        self.assertEqual("content-building", manifest["assembly_state"])
+        self.assertEqual(26, sum(skill["state"] == "active" for skill in manifest["skills"]))
+        self.assertEqual(0, sum(skill["state"] == "planned" for skill in manifest["skills"]))
+        self.assertEqual(7, sum(len(row) for row in manifest["skill_dependencies"].values()))
+        self.assertEqual(28, sum(len(agent["required_skills"]) for agent in manifest["agents"]))
+        for name, inventory in TASK32_INVENTORIES.items():
+            record = next(skill for skill in manifest["skills"] if skill["name"] == name)
+            self.assertEqual("active", record["state"])
+            self.assertEqual(f"skills/{name}", record["directory"])
+            for kind, expected in inventory.items():
+                self.assertEqual(expected, record[kind])
+        self.assertEqual(list(generate_fleet.CONTENT_COMPLETE_AGENTS), ready)
         outputs = generate_fleet.render(ROOT, manifest, ready)
         wrapper_paths = {
             path.as_posix()
@@ -306,9 +590,13 @@ class ProductionGeneratorContracts(unittest.TestCase):
             {
                 "generated/copilot/agents/reviewer.agent.md",
                 "generated/copilot/agents/sde.agent.md",
+                "generated/copilot/agents/sre.agent.md",
+                "generated/copilot/agents/observer.agent.md",
                 "generated/copilot/agents/scribe.agent.md",
                 "generated/claude/agents/reviewer.md",
                 "generated/claude/agents/sde.md",
+                "generated/claude/agents/sre.md",
+                "generated/claude/agents/observer.md",
                 "generated/claude/agents/scribe.md",
             },
             wrapper_paths,
@@ -321,6 +609,8 @@ class ProductionGeneratorContracts(unittest.TestCase):
             [
                 "./generated/claude/agents/reviewer.md",
                 "./generated/claude/agents/sde.md",
+                "./generated/claude/agents/sre.md",
+                "./generated/claude/agents/observer.md",
                 "./generated/claude/agents/scribe.md",
             ],
             json.loads(outputs[Path(".claude-plugin/plugin.json")])["agents"],
@@ -331,6 +621,16 @@ class ProductionGeneratorContracts(unittest.TestCase):
             ].decode("utf-8").split("\n---\n", 1)[0]
             self.assertIn("Skill", frontmatter)
             self.assertNotIn("\nskills:", frontmatter)
+
+        for runtime, pattern in (("copilot", "*.agent.md"), ("claude", "*.md")):
+            actual = sorted(
+                path.name for path in (ROOT / "generated" / runtime / "agents").glob(pattern)
+            )
+            expected = sorted(
+                f"{name}.agent.md" if runtime == "copilot" else f"{name}.md"
+                for name in ready
+            )
+            self.assertEqual(expected, actual)
 
     def test_catalog_is_exact_and_planned_active_shapes_do_not_cross(self) -> None:
         mutations = []
@@ -448,6 +748,72 @@ class ProductionGeneratorContracts(unittest.TestCase):
             body_extra="Read [binary guidance](./references/binary.dat) before acting.\n",
         )
         self.assertInvalid(fleet, "binary instruction guidance")
+
+    def test_hidden_load_scope_does_not_cross_into_a_parenthetical_owner_load(self) -> None:
+        def onboarding_fixture(body_extra: str) -> FleetRoot:
+            candidate = FleetRoot(self)
+            candidate.manifest["assembly_state"] = "content-building"
+            for target in TASK32_DEPENDENCIES:
+                candidate.activate(target)
+            candidate.activate("service-onboarding", body_extra=body_extra)
+            return candidate
+
+        paired_owner = (
+            "load the owner: Copilot `obs-alerting`; Claude "
+            "`sre-agents:obs-alerting`"
+        )
+        fleet = onboarding_fixture(
+            "5. **Alerts** — each alert links to a runbook "
+            f"({paired_owner}). No runbook, no alert.\n"
+        )
+        generate_fleet.load_and_validate(fleet.root)
+
+        hidden_cases = (
+            "Keep the runbook (load this method) before continuing.\n",
+            f"Keep the runbook ({paired_owner}; follow it) before continuing.\n",
+            f"Keep the runbook ({paired_owner}), then follow it before continuing.\n",
+            f"Keep the runbook, then follow it ({paired_owner}).\n",
+        )
+        for body_extra in hidden_cases:
+            with self.subTest(hidden_parenthetical=body_extra):
+                self.assertInvalid(
+                    onboarding_fixture(body_extra),
+                    "mandatory load lacks both runtime identities",
+                )
+
+    def test_manual_only_skill_control_must_be_true_and_inside_frontmatter(self) -> None:
+        moved = FleetRoot(self)
+        moved.manifest["assembly_state"] = "content-building"
+        for target in TASK32_DEPENDENCIES:
+            moved.activate(target)
+        moved.activate("service-onboarding")
+        path = moved.root / "skills" / "service-onboarding" / "SKILL.md"
+        text = path.read_text(encoding="utf-8")
+        path.write_text(
+            text.replace(
+                "disable-model-invocation: true\n---\n",
+                "---\n\ndisable-model-invocation: true\n",
+                1,
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+        self.assertInvalid(moved, "frontmatter must contain disable-model-invocation: true")
+
+        widened = FleetRoot(self)
+        widened.manifest["assembly_state"] = "content-building"
+        widened.activate("stack-profile")
+        path = widened.root / "skills" / "stack-profile" / "SKILL.md"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "---\n\n# stack-profile",
+                "disable-model-invocation: true\n---\n\n# stack-profile",
+                1,
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+        self.assertInvalid(widened, "only pcf-deploy and service-onboarding")
 
     def test_not_a_load_does_not_mask_a_later_hidden_instruction(self) -> None:
         fleet = FleetRoot(self)
