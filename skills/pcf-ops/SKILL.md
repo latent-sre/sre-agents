@@ -9,6 +9,11 @@ description: >-
 compatibility: Requires the cf CLI v8 and access/auth to the target PCF foundation
 ---
 
+> **Evidence default — `[unverified]`.** Unless a paragraph carries a narrower label, each
+> stack/product-specific command, query, API or CLI behavior, version, licensing statement, and
+> runtime claim in this skill and its bundled files is `[unverified]` for the exact target.
+> A narrower `[sourced]` or `[verified]` label takes precedence; handoffs never upgrade it.
+
 # PCF / TAS application-side triage (cf CLI v8)
 
 Our apps run on PCF (VMware Tanzu Application Service). This skill stays on the application side:
@@ -159,8 +164,10 @@ the process `/stats` endpoint. *[sourced: CAPI V3 process endpoints]*
 
 ### Secrets: credential-bearing reads are human-only
 
-Fleet agents never run `cf env`, `cf service-key`, or `CF_TRACE` output: brokered mode denies them and
-safe mode has no execute tool; they leak credentials to an agent with egress, so a human runs them.
+Fleet agents never run `cf env`, `cf service-key`, or `CF_TRACE` output because those reads can leak
+credentials to an agent with egress. The selected execution boundary remains
+`[unverified/pending Task 38]`; `sre` and `observer` are not projected yet, so do not infer brokered or
+safe mode from the current tree. A human runs these credential-bearing reads.
 If raw environment data is genuinely required, the human captures and sanitizes the smallest excerpt
 outside the agent context. Preserve its evidence label and content hash through handoff.
 

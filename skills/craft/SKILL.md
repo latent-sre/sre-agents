@@ -8,6 +8,11 @@ description: >-
   TypeScript/React UI design.
 ---
 
+> **Evidence default — `[unverified]`.** Unless a paragraph carries a narrower label, each
+> stack/product-specific command, query, API or CLI behavior, version, licensing statement, and
+> runtime claim in this skill and its bundled files is `[unverified]` for the exact target.
+> A narrower `[sourced]` or `[verified]` label takes precedence; handoffs never upgrade it.
+
 # Craft — pick the language
 
 Match the repo's existing tooling first; the per-language defaults apply when none is set. Load **only**

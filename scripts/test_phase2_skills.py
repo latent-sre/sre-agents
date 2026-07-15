@@ -379,10 +379,17 @@ class Phase2FirstCohortTests(unittest.TestCase):
             "mark anything `[unverified]`",
         ):
             self.assertIn(required, normalized)
-        self.assertNotIn("steps 1–2 [verified]", normalized)
-        self.assertNotIn("step 3 [unverified", normalized)
-        self.assertNotIn("[verified]", normalized)
-        self.assertNotIn("[sourced]", normalized)
+        evidence_default = (
+            "**Evidence default — `[unverified]`.** Unless a paragraph carries a narrower label, each "
+            "stack/product-specific command, query, API or CLI behavior, version, licensing statement, "
+            "and runtime claim in this skill and its bundled files is `[unverified]` for the exact target. "
+            "A narrower `[sourced]` or `[verified]` label takes precedence; handoffs never upgrade it."
+        )
+        provenance_examples = normalized.replace(evidence_default, "")
+        self.assertNotIn("steps 1–2 [verified]", provenance_examples)
+        self.assertNotIn("step 3 [unverified", provenance_examples)
+        self.assertNotIn("[verified]", provenance_examples)
+        self.assertNotIn("[sourced]", provenance_examples)
         for required in (
             "Tier 2/3: record explicit human approval for the exact command/target plus rollback evidence before execution",
             "Hand over: trigger, evidence, attempted steps, current state, and the current owner.",
@@ -2119,6 +2126,45 @@ exit /b 0
         self.assertEqual(set(), active & planned)
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
+
+    def test_task26_stack_specific_claims_have_explicit_default_evidence_status(self):
+        for name in EXPECTED_ACTIVE:
+            with self.subTest(skill=name):
+                text = (ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+                normalized = " ".join(
+                    line[2:] if line.startswith("> ") else line
+                    for line in text.splitlines()
+                )
+                normalized = " ".join(normalized.split())
+                self.assertIn("**Evidence default — `[unverified]`.**", text)
+                self.assertIn(
+                    "each stack/product-specific command, query, API or CLI behavior, version, "
+                    "licensing statement, and runtime claim in this skill and its bundled files "
+                    "is `[unverified]`",
+                    normalized,
+                )
+                self.assertIn(
+                    "A narrower `[sourced]` or `[verified]` label takes precedence",
+                    normalized,
+                )
+
+    def test_task26_gate_c_does_not_overstate_pcf_oom_or_pending_runtime_policy(self):
+        investigator = (
+            ROOT / "skills" / "eng-ladder" / "references" / "investigator.md"
+        ).read_text(encoding="utf-8")
+        investigator_normalized = " ".join(investigator.split())
+        self.assertNotIn('not a literal "out of memory" string', investigator)
+        self.assertIn("bare status 137 also has non-OOM causes", investigator_normalized)
+        self.assertIn("*[sourced: cloudfoundry/executor", investigator)
+
+        pcf_ops = (ROOT / "skills" / "pcf-ops" / "SKILL.md").read_text(encoding="utf-8")
+        pcf_ops_normalized = " ".join(pcf_ops.split())
+        self.assertNotIn(
+            "brokered mode denies them and\nsafe mode has no execute tool",
+            pcf_ops,
+        )
+        self.assertIn("`[unverified/pending Task 38]`", pcf_ops)
+        self.assertIn("do not infer brokered or safe mode", pcf_ops_normalized)
 
 
 if __name__ == "__main__":
