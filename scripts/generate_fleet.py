@@ -1413,7 +1413,7 @@ def write(root: Path, *, require_content_complete: bool = False) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    mode = parser.add_mutually_exclusive_group(required=True)
+    mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--write", action="store_true", help="regenerate owned outputs")
     mode.add_argument("--check", action="store_true", help="fail when owned outputs drift")
     parser.add_argument(
@@ -1422,6 +1422,8 @@ def main(argv: list[str] | None = None) -> int:
         help="also require the final 26-skill/five-agent closed state",
     )
     args = parser.parse_args(argv)
+    if not (args.write or args.check or args.require_content_complete):
+        parser.error("one of the arguments --write --check is required")
     root = Path(__file__).resolve().parents[1]
     try:
         if args.write:

@@ -2285,7 +2285,7 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         }
         self.assertEqual(EXPECTED_ACTIVE, active)
         self.assertEqual(EXPECTED_PLANNED, planned)
-        self.assertEqual("content-building", self.fleet["assembly_state"])
+        self.assertEqual("content-complete", self.fleet["assembly_state"])
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
 

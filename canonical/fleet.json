@@ -30,7 +30,7 @@
     ],
     "claude": null
   },
-  "assembly_state": "content-building",
+  "assembly_state": "content-complete",
   "commands": [
     {
       "name": "adr",

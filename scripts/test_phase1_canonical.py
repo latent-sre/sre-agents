@@ -728,9 +728,9 @@ class Phase1CanonicalAuthoringTests(unittest.TestCase):
             "0.1.0", plugin.get("version"), "Phase-1 plugin version drifted"
         )
         self.assertAuthoringEqual(
-            "content-building",
+            "content-complete",
             self.fleet.get("assembly_state"),
-            "assembly_state must be content-building after the Phase-2 open",
+            "assembly_state must remain content-complete after the Task-33 transition",
         )
         self.assertAuthoringEqual(
             EXPECTED_COMMANDS,

@@ -56,6 +56,8 @@ STEPS = [
      ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_generate_fleet.py"], None),
     ("Generated fleet is current",
      ["scripts/generate_fleet.py", "--check"], None),
+    ("Fleet content complete",
+     ["scripts/generate_fleet.py", "--require-content-complete"], None),
     ("Read-only guard",
      ["scripts/test_readonly_guard.py"], None),
     ("Eval graders",

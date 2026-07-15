@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import io
 import json
 import os
 import re
@@ -19,6 +20,7 @@ import stat
 import tempfile
 import unittest
 import uuid
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -26,11 +28,28 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "scripts" / "generate_fleet.py"
+DESIGN_PATH = (
+    ROOT
+    / "docs"
+    / "superpowers"
+    / "specs"
+    / "2026-07-13-copilot-fleet-redesign-design.md"
+)
+TASK33_EVIDENCE_PATH = (
+    ROOT / "docs" / "superpowers" / "evidence" / "task-33-content-complete.md"
+)
 SPEC = importlib.util.spec_from_file_location("generate_fleet", MODULE_PATH)
 if SPEC is None or SPEC.loader is None:  # pragma: no cover - import machinery guard
     raise RuntimeError(f"cannot load {MODULE_PATH}")
 generate_fleet = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(generate_fleet)
+
+GATE_A_MODULE_PATH = ROOT / "scripts" / "gate_a.py"
+GATE_A_SPEC = importlib.util.spec_from_file_location("gate_a", GATE_A_MODULE_PATH)
+if GATE_A_SPEC is None or GATE_A_SPEC.loader is None:  # pragma: no cover - import machinery guard
+    raise RuntimeError(f"cannot load {GATE_A_MODULE_PATH}")
+gate_a = importlib.util.module_from_spec(GATE_A_SPEC)
+GATE_A_SPEC.loader.exec_module(gate_a)
 
 
 PINNED_SKILLS = [
@@ -61,6 +80,123 @@ PINNED_SKILLS = [
     ("obs-alerting", 31),
     ("obs-pipeline", 32),
 ]
+
+PINNED_LEDGER_KEYS = {
+    "skills": (
+        "adr-template",
+        "agent-authoring",
+        "agent-security",
+        "api-design",
+        "bamboo-to-actions-migration",
+        "blameless-postmortem",
+        "context-engineering",
+        "craft",
+        "database-reliability",
+        "debug-rca",
+        "github-actions-ci",
+        "grafana-dashboards",
+        "handoff-protocol",
+        "incident-severity",
+        "instrument-service",
+        "merge-gate",
+        "moogsoft-correlation",
+        "ops-cli",
+        "ops-stack-integration",
+        "pcf-deploy",
+        "pcf-ops",
+        "production-change-gate",
+        "release-gate",
+        "rollback-mitigation",
+        "route-request",
+        "runbook-template",
+        "safe-refactor",
+        "sde-ladder",
+        "self-improve-loop",
+        "slo-error-budget",
+        "spa-architecture",
+        "splunk-triage",
+        "sre-ladder",
+        "tdd-workflow",
+        "thousandeyes-network",
+        "tool-design",
+        "wavefront-queries",
+    ),
+    "agents": (
+        "sde-engineer",
+        "code-reviewer",
+        "security-reviewer",
+        "test-engineer",
+        "sre-engineer",
+        "sre-monitor",
+        "runbook-author",
+        "researcher",
+        "prompt-engineer",
+    ),
+    "evals": (
+        "`evals/discovery/*.yaml` (**45 cases**)",
+        "`evals/scenarios/*.yaml` (**25 cases**)",
+        "`evals/clean_room.py`",
+        "`evals/run_evals.py`, `discovery_probe.py`, `graders.py`",
+        "`evals/test_graders.py`, `test_discovery_probe.py`",
+        "`evals/README.md`",
+    ),
+    "machinery": (
+        "`scripts/readonly-guard.py` + `readonly-guard-hook.sh`",
+        "`scripts/test_readonly_guard.py`",
+        "`scripts/validate_fleet.py`",
+        "`scripts/ralph-loop.sh`",
+        "`.github/workflows/validate.yml`",
+        "`requirements-dev.txt`",
+        "`.mcp.json`",
+    ),
+    "roots": (
+        "`AGENTS.md`",
+        "`CLAUDE.md`",
+        "`README.md`",
+        "`docs/RESEARCH.md`",
+        "`docs/AUDIT-2026-07-12.md`",
+        "`docs/superpowers/{specs,plans}/`",
+        "`LICENSE`",
+    ),
+    "assets": (
+        "`ops-cli/assets/cli_skeleton.py`",
+        "`api-design/assets/openapi.starter.yaml`",
+        "`pcf-deploy/assets/*`, `github-actions-ci/assets/*`",
+        "`runbook-template/assets/*`",
+        "`adr-template/assets/adr-template.md`",
+        "`route-request/references/fan-out.md`",
+        "`sre-ladder/references/golden-signals.md`",
+        "`craft/references/{python,bash,powershell,go,typescript,react}.md`",
+        "`pcf-ops/{references,scripts}/*`, `splunk-triage/references/*`, "
+        "`wavefront-queries/references/*`, `grafana-dashboards/references/*`, "
+        "`moogsoft-correlation/references/*`, `thousandeyes-network/references/*`",
+        "`slo-error-budget/scripts/error_budget.py`",
+        "`agent-authoring/references/*`, `sde-ladder/references/*`, "
+        "`route-request/references/*` (others)",
+    ),
+}
+
+PINNED_SCHEDULED_LEDGER_TASKS = {
+    ("evals", "`evals/discovery/*.yaml` (**45 cases**)"): ("Task 34",),
+    ("evals", "`evals/scenarios/*.yaml` (**25 cases**)"): ("Task 34",),
+    (
+        "evals",
+        "`evals/run_evals.py`, `discovery_probe.py`, `graders.py`",
+    ): ("Task 34", "Task 35"),
+    ("evals", "`evals/README.md`"): ("Task 35",),
+    (
+        "machinery",
+        "`scripts/readonly-guard.py` + `readonly-guard-hook.sh`",
+    ): ("Task 38", "Task 40"),
+    ("machinery", "`scripts/test_readonly_guard.py`"): ("Task 38", "Task 40"),
+    ("machinery", "`scripts/validate_fleet.py`"): ("Task 37",),
+    ("machinery", "`scripts/ralph-loop.sh`"): ("Task 40",),
+    ("machinery", "`.github/workflows/validate.yml`"): ("Task 40",),
+    ("roots", "`AGENTS.md`"): ("Task 46",),
+    ("roots", "`CLAUDE.md`"): ("Task 46",),
+    ("roots", "`README.md`"): ("Task 45",),
+    ("roots", "`docs/RESEARCH.md`"): ("Task 45",),
+}
 
 PINNED_SKILL_DEPENDENCIES = {
     "ops-tooling": ["eng-ladder"],
@@ -145,6 +281,53 @@ platform-deprecation notices.
 Output: `[P0]`–`[P3]` findings, each with the evidence (command + output) and the one-line fix.
 **P0 = exposed without auth, or stateful and unbacked-up.**
 """
+
+
+def _markdown_table_rows(text: str, heading: str) -> list[list[str]]:
+    lines = text.splitlines()
+    try:
+        start = lines.index(heading)
+    except ValueError as exc:
+        raise AssertionError(f"missing ledger heading: {heading}") from exc
+    rows: list[list[str]] = []
+    table_started = False
+    for line in lines[start + 1 :]:
+        if line.startswith("#"):
+            break
+        if not line.startswith("|"):
+            continue
+        table_started = True
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if not cells or set(cells[0]) <= set("-: "):
+            continue
+        rows.append(cells)
+    if not table_started or not rows:
+        raise AssertionError(f"missing ledger table: {heading}")
+    return rows[1:]
+
+
+def _assert_pinned_ledger(
+    case: unittest.TestCase,
+    ledger_name: str,
+    design_rows: list[list[str]],
+    evidence_rows: list[list[str]],
+) -> None:
+    expected_keys = list(PINNED_LEDGER_KEYS[ledger_name])
+    case.assertEqual(expected_keys, [row[0] for row in design_rows])
+    case.assertEqual(expected_keys, [row[0] for row in evidence_rows])
+    case.assertEqual(len(expected_keys), len(set(expected_keys)))
+
+    for key, row in zip(expected_keys, evidence_rows, strict=True):
+        case.assertEqual(3, len(row), key)
+        scheduled_tasks = PINNED_SCHEDULED_LEDGER_TASKS.get((ledger_name, key), ())
+        expected_status = (
+            "`[sourced scheduled]`" if scheduled_tasks else "`[verified realized]`"
+        )
+        case.assertEqual(expected_status, row[1], key)
+        case.assertTrue(row[2], key)
+        case.assertNotRegex(row[2].lower(), r"\b(?:pending|tbd|todo)\b")
+        for task in scheduled_tasks:
+            case.assertIn(task, row[2], key)
 
 
 def _plugin() -> dict:
@@ -418,6 +601,114 @@ class ProductionGeneratorContracts(unittest.TestCase):
         with self.assertRaisesRegex(generate_fleet.ManifestError, fragment):
             generate_fleet.load_and_validate(fleet.root)
 
+    def test_gate_a_requires_exact_content_complete_step_once(self) -> None:
+        expected = (
+            "Fleet content complete",
+            ["scripts/generate_fleet.py", "--require-content-complete"],
+            None,
+        )
+        self.assertEqual(1, gate_a.STEPS.count(expected))
+
+    def test_cli_requires_a_mode_when_no_completion_assertion_is_requested(self) -> None:
+        with redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as raised:
+                generate_fleet.main([])
+        self.assertEqual(2, raised.exception.code)
+
+    def test_cli_preserves_explicit_write_and_check_modes(self) -> None:
+        with mock.patch.object(generate_fleet, "write") as write:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, generate_fleet.main(["--write"]))
+        write.assert_called_once_with(ROOT, require_content_complete=False)
+
+        with mock.patch.object(generate_fleet, "check", return_value=[]) as check:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, generate_fleet.main(["--check"]))
+        check.assert_called_once_with(ROOT, require_content_complete=False)
+
+    def test_cli_completion_assertion_standalone_performs_a_check(self) -> None:
+        with mock.patch.object(generate_fleet, "check", return_value=[]) as check:
+            with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
+                try:
+                    result = generate_fleet.main(["--require-content-complete"])
+                except SystemExit as exc:
+                    self.fail(
+                        "standalone --require-content-complete exited with "
+                        f"status {exc.code} instead of checking the fleet"
+                    )
+        self.assertEqual(0, result)
+        check.assert_called_once_with(ROOT, require_content_complete=True)
+
+    def test_disposition_ledger_rows_and_projection_counts_are_closed(self) -> None:
+        design = DESIGN_PATH.read_text(encoding="utf-8")
+        evidence = TASK33_EVIDENCE_PATH.read_text(encoding="utf-8")
+        ledgers = (
+            ("skills", "### Skills (37 → 26)", "### Ledger table: skills"),
+            ("agents", "### Agents (9 → 5)", "### Ledger table: agents"),
+            (
+                "evals",
+                "### Evals (the largest omission — 70 case files)",
+                "### Ledger table: evals",
+            ),
+            (
+                "machinery",
+                "### Scripts, CI, hooks",
+                "### Ledger table: scripts, CI, hooks",
+            ),
+            ("roots", "### Root docs", "### Ledger table: root docs"),
+            (
+                "assets",
+                "### In-skill assets and references (the strays)",
+                "### Ledger table: in-skill assets and references",
+            ),
+        )
+        for ledger_name, design_heading, evidence_heading in ledgers:
+            with self.subTest(ledger=design_heading):
+                design_rows = _markdown_table_rows(design, design_heading)
+                evidence_rows = _markdown_table_rows(evidence, evidence_heading)
+                _assert_pinned_ledger(self, ledger_name, design_rows, evidence_rows)
+
+        skill_directories = sorted(
+            path.name for path in (ROOT / "skills").iterdir() if path.is_dir()
+        )
+        self.assertEqual(sorted(name for name, _task in PINNED_SKILLS), skill_directories)
+
+        expected_agents = list(generate_fleet.CONTENT_COMPLETE_AGENTS)
+        canonical_agents = sorted(
+            path.stem for path in (ROOT / "canonical" / "agents").glob("*.md")
+        )
+        self.assertEqual(sorted(expected_agents), canonical_agents)
+        self.assertEqual(
+            sorted(f"{name}.agent.md" for name in expected_agents),
+            sorted(
+                path.name
+                for path in (ROOT / "generated/copilot/agents").glob("*.agent.md")
+            ),
+        )
+        self.assertEqual(
+            sorted(f"{name}.md" for name in expected_agents),
+            sorted(path.name for path in (ROOT / "generated/claude/agents").glob("*.md")),
+        )
+
+        manual_only = []
+        for skill in skill_directories:
+            text = (ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8")
+            frontmatter = text.split("---", 2)[1]
+            if re.search(r"(?m)^disable-model-invocation: true$", frontmatter):
+                manual_only.append(skill)
+        self.assertEqual(["pcf-deploy", "service-onboarding"], manual_only)
+
+    def test_ledger_rejects_coordinated_identity_substitution(self) -> None:
+        original = PINNED_LEDGER_KEYS["skills"]
+        design_rows = [[key, "disposition"] for key in original]
+        evidence_rows = [
+            [key, "`[verified realized]`", "exact proof"] for key in original
+        ]
+        design_rows[0][0] = "substituted-old-skill"
+        evidence_rows[0][0] = "substituted-old-skill"
+        with self.assertRaises(AssertionError):
+            _assert_pinned_ledger(self, "skills", design_rows, evidence_rows)
+
     def test_task32_obs_pipeline_preserves_the_planned_disposition(self) -> None:
         skill_path = ROOT / "skills" / "obs-pipeline" / "SKILL.md"
         alloy_path = skill_path.parent / "references" / "alloy.md"
@@ -566,9 +857,9 @@ class ProductionGeneratorContracts(unittest.TestCase):
         self.assertIn("top three fixes — not a list of thirty", normalized)
         self.assertIn("**P0 = exposed without auth, or stateful and unbacked-up.**", text)
 
-    def test_real_task32_dependency_slice_projects_all_five_agents(self) -> None:
+    def test_real_content_complete_dependency_slice_projects_all_five_agents(self) -> None:
         manifest, ready = generate_fleet.load_and_validate(ROOT)
-        self.assertEqual("content-building", manifest["assembly_state"])
+        self.assertEqual("content-complete", manifest["assembly_state"])
         self.assertEqual(26, sum(skill["state"] == "active" for skill in manifest["skills"]))
         self.assertEqual(0, sum(skill["state"] == "planned" for skill in manifest["skills"]))
         self.assertEqual(7, sum(len(row) for row in manifest["skill_dependencies"].values()))
