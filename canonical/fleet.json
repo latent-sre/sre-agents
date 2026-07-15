@@ -236,7 +236,14 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "obs-metrics", "state": "planned", "activate_task": 28 },
+    {
+      "name": "obs-metrics",
+      "state": "active",
+      "directory": "skills/obs-metrics",
+      "references": ["references/wql.md", "references/promql.md", "references/metrics.md"],
+      "assets": [],
+      "scripts": []
+    },
     { "name": "obs-traces", "state": "planned", "activate_task": 29 },
     { "name": "obs-dashboards", "state": "planned", "activate_task": 30 },
     { "name": "obs-alerting", "state": "planned", "activate_task": 31 },

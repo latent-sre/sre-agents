@@ -247,6 +247,18 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "obs-metrics": {
+        "name": "obs-metrics",
+        "state": "active",
+        "directory": "skills/obs-metrics",
+        "references": [
+            "references/wql.md",
+            "references/promql.md",
+            "references/metrics.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {

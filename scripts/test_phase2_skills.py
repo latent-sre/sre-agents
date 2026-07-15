@@ -198,12 +198,19 @@ OBS_LOGS_DESCRIPTION = (
     "are there 500s', 'grep production for', 'build a log alert'. Ownership map only—not "
     "a load: obs-metrics owns metrics and obs-dashboards owns dashboards."
 )
+OBS_METRICS_DESCRIPTION = (
+    "The answer is in the metrics — latency percentiles, error ratios, saturation, rates, "
+    "missing-data traps. Backends: Wavefront (WQL) and Mimir/Prometheus (PromQL). Triggers: "
+    "'query the metrics', 'graph the error rate', 'is latency up', 'write a metric alert query'. "
+    "Ownership map only—not a load: obs-alerting owns alert design and obs-logs owns logs."
+)
 EXPECTED_READY = ["reviewer", "sde", "scribe"]
 EXPECTED_ACTIVE = {
     "stack-profile", "root-cause", "runbook", "eng-ladder", "craft", "backend-craft",
     "frontend-craft", "ops-tooling", "pcf-ops", "pcf-deploy", "database-reliability",
     "ci-actions", "merge-gate", "release-gate", "production-change-gate",
     "incident-command", "postmortem", "agent-authoring", "agent-security", "obs-logs",
+    "obs-metrics",
 }
 
 
@@ -1843,8 +1850,8 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(20, len(active))
-        self.assertEqual(6, len(planned))
+        self.assertEqual(21, len(active))
+        self.assertEqual(5, len(planned))
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
 
@@ -1915,8 +1922,102 @@ Status: <draft|final>   Authors: <…>   Date: <…>
         planned = {
             record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
         }
-        self.assertEqual(20, len(active))
-        self.assertEqual(6, len(planned))
+        self.assertEqual(21, len(active))
+        self.assertEqual(5, len(planned))
+        _manifest, ready = generate_fleet.load_and_validate(ROOT)
+        self.assertEqual(EXPECTED_READY, ready)
+
+    def test_task28_obs_metrics_activates_source_correct_signal_skill(self):
+        self.assertEqual(
+            {
+                "name": "obs-metrics",
+                "state": "active",
+                "directory": "skills/obs-metrics",
+                "references": [
+                    "references/wql.md",
+                    "references/promql.md",
+                    "references/metrics.md",
+                ],
+                "assets": [],
+                "scripts": [],
+            },
+            self.record("obs-metrics"),
+        )
+        self.assert_inventory(
+            "obs-metrics",
+            {
+                "SKILL.md",
+                "references/wql.md",
+                "references/promql.md",
+                "references/metrics.md",
+            },
+        )
+
+        body = (ROOT / "skills/obs-metrics/SKILL.md").read_text(encoding="utf-8")
+        self.assertEqual(OBS_METRICS_DESCRIPTION, frontmatter_description(body))
+        self.assertLessEqual(len(OBS_METRICS_DESCRIPTION.encode("utf-8")), 600)
+        for row in (
+            "| Wavefront or WQL | [WQL](./references/wql.md) |",
+            "| Mimir, Prometheus, or PromQL | [PromQL](./references/promql.md) |",
+            "| Which metric, counter type, or label exists | "
+            "[local metric inventory](./references/metrics.md) |",
+        ):
+            self.assertIn(row, body)
+        self.assertNotIn("ts(", body)
+        self.assertNotIn("sum by", body)
+
+        wql = (ROOT / "skills/obs-metrics/references/wql.md").read_text(encoding="utf-8")
+        wql_flat = " ".join(wql.split())
+        self.assertIn("WQL has no PromQL-style aggregation `by` clause.", wql_flat)
+        self.assertIn("`sum(ts(app.http.requests.count), app)`", wql_flat)
+        self.assertIn("controls series matching across operators", wql_flat)
+        self.assertIn("`join()` is an alternative", wql_flat)
+        self.assertIn(
+            'sum(rate(ts(app.http.requests.errors, app="checkout")))', wql
+        )
+        self.assertNotIn("rate(sum(", wql)
+        self.assertIn(
+            'percentile(95, merge(hs(app.http.requests.latency.m, app="checkout")))',
+            wql,
+        )
+        self.assertIn(
+            "Break a flat aggregate down by adding the pointTag parameter: `, instance` / `, host`.",
+            wql_flat,
+        )
+
+        promql = (ROOT / "skills/obs-metrics/references/promql.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("`rate()` before `sum()`, never `sum()` before `rate()`", promql)
+        self.assertIn(
+            'sum by (app) (rate(http_requests_total{env="prod"}[5m]))', promql
+        )
+        combined = wql + promql + body
+        self.assertNotIn("sum(ts(app.http.requests.count)) by (app)", combined)
+        self.assertNotIn("requires **parentheses** around the grouping keys", combined)
+        self.assertNotIn("`by instance`/`by host`", combined)
+
+        canaries = {
+            "wql.md": "q_omwql_7b31",
+            "promql.md": "q_ompr_4e9a",
+            "metrics.md": "q_ommet_c2d8",
+        }
+        self.assertEqual(len(canaries), len(set(canaries.values())))
+        for filename, canary in canaries.items():
+            text = (ROOT / "skills/obs-metrics/references" / filename).read_text(
+                encoding="utf-8"
+            )
+            self.assertEqual(1, text.count(canary))
+            self.assertIn(canary, "\n".join(text.rstrip().splitlines()[-8:]))
+
+        active = {
+            record["name"] for record in self.fleet["skills"] if record["state"] == "active"
+        }
+        planned = {
+            record["name"] for record in self.fleet["skills"] if record["state"] == "planned"
+        }
+        self.assertEqual(21, len(active))
+        self.assertEqual(5, len(planned))
         _manifest, ready = generate_fleet.load_and_validate(ROOT)
         self.assertEqual(EXPECTED_READY, ready)
 
