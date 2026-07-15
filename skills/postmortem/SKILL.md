@@ -8,6 +8,11 @@ description: >-
   what happened", "create follow-up actions".
 ---
 
+> **Evidence default — `[unverified]`.** Unless a paragraph carries a narrower label, each
+> stack/product-specific command, query, API or CLI behavior, version, licensing statement, and
+> runtime claim in this skill and its bundled files is `[unverified]` for the exact target.
+> A narrower `[sourced]` or `[verified]` label takes precedence; handoffs never upgrade it.
+
 # Blameless postmortem
 
 The goal is **learning, not blame**: find the systemic reasons a competent team still hit this, and fix

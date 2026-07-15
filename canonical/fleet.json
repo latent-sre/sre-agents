@@ -31,7 +31,16 @@
     "claude": null
   },
   "assembly_state": "content-building",
-  "commands": [],
+  "commands": [
+    {
+      "name": "adr",
+      "source": "commands/adr.md",
+      "description": "Scaffold a self-contained Nygard Architecture Decision Record under docs/adr. Invoke manually with sde selected. Triggers: 'create an ADR', 'scaffold an architecture decision record'.",
+      "argument_mode": "required",
+      "argument_usage": "<decision> [probe: <token>]",
+      "invocation_mode": "manual"
+    }
+  ],
   "skills": [
     {
       "name": "stack-profile",
@@ -197,15 +206,88 @@
       "assets": [],
       "scripts": []
     },
-    { "name": "service-onboarding", "state": "planned", "activate_task": 32 },
-    { "name": "agent-authoring", "state": "planned", "activate_task": 25 },
-    { "name": "agent-security", "state": "planned", "activate_task": 25 },
-    { "name": "obs-logs", "state": "planned", "activate_task": 27 },
-    { "name": "obs-metrics", "state": "planned", "activate_task": 28 },
-    { "name": "obs-traces", "state": "planned", "activate_task": 29 },
-    { "name": "obs-dashboards", "state": "planned", "activate_task": 30 },
-    { "name": "obs-alerting", "state": "planned", "activate_task": 31 },
-    { "name": "obs-pipeline", "state": "planned", "activate_task": 32 }
+    {
+      "name": "service-onboarding",
+      "state": "active",
+      "directory": "skills/service-onboarding",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "agent-authoring",
+      "state": "active",
+      "directory": "skills/agent-authoring",
+      "references": [
+        "references/artifact.md",
+        "references/roster.md",
+        "references/tools.md",
+        "references/context.md"
+      ],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "agent-security",
+      "state": "active",
+      "directory": "skills/agent-security",
+      "references": [],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "obs-logs",
+      "state": "active",
+      "directory": "skills/obs-logs",
+      "references": ["references/spl.md", "references/logql.md", "references/indexes.md"],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "obs-metrics",
+      "state": "active",
+      "directory": "skills/obs-metrics",
+      "references": ["references/wql.md", "references/promql.md", "references/metrics.md"],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "obs-traces",
+      "state": "active",
+      "directory": "skills/obs-traces",
+      "references": ["references/traceql.md", "references/otel-semantics.md"],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "obs-dashboards",
+      "state": "active",
+      "directory": "skills/obs-dashboards",
+      "references": ["references/provisioning.md", "references/wavefront-legacy.md"],
+      "assets": [],
+      "scripts": []
+    },
+    {
+      "name": "obs-alerting",
+      "state": "active",
+      "directory": "skills/obs-alerting",
+      "references": [
+        "references/grafana-alerting.md",
+        "references/burn-rate.md",
+        "references/moogsoft.md",
+        "references/thousandeyes.md"
+      ],
+      "assets": [],
+      "scripts": ["scripts/error_budget.py"]
+    },
+    {
+      "name": "obs-pipeline",
+      "state": "active",
+      "directory": "skills/obs-pipeline",
+      "references": ["references/alloy.md", "references/otel-sdk.md"],
+      "assets": [],
+      "scripts": []
+    }
   ],
   "skill_dependencies": {
     "ops-tooling": [

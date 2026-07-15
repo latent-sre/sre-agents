@@ -214,6 +214,102 @@ EXPECTED_PHASE2_ACTIVE = {
         "assets": [],
         "scripts": [],
     },
+    "service-onboarding": {
+        "name": "service-onboarding",
+        "state": "active",
+        "directory": "skills/service-onboarding",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
+    "agent-authoring": {
+        "name": "agent-authoring",
+        "state": "active",
+        "directory": "skills/agent-authoring",
+        "references": [
+            "references/artifact.md",
+            "references/roster.md",
+            "references/tools.md",
+            "references/context.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
+    "agent-security": {
+        "name": "agent-security",
+        "state": "active",
+        "directory": "skills/agent-security",
+        "references": [],
+        "assets": [],
+        "scripts": [],
+    },
+    "obs-logs": {
+        "name": "obs-logs",
+        "state": "active",
+        "directory": "skills/obs-logs",
+        "references": [
+            "references/spl.md",
+            "references/logql.md",
+            "references/indexes.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
+    "obs-metrics": {
+        "name": "obs-metrics",
+        "state": "active",
+        "directory": "skills/obs-metrics",
+        "references": [
+            "references/wql.md",
+            "references/promql.md",
+            "references/metrics.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
+    "obs-traces": {
+        "name": "obs-traces",
+        "state": "active",
+        "directory": "skills/obs-traces",
+        "references": [
+            "references/traceql.md",
+            "references/otel-semantics.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
+    "obs-dashboards": {
+        "name": "obs-dashboards",
+        "state": "active",
+        "directory": "skills/obs-dashboards",
+        "references": [
+            "references/provisioning.md",
+            "references/wavefront-legacy.md",
+        ],
+        "assets": [],
+        "scripts": [],
+    },
+    "obs-alerting": {
+        "name": "obs-alerting",
+        "state": "active",
+        "directory": "skills/obs-alerting",
+        "references": [
+            "references/grafana-alerting.md",
+            "references/burn-rate.md",
+            "references/moogsoft.md",
+            "references/thousandeyes.md",
+        ],
+        "assets": [],
+        "scripts": ["scripts/error_budget.py"],
+    },
+    "obs-pipeline": {
+        "name": "obs-pipeline",
+        "state": "active",
+        "directory": "skills/obs-pipeline",
+        "references": ["references/alloy.md", "references/otel-sdk.md"],
+        "assets": [],
+        "scripts": [],
+    },
 }
 
 EXPECTED_MODELS = {
@@ -224,6 +320,20 @@ EXPECTED_MODELS = {
     ],
     "claude": None,
 }
+EXPECTED_COMMANDS = [
+    {
+        "name": "adr",
+        "source": "commands/adr.md",
+        "description": (
+            "Scaffold a self-contained Nygard Architecture Decision Record under docs/adr. "
+            "Invoke manually with sde selected. Triggers: 'create an ADR', 'scaffold an "
+            "architecture decision record'."
+        ),
+        "argument_mode": "required",
+        "argument_usage": "<decision> [probe: <token>]",
+        "invocation_mode": "manual",
+    }
+]
 
 FLEET_KEYS = {
     "schema_version",
@@ -623,7 +733,9 @@ class Phase1CanonicalAuthoringTests(unittest.TestCase):
             "assembly_state must be content-building after the Phase-2 open",
         )
         self.assertAuthoringEqual(
-            [], self.fleet.get("commands"), "production commands must remain empty"
+            EXPECTED_COMMANDS,
+            self.fleet.get("commands"),
+            "canonical command inventory drifted",
         )
         self.assertAuthoringEqual(
             EXPECTED_MODELS, self.fleet.get("models"), "canonical model policy drifted"
@@ -639,6 +751,20 @@ class Phase1CanonicalAuthoringTests(unittest.TestCase):
             expected_records,
             self.fleet.get("skills"),
             "the exact 26-entry planned/active skill catalog drifted",
+        )
+        self.assertAuthoringEqual(
+            26,
+            sum(record.get("state") == "active" for record in self.fleet.get("skills", [])),
+            "Task-32 catalog must contain exactly 26 active skills",
+        )
+        self.assertAuthoringEqual(
+            [],
+            [
+                record.get("name")
+                for record in self.fleet.get("skills", [])
+                if record.get("state") == "planned"
+            ],
+            "Task-32 catalog must contain zero planned skills",
         )
 
     def test_exact_skill_dependency_rows_and_edges(self):
@@ -657,13 +783,17 @@ class Phase1CanonicalAuthoringTests(unittest.TestCase):
     def test_canonical_drafts_stay_out_of_default_discovery_paths(self):
         expected_generated = {
             Path("generated/copilot/agents"): {
+                "generated/copilot/agents/observer.agent.md",
                 "generated/copilot/agents/reviewer.agent.md",
                 "generated/copilot/agents/sde.agent.md",
+                "generated/copilot/agents/sre.agent.md",
                 "generated/copilot/agents/scribe.agent.md",
             },
             Path("generated/claude/agents"): {
+                "generated/claude/agents/observer.md",
                 "generated/claude/agents/reviewer.md",
                 "generated/claude/agents/sde.md",
+                "generated/claude/agents/sre.md",
                 "generated/claude/agents/scribe.md",
             },
         }
@@ -677,7 +807,7 @@ class Phase1CanonicalAuthoringTests(unittest.TestCase):
             self.assertAuthoringEqual(
                 expected,
                 files,
-                f"Task-23 generated wrapper inventory drifted under {relative}",
+                f"Task-32 generated wrapper inventory drifted under {relative}",
             )
 
         canonical_names = set(EXPECTED_AGENTS)

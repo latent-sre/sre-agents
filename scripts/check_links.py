@@ -168,14 +168,19 @@ def _check_skill_frontmatter(path: Path, text: str) -> tuple[str, list[str]]:
         _yaml_string(values["argument-hint"], f"{where}: argument-hint", failures)
     if "compatibility" in values:
         _yaml_string(values["compatibility"], f"{where}: compatibility", failures)
-    if "disable-model-invocation" in values:
-        raw = values["disable-model-invocation"]
-        if raw != "true":
-            failures.append(f"{where}: disable-model-invocation must be boolean true")
-        if expected_name not in MANUAL_ONLY:
+    raw_manual_only = values.get("disable-model-invocation")
+    if expected_name in MANUAL_ONLY:
+        if raw_manual_only != "true":
             failures.append(
-                f"{where}: only pcf-deploy and service-onboarding may disable model invocation"
+                f"{where}: manual-only skill must contain frontmatter "
+                "disable-model-invocation: true"
             )
+    elif raw_manual_only is not None:
+        if raw_manual_only != "true":
+            failures.append(f"{where}: disable-model-invocation must be boolean true")
+        failures.append(
+            f"{where}: only pcf-deploy and service-onboarding may disable model invocation"
+        )
     return body, failures
 
 

@@ -8,6 +8,11 @@ description: >-
 argument-hint: "[what the tool should do]"
 ---
 
+> **Evidence default — `[unverified]`.** Unless a paragraph carries a narrower label, each
+> stack/product-specific command, query, API or CLI behavior, version, licensing statement, and
+> runtime claim in this skill and its bundled files is `[unverified]` for the exact target.
+> A narrower `[sourced]` or `[verified]` label takes precedence; handoffs never upgrade it.
+
 Announce at start: "Running the ops-tooling pipeline: requirements → right-sized design → build → review → verify."
 
 → read [cli](./references/cli.md) when the tool is a CLI. Starter for CLIs: [cli_skeleton.py](./assets/cli_skeleton.py).
