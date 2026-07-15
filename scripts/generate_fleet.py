@@ -202,6 +202,7 @@ RUNTIME_INTERPOLATION = re.compile(
     r"\$(?:ARGUMENTS(?:\[[0-9]+\])?|[0-9]+|\{[^}\r\n]+\})"
 )
 OWNED_DIRECTORIES = (
+    Path(".plugin"),
     Path("generated/copilot/agents"),
     Path("generated/claude/agents"),
     Path("generated/copilot/commands"),
@@ -210,6 +211,7 @@ OWNED_DIRECTORIES = (
 )
 ROOT_OUTPUTS = (
     Path("plugin.json"),
+    Path(".plugin/plugin.json"),
     Path(".claude-plugin/plugin.json"),
     Path("hooks.json"),
     Path("hooks/hooks.json"),
@@ -334,15 +336,19 @@ def _walk_no_links(root: Path):
         safe_directories: list[str] = []
         for name in sorted(directory_names):
             candidate = current_path / name
-            yield candidate
             if _is_link_or_junction(candidate):
                 raise ManifestError(f"link or junction is not allowed: {candidate}")
+            if not candidate.is_dir():
+                raise ManifestError(f"unsupported filesystem entry: {candidate}")
+            yield candidate
             safe_directories.append(name)
         directory_names[:] = safe_directories
         for name in sorted(file_names):
             candidate = current_path / name
             if _is_link_or_junction(candidate):
                 raise ManifestError(f"link or junction is not allowed: {candidate}")
+            if not candidate.is_file():
+                raise ManifestError(f"unsupported filesystem entry: {candidate}")
             yield candidate
 
 
@@ -1256,8 +1262,10 @@ def render(root: Path, manifest: dict, ready: list[str] | None = None) -> dict[P
     ready = validated_ready
     models = _validate_models(manifest)
     by_name = {agent["name"]: agent for agent in manifest["agents"]}
+    copilot_manifest = _json_bytes(_plugin_manifest(manifest, ready, "copilot"))
     outputs: dict[Path, bytes] = {
-        Path("plugin.json"): _json_bytes(_plugin_manifest(manifest, ready, "copilot")),
+        Path("plugin.json"): copilot_manifest,
+        Path(".plugin/plugin.json"): copilot_manifest,
         Path(".claude-plugin/plugin.json"): _json_bytes(
             _plugin_manifest(manifest, ready, "claude")
         ),
@@ -1318,16 +1326,22 @@ def _preflight_outputs(root: Path) -> None:
                 raise ManifestError(f"generated output is a hardlink: {candidate}")
 
 
-def _actual_owned_files(root: Path) -> set[Path]:
-    actual: set[Path] = set()
+def _actual_owned_entries(root: Path) -> tuple[set[Path], set[Path]]:
+    files: set[Path] = set()
+    directories: set[Path] = set()
     for relative in OWNED_DIRECTORIES:
         tree = root / relative
         if not tree.exists() and not _is_link_or_junction(tree):
             continue
         for candidate in _walk_no_links(tree):
+            candidate_relative = candidate.relative_to(root)
             if candidate.is_file():
-                actual.add(candidate.relative_to(root))
-    return actual
+                files.add(candidate_relative)
+            elif candidate.is_dir():
+                directories.add(candidate_relative)
+            else:  # pragma: no cover - _walk_no_links rejects this first
+                raise ManifestError(f"unsupported filesystem entry: {candidate}")
+    return files, directories
 
 
 def check(root: Path, *, require_content_complete: bool = False) -> list[str]:
@@ -1349,7 +1363,17 @@ def check(root: Path, *, require_content_complete: bool = False) -> list[str]:
         for relative in expected
         if any(relative == owned or owned in relative.parents for owned in OWNED_DIRECTORIES)
     }
-    for relative in sorted(_actual_owned_files(root) - expected_owned, key=lambda path: path.as_posix()):
+    expected_owned_directories: set[Path] = set()
+    for relative in expected_owned:
+        for parent in relative.parents:
+            if parent in OWNED_DIRECTORIES:
+                break
+            expected_owned_directories.add(parent)
+    actual_owned_files, actual_owned_directories = _actual_owned_entries(root)
+    unexpected_owned = (actual_owned_files - expected_owned) | (
+        actual_owned_directories - expected_owned_directories
+    )
+    for relative in sorted(unexpected_owned, key=lambda path: path.as_posix()):
         failures.append(f"unexpected generated output: {relative.as_posix()}")
     return failures
 
@@ -1390,7 +1414,8 @@ def write(root: Path, *, require_content_complete: bool = False) -> None:
         for relative in expected
         if any(relative == owned or owned in relative.parents for owned in OWNED_DIRECTORIES)
     }
-    stale = _actual_owned_files(root) - expected_owned
+    actual_owned_files, _actual_owned_directories = _actual_owned_entries(root)
+    stale = actual_owned_files - expected_owned
     for relative in sorted(stale, key=lambda path: (len(path.parts), path.as_posix()), reverse=True):
         target = root / relative
         if _is_link_or_junction(target) or _is_hardlinked_file(target):

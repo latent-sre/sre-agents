@@ -266,4 +266,34 @@ The first managed-sandbox Gate A run reached 12/16 green; the four failures were
 
 ## Checkpoint 4 — immutable runtime smoke
 
-Pending static closure, independent reviews, and a committed candidate. No mutable worktree smoke is permitted.
+### Superseded candidate and native selector finding
+
+The first candidate was committed before any runtime registration:
+
+| Binding | Exact value |
+|---|---|
+| Source candidate SHA | `[verified]` `a8dcd1d8f70e6e533a3642fcc17614e711b4922a` |
+| Source/snapshot tree object | `[verified]` `8fec0082f52e373a307f22f7404908dc4cef714a` |
+| Immutable snapshot full-tree digest (320 files) | `[unverified transcript value]` `7f54c927643dd8357bdbe16b9e75d76ed539b3bdc5267489b43951e3525f0f12`; the failed row did not retain its digest-serialization helper, so this value receives no credit and is not reused. |
+| Runtime-tree digest (99 files) | `[unverified transcript value]` `e8e787d7f3c3af68809fe620cd8d5562bf6fea642f8d0d9dc90ab83fe50be7f5`; the failed row did not retain its exact file-selection/serialization helper, so this value receives no credit and is not reused. |
+
+`[verified]` The durable candidate commit still resolves to the recorded SHA/tree. `[unverified transcript observation]` The removed disposable diagnostic packet reported that native VS Code, enabled alone through `chat.pluginLocations`, selected `generated/claude/agents/reviewer.md` and watched `.claude-plugin/plugin.json`; because that packet was not retained and hash-bound, it is a hypothesis only. The independently reproducible installed-loader inspection below confirms the selection defect mechanically. The probe produced no accepted skill/delegation/execution tool evidence, so **the entire attempt receives 0% runtime credit**. No positive runtime-smoke claim is carried into the replacement candidate; only the negative selector defect is retained as a repair input.
+
+The reproducible part of the sanitized failure/cleanup audit uses the literal commands below. It intentionally omits authentication values and unrelated profile contents. Transcript-only rows are explicitly downgraded above instead of being presented as verified evidence:
+
+| Command/check | Exact sanitized outcome |
+|---|---|
+| `git rev-parse a8dcd1d8f70e6e533a3642fcc17614e711b4922a` and `git rev-parse 'a8dcd1d8f70e6e533a3642fcc17614e711b4922a^{tree}'` | `a8dcd1d8f70e6e533a3642fcc17614e711b4922a`; `8fec0082f52e373a307f22f7404908dc4cef714a` |
+| `$p='C:\Users\hawkins\AppData\Local\Programs\Microsoft VS Code\5264f2156c\resources\app\out\vs\workbench\workbench.desktop.main.js'; (Get-Item -LiteralPath $p).Length; (Get-FileHash -Algorithm SHA256 -LiteralPath $p).Hash.ToLower()` | `17809503`; `cd2ec82418998e6141a1f7cdfc957265e3bc52dd772998c8dc245229ab21b87b` |
+| `$p='C:\Users\hawkins\AppData\Local\Programs\Microsoft VS Code\5264f2156c\resources\app\out\vs\workbench\workbench.desktop.main.js'; $t=[IO.File]::ReadAllText($p); $needle='.plugin/plugin.json'; $offset=0; $found=@(); while(($i=$t.IndexOf($needle,$offset,[StringComparison]::Ordinal)) -ge 0){$found+=$i; $offset=$i+$needle.Length}; $found -join ','` | `4088646,11277382`; the 650-byte sanitized inspection window at offset `4088646` contains the selector function: `.plugin/plugin.json` first, else Claude on `.claude` path/marker, else root Copilot. |
+| `$snapshot='C:\Users\hawkins\.codex\visualizations\2026\07\15\019f641c-f61f-7540-95d7-f89259f943c5\task33-runtime-a8dcd1d8'; $control='C:\Users\hawkins\.codex\visualizations\2026\07\15\019f641c-f61f-7540-95d7-f89259f943c5\task33-smoke-a8dcd1d8'; Get-CimInstance Win32_Process \| Where-Object { $_.CommandLine -like "*$snapshot*" -or $_.CommandLine -like "*$control*" } \| Select-Object ProcessId,Name` | Zero rows after the failed client was stopped. |
+| `icacls $snapshot /grant:r 'GALACTICA\hawkins:(F)' /T /C`; `Remove-Item -LiteralPath $snapshot -Recurse -Force`; `Remove-Item -LiteralPath $control -Recurse -Force`; `Test-Path -LiteralPath $snapshot`; `Test-Path -LiteralPath $control` | ACL reset completed for the disposable snapshot; final outputs `False`; `False`. |
+| `$paths=@("$env:APPDATA\Code\User\settings.json","$HOME\.claude\settings.json","$HOME\.claude\settings.local.json","$HOME\.claude.json","$HOME\.claude\plugins\installed_plugins.json","$HOME\.claude\plugins\known_marketplaces.json"); $paths \| ForEach-Object { (Get-FileHash -Algorithm SHA256 -LiteralPath $_).Hash.ToLower() }` | Exact outputs, in order: `0d8ce40390ed05c8ca405e5e653507f1b77114a0bab32578b473bfa260658e4c`; `d8c967ee3bbaf08dba725a0b646155a6d46f541798c244fca5f35274fefc3f68`; `d1a2adadbf199974e3f7fafd35877c70b9de599a367773149c1b2550cd9748e8`; `dadfbcef1da46f73defdd4f64de37ddc106a60898ed30b12dd53bac7c1cccf32`; `df41d33d4f3da44229f39887d93c5348f5ef4881cd24c3710506b0a59fca786a`; `7c1959d128e241e871ef6ef92932b1c98d863b1166768a5a7d44ed79d41c3655`. |
+
+`[sourced]` The current VS Code plugin documentation both describes `.plugin/plugin.json` as an OpenPlugin marker and publishes a cross-tool lookup sequence that places `.plugin/plugin.json` ahead of root and Claude manifests. `[verified]` Inspection of the installed VS Code 1.128.1 loader showed its effective rule: choose `.plugin/plugin.json` first; otherwise choose Claude when `.claude-plugin/plugin.json` is present; otherwise choose root Copilot. This explained why the coexistence design made root `plugin.json` unreachable in that client. The narrowly amended contract generates `.plugin/plugin.json` as an exact-byte alias of root `plugin.json`, owns the complete `.plugin/` directory, and rejects missing, stale, linked, hardlinked, or unexpected selector content. The selector creates no new wrappers, skills, or semantic authoring source. `[unverified]` OpenPlugin hook/MCP lookup is intentionally not inferred; Phase 4 must re-probe it before relying on that machinery.
+
+`[verified]` No process command line references either disposable root, both roots are absent, and all six profile hashes match their pre-registration baselines. `[unverified historical transcript]` `git status --short` was reported empty at the superseded candidate before the replacement fix began; this historical worktree-state claim receives no runtime credit and is replaced by the new candidate's independently recorded clean-tree proof.
+
+### Replacement-candidate requirement
+
+Pending replacement static closure, independent reviews, and a new committed candidate. The new exact SHA must be exported to a fresh immutable snapshot and all three channels must restart from the beginning. No superseded evidence and no mutable-worktree smoke are permitted. Before native registration the evidence packet must record a sanitized environment with no `GRAFANA_*`, an unresolvable `uvx`, MCP access `none`, MCP autostart `never`, discovery/gallery/apps off, zero profile/workspace/CLI MCP registrations, and before/during/after Diagnostics plus process censuses with no MCP, hook, or `uvx` event/process. Failure of any containment assertion stops the channel before registration.

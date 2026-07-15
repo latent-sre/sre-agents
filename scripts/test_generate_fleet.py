@@ -923,6 +923,124 @@ class ProductionGeneratorContracts(unittest.TestCase):
             )
             self.assertEqual(expected, actual)
 
+    def test_copilot_selector_manifest_is_an_exact_copilot_alias(self) -> None:
+        manifest, ready = generate_fleet.load_and_validate(ROOT)
+        outputs = generate_fleet.render(ROOT, manifest, ready)
+
+        root_manifest = outputs[Path("plugin.json")]
+        selector_manifest = outputs[Path(".plugin/plugin.json")]
+        self.assertEqual(root_manifest, selector_manifest)
+        self.assertEqual(
+            {
+                "agents": "./generated/copilot/agents/",
+                "skills": "./skills/",
+                "commands": "./generated/copilot/commands/",
+            },
+            {
+                key: json.loads(selector_manifest)[key]
+                for key in ("agents", "skills", "commands")
+            },
+        )
+        self.assertNotIn("generated/claude", selector_manifest.decode("utf-8"))
+
+    def test_check_rejects_missing_copilot_selector_manifest(self) -> None:
+        fleet = FleetRoot(self)
+        generate_fleet.write(fleet.root)
+        selector = fleet.root / ".plugin" / "plugin.json"
+        self.assertTrue(selector.is_file())
+
+        selector.unlink()
+        self.assertIn(
+            "missing generated output: .plugin/plugin.json",
+            generate_fleet.check(fleet.root),
+        )
+
+    def test_check_rejects_stale_copilot_selector_manifest(self) -> None:
+        fleet = FleetRoot(self)
+        generate_fleet.write(fleet.root)
+        selector = fleet.root / ".plugin" / "plugin.json"
+        selector.parent.mkdir(parents=True, exist_ok=True)
+        selector.write_text("{}\n", encoding="utf-8", newline="\n")
+
+        self.assertIn(
+            "stale generated output: .plugin/plugin.json",
+            generate_fleet.check(fleet.root),
+        )
+
+    def test_copilot_selector_directory_rejects_and_cleans_rogue_files(self) -> None:
+        fleet = FleetRoot(self)
+        generate_fleet.write(fleet.root)
+        rogue = fleet.root / ".plugin" / "nested" / "rogue.agent.md"
+        rogue.parent.mkdir(parents=True, exist_ok=True)
+        rogue.write_text("rogue\n", encoding="utf-8", newline="\n")
+
+        self.assertIn(
+            "unexpected generated output: .plugin/nested/rogue.agent.md",
+            generate_fleet.check(fleet.root),
+        )
+        generate_fleet.write(fleet.root)
+        self.assertFalse(rogue.exists())
+        self.assertEqual([], generate_fleet.check(fleet.root))
+
+    def test_check_rejects_unexpected_empty_copilot_selector_directory(self) -> None:
+        fleet = FleetRoot(self)
+        generate_fleet.write(fleet.root)
+        unexpected = fleet.root / ".plugin" / "nested"
+        unexpected.mkdir()
+
+        self.assertIn(
+            "unexpected generated output: .plugin/nested",
+            generate_fleet.check(fleet.root),
+        )
+        generate_fleet.write(fleet.root)
+        self.assertFalse(unexpected.exists())
+        self.assertTrue((fleet.root / ".plugin").is_dir())
+        self.assertEqual([], generate_fleet.check(fleet.root))
+
+    def test_check_preserves_directories_implied_by_generated_files(self) -> None:
+        fleet = FleetRoot(self)
+        content = b"generated\n"
+        generated = fleet.root / ".plugin" / "nested" / "plugin.json"
+        generated.parent.mkdir(parents=True)
+        generated.write_bytes(content)
+
+        with mock.patch.object(
+            generate_fleet,
+            "render",
+            return_value={Path(".plugin/nested/plugin.json"): content},
+        ):
+            self.assertEqual([], generate_fleet.check(fleet.root))
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "filesystem FIFOs unavailable")
+    def test_check_rejects_special_copilot_selector_entry(self) -> None:
+        fleet = FleetRoot(self)
+        generate_fleet.write(fleet.root)
+        special = fleet.root / ".plugin" / "unexpected.pipe"
+        try:
+            os.mkfifo(special)
+        except OSError as exc:
+            self.skipTest(f"filesystem FIFO creation unavailable: {exc}")
+
+        with self.assertRaisesRegex(
+            generate_fleet.ManifestError, "unsupported filesystem entry"
+        ):
+            generate_fleet.check(fleet.root)
+
+    @unittest.skipUnless(hasattr(os, "link"), "hardlinks unavailable")
+    def test_write_refuses_hardlinked_copilot_selector_manifest(self) -> None:
+        fleet = FleetRoot(self)
+        selector = fleet.root / ".plugin" / "plugin.json"
+        selector.parent.mkdir(parents=True)
+        source = fleet.root / "selector-hardlink-source.json"
+        source.write_text("unsafe\n", encoding="utf-8", newline="\n")
+        try:
+            os.link(source, selector)
+        except OSError as exc:
+            self.skipTest(f"hardlink creation unavailable: {exc}")
+
+        with self.assertRaisesRegex(generate_fleet.ManifestError, "hardlink"):
+            generate_fleet.write(fleet.root)
+
     def test_catalog_is_exact_and_planned_active_shapes_do_not_cross(self) -> None:
         mutations = []
         fleet = FleetRoot(self)
