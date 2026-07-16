@@ -15,7 +15,7 @@ the fleet source; shipped runtime context belongs in canonical agents and skills
 
 ## Required workflow
 
-Follow the redesign spec's [Section 0 run protocol](docs/superpowers/specs/2026-07-13-copilot-fleet-redesign-design.md#section-0--run-protocol-how-every-session-on-this-spec-opens-and-closes).
+Follow the [work and verification protocol](CONTRIBUTING.md#work-and-verification-protocol).
 Write a failing focused check before changing an artifact. For fleet runtime content, edit
 `canonical/fleet.json`, `canonical/agents/`, or `skills/`, then regenerate projections through the
 repository generator; edit repository machinery and documentation in their owning source paths.
