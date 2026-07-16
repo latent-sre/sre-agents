@@ -1,7 +1,7 @@
 # Fleet evals
 
-Behavioral evals for the agents + skills — the layer above `scripts/validate_fleet.py`
-(which only checks structure/spec). These check that the fleet *behaves*: that a request routes
+Behavioral evals for the agents + skills — the layer above the structural gate
+(`scripts/gate_a.py`, which only checks structure/spec). These check that the fleet *behaves*: that a request routes
 to the right place, a gate blocks what it should, and an agent treats untrusted content as data.
 
 Built on Anthropic's eval shape (["Demystifying evals for AI agents"](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)):

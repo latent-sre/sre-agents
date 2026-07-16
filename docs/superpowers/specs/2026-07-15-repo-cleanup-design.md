@@ -21,10 +21,15 @@ green after every commit.
 - `canonical/` — fleet.json, 5 agent bodies, adr command (source of truth).
 - `generated/` — Claude and Copilot projections (regenerated, never hand-edited).
 - `skills/` — all 26 skill trees.
-- `scripts/` durable machinery: `generate_fleet.py`, `validate_fleet.py`, `gate_a.py`,
-  `check_links.py`, `check_stale_names.py`, `readonly-guard.py`, `readonly-guard-hook.sh`, and the
-  tests for each (`test_generate_fleet.py`, `test_validate_fleet.py`, `test_check_links.py`,
-  `test_readonly_guard.py`).
+- `scripts/` durable machinery: `generate_fleet.py`, `gate_a.py`, `check_links.py`,
+  `check_stale_names.py`, `readonly-guard.py`, `readonly-guard-hook.sh`, and the tests for each
+  (`test_generate_fleet.py`, `test_check_links.py`, `test_readonly_guard.py`).
+  **Correction (2026-07-15, owner-approved):** `validate_fleet.py` + `test_validate_fleet.py` moved
+  to cut 1. Verified: its tests can only fixture against `legacy/claude-fleet/`, and the validator
+  rejects the shipped fleet on the retired charter (PCF/no-K8s vs. the fleet's deliberate Prometheus
+  content) and a roster check expecting retired units. The shipped fleet's structural guardrails are
+  `generate_fleet.py --check`/`--require-content-complete`, its contract tests, `check_links.py`,
+  and `check_stale_names.py`.
 - `evals/` harness (`run_evals.py`, `graders.py`, `clean_room.py`, `discovery_probe.py`, their tests,
   README) and `evals/scenarios/` (25 scenarios; they target skills that still exist).
 - `.github/workflows/validate.yml`, `.claude/settings.json`, root instruction files

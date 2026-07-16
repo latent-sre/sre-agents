@@ -25,6 +25,7 @@
 - `test_generate_fleet.py` transitional members: `TASK33_EVIDENCE_PATH` (line 38), `PINNED_LEDGER_KEYS` (84), `PINNED_SCHEDULED_LEDGER_TASKS` (179), `_assert_pinned_ledger` (309), tests `test_disposition_ledger_rows_and_projection_counts_are_closed` (642), `test_ledger_rejects_coordinated_identity_substitution` (701), `test_task32_obs_pipeline_preserves_the_planned_disposition` (712, reads `legacy/`). Durable constants `PINNED_SKILLS`, `PINNED_SKILL_DEPENDENCIES`, `TASK32_DEPENDENCIES` are used by fixtures and surviving tests — keep. `[verified]`
 - `ralph-loop.sh` is a hand-run example scaffold for the retired `self-improve-loop` skill; referenced only by legacy/, docs being deleted, the ledger pins being deleted, and the stale ralph scenario. `[verified]`
 - `check_stale_names.py` scans only `skills/`, `canonical/agents`, `canonical/commands`, `canonical/fleet.json` — unaffected by these deletions. `[verified]`
+- **Execution finding (owner-approved fork):** `test_validate_fleet.py` fixtures against `legacy/claude-fleet/` (its `_copy` helper returns that path), and `validate_fleet.py` run against a synthetic shipped-fleet root fails on retired-charter scope rules ("repo is PCF / no-K8s" vs. shipped Prometheus content) and roster checks expecting `route-request`/root docs. `[verified]` Both files deleted in cut 1; the "Validator's own tests" gate step removed with them.
 
 ---
 
