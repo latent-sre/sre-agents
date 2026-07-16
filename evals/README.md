@@ -34,6 +34,11 @@ right skill on its own. `discovery_probe.py` fills that gap: each scenario in `d
 is a realistic prompt that **never names the skill**, and the probe reads which `Skill(...)` the
 model actually invoked from the `stream-json` trace.
 
+> **Status (2026-07-15):** the discovery scenario set targeted the retired legacy fleet and was
+> removed in the repo cleanup (recoverable at tag `pre-cleanup-2026-07-15`). The probe machinery
+> ships ready, and `--validate` deliberately fails on an empty `discovery/` — re-author scenarios
+> against the shipped fleet (`skills/`, `generated/claude/agents/`) before running it.
+
 ```bash
 python evals/discovery_probe.py --validate    # CI-safe: parse + targets exist, no model
 python evals/discovery_probe.py --list
@@ -80,9 +85,9 @@ write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
 > routing fault. The 2026-06 baseline was **4/12** *[unverified: manual run; no committed artifact]*: `security-reviewer` and `sre-engineer` routed
 > 2/2 (investigative/review work naturally spins up a subagent), while `runbook-author` (and the
 > since-removed `database-reliability` / `release-engineer` agents) were handled inline (`saw: none`) and `sde-engineer`
-> delegated to the built-in `Explore` agent. The authoritative test of *routing correctness* is the
-> `route-request` skill's decision (see `run_evals.py`'s `route-request-*` scenario), not headless
-> delegation. These scenarios are kept as a working capability + a documented baseline, not a gate.
+> delegated to the built-in `Explore` agent. That baseline (and the `route-request` scenarios it
+> cites) belongs to the retired legacy fleet; it is kept here as historical context for whoever
+> re-authors the discovery set, not as a gate.
 
 ## The clean room (and why a baseline states its namespace)
 

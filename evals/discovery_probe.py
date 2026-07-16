@@ -22,8 +22,8 @@ before any scenario is scored — a credential-less run otherwise emits a valid,
 stream-json trace that would read as a devastating (but fake) finding about the fleet.
 
 Scenario files: evals/discovery/*.yaml — each targets exactly one of:
-  expected:        a SKILL that should be invoked (folder in .claude/skills/), or
-  expected_agent:  an AGENT the request should delegate to (file in .claude/agents/)
+  expected:        a SKILL that should be invoked (folder in skills/), or
+  expected_agent:  an AGENT the request should delegate to (file in generated/claude/agents/)
   id:              short id
   also_acceptable: optional list of other targets of the SAME kind that also count as correct
   prompt:          a realistic, AMBIGUOUS prompt that does NOT name the target
@@ -57,8 +57,8 @@ import clean_room
 
 ROOT = Path(__file__).resolve().parent.parent
 DISCOVERY_DIR = Path(__file__).resolve().parent / "discovery"
-SKILLS_DIR = ROOT / ".claude/skills"
-AGENTS_DIR = ROOT / ".claude/agents"
+SKILLS_DIR = ROOT / "skills"
+AGENTS_DIR = ROOT / "generated/claude/agents"
 _SKILL_RE = re.compile(r'"skill"\s*:\s*"([a-z0-9-]+)"')
 _AGENT_RE = re.compile(r'"subagent_type"\s*:\s*"([^"]+)"')  # accept capitals (built-in Explore/Plan)
 

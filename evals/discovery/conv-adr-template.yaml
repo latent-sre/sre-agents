@@ -1,6 +1,0 @@
-id: discover-conv-adr-template
-expected: adr-template
-prompt: |
-  We just committed to moving off Bamboo onto GitHub Actions. I want the reasoning written down so
-  the next person doesn't reopen the argument in six months. What's the right way to capture that?
-note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). 2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: adr-template. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."

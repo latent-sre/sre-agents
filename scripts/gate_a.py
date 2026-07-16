@@ -52,6 +52,8 @@ STEPS = [
      ["evals/test_discovery_probe.py"], None),
     ("Clean-room rig",
      ["evals/test_clean_room.py"], None),
+    ("Eval suite parses (shipped fleet)",
+     ["evals/run_evals.py", "--validate"], None),
 ]
 
 
