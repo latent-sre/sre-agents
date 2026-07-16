@@ -95,21 +95,18 @@ Porting the deleted discovery evals to the new roster is explicitly out of scope
 
 ### Cut 4 — manifest dedupe
 
-Keep exactly the manifests a tool reads, verified against the spike's sourced contract findings before
-cut 1 deletes them (the plan records the citations):
+**Corrected by verification (2026-07-15):** the Task-33 evidence records a `[verified]` inspection of
+the installed VS Code 1.128.1 loader: its selection rule is `.plugin/plugin.json` first, else Claude on
+`.claude-plugin/plugin.json`, else root Copilot `plugin.json`. All three plugin manifests are therefore
+load-bearing generator projections — `.plugin/plugin.json` is the exact-byte Copilot alias the native
+selector requires (without it, root `plugin.json` is unreachable in that client) and seven generator
+tests defend it. The original assumption that `.plugin/` was unread is withdrawn.
 
-- `.claude-plugin/plugin.json` — Claude Code plugin manifest (documented standard path).
-- Root `plugin.json` — VS Code Copilot agent-plugin manifest.
-- `.claude-plugin/marketplace.json` — marketplace listing.
-- At most one hooks file. The spike recorded a live `plugin_errors` entry: *"Duplicate hooks file
-  detected: ./hooks/hooks.json … standard hooks/hooks.json is loaded automatically."* Keep
-  `hooks/hooks.json` (the auto-loaded standard path) and delete root `hooks.json`. Both are currently
-  empty (`{"hooks": {}}`); if the contract check confirms an empty hooks file is not required for
-  plugin load, delete both.
-- Delete `.plugin/` — matches no documented read path for either tool.
-
-If verification contradicts any of these expectations, the manifest in question stays and the spec's
-assumption is corrected in the plan's evidence note.
+What this cut actually removes: root `hooks.json` (empty `{"hooks": {}}`), the duplicate of the
+auto-loaded standard `hooks/hooks.json` — the spike recorded the live `plugin_errors` mode *"Duplicate
+hooks file detected."* `hooks/hooks.json` stays because OpenPlugin hook lookup was explicitly left
+`[unverified]` by the evidence packet, so the standard wiring point is preserved. The generator's
+`ROOT_OUTPUTS` and render map drop the root file so `--check` stays convergent.
 
 ## Execution and verification
 

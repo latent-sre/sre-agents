@@ -213,7 +213,6 @@ ROOT_OUTPUTS = (
     Path("plugin.json"),
     Path(".plugin/plugin.json"),
     Path(".claude-plugin/plugin.json"),
-    Path("hooks.json"),
     Path("hooks/hooks.json"),
 )
 DEFAULT_DISCOVERY_TREES = (
@@ -1269,7 +1268,6 @@ def render(root: Path, manifest: dict, ready: list[str] | None = None) -> dict[P
         Path(".claude-plugin/plugin.json"): _json_bytes(
             _plugin_manifest(manifest, ready, "claude")
         ),
-        Path("hooks.json"): _json_bytes({"hooks": {}}),
         Path("hooks/hooks.json"): _json_bytes({"hooks": {}}),
     }
     for name in ready:
