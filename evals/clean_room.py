@@ -4,7 +4,7 @@
 Both harnesses shell out to `claude -p ...`. With no explicit `env`, that inherits the operator's
 entire Claude Code install: ~/.claude/skills, ~/.claude/agents, installed plugins (which may ship
 those same skills AGAIN), and the operator's global CLAUDE.md. Those do not shadow the fleet by name
--- they COMPETE with it for skill discovery, which is the one thing discovery_probe.py exists to
+-- they COMPETE with it for skill discovery, which is the one thing a discovery probe exists to
 measure. Every number it ever produced described the LAPTOP, not the fleet, and every recorded
 baseline says so ("treat as a LOWER BOUND").
 

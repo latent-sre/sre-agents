@@ -11,7 +11,6 @@ the fleet source; shipped runtime context belongs in canonical agents and skills
 - `generated/` and the runtime manifests are deterministic projections; never edit them directly.
 - `scripts/` owns generation, validation, and structural gates.
 - `evals/` owns behavioral scenarios and graders.
-- `docs/` owns design decisions, implementation plans, research, and recorded evidence.
 
 ## Required workflow
 

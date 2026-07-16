@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "grafana": {
-      "command": "uvx",
-      "args": ["mcp-grafana@0.17.2", "--disable-write"]
-    }
-  }
-}

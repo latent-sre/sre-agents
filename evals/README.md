@@ -26,68 +26,15 @@ python evals/run_evals.py --run          # invoke the fleet and grade (needs a C
 a fresh session so leftover authoring context can't mask gaps (per the skills best-practice). Swap
 `run_agent()` in `run_evals.py` for the Agent SDK if you'd rather drive it programmatically.
 
-## Discovery probe (`discovery_probe.py`) — routing *without* a target hint
+## Discovery (routing *without* a target hint) — retired, re-author against the shipped fleet
 
-`run_evals.py` prepends `"(Use the <target> skill/agent.)"` to every prompt, so it grades
-the **outcome given the right skill** — it can't tell you whether the model *discovers* the
-right skill on its own. `discovery_probe.py` fills that gap: each scenario in `discovery/*.yaml`
-is a realistic prompt that **never names the skill**, and the probe reads which `Skill(...)` the
-model actually invoked from the `stream-json` trace.
-
-> **Status (2026-07-15):** the discovery scenario set targeted the retired legacy fleet and was
-> removed in the repo cleanup (recoverable at tag `pre-cleanup-2026-07-15`). The probe machinery
-> ships ready, and `--validate` deliberately fails on an empty `discovery/` — re-author scenarios
-> against the shipped fleet (`skills/`, `generated/claude/agents/`) before running it.
-
-```bash
-python evals/discovery_probe.py --validate    # CI-safe: parse + targets exist, no model
-python evals/discovery_probe.py --list
-python evals/discovery_probe.py --run --match obs     # measure discovery for a subset (needs a live model)
-python evals/discovery_probe.py --ab  --match method  # A=listed vs B=name-only, over the 4 method-skills
-```
-
-`--ab` answers "does demoting these skills to `skillOverrides: name-only` cost discovery?"
-(`B == A` ⇒ name-only is safe; `B << A` ⇒ it hurts) — it forces `name-only` on the expected
-skills of the selected scenarios, so scope it with `--match`. This is the harness behind the
-2026-06 Tier-1 decision: with `--match method` (the four `domain=method` skills) at
-`skillListingBudgetFraction: 0.04` discovery was **6/12 → 6/12** *[unverified: manual run; no committed artifact]* between conditions — no discovery loss, and no measurable gain — so the
-"demote the meta-skills" idea was declined. Like `--run` in `run_evals.py`, the model-driven
-modes are **not** a CI gate; only `--validate` is.
-
-**Read `--run` by MISROUTE, not raw hit-rate.** Each trial is classified `hit` / `MISROUTE`
-(a *wrong* target was invoked) / `no-route` (nothing invoked — the model answered inline). `--run`
-exits non-zero **only when total misroutes exceed `--max-misroute` (default 0)**, because those are the
-real routing failures; a `no-route` on a general-knowledge prompt is usually fine, not a fault. `--run`
-is **advisory, not a CI gate** —
-model output is stochastic, so a single flaky misroute shouldn't hard-fail a pipeline; raise
-`--max-misroute` (or just read the report) when measuring rather than gating. Only `--validate` is CI-safe. This is why the weak general-knowledge probes don't need their prompts retargeted to force
-discovery — the classification already separates "answered inline" from "routed to the wrong place."
-
-> Caveat: discovery ≠ necessity. A skill scoring 0 may simply mean the model answered well
-> *without* loading it. Read these as relative/A-B and misroute signals, not absolute hit-rate.
-
-### Agent-routing scenarios (`expected_agent`)
-
-A scenario can target an **agent** instead of a skill (`expected_agent: sre-engineer`); the probe
-then reads `Task`/`Agent` `subagent_type` delegations from the trace. These spawn a *real* subagent
-that does real work, so they're minutes-slow — scope with `--match agent`, raise `--timeout`, and run
-in a throwaway git worktree (writing agents like `sde-engineer` are isolated there).
-
-```bash
-python evals/discovery_probe.py --run --agents --match agent --trials 2 --timeout 540
-```
-
-Agent scenarios are **opt-in** (`--agents`) and excluded from default runs, because they spawn
-write-capable subagents in the CWD — a bare `--run` stays skill-only and safe.
-
-> **Important limitation — measures delegation propensity, not routing quality.** Headless `claude -p`
-> often answers a request *inline* instead of delegating, so a low agent score is **not** a fleet
-> routing fault. The 2026-06 baseline was **4/12** *[unverified: manual run; no committed artifact]*: `security-reviewer` and `sre-engineer` routed
-> 2/2 (investigative/review work naturally spins up a subagent), while `runbook-author` (and the
-> since-removed `database-reliability` / `release-engineer` agents) were handled inline (`saw: none`) and `sde-engineer`
-> delegated to the built-in `Explore` agent. That baseline (and the `route-request` scenarios it
-> cites) belongs to the retired legacy fleet; it is kept here as historical context for whoever
-> re-authors the discovery set, not as a gate.
+`run_evals.py` prepends `"(Use the <target> skill/agent.)"` to every prompt, so it grades the
+**outcome given the right skill** — it cannot tell you whether the model *discovers* the right
+skill on its own. A discovery probe (`discovery_probe.py` + `discovery/*.yaml`) used to fill that
+gap, but the whole set was authored against the retired legacy fleet and was removed in the
+2026-07 cleanup — recoverable at tag `pre-cleanup-2026-07-15`, along with its measured baselines.
+Re-author both the probe and its scenarios against the shipped layout (`skills/`,
+`generated/claude/agents/`) when discovery measurement is needed again.
 
 ## The clean room (and why a baseline states its namespace)
 
@@ -97,9 +44,9 @@ Every trial runs with `CLAUDE_CONFIG_DIR` pointed at a temp dir holding only you
 installed plugins, not your global `CLAUDE.md`.
 
 This is not tidiness. Those things do not shadow the fleet by name; they **compete with it for
-discovery**, which is the one thing `discovery_probe.py` measures. Before the clean room, every
-number it produced was a property of the machine it ran on — and every baseline note said so
-("treat as a LOWER BOUND").
+discovery** — the property a discovery probe exists to measure. Before the clean room, every
+number the retired probe produced was a property of the machine it ran on — and every baseline
+note said so ("treat as a LOWER BOUND").
 
 **A baseline note must state the namespace it was taken in.** A number without one is not a
 baseline. Notes marked `namespace: CONTAMINATED` predate the clean room and are not comparable to
@@ -136,8 +83,7 @@ and plugin keys — operator-machine state inside the "clean" namespace. `clean_
 *not* match — used for "must not propose to act" checks). Each scores the response text and returns
 `(passed, detail)`. Add new ones to the `REGISTRY`. The graders and the stream-json parser are
 unit-tested offline (run them in CI or locally): `python evals/test_graders.py` (includes adversarial
-should-fail verdicts — e.g. a `BLOCKED … does not pass` that must not score as PASS) and
-`python evals/test_discovery_probe.py`.
+should-fail verdicts — e.g. a `BLOCKED … does not pass` that must not score as PASS).
 
 > The bundled graders are keyword/structural proxies — fast, deterministic, and good at catching
 > "it routed to the wrong agent" or "it complied with an injection." They do **not** judge prose

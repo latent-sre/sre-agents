@@ -83,4 +83,4 @@ disposable-harness requirements are satisfied.
 
 Start with [AGENTS.md](AGENTS.md) for the repository workflow and [CONTRIBUTING.md](CONTRIBUTING.md) for
 authoring and review policy. The redesign's decision record is preserved in git history (tag
-`pre-cleanup-2026-07-15`); current working docs live in [docs/superpowers/](docs/superpowers/).
+`pre-cleanup-2026-07-15`).
