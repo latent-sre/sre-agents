@@ -1,5 +1,0 @@
-id: route-agent-prompt-engineer
-expected_agent: prompt-engineer
-prompt: |
-  Our splunk-triage skill never gets picked up when teammates ask about searching logs
-  during an incident — figure out why it isn't triggering and tune it so it does.

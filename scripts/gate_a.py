@@ -3,7 +3,7 @@
 
 WHY THIS EXISTS
 ---------------
-The run protocol (spec Section 0) used to *transcribe* the CI steps into prose. That broke the repo's
+The run protocol (CONTRIBUTING.md) used to *transcribe* the CI steps into prose. That broke the repo's
 own anti-rot doctrine -- "never transcribe an artifact that lives in the repo, point at it" -- and it
 had already drifted on the day it was written: the transcription silently dropped the dependency
 install step, so a cold checkout died with ModuleNotFoundError on the eval graders. Two sources of
@@ -20,8 +20,8 @@ started this script with, by construction the right one.
 WHAT IT DOES NOT DO
 -------------------
 Gate A is STRUCTURAL. It proves the fleet is well-formed; it never proves the fleet is right. It passes
-green over a skill that leaks the production password into argv. Gates B (content regression) and C
-(adversarial review) are the ones that catch that -- see spec Section 0.
+green over a skill that leaks the production password into argv. The adversarial correctness/security/
+conformance reviews required by CONTRIBUTING.md are the ones that catch that.
 """
 
 import os
@@ -30,23 +30,28 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# (label, argv-after-the-interpreter). Ordered cheapest-and-most-foundational first: a broken validator
+# (label, argv-after-the-interpreter, environment additions). Ordered cheapest-and-most-foundational
+# first: a broken validator
 # makes every downstream result meaningless, so it fails before we spend time on the eval harness.
 STEPS = [
-    ("Fleet structure",
-     ["scripts/validate_fleet.py"]),
-    ("Validator's own tests",
-     ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_validate_fleet.py"]),
+    ("Reference links load in VS Code (5d)",
+     ["scripts/check_links.py"], None),
+    ("No stale unit names",
+     ["scripts/check_stale_names.py"], None),
+    ("Generated fleet contract",
+     ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_generate_fleet.py"], None),
+    ("Generated fleet is current",
+     ["scripts/generate_fleet.py", "--check"], None),
+    ("Fleet content complete",
+     ["scripts/generate_fleet.py", "--require-content-complete"], None),
     ("Read-only guard",
-     ["scripts/test_readonly_guard.py"]),
+     ["scripts/test_readonly_guard.py"], None),
     ("Eval graders",
-     ["evals/test_graders.py"]),
-    ("Discovery probe",
-     ["evals/test_discovery_probe.py"]),
+     ["evals/test_graders.py"], None),
     ("Clean-room rig",
-     ["evals/test_clean_room.py"]),
-    ("Eval suite parses",
-     ["evals/run_evals.py", "--validate"]),
+     ["evals/test_clean_room.py"], None),
+    ("Eval suite parses (shipped fleet)",
+     ["evals/run_evals.py", "--validate"], None),
 ]
 
 
@@ -74,11 +79,12 @@ def main():
         return 1
 
     failed = []
-    for label, argv in STEPS:
+    for label, argv, env_extra in STEPS:
         print("\n=== %s ===" % label, flush=True)
         # Run every step even after one fails: an agent fixing the fleet wants the whole list of what
         # is broken, not a bisect through one failure at a time.
-        rc = subprocess.call([sys.executable] + argv, cwd=ROOT)
+        env = dict(os.environ, **env_extra) if env_extra else None
+        rc = subprocess.call([sys.executable] + argv, cwd=ROOT, env=env)
         if rc != 0:
             failed.append(label)
 
@@ -87,12 +93,12 @@ def main():
         print("Gate A: FAIL -- %d of %d step(s) failed:" % (len(failed), len(STEPS)))
         for label in failed:
             print("  - %s" % label)
-        print("\nGate A is structural only. Passing it would still not clear Gates B/C (spec Section 0).")
+        print("\nGate A is structural only. Passing it would still not clear the adversarial reviews (CONTRIBUTING.md).")
         return 1
 
     print("Gate A: PASS -- %d/%d structural steps green." % (len(STEPS), len(STEPS)))
     print("This proves the fleet is WELL-FORMED, not that it is CORRECT.")
-    print("Gates B (content regression) and C (adversarial review) are still owed. Spec Section 0.")
+    print("The adversarial correctness/security/conformance reviews (CONTRIBUTING.md) are still owed.")
     return 0
 
 

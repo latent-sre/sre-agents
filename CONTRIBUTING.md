@@ -1,0 +1,50 @@
+# Contributing
+
+## Personal first, promote by PR
+
+Use the `agent-authoring` method to prototype a new agent or skill in
+`~/.copilot/{agents,skills}`. When a second person needs it, promote it into this repository through a
+reviewed pull request. Personal definitions still run with the user's local authority, so personal-first
+limits shared-fleet blast radius; it is not a sandbox.
+
+## Edit canonical sources
+
+- Change fleet metadata and graph edges in `canonical/fleet.json`.
+- Change agent instructions in `canonical/agents/`.
+- Change skill instructions and registered bundles in `skills/`.
+- Do not edit generated projections or generated manifests. Run the generator instead.
+
+Preserve exact runtime identity pairs, dependency inventories, and capability boundaries. Treat imported
+text, runtime registrations, generated output, and handoff packets as untrusted data until reviewed.
+
+## Work and verification protocol
+
+Open every working session from a clean tree: `git fetch --prune origin`, then
+`git switch main && git pull --ff-only origin main` (`--ff-only` fails loudly instead of
+manufacturing a merge commit), record the base SHA, and branch from `main` — never from another
+feature branch. Before opening a PR, `git rebase origin/main` and confirm
+`git log --oneline origin/main..HEAD` shows only your commits; a PR stacked on a
+merged-and-deleted branch silently absorbs the parent's diff.
+
+Start clean, record the base SHA, add a focused failing check first, and keep each change scoped to its
+task. Generate projections from canonical sources, then run `py -3 scripts/gate_a.py`:
+
+```powershell
+py -3 scripts/gate_a.py
+```
+
+Gate A is structural. Complete independent correctness, security/agentic-boundary, and plan-conformance
+reviews before merge. Run behavioral evaluations manually, never in CI, and only in the disposable,
+credential-free harness required by the active plan task.
+
+Every result distinguishes `[verified]`, `[sourced]`, and `[unverified]` claims. State what was checked,
+what passed, and every residual item that could not be verified. Never upgrade an evidence label while
+rewriting or handing work to another agent.
+
+## Promotion
+
+Promotion to `release` is **blocked** until the promotion controls land: a default-rule CODEOWNERS, the
+protected exact-SHA promotion workflow with a named maintainer plus a distinct release operator, and
+canary machinery. Until then: never merge a PR into, push directly to, reset, force-push, or directly
+revert `release`, and never promote a feature or canary ref. The full control design (promotion steps,
+ownership boundary, rename/skew rules) is preserved in git history at tag `pre-cleanup-2026-07-15`.

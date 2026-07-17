@@ -1,7 +1,0 @@
-id: discover-method-agent-authoring-artifact
-expected: agent-authoring
-prompt: |
-  I wrote a SKILL.md for our deploy checklist but it fires on almost every request,
-  even unrelated ones. How should I rewrite its description so it only triggers when
-  someone is actually deploying?
-note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). Baseline 2026-07-09 (as prompt-craft / agent-architecture): 3/3 hit, 0 misroute. Merged into agent-authoring 2026-07-11 — the two probes now verify the SINGLE merged description still triggers from BOTH altitudes; re-baseline with --run --match method --trials 3."

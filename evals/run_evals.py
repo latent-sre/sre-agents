@@ -44,7 +44,7 @@ try:
 except ModuleNotFoundError:
     sys.exit("evals: PyYAML required — `python -m pip install pyyaml`")
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(os.environ.get("FLEET_ROOT") or Path(__file__).resolve().parent.parent).resolve()
 SCENARIOS_DIR = Path(__file__).resolve().parent / "scenarios"
 REQUIRED = ("id", "target", "prompt", "graders")
 
@@ -64,10 +64,8 @@ def load_scenarios() -> list[dict]:
 
 
 def target_exists(target: str) -> bool:
-    # Both layouts, for the same reason validate_fleet.py resolves rather than hardcodes: the Copilot
-    # migration moves skills/agents out of .claude/ (to the plugin root, and the old fleet to
-    # legacy/claude-fleet/), which would otherwise make every scenario target un-resolvable mid-port.
-    for skills, agents in (("skills", "agents"), (".claude/skills", ".claude/agents")):
+    # Shipped plugin layout: skills at the plugin root, agents as the generated Claude projections.
+    for skills, agents in (("skills", "generated/claude/agents"),):
         if (ROOT / skills / target / "SKILL.md").is_file() or (ROOT / agents / f"{target}.md").is_file():
             return True
     return False

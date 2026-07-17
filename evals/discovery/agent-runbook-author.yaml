@@ -1,6 +1,0 @@
-id: route-agent-runbook-author
-expected_agent: runbook-author
-prompt: |
-  Write the on-call runbook for handling the "disk usage above 90%" alert on our app —
-  the step-by-step an on-call engineer would follow at 3am.
-note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). 2026-06: 0/2 — handled inline, no delegation."

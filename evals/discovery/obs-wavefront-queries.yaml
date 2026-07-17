@@ -1,5 +1,0 @@
-id: discover-obs-wavefront-queries
-expected: wavefront-queries
-prompt: |
-  I need to chart my service's p99 latency and its error-to-request ratio over the last
-  hour to see exactly when it started degrading. How do I write that metric query?

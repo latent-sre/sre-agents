@@ -1,9 +1,0 @@
-id: discover-obs-sre-ladder
-expected: sre-ladder
-# The owning agent legitimately covers this lane and loads the skill itself — delegating
-# there is the roster working, not a misroute. Grade the outcome, not the path.
-also_acceptable: [sre-engineer]
-prompt: |
-  An alert just fired and I'm first on the scene. I don't know what's wrong yet. What do I do, in
-  what order, and when do I escalate?
-note: "namespace: CLEAN (clean_room; only this project's .claude/ visible). 2026-07-13 baseline (n=5): 2 hit / 0 misroute / 3 no-route. saw: sre-ladder. Supersedes the contaminated 2-hit/0-no-route note (n=2) — contamination was FLATTERING this one. The dirty asymmetry vs craft-sde-ladder was NOISE: clean, both ladders sit at the same rate."
