@@ -24,3 +24,13 @@ Copilot-native `.github/` files only for hard tool scoping.
 `anthropics/anthropic-cookbook` (agent/skill/eval patterns) · `ComposioHQ/awesome-claude-skills`
 (community skills) · `affaan-m/ecc` (harness-native operator system; skill-first + per-language rules +
 cross-harness adapters).
+
+## Fleet adoption provenance (2026-07-17)
+
+| Fact | Source |
+|---|---|
+| Fleet content adopted from the codex/cleanup implementation of the 2026-07-13 redesign | docs/superpowers/specs/2026-07-17-claude-fleet-adoption-design.md |
+| Sister-repo state grafted | latent-sre/sde-agents @ ac2e222 |
+| Frontmatter `hooks:` fire on project-scope agents, silently ignored on plugin agents (probed) | scripts/readonly-guard.py docstring |
+| `tools: Bash(...)` specifiers are inert on agents; real only in settings permission rules (probed) | scripts/readonly-guard.py docstring |
+| `Agent(target)` type lists bind main-thread agents only; ignored at subagent depth | .claude/skills/agent-authoring/references/claude-code-frontmatter.md |

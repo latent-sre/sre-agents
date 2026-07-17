@@ -1,39 +1,35 @@
 # SRE Agents
 
-SRE Agents is a canonical fleet of **5 agents and 26 skills** for application engineering and site
-reliability work. The repository authors one fleet and deterministically projects separate VS Code /
-GitHub Copilot and Claude Code runtime definitions.
+SRE Agents is a **Claude Code** fleet of **6 agents and 26 skills** for application engineering and
+site reliability work. Everything lives under [`.claude/`](.claude/) as directly edited source —
+there is no generator and no projection; the file you edit is the file the runtime loads.
 
-The canonical content is complete. Distribution, protected promotion, and pilot work are later phases
-of the redesign and are not implied by this checkout. Never register a mutable authoring tree as a
-runtime source.
+## Layout
 
-## Authoring model
+- [`.claude/agents/`](.claude/agents) — the six agent definitions (frontmatter carries the
+  authority: `tools`, delegation grants, guard hooks).
+- [`.claude/skills/`](.claude/skills) — the 26 Agent Skills with their `references/`, `assets/`,
+  and `scripts/`.
+- [`.claude/commands/adr.md`](.claude/commands/adr.md) — the manual ADR scaffold (`/adr`).
+- [`scripts/`](scripts) — the structural gate (`gate_a.py`), the read-only allowlist guard
+  (`readonly-guard.py` + launcher), and their tests.
 
-- [`canonical/fleet.json`](canonical/fleet.json) is the metadata, capability, dependency, and routing source.
-- [`canonical/agents/`](canonical/agents) contains the five shared agent bodies.
-- [`skills/`](skills) contains shared Agent Skills and their registered references, assets, and scripts.
-- [`generated/copilot/`](generated/copilot) and [`generated/claude/`](generated/claude) are generated,
-  runtime-specific projections. Root and runtime manifests are generated too; do not edit them directly.
-- [`scripts/generate_fleet.py`](scripts/generate_fleet.py) generates and checks projections.
-
-Runtime routing is native: agent descriptions select a lane, canonical `delegates_to` edges project each
-runtime's delegation metadata, and canonical `handoffs` become explicit actions where supported. Claude
-currently ignores a nested delegator's target list; compatibility records that degradation, while
-terminal agents remain terminal by omitting `Agent` entirely.
+Routing is native: agent descriptions select the lane; skills load by description match or `/name`.
+The roster, enforcement model, and shared conventions are in [AGENTS.md](AGENTS.md).
 
 ## Fleet inventory
 
 <!-- fleet-inventory:start -->
-### Agents (5)
+### Agents (6)
 
-| Agent | Lane | Canonical routing |
+| Agent | Lane | Routing |
 |---|---|---|
-| `reviewer` | Read-only correctness, quality, and security review | Reports findings; hands approved fixes to `sde` |
-| `sde` | Build, fix, refactor, and test code or operations tooling | Delegates review to `reviewer`; can hand documentation to `scribe` |
-| `sre` | Investigate active production or staging failures | Delegates signal work to `observer` and incident documentation to `scribe` |
-| `observer` | Build steady-state observability as code | Hands active incidents to `sre` and runbook work to `scribe` |
-| `scribe` | Write runbooks and postmortems without executing commands | Hands automation requests to `sde` |
+| `sde` | Build, fix, refactor, and test code or operations tooling | Delegates review to `reviewer`; hands documentation to `sre-steward` |
+| `reviewer` | Read-only correctness, quality, and security review | Reports findings; hands approved fixes to `sde`; terminal |
+| `sre` | Investigate active production or staging failures (guarded read-only Bash) | Delegates steady-state work to `sre-steward`, fact checks to `researcher` |
+| `sre-steward` | Steady state: observability as code + runbooks/postmortems (guarded Bash) | Hands active incidents to `sre`, automation to `sde`, lookups to `researcher` |
+| `researcher` | Cited fact-finding and verification for any agent | Web + read only; returns to caller |
+| `prompt-engineer` | The fleet's own files: agents, skills, descriptions, evals | Hands helper code to `sde`, injection review to `reviewer` |
 
 ### Skills (26)
 
@@ -69,7 +65,8 @@ terminal agents remain terminal by omitting `Agent` entirely.
 
 ## Validate and evaluate
 
-Run the single structural entrypoint from Windows:
+Run the single structural entrypoint (on Windows use `python` or `py -3`, never `python3` — the
+Microsoft Store stub):
 
 ```powershell
 py -3 scripts/gate_a.py
