@@ -63,6 +63,9 @@ Route to the relevant method without loading sibling skills:
   orchestration.
 - [tool guidance](./references/tools.md) for tool contracts and promotion from shell prototypes.
 - [context guidance](./references/context.md) for cold-start packets and bounded evidence.
+- [Claude Code frontmatter](./references/claude-code-frontmatter.md) — the single source of truth
+  for frontmatter fields and their traps; read it before authoring or debugging any agent or skill
+  frontmatter.
 
 ## Runtime quick reference
 
