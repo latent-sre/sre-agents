@@ -203,10 +203,12 @@ RUNTIME_INTERPOLATION = re.compile(
 )
 OWNED_DIRECTORIES = (
     Path(".plugin"),
-    Path("generated/copilot/agents"),
+    # VS Code native discovery: agents and prompt/slash-command files live under .github/.
+    Path(".github/agents"),
+    Path(".github/prompts"),
     Path("generated/claude/agents"),
+    # Copilot CLI command form ($ARGUMENTS) stays a generated projection referenced by the plugin.
     Path("generated/copilot/commands"),
-    Path("generated/copilot/prompts"),
     Path("generated/claude/commands"),
 )
 ROOT_OUTPUTS = (
@@ -219,13 +221,12 @@ ROOT_OUTPUTS = (
 SKILLS_ROOT = Path(".github") / "skills"
 SKILLS_DIR_PREFIX = ".github/skills"
 # Trees a runtime would auto-discover that this fleet does NOT use: content here would bypass the
-# canonical inventory, so they must stay empty. .github/skills is deliberately absent -- it is owned.
+# canonical inventory, so they must stay empty. The .github/{agents,prompts,skills} trees are
+# deliberately absent -- they are owned, generated, and drift-checked as inventory.
 DEFAULT_DISCOVERY_TREES = (
     Path("agents"),
     Path("commands"),
     Path(".agents"),
-    Path(".github/agents"),
-    Path(".github/prompts"),
     Path(".claude/agents"),
     Path(".claude/commands"),
     Path(".claude/skills"),
@@ -1241,7 +1242,7 @@ def _plugin_manifest(manifest: dict, ready: list[str], runtime: str) -> dict:
     active = [skill for skill in manifest["skills"] if skill["state"] == "active"]
     if runtime == "copilot":
         result = dict(plugin)
-        result["agents"] = "./generated/copilot/agents/" if ready else []
+        result["agents"] = "./.github/agents/" if ready else []
     else:
         result = {key: value for key, value in plugin.items() if key != "displayName"}
         result["agents"] = [
@@ -1277,7 +1278,7 @@ def render(root: Path, manifest: dict, ready: list[str] | None = None) -> dict[P
     }
     for name in ready:
         agent = by_name[name]
-        outputs[Path(f"generated/copilot/agents/{name}.agent.md")] = _copilot_agent(
+        outputs[Path(f".github/agents/{name}.agent.md")] = _copilot_agent(
             root, agent, models
         )
         outputs[Path(f"generated/claude/agents/{name}.md")] = _claude_agent(
@@ -1288,7 +1289,7 @@ def render(root: Path, manifest: dict, ready: list[str] | None = None) -> dict[P
         outputs[Path(f"generated/copilot/commands/{name}.md")] = _command_view(
             root, command, "copilot"
         )
-        outputs[Path(f"generated/copilot/prompts/{name}.prompt.md")] = _command_view(
+        outputs[Path(f".github/prompts/{name}.prompt.md")] = _command_view(
             root, command, "fallback"
         )
         outputs[Path(f"generated/claude/commands/{name}.md")] = _command_view(

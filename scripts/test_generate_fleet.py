@@ -527,15 +527,15 @@ class ProductionGeneratorContracts(unittest.TestCase):
         wrapper_paths = {
             path.as_posix()
             for path in outputs
-            if path.as_posix().startswith("generated/") and "/agents/" in path.as_posix()
+            if "/agents/" in path.as_posix()
         }
         self.assertEqual(
             {
-                "generated/copilot/agents/reviewer.agent.md",
-                "generated/copilot/agents/sde.agent.md",
-                "generated/copilot/agents/sre.agent.md",
-                "generated/copilot/agents/observer.agent.md",
-                "generated/copilot/agents/scribe.agent.md",
+                ".github/agents/reviewer.agent.md",
+                ".github/agents/sde.agent.md",
+                ".github/agents/sre.agent.md",
+                ".github/agents/observer.agent.md",
+                ".github/agents/scribe.agent.md",
                 "generated/claude/agents/reviewer.md",
                 "generated/claude/agents/sde.md",
                 "generated/claude/agents/sre.md",
@@ -545,7 +545,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
             wrapper_paths,
         )
         self.assertEqual(
-            "./generated/copilot/agents/",
+            "./.github/agents/",
             json.loads(outputs[Path("plugin.json")])["agents"],
         )
         self.assertEqual(
@@ -565,12 +565,13 @@ class ProductionGeneratorContracts(unittest.TestCase):
             self.assertIn("Skill", frontmatter)
             self.assertNotIn("\nskills:", frontmatter)
 
-        for runtime, pattern in (("copilot", "*.agent.md"), ("claude", "*.md")):
-            actual = sorted(
-                path.name for path in (ROOT / "generated" / runtime / "agents").glob(pattern)
-            )
+        for runtime_dir, pattern in (
+            (ROOT / ".github" / "agents", "*.agent.md"),
+            (ROOT / "generated" / "claude" / "agents", "*.md"),
+        ):
+            actual = sorted(path.name for path in runtime_dir.glob(pattern))
             expected = sorted(
-                f"{name}.agent.md" if runtime == "copilot" else f"{name}.md"
+                f"{name}.agent.md" if pattern == "*.agent.md" else f"{name}.md"
                 for name in ready
             )
             self.assertEqual(expected, actual)
@@ -584,7 +585,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         self.assertEqual(root_manifest, selector_manifest)
         self.assertEqual(
             {
-                "agents": "./generated/copilot/agents/",
+                "agents": "./.github/agents/",
                 "skills": "./.github/skills/",
                 "commands": "./generated/copilot/commands/",
             },
@@ -1021,7 +1022,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         manifest, ready = generate_fleet.load_and_validate(fleet.root)
         outputs = generate_fleet.render(fleet.root, manifest, ready)
         copilot_builder = outputs[
-            Path("generated/copilot/agents/builder.agent.md")
+            Path(".github/agents/builder.agent.md")
         ].decode()
         claude_builder = outputs[Path("generated/claude/agents/builder.md")].decode()
         self.assertIn(
@@ -1037,7 +1038,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         self.assertIn('model: "sonnet"', claude_builder)
         for name in ("sre", "observer"):
             self.assertIn(
-                "'execute'", outputs[Path(f"generated/copilot/agents/{name}.agent.md")].decode()
+                "'execute'", outputs[Path(f".github/agents/{name}.agent.md")].decode()
             )
             self.assertNotIn(
                 "Bash", outputs[Path(f"generated/claude/agents/{name}.md")].decode()
@@ -1160,7 +1161,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         outputs = generate_fleet.render(fleet.root, manifest, ready)
         paths = {
             Path("generated/copilot/commands/adr.md"),
-            Path("generated/copilot/prompts/adr.prompt.md"),
+            Path(".github/prompts/adr.prompt.md"),
             Path("generated/claude/commands/adr.md"),
         }
         self.assertTrue(paths <= set(outputs))
@@ -1178,7 +1179,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         )
         expected = {
             Path("generated/copilot/commands/adr.md"): ("$ARGUMENTS", True, False),
-            Path("generated/copilot/prompts/adr.prompt.md"): (
+            Path(".github/prompts/adr.prompt.md"): (
                 "${input:arguments}", False, True
             ),
             Path("generated/claude/commands/adr.md"): ("$ARGUMENTS", True, False),
@@ -1212,7 +1213,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         generate_fleet.write(fleet.root)
         projected = (
             fleet.root / "generated" / "copilot" / "commands" / "adr.md",
-            fleet.root / "generated" / "copilot" / "prompts" / "adr.prompt.md",
+            fleet.root / ".github" / "prompts" / "adr.prompt.md",
             fleet.root / "generated" / "claude" / "commands" / "adr.md",
         )
         self.assertTrue(all(path.is_file() for path in projected))
@@ -1250,7 +1251,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         self.assertEqual(
             5,
             sum(
-                path.as_posix().startswith("generated/copilot/agents/")
+                path.as_posix().startswith(".github/agents/")
                 for path in outputs
             ),
         )
@@ -1263,7 +1264,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         fleet.flush()
         generate_fleet.write(fleet.root)
         self.assertEqual([], generate_fleet.check(fleet.root))
-        copilot = fleet.root / "generated" / "copilot" / "agents" / "builder.agent.md"
+        copilot = fleet.root / ".github" / "agents" / "builder.agent.md"
         claude = fleet.root / "generated" / "claude" / "agents" / "builder.md"
         self.assertTrue(copilot.is_file())
         self.assertTrue(claude.is_file())
@@ -1293,7 +1294,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         plugin.write_text("{}\n", encoding="utf-8")
         self.assertTrue(any("plugin.json" in item for item in generate_fleet.check(fleet.root)))
 
-        stale = fleet.root / "generated" / "copilot" / "agents" / "nested" / "stale.bin"
+        stale = fleet.root / ".github" / "agents" / "nested" / "stale.bin"
         stale.parent.mkdir(parents=True)
         stale.write_bytes(b"stale")
         generate_fleet.write(fleet.root)
@@ -1376,7 +1377,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
 
         fleet = FleetRoot(self)
         generate_fleet.write(fleet.root)
-        generated_tree = fleet.root / "generated" / "copilot" / "agents"
+        generated_tree = fleet.root / ".github" / "agents"
         original = generate_fleet._is_link_or_junction
         with mock.patch.object(
             generate_fleet,
