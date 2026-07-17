@@ -1,10 +1,10 @@
 # Dev/CI-only dependencies. The fleet's runtime validators are pure stdlib; only the
-# behavioral eval harness (evals/run_evals.py, evals/discovery_probe.py) needs a YAML parser
+# behavioral eval harness (evals/run_evals.py) needs a YAML parser
 # to load scenario files. CI installs this before the `--validate` steps.
 #
 #   python3 -m pip install -r requirements-dev.txt
 #
-# Note: scripts/validate_fleet.py and the guard tests have NO third-party deps — run them directly.
+# Note: the generator, its contract tests, and the guard tests have NO third-party deps — run them directly.
 # Pinned to an exact version for reproducibility — install via `-r requirements-dev.txt`, never a
 # bare `pip install pyyaml`.
 pyyaml==6.0.3

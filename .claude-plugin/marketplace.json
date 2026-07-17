@@ -1,0 +1,12 @@
+{
+  "name": "latent-sre",
+  "description": "SRE + SDE agents and skills from latent-sre.",
+  "owner": { "name": "latent-sre", "url": "https://github.com/latent-sre" },
+  "plugins": [
+    {
+      "name": "sre-agents",
+      "source": { "source": "github", "repo": "latent-sre/sre-agents", "ref": "release" },
+      "description": "SRE + SDE fleet for VS Code Copilot"
+    }
+  ]
+}

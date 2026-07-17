@@ -1,9 +1,7 @@
 name: Validate fleet
 
-# The repo documented `scripts/validate_fleet.py` as a "CI gate"
-# (.claude/skills/agent-authoring/references/artifact.md) and requirements-dev.txt says "CI installs
-# this before the --validate steps" -- but no CI existed. The validator only ran when someone
-# remembered to run it, which is the same silent-failure mode the validator itself exists to catch.
+# The repo once documented its fleet validator as a "CI gate" while no CI existed -- the check only
+# ran when someone remembered to run it, which is the same silent-failure mode a gate exists to catch.
 # This is that gate.
 
 on:
