@@ -1,9 +1,0 @@
-id: discover-craft-debug-rca
-expected: debug-rca
-# The owning agent legitimately covers this lane and loads the skill itself — delegating
-# there is the roster working, not a misroute. Grade the outcome, not the path.
-also_acceptable: [sde-engineer]
-prompt: |
-  This test passes on my machine and fails in CI about one run in three. I've already tried bumping
-  the timeout and it didn't help. How do I actually find the cause?
-note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). 2026-07-11 FIRST baseline (n=2): 0 hit / 2 misroute / 0 no-route. saw: root-cause. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."

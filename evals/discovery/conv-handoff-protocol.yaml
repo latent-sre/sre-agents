@@ -1,6 +1,0 @@
-id: discover-conv-handoff-protocol
-expected: handoff-protocol
-prompt: |
-  I'm going off shift mid-investigation and someone else is picking it up cold. What exactly do I
-  need to hand them so they don't start from scratch?
-note: "namespace: CONTAMINATED (pre-clean-room; personal ~/.claude skills+agents and installed plugins were visible and competing — NOT comparable to a clean number). 2026-07-11 FIRST baseline (n=2): 2 hit / 0 misroute / 0 no-route. saw: handoff-protocol. NOTE: measured on a machine carrying 9 personal GLOBAL skills (~/.claude/skills: root-cause, eng-ladder, prompt-craft, runbook, backend-craft, sre-tool...) that shadow fleet skills — treat as a LOWER BOUND for a clean checkout."

@@ -1,9 +1,0 @@
-id: discover-craft-sde-ladder
-expected: sde-ladder
-# The owning agent legitimately covers this lane and loads the skill itself — delegating
-# there is the roster working, not a misroute. Grade the outcome, not the path.
-also_acceptable: [sde-engineer]
-prompt: |
-  This change touches three services and alters an API contract other teams call. How much design
-  work does something like this actually need before I start coding?
-note: "namespace: CLEAN (clean_room; only this project's .claude/ visible). 2026-07-13 baseline (n=5): 2 hit / 0 misroute / 3 no-route. saw: sde-ladder. Supersedes the contaminated 0-hit/2-no-route note (n=2) — contamination was SUPPRESSING this one. NB this measures MAIN-SESSION discovery, not whether a delegated sde-engineer loads its ladder (see capability-sde-engineer-reaches-ladder, which shows it does)."
