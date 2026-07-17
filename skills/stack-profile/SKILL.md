@@ -52,4 +52,4 @@ middle fallback = the next approved Claude model; final fallback = the org's def
 Recorded ordered list: Claude Sonnet 5 (copilot) → Claude Opus 4.8 (copilot) → GPT-5.4 (copilot).
 [unverified — re-record the complete ordered list when the team's licensed model picker changes]
 
-<!-- profile canary: sp_7c2e — quoted output proves this file loaded; guarded by the tripwire test -->
+<!-- profile canary: sp_7c2e — quoted output proves this file loaded -->
