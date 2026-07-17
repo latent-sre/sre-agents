@@ -1,29 +1,16 @@
 #!/bin/sh
-# PreToolUse hook launcher for readonly-guard.py. Wired into the read-only agents that keep Bash.
-#
-# WHY THIS EXISTS (2026-07-11): the hook used to be an inline one-liner:
-#
-#     "$(command -v python3 || command -v python)" -c "...run readonly-guard.py..."
-#
-# On Windows that SILENTLY DISABLED THE GUARD. `command -v python3` succeeds -- it resolves the
-# Microsoft Store *alias stub* at AppData/Local/Microsoft/WindowsApps/python3 (enabled by default on
-# Win 10/11) -- so the `|| command -v python` fallback NEVER fired. The stub then prints "Python was
-# not found" and exits non-zero. The guard never ran, emitted no decision, and Claude Code treats a
-# non-zero hook (other than exit 2) as a NON-BLOCKING error -- so the command PROCEEDED.
-#
-# Net effect: read-only agents had NO guard on Windows, and the failure was silent. Verified on this
-# machine: `command -v python3` -> .../WindowsApps/python3, and the hook's stdout was EMPTY (no deny).
-#
-# Two rules this script exists to enforce:
-#   1. Pick an interpreter that WORKS, not one that merely RESOLVES (`-c ""` actually executes it).
-#   2. FAIL CLOSED. If no interpreter works, DENY. A guard that cannot run must never silently allow.
-set -u
-
-for p in python3 python py; do
-    if "$p" -c "" >/dev/null 2>&1; then
-        exec "$p" -c "import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PROJECT_DIR', '.'), 'scripts', 'readonly-guard.py'), run_name='__main__')"
-    fi
+# Fail-closed launcher for the read-only allowlist guard (scripts/readonly-guard.py).
+# Wired via per-agent frontmatter PreToolUse hooks (matcher: Bash) on sre and sre-steward.
+# Protocol: guard exits 42 = allow (empty stdout), 43 = deny (permissionDecision JSON on stdout).
+# If NO interpreter answers with the guard's own exit codes, the guard is missing or broken:
+# DENY — these hooks only fire for guarded agents, so failing closed cannot hit the user's session.
+IN=$(cat)
+G="${CLAUDE_PROJECT_DIR:-.}/scripts/readonly-guard.py"
+for C in python py python3; do
+  command -v "$C" >/dev/null 2>&1 || continue
+  OUT=$(printf '%s' "$IN" | "$C" -I -S "$G" 2>/dev/null); RC=$?
+  if [ "$RC" -eq 42 ]; then exit 0; fi
+  if [ "$RC" -eq 43 ]; then printf '%s' "$OUT"; exit 0; fi
 done
-
-# No working Python. Deny rather than fall open.
-printf '%s' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"readonly-guard could not start: no working Python interpreter found. Failing CLOSED — refusing the command rather than silently allowing it. Install Python, or disable the Windows Store python3 alias (Settings > Apps > Advanced app settings > App execution aliases)."}}'
+printf '%s' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Read-only guard unavailable: no interpreter answered with the guard exit codes (tried python, py, python3). Bash is denied for guarded agents until the guard is restored."}}'
+exit 0
