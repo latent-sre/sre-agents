@@ -32,11 +32,11 @@ Establish before designing. Infer from context and the codebase where possible; 
 
 ## Phase 1 — Right-size the design
 
-Use the dependency block to load canonical `eng-ladder` (Copilot `eng-ladder`; Claude `sre-agents:eng-ladder`), then read its principal or distinguished reference—or return the material fork to your caller.
+Use the dependency block to load canonical `eng-ladder`, then read its principal or distinguished reference—or return the material fork to your caller.
 
 <!-- required-skill-dependencies:start -->
 ## Required on-demand skill dependencies
-- canonical `eng-ladder`; Copilot `eng-ladder`; Claude `sre-agents:eng-ladder`
+- canonical `eng-ladder`
 <!-- required-skill-dependencies:end -->
 
 - Single component, low blast radius → design inline at SDE level: a few sentences of plan plus stated assumptions. No ceremony.

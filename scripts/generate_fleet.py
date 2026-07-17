@@ -165,15 +165,12 @@ REQUIRED_LINE = re.compile(
     r"^- `(?P<copilot>[a-z0-9-]+)` "
     r"\(Claude: `sre-agents:(?P<claude>[a-z0-9-]+)`\) — \S.*$"
 )
-DEPENDENCY_LINE = re.compile(
-    r"^- canonical `(?P<canonical>[a-z0-9-]+)`; "
-    r"Copilot `(?P<copilot>[a-z0-9-]+)`; "
-    r"Claude `sre-agents:(?P<claude>[a-z0-9-]+)`$"
-)
-OWNER_LOAD_PAIR = re.compile(
-    r"^load the owner: copilot `(?P<copilot>[a-z0-9-]+)`; "
-    r"claude `sre-agents:(?P<claude>[a-z0-9-]+)`$"
-)
+# Skills are hand-authored at their native .github/skills/ path and are NOT projected per runtime, so
+# they reference dependencies by a single runtime-neutral canonical identity that each runtime resolves
+# (Copilot loads `X`; Claude's Skill tool resolves `sre-agents:X`). Agents still carry both identities
+# because they ARE projected (see _project_agent_identities).
+DEPENDENCY_LINE = re.compile(r"^- canonical `(?P<canonical>[a-z0-9-]+)`$")
+OWNER_LOAD_PAIR = re.compile(r"^load the owner: canonical `(?P<canonical>[a-z0-9-]+)`$")
 MANUAL_ONLY_SKILLS = frozenset({"pcf-deploy", "service-onboarding"})
 ACTION_STEMS = (
     "load",
@@ -498,11 +495,10 @@ def _action_targets(line: str, catalog: tuple[str, ...], *, owner: str | None = 
                 nested = parenthetical.group("body")
                 owner_pair = OWNER_LOAD_PAIR.fullmatch(nested)
                 paired_target = (
-                    owner_pair.group("copilot") if owner_pair is not None else None
+                    owner_pair.group("canonical") if owner_pair is not None else None
                 )
                 exact_different_owner = (
                     owner_pair is not None
-                    and paired_target == owner_pair.group("claude")
                     and paired_target in catalog
                     and paired_target != target
                 )
@@ -590,18 +586,15 @@ def _validate_dependency_identities(text: str, owner: str, targets: list[str]) -
     inside, outside = _block(
         text, DEPENDENCY_START, DEPENDENCY_END, f"skill '{owner}' dependency identities"
     )
-    triples: list[tuple[str, str, str]] = []
+    canonicals: list[str] = []
     for line in inside.splitlines():
         if not line.startswith("- "):
             continue
         match = DEPENDENCY_LINE.fullmatch(line)
         if match is None:
             raise ManifestError(f"skill '{owner}': malformed dependency identities line: {line}")
-        triples.append(
-            (match.group("canonical"), match.group("copilot"), match.group("claude"))
-        )
-    expected = [(target, target, target) for target in targets]
-    if triples != expected:
+        canonicals.append(match.group("canonical"))
+    if canonicals != targets:
         raise ManifestError(f"skill '{owner}': dependency identities do not match canonical graph")
     return outside
 
@@ -698,16 +691,14 @@ def _validate_active_skill(
                     raise ManifestError(
                         f"skill '{name}' {relative}:{line_number}: undeclared mandatory load '{target}'"
                     )
-                paired = (
-                    f"`{target}`" in context and f"`sre-agents:{target}`" in context
-                )
+                named = f"canonical `{target}`" in context
                 block_directed = (
                     "dependency block" in context.lower()
                     or "required-skill-dependencies" in context.lower()
                 )
-                if not paired and not block_directed:
+                if not named and not block_directed:
                     raise ManifestError(
-                        f"skill '{name}' {relative}:{line_number}: mandatory load lacks both runtime identities"
+                        f"skill '{name}' {relative}:{line_number}: mandatory load lacks the canonical skill identity"
                     )
 
 

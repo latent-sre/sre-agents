@@ -98,48 +98,43 @@ TASK32_INVENTORIES = {
 }
 TASK32_SERVICE_DESCRIPTION = (
     "Onboard a service onto the platform and the observability stack — or audit an existing one "
-    "against the standard. Invoke explicitly as Copilot `/service-onboarding` or Claude "
-    "`/sre-agents:service-onboarding`. Triggers: 'onboard this service', 'bring X up to standard', "
-    "'audit this service'. Works the checklist in order; audit mode reports evidence-cited "
-    "findings and the top three fixes."
+    "against the standard. Invoke it explicitly by name. Triggers: 'onboard this service', "
+    "'bring X up to standard', 'audit this service'. Works the checklist in order; audit mode "
+    "reports evidence-cited findings and the top three fixes."
 )
 TASK32_SERVICE_INVOCATION_COMMENT = (
-    "# Side-effect-shaped: invoke explicitly as Copilot `/service-onboarding` or Claude "
-    "`/sre-agents:service-onboarding`; never auto-load."
+    "# Side-effect-shaped: invoke explicitly by name; never auto-load."
 )
 TASK32_SERVICE_CHASSIS = """Work through every step in order; when one is skipped, say so explicitly and why — silence reads
 as "done." This checklist grants no permission of its own — a step being on the list is not
 approval to run it. Before any prod-facing step, load its gate from the dependency block below
-(Copilot `production-change-gate`; Claude `sre-agents:production-change-gate`) and re-enter it.
+(canonical `production-change-gate`) and re-enter it.
 
 <!-- required-skill-dependencies:start -->
 ## Required on-demand skill dependencies
-- canonical `production-change-gate`; Copilot `production-change-gate`; Claude `sre-agents:production-change-gate`
-- canonical `obs-pipeline`; Copilot `obs-pipeline`; Claude `sre-agents:obs-pipeline`
-- canonical `obs-dashboards`; Copilot `obs-dashboards`; Claude `sre-agents:obs-dashboards`
-- canonical `obs-alerting`; Copilot `obs-alerting`; Claude `sre-agents:obs-alerting`
-- canonical `ci-actions`; Copilot `ci-actions`; Claude `sre-agents:ci-actions`
-- canonical `runbook`; Copilot `runbook`; Claude `sre-agents:runbook`
+- canonical `production-change-gate`
+- canonical `obs-pipeline`
+- canonical `obs-dashboards`
+- canonical `obs-alerting`
+- canonical `ci-actions`
+- canonical `runbook`
 <!-- required-skill-dependencies:end -->
 
-Before each dependent checklist step, load that row's runtime identity from this block; the paired
-names below are executable identity requirements, not decorative cross-references.
+Before each dependent checklist step, load that row's skill from this block; the canonical names are
+executable load requirements, not decorative cross-references.
 
 1. **Manifest & health** — version-controlled `manifest.yml`; http health-check endpoint; ≥2 instances.
 2. **Instrument** — OTel SDK wired (metrics + traces + structured logs); RED metrics named per
-   convention; cardinality reviewed. [read the runtime identity before this step: Copilot
-   `obs-pipeline`; Claude `sre-agents:obs-pipeline`]
+   convention; cardinality reviewed. [read canonical `obs-pipeline` before this step]
 3. **Ship telemetry** — Alloy/collector config routes logs → Loki (and Splunk where required),
    metrics → Mimir, traces → Tempo. Prove arrival with one query per signal, quoted.
 4. **Dashboard** — the service page in Grafana: top-level health → drill-down (load the owner:
-   Copilot `obs-dashboards`; Claude `sre-agents:obs-dashboards`).
+   canonical `obs-dashboards`).
 5. **Alerts** — burn-rate alert on the SLI + one saturation alert; each linked to a runbook
-   (load the owner: Copilot `obs-alerting`; Claude `sre-agents:obs-alerting`). No runbook, no alert.
+   (load the owner: canonical `obs-alerting`). No runbook, no alert.
 6. **SLO** — SLI formula + target + window recorded where the team keeps them.
-7. **CI/CD** — build + deploy via Actions (Copilot `ci-actions`; Claude
-   `sre-agents:ci-actions`); promotion gates on.
-8. **Runbook** — check/restart/recover doc exists (Copilot `runbook`; Claude
-   `sre-agents:runbook`); on-call knows where it is.
+7. **CI/CD** — build + deploy via Actions (canonical `ci-actions`); promotion gates on.
+8. **Runbook** — check/restart/recover doc exists (canonical `runbook`); on-call knows where it is.
 
 **Audit mode** (bringing an existing service up to standard): run the checks below and report like
 a code review of the service — severity-ranked, evidence-cited, **no finding without the command
@@ -209,10 +204,7 @@ def _dependency_block(skills: list[str]) -> str:
         "<!-- required-skill-dependencies:start -->",
         "## Required on-demand skill dependencies",
     ]
-    lines.extend(
-        f"- canonical `{name}`; Copilot `{name}`; Claude `sre-agents:{name}`"
-        for name in skills
-    )
+    lines.extend(f"- canonical `{name}`" for name in skills)
     lines.extend(["<!-- required-skill-dependencies:end -->", ""])
     return "\n".join(lines)
 
@@ -778,7 +770,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         skill_body = fleet.root / ".github" / "skills" / "ops-tooling" / "SKILL.md"
         skill_body.write_text(
             skill_body.read_text(encoding="utf-8").replace(
-                "Claude `sre-agents:eng-ladder`", "Claude `eng-ladder`"
+                "- canonical `eng-ladder`", "- canonical `craft`"
             ),
             encoding="utf-8",
             newline="\n",
@@ -840,27 +832,24 @@ class ProductionGeneratorContracts(unittest.TestCase):
             candidate.activate("service-onboarding", body_extra=body_extra)
             return candidate
 
-        paired_owner = (
-            "load the owner: Copilot `obs-alerting`; Claude "
-            "`sre-agents:obs-alerting`"
-        )
+        canonical_owner = "load the owner: canonical `obs-alerting`"
         fleet = onboarding_fixture(
             "5. **Alerts** — each alert links to a runbook "
-            f"({paired_owner}). No runbook, no alert.\n"
+            f"({canonical_owner}). No runbook, no alert.\n"
         )
         generate_fleet.load_and_validate(fleet.root)
 
         hidden_cases = (
             "Keep the runbook (load this method) before continuing.\n",
-            f"Keep the runbook ({paired_owner}; follow it) before continuing.\n",
-            f"Keep the runbook ({paired_owner}), then follow it before continuing.\n",
-            f"Keep the runbook, then follow it ({paired_owner}).\n",
+            f"Keep the runbook ({canonical_owner}; follow it) before continuing.\n",
+            f"Keep the runbook ({canonical_owner}), then follow it before continuing.\n",
+            f"Keep the runbook, then follow it ({canonical_owner}).\n",
         )
         for body_extra in hidden_cases:
             with self.subTest(hidden_parenthetical=body_extra):
                 self.assertInvalid(
                     onboarding_fixture(body_extra),
-                    "mandatory load lacks both runtime identities",
+                    "mandatory load lacks the canonical skill identity",
                 )
 
     def test_manual_only_skill_control_must_be_true_and_inside_frontmatter(self) -> None:
