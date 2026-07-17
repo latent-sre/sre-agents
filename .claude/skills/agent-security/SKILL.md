@@ -19,10 +19,13 @@ An LLM **cannot reliably separate trusted instructions from untrusted data** —
 stream. So any text an agent reads can try to *become* a command. This is architectural, not a bug you
 patch; you contain it. *[sourced: industry consensus; Simon Willison, "The lethal trifecta"]*
 
-## Runtime boundary (pre-Task 38)
+## Runtime boundary
 
-Inspect the generated wrappers/manifests directly, report the execution boundary as
-`[unverified/pending Task 38]`, and never infer a guard from the empty checked-in hook files.
+The execution boundary today: `reviewer` and `researcher` hold no Bash or Write (enforced by tool
+absence); `sre` and `sre-steward` run Bash under the fail-closed allowlist guard
+(`scripts/readonly-guard.py`, wired per-agent via frontmatter hooks); `sde` runs unguarded Bash by
+stated trust decision, for team-authored code only. Verify a guard claim against the agent's
+frontmatter and the guard's tests — never infer enforcement from prose.
 
 ## The lethal trifecta
 An agent is exploitable by a single injected prompt when it combines **all three**:
@@ -71,8 +74,8 @@ Name which trifecta legs the agent/flow holds, the injection surface (where untr
 the containment (which leg is broken, by what control), and any residual risk needing a human gate.
 
 Report structural controls separately from prose. For each finding, give evidence, affected boundary,
-blast radius, smallest safe remediation, verification method, residual risk, and any
-`[unverified/pending Task 38]` runtime claim.
+blast radius, smallest safe remediation, verification method, residual risk, and any runtime claim
+you could not verify against the agent frontmatter or the guard's tests (label it `[unverified]`).
 
 ## Handoffs
 - Route independent findings to the typed `reviewer` agent with evidence, taint, severity, and the

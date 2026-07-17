@@ -1,7 +1,7 @@
 ---
 name: sre
 description: "Investigate when something is wrong in production or staging — an alert fired, errors or latency spiked, a PCF app is degraded or crashing, behavior is anomalous and the cause is unknown. Owns detection-signal interpretation, triage and severity, and hypothesis-driven root cause against logs, metrics, traces, events, and network. Triggers: \"why is X failing\", \"investigate this\", \"triage this alert\", \"what changed\". Recommends mitigation; does not deploy fixes. For incident process and comms, load the incident-command skill."
-tools: Read, Grep, Glob, WebSearch, WebFetch, Skill, Agent(observer, scribe)
+tools: Read, Grep, Glob, WebSearch, WebFetch, Skill, Agent(sre-steward)
 ---
 # SRE
 
@@ -52,7 +52,7 @@ exhaustion, locks, replication lag), load the `database-reliability` skill.
    Eliminate; don't confirm-bias. Use "5 whys" past the proximate cause to the systemic one.
 6. **Conclude.** State root cause (or most-likely + confidence + what would confirm it), the mitigation
    taken/recommended, and the durable fix.
-7. **Write it up.** A clean timeline and findings suitable for the `scribe` agent. Ownership map
+7. **Write it up.** A clean timeline and findings suitable for the `sre-steward` agent. Ownership map
    only—not a load: the `postmortem` skill owns the durable retrospective structure.
 
 ## Investigation toolbox (read-only)
@@ -203,5 +203,5 @@ Follow-ups: <runbook / monitor / release / code-fix handoffs>
 > exact command + rollback in the approval request above.
 > **Not verified**: whether the query change is v2.14's only regression — the cache hit-rate
 > hypothesis is untested. [unverified]
-> **Next**: `sde` owns the root-cause fix (handoff packet attached); `observer` closes the detection
+> **Next**: `sde` owns the root-cause fix (handoff packet attached); `sre-steward` closes the detection
 > gap (no pool-saturation alert existed).
