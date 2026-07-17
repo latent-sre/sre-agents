@@ -45,7 +45,7 @@
     {
       "name": "stack-profile",
       "state": "active",
-      "directory": "skills/stack-profile",
+      "directory": ".github/skills/stack-profile",
       "references": [],
       "assets": [],
       "scripts": []
@@ -53,7 +53,7 @@
     {
       "name": "root-cause",
       "state": "active",
-      "directory": "skills/root-cause",
+      "directory": ".github/skills/root-cause",
       "references": [],
       "assets": [],
       "scripts": []
@@ -61,7 +61,7 @@
     {
       "name": "runbook",
       "state": "active",
-      "directory": "skills/runbook",
+      "directory": ".github/skills/runbook",
       "references": [],
       "assets": ["assets/runbook-template.md"],
       "scripts": []
@@ -69,7 +69,7 @@
     {
       "name": "eng-ladder",
       "state": "active",
-      "directory": "skills/eng-ladder",
+      "directory": ".github/skills/eng-ladder",
       "references": [
         "references/builder.md",
         "references/principal.md",
@@ -85,7 +85,7 @@
     {
       "name": "craft",
       "state": "active",
-      "directory": "skills/craft",
+      "directory": ".github/skills/craft",
       "references": [
         "references/python.md",
         "references/bash.md",
@@ -100,7 +100,7 @@
     {
       "name": "backend-craft",
       "state": "active",
-      "directory": "skills/backend-craft",
+      "directory": ".github/skills/backend-craft",
       "references": [
         "references/stack.md",
         "references/consuming-apis.md",
@@ -115,7 +115,7 @@
     {
       "name": "frontend-craft",
       "state": "active",
-      "directory": "skills/frontend-craft",
+      "directory": ".github/skills/frontend-craft",
       "references": [
         "references/stack.md",
         "references/data-views.md",
@@ -129,7 +129,7 @@
     {
       "name": "ops-tooling",
       "state": "active",
-      "directory": "skills/ops-tooling",
+      "directory": ".github/skills/ops-tooling",
       "references": ["references/cli.md"],
       "assets": ["assets/cli_skeleton.py"],
       "scripts": []
@@ -137,7 +137,7 @@
     {
       "name": "pcf-ops",
       "state": "active",
-      "directory": "skills/pcf-ops",
+      "directory": ".github/skills/pcf-ops",
       "references": ["references/foundations.md"],
       "assets": [],
       "scripts": ["scripts/triage.sh", "scripts/triage.ps1"]
@@ -145,7 +145,7 @@
     {
       "name": "pcf-deploy",
       "state": "active",
-      "directory": "skills/pcf-deploy",
+      "directory": ".github/skills/pcf-deploy",
       "references": [],
       "assets": ["assets/manifest.yml"],
       "scripts": []
@@ -153,7 +153,7 @@
     {
       "name": "database-reliability",
       "state": "active",
-      "directory": "skills/database-reliability",
+      "directory": ".github/skills/database-reliability",
       "references": [],
       "assets": [],
       "scripts": []
@@ -161,7 +161,7 @@
     {
       "name": "ci-actions",
       "state": "active",
-      "directory": "skills/ci-actions",
+      "directory": ".github/skills/ci-actions",
       "references": [],
       "assets": ["assets/ci.reusable.yml"],
       "scripts": []
@@ -169,7 +169,7 @@
     {
       "name": "merge-gate",
       "state": "active",
-      "directory": "skills/merge-gate",
+      "directory": ".github/skills/merge-gate",
       "references": [],
       "assets": [],
       "scripts": []
@@ -177,7 +177,7 @@
     {
       "name": "release-gate",
       "state": "active",
-      "directory": "skills/release-gate",
+      "directory": ".github/skills/release-gate",
       "references": [],
       "assets": [],
       "scripts": []
@@ -185,7 +185,7 @@
     {
       "name": "production-change-gate",
       "state": "active",
-      "directory": "skills/production-change-gate",
+      "directory": ".github/skills/production-change-gate",
       "references": [],
       "assets": [],
       "scripts": []
@@ -193,7 +193,7 @@
     {
       "name": "incident-command",
       "state": "active",
-      "directory": "skills/incident-command",
+      "directory": ".github/skills/incident-command",
       "references": [],
       "assets": [],
       "scripts": []
@@ -201,7 +201,7 @@
     {
       "name": "postmortem",
       "state": "active",
-      "directory": "skills/postmortem",
+      "directory": ".github/skills/postmortem",
       "references": [],
       "assets": [],
       "scripts": []
@@ -209,7 +209,7 @@
     {
       "name": "service-onboarding",
       "state": "active",
-      "directory": "skills/service-onboarding",
+      "directory": ".github/skills/service-onboarding",
       "references": [],
       "assets": [],
       "scripts": []
@@ -217,7 +217,7 @@
     {
       "name": "agent-authoring",
       "state": "active",
-      "directory": "skills/agent-authoring",
+      "directory": ".github/skills/agent-authoring",
       "references": [
         "references/artifact.md",
         "references/roster.md",
@@ -230,7 +230,7 @@
     {
       "name": "agent-security",
       "state": "active",
-      "directory": "skills/agent-security",
+      "directory": ".github/skills/agent-security",
       "references": [],
       "assets": [],
       "scripts": []
@@ -238,7 +238,7 @@
     {
       "name": "obs-logs",
       "state": "active",
-      "directory": "skills/obs-logs",
+      "directory": ".github/skills/obs-logs",
       "references": ["references/spl.md", "references/logql.md", "references/indexes.md"],
       "assets": [],
       "scripts": []
@@ -246,7 +246,7 @@
     {
       "name": "obs-metrics",
       "state": "active",
-      "directory": "skills/obs-metrics",
+      "directory": ".github/skills/obs-metrics",
       "references": ["references/wql.md", "references/promql.md", "references/metrics.md"],
       "assets": [],
       "scripts": []
@@ -254,7 +254,7 @@
     {
       "name": "obs-traces",
       "state": "active",
-      "directory": "skills/obs-traces",
+      "directory": ".github/skills/obs-traces",
       "references": ["references/traceql.md", "references/otel-semantics.md"],
       "assets": [],
       "scripts": []
@@ -262,7 +262,7 @@
     {
       "name": "obs-dashboards",
       "state": "active",
-      "directory": "skills/obs-dashboards",
+      "directory": ".github/skills/obs-dashboards",
       "references": ["references/provisioning.md", "references/wavefront-legacy.md"],
       "assets": [],
       "scripts": []
@@ -270,7 +270,7 @@
     {
       "name": "obs-alerting",
       "state": "active",
-      "directory": "skills/obs-alerting",
+      "directory": ".github/skills/obs-alerting",
       "references": [
         "references/grafana-alerting.md",
         "references/burn-rate.md",
@@ -283,7 +283,7 @@
     {
       "name": "obs-pipeline",
       "state": "active",
-      "directory": "skills/obs-pipeline",
+      "directory": ".github/skills/obs-pipeline",
       "references": ["references/alloy.md", "references/otel-sdk.md"],
       "assets": [],
       "scripts": []

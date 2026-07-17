@@ -214,13 +214,18 @@ ROOT_OUTPUTS = (
     Path(".plugin/plugin.json"),
     Path(".claude-plugin/plugin.json"),
 )
+# Skills are authored natively at .github/skills/ (VS Code Agent Skills discovery); this is the one
+# runtime tree the fleet both owns and hand-authors, so it is validated as inventory, not forbidden.
+SKILLS_ROOT = Path(".github") / "skills"
+SKILLS_DIR_PREFIX = ".github/skills"
+# Trees a runtime would auto-discover that this fleet does NOT use: content here would bypass the
+# canonical inventory, so they must stay empty. .github/skills is deliberately absent -- it is owned.
 DEFAULT_DISCOVERY_TREES = (
     Path("agents"),
     Path("commands"),
     Path(".agents"),
     Path(".github/agents"),
     Path(".github/prompts"),
-    Path(".github/skills"),
     Path(".claude/agents"),
     Path(".claude/commands"),
     Path(".claude/skills"),
@@ -619,7 +624,7 @@ def _validate_active_skill(
 ) -> None:
     name = record["name"]
     skill_root = root / record["directory"]
-    _require_contained(skill_root, root / "skills", f"skill '{name}'")
+    _require_contained(skill_root, root / SKILLS_ROOT, f"skill '{name}'")
     if not skill_root.is_dir():
         raise ManifestError(f"active skill directory is missing: {record['directory']}")
 
@@ -740,8 +745,10 @@ def _validate_skills(
             directory = _normalize_posix_path(
                 raw_record.get("directory"), f"active skill '{name}'.directory"
             )
-            if directory != f"skills/{name}":
-                raise ManifestError(f"active skill '{name}' directory must be skills/{name}")
+            if directory != f"{SKILLS_DIR_PREFIX}/{name}":
+                raise ManifestError(
+                    f"active skill '{name}' directory must be {SKILLS_DIR_PREFIX}/{name}"
+                )
             active_names.add(name)
         else:
             raise ManifestError(f"skill '{name}': state must be planned or active")
@@ -751,7 +758,7 @@ def _validate_skills(
     if dependencies != PINNED_SKILL_DEPENDENCIES:
         raise ManifestError("skill_dependencies must match the pinned two-row/seven-edge graph")
 
-    skills_root = root / "skills"
+    skills_root = root / SKILLS_ROOT
     if skills_root.exists() or _is_link_or_junction(skills_root):
         if not skills_root.is_dir():
             raise ManifestError("skills path must be a directory")
@@ -1241,7 +1248,7 @@ def _plugin_manifest(manifest: dict, ready: list[str], runtime: str) -> dict:
             f"./generated/claude/agents/{name}.md" for name in ready
         ]
     commands = manifest["commands"]
-    result["skills"] = "./skills/" if active else []
+    result["skills"] = f"./{SKILLS_DIR_PREFIX}/" if active else []
     if runtime == "copilot":
         result["commands"] = "./generated/copilot/commands/" if commands else []
     else:

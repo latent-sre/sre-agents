@@ -32,7 +32,7 @@ SCAFFOLDING = (
     (re.compile(r"(?<![A-Za-z0-9-])content-building(?![A-Za-z0-9-])"), "assembly-state scaffolding"),
 )
 
-SCANNED_TREES = (Path("skills"), Path("canonical/agents"), Path("canonical/commands"))
+SCANNED_TREES = (Path(".github/skills"), Path("canonical/agents"), Path("canonical/commands"))
 
 
 def _scan_file(path: Path) -> list[str]:

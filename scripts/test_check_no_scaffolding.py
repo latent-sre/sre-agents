@@ -30,27 +30,27 @@ class Fixture(unittest.TestCase):
 
 class ScaffoldingGateTests(Fixture):
     def test_clean_content_is_silent(self):
-        self.write("skills/probe/SKILL.md", "# Probe\n\nDo the operational thing.\n")
+        self.write(".github/skills/probe/SKILL.md", "# Probe\n\nDo the operational thing.\n")
         self.write("canonical/agents/probe.md", "# Probe agent\n\nInvestigate the failure.\n")
         self.assertEqual([], check_no_scaffolding.check(self.root))
 
     def test_build_task_reference_is_flagged(self):
-        self.write("skills/probe/SKILL.md", "Boundary remains pending Task 38 for now.\n")
+        self.write(".github/skills/probe/SKILL.md", "Boundary remains pending Task 38 for now.\n")
         failures = check_no_scaffolding.check(self.root)
         self.assertTrue(any("Task 38" in item for item in failures), failures)
 
     def test_hyphen_prefixed_task_is_flagged(self):
-        self.write("skills/probe/SKILL.md", "## Runtime boundary (pre-Task 38)\n")
+        self.write(".github/skills/probe/SKILL.md", "## Runtime boundary (pre-Task 38)\n")
         failures = check_no_scaffolding.check(self.root)
         self.assertTrue(any("Task 38" in item for item in failures), failures)
 
     def test_spec_section_reference_is_flagged(self):
-        self.write("skills/probe/SKILL.md", "Recorded here per spec Section 3, not elsewhere.\n")
+        self.write(".github/skills/probe/SKILL.md", "Recorded here per spec Section 3, not elsewhere.\n")
         failures = check_no_scaffolding.check(self.root)
         self.assertTrue(any("spec Section 3" in item for item in failures), failures)
 
     def test_assembly_state_token_is_flagged(self):
-        self.write("skills/probe/SKILL.md", "Projected in the content-building tree.\n")
+        self.write(".github/skills/probe/SKILL.md", "Projected in the content-building tree.\n")
         failures = check_no_scaffolding.check(self.root)
         self.assertTrue(any("content-building" in item for item in failures), failures)
 
@@ -58,7 +58,7 @@ class ScaffoldingGateTests(Fixture):
         # `ops-tooling` legitimately uses "Phase 0 -- Requirements" as a real heading; the gate must
         # not touch it. The shipped `content-complete` state and `[unverified]` labels are content too.
         self.write(
-            "skills/probe/SKILL.md",
+            ".github/skills/probe/SKILL.md",
             "## Phase 0 -- Requirements\n\nAssembly is content-complete; this claim is `[unverified]`.\n",
         )
         self.assertEqual([], check_no_scaffolding.check(self.root))

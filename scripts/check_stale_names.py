@@ -59,7 +59,7 @@ def _scan_file(path: Path) -> list[str]:
 
 def _scan_tree(root: Path) -> list[str]:
     failures = []
-    for relative in (Path("skills"), Path("canonical/agents"), Path("canonical/commands")):
+    for relative in (Path(".github/skills"), Path("canonical/agents"), Path("canonical/commands")):
         base = root / relative
         if not base.is_dir():
             continue

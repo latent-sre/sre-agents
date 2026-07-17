@@ -293,13 +293,13 @@ class FleetRoot:
             {
                 "name": name,
                 "state": "active",
-                "directory": f"skills/{name}",
+                "directory": f".github/skills/{name}",
                 "references": [f"references/{path}" for path in references],
                 "assets": [f"assets/{path}" for path in assets],
                 "scripts": [f"scripts/{path}" for path in scripts],
             }
         )
-        skill_root = self.root / "skills" / name
+        skill_root = self.root / ".github" / "skills" / name
         skill_root.mkdir(parents=True, exist_ok=True)
         dependency_names = self.manifest["skill_dependencies"].get(name, [])
         manual_only = (
@@ -455,7 +455,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         check.assert_called_once_with(ROOT, require_content_complete=True)
 
     def test_task32_service_onboarding_has_exact_dependency_identities_and_chassis(self) -> None:
-        path = ROOT / "skills" / "service-onboarding" / "SKILL.md"
+        path = ROOT / ".github" / "skills" / "service-onboarding" / "SKILL.md"
         self.assertTrue(path.is_file(), "Task 32 service-onboarding source is missing")
         text = path.read_text(encoding="utf-8")
         frontmatter, comments, body = _skill_parts(text)
@@ -519,7 +519,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         for name, inventory in TASK32_INVENTORIES.items():
             record = next(skill for skill in manifest["skills"] if skill["name"] == name)
             self.assertEqual("active", record["state"])
-            self.assertEqual(f"skills/{name}", record["directory"])
+            self.assertEqual(f".github/skills/{name}", record["directory"])
             for kind, expected in inventory.items():
                 self.assertEqual(expected, record[kind])
         self.assertEqual(list(generate_fleet.CONTENT_COMPLETE_AGENTS), ready)
@@ -585,7 +585,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         self.assertEqual(
             {
                 "agents": "./generated/copilot/agents/",
-                "skills": "./skills/",
+                "skills": "./.github/skills/",
                 "commands": "./generated/copilot/commands/",
             },
             {
@@ -706,7 +706,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         wrong_task["skills"][0]["activate_task"] = 999
         mutations.append((wrong_task, "catalog"))
         crossover = copy.deepcopy(fleet.manifest)
-        crossover["skills"][0]["directory"] = "skills/stack-profile"
+        crossover["skills"][0]["directory"] = ".github/skills/stack-profile"
         mutations.append((crossover, "planned skill"))
         for manifest, fragment in mutations:
             with self.subTest(fragment=fragment):
@@ -715,7 +715,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
                 self.assertInvalid(candidate, fragment)
 
         planned_dir = FleetRoot(self)
-        (planned_dir.root / "skills" / "stack-profile").mkdir(parents=True)
+        (planned_dir.root / ".github" / "skills" / "stack-profile").mkdir(parents=True)
         self.assertInvalid(planned_dir, "planned skill directory")
 
     def test_active_skill_requires_exact_directory_and_bundle_inventory(self) -> None:
@@ -735,11 +735,11 @@ class ProductionGeneratorContracts(unittest.TestCase):
         self.assertEqual([], ready)
         self.assertEqual("active", manifest["skills"][0]["state"])
 
-        unexpected = fleet.root / "skills" / "stack-profile" / "references" / "extra.md"
+        unexpected = fleet.root / ".github" / "skills" / "stack-profile" / "references" / "extra.md"
         unexpected.write_text("extra\n", encoding="utf-8")
         self.assertInvalid(fleet, "unexpected")
         unexpected.unlink()
-        (fleet.root / "skills" / "stack-profile" / "assets" / "sample.txt").unlink()
+        (fleet.root / ".github" / "skills" / "stack-profile" / "assets" / "sample.txt").unlink()
         self.assertInvalid(fleet, "missing")
 
     def test_skill_dependency_graph_is_pinned_and_active_owner_requires_active_targets(self) -> None:
@@ -754,7 +754,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         fleet.activate("eng-ladder")
         generate_fleet.load_and_validate(fleet.root)
 
-        skill_body = fleet.root / "skills" / "ops-tooling" / "SKILL.md"
+        skill_body = fleet.root / ".github" / "skills" / "ops-tooling" / "SKILL.md"
         skill_body.write_text(
             skill_body.read_text(encoding="utf-8").replace(
                 "Claude `sre-agents:eng-ladder`", "Claude `eng-ladder`"
@@ -848,7 +848,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         for target in TASK32_DEPENDENCIES:
             moved.activate(target)
         moved.activate("service-onboarding")
-        path = moved.root / "skills" / "service-onboarding" / "SKILL.md"
+        path = moved.root / ".github" / "skills" / "service-onboarding" / "SKILL.md"
         text = path.read_text(encoding="utf-8")
         path.write_text(
             text.replace(
@@ -864,7 +864,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         widened = FleetRoot(self)
         widened.manifest["assembly_state"] = "content-building"
         widened.activate("stack-profile")
-        path = widened.root / "skills" / "stack-profile" / "SKILL.md"
+        path = widened.root / ".github" / "skills" / "stack-profile" / "SKILL.md"
         path.write_text(
             path.read_text(encoding="utf-8").replace(
                 "---\n\n# stack-profile",
@@ -1272,13 +1272,13 @@ class ProductionGeneratorContracts(unittest.TestCase):
         record.clear()
         record.update({"name": "stack-profile", "state": "planned", "activate_task": 10})
         for path in sorted(
-            (fleet.root / "skills" / "stack-profile").rglob("*"), reverse=True
+            (fleet.root / ".github" / "skills" / "stack-profile").rglob("*"), reverse=True
         ):
             if path.is_file():
                 path.unlink()
             elif path.is_dir():
                 path.rmdir()
-        (fleet.root / "skills" / "stack-profile").rmdir()
+        (fleet.root / ".github" / "skills" / "stack-profile").rmdir()
         fleet.flush()
         self.assertTrue(generate_fleet.check(fleet.root))
         generate_fleet.write(fleet.root)
@@ -1337,7 +1337,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         fleet = FleetRoot(self)
         fleet.manifest["assembly_state"] = "content-building"
         fleet.activate("stack-profile", references={"facts.md": "facts\n"})
-        bundle_path = fleet.root / "skills" / "stack-profile" / "references" / "facts.md"
+        bundle_path = fleet.root / ".github" / "skills" / "stack-profile" / "references" / "facts.md"
         with mock.patch.object(
             generate_fleet,
             "_is_link_or_junction",
@@ -1359,7 +1359,7 @@ class ProductionGeneratorContracts(unittest.TestCase):
         fleet = FleetRoot(self)
         fleet.manifest["assembly_state"] = "content-building"
         fleet.activate("stack-profile", references={"facts.md": "facts\n"})
-        bundle = fleet.root / "skills" / "stack-profile" / "references" / "facts.md"
+        bundle = fleet.root / ".github" / "skills" / "stack-profile" / "references" / "facts.md"
         bundle_peer = fleet.root / "bundle-peer.md"
         try:
             os.link(bundle, bundle_peer)

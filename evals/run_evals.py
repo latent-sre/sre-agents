@@ -64,8 +64,9 @@ def load_scenarios() -> list[dict]:
 
 
 def target_exists(target: str) -> bool:
-    # Shipped plugin layout: skills at the plugin root, agents as the generated Claude projections.
-    for skills, agents in (("skills", "generated/claude/agents"),):
+    # Shipped layout: skills discovered natively at .github/skills/, agents as the generated Claude
+    # projections.
+    for skills, agents in ((".github/skills", "generated/claude/agents"),):
         if (ROOT / skills / target / "SKILL.md").is_file() or (ROOT / agents / f"{target}.md").is_file():
             return True
     return False

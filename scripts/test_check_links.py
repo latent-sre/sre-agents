@@ -39,7 +39,7 @@ class Fixture(unittest.TestCase):
         return path
 
     def skill(self, body: str = "# Probe\n") -> Path:
-        return self.write("skills/probe-skill/SKILL.md", CLEAN_FRONTMATTER + "\n" + body)
+        return self.write(".github/skills/probe-skill/SKILL.md", CLEAN_FRONTMATTER + "\n" + body)
 
 
 class LinkCheckerTests(Fixture):
@@ -48,8 +48,8 @@ class LinkCheckerTests(Fixture):
             "# Probe\n\nRead [notes](./references/notes.md) and use "
             "[template](./assets/template.txt).\n"
         )
-        self.write("skills/probe-skill/references/notes.md", "# Notes\n")
-        self.write("skills/probe-skill/assets/template.txt", "template\n")
+        self.write(".github/skills/probe-skill/references/notes.md", "# Notes\n")
+        self.write(".github/skills/probe-skill/assets/template.txt", "template\n")
         self.assertEqual([], check_links.check(self.root))
 
     def test_top_level_frontmatter_comment_is_allowed(self):
@@ -58,7 +58,7 @@ class LinkCheckerTests(Fixture):
             '# Human-invoked skill; this comment is model-visible context.\n'
             'argument-hint: "[the probe]"',
         )
-        self.write("skills/probe-skill/SKILL.md", frontmatter + "\n# Probe\n")
+        self.write(".github/skills/probe-skill/SKILL.md", frontmatter + "\n# Probe\n")
         self.assertEqual([], check_links.check(self.root))
 
     def test_frontmatter_contract_rejects_each_silent_load_failure(self):
@@ -94,7 +94,7 @@ class LinkCheckerTests(Fixture):
             with self.subTest(label=label):
                 self.root = Path(self._tmp.name) / label
                 self.write(
-                    "skills/probe-skill/SKILL.md", frontmatter + "\n# Probe\n"
+                    ".github/skills/probe-skill/SKILL.md", frontmatter + "\n# Probe\n"
                 )
                 failures = check_links.check(self.root)
                 self.assertTrue(failures, label)
@@ -107,7 +107,7 @@ class LinkCheckerTests(Fixture):
             'argument-hint: "[the probe]"\ndisable-model-invocation: true',
         )
         self.write(
-            "skills/service-onboarding/SKILL.md",
+            ".github/skills/service-onboarding/SKILL.md",
             manual_frontmatter + "\n# Manual probe\n",
         )
         self.assertEqual([], check_links.check(self.root))
@@ -116,7 +116,7 @@ class LinkCheckerTests(Fixture):
         missing = fixture_root / "missing"
         self.root = missing
         self.write(
-            "skills/service-onboarding/SKILL.md",
+            ".github/skills/service-onboarding/SKILL.md",
             manual_frontmatter.replace("disable-model-invocation: true\n", "")
             + "\n# Manual probe\n",
         )
@@ -127,7 +127,7 @@ class LinkCheckerTests(Fixture):
         moved = fixture_root / "moved"
         self.root = moved
         self.write(
-            "skills/service-onboarding/SKILL.md",
+            ".github/skills/service-onboarding/SKILL.md",
             manual_frontmatter.replace("disable-model-invocation: true\n", "")
             + "\ndisable-model-invocation: true\n# Manual probe\n",
         )
@@ -138,7 +138,7 @@ class LinkCheckerTests(Fixture):
         widened = fixture_root / "widened"
         self.root = widened
         self.write(
-            "skills/probe-skill/SKILL.md",
+            ".github/skills/probe-skill/SKILL.md",
             CLEAN_FRONTMATTER.replace(
                 'argument-hint: "[the probe]"',
                 'argument-hint: "[the probe]"\ndisable-model-invocation: true',
@@ -151,7 +151,7 @@ class LinkCheckerTests(Fixture):
 
     def test_code_span_pointer_is_rejected(self):
         self.skill("# Probe\n\nRead `references/notes.md`.\n")
-        self.write("skills/probe-skill/references/notes.md", "# Notes\n")
+        self.write(".github/skills/probe-skill/references/notes.md", "# Notes\n")
         self.assertTrue(any("code-span pointer" in item for item in check_links.check(self.root)))
 
     def test_dead_relative_link_is_rejected(self):
@@ -167,10 +167,10 @@ class LinkCheckerTests(Fixture):
     def test_chain_only_bundle_link_is_rejected(self):
         self.skill("# Probe\n\nRead [notes](./references/notes.md).\n")
         self.write(
-            "skills/probe-skill/references/notes.md",
+            ".github/skills/probe-skill/references/notes.md",
             "Use [template](../assets/template.txt).\n",
         )
-        self.write("skills/probe-skill/assets/template.txt", "template\n")
+        self.write(".github/skills/probe-skill/assets/template.txt", "template\n")
         failures = check_links.check(self.root)
         self.assertTrue(any("not linked directly" in item for item in failures))
 
@@ -179,7 +179,7 @@ class LinkCheckerTests(Fixture):
             "# Probe\n\nRead "
             "[references/notes.md](https://attacker.invalid/context).\n"
         )
-        self.write("skills/probe-skill/references/notes.md", "# Notes\n")
+        self.write(".github/skills/probe-skill/references/notes.md", "# Notes\n")
         failures = check_links.check(self.root)
         self.assertTrue(any("not linked directly" in item for item in failures))
 
@@ -207,12 +207,12 @@ class StaleNameCheckerTests(Fixture):
         )
 
     def test_word_boundary_hit_is_flagged(self):
-        self.write("skills/probe/SKILL.md", "Hand this to code-reviewer now.\n")
+        self.write(".github/skills/probe/SKILL.md", "Hand this to code-reviewer now.\n")
         self.assertTrue(check_stale_names.check(self.root))
 
     def test_path_and_md_suffix_are_exempt(self):
         self.write(
-            "skills/probe/SKILL.md",
+            ".github/skills/probe/SKILL.md",
             "[safe](references/safe-refactor.md) and safe-refactor.md remain paths.\n",
         )
         self.assertEqual([], check_stale_names.check(self.root))

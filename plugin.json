@@ -20,6 +20,6 @@
     "observability"
   ],
   "agents": "./generated/copilot/agents/",
-  "skills": "./skills/",
+  "skills": "./.github/skills/",
   "commands": "./generated/copilot/commands/"
 }

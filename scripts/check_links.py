@@ -269,7 +269,7 @@ def _check_direct_bundle_links(skill_path: Path, body: str) -> list[str]:
 def check(root: Path = ROOT) -> list[str]:
     root = Path(root).resolve()
     failures: list[str] = []
-    skill_root = root / "skills"
+    skill_root = root / ".github" / "skills"
     if skill_root.is_dir():
         for skill_path in sorted(skill_root.glob("*/SKILL.md")):
             try:
