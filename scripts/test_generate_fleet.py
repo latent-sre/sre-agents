@@ -576,6 +576,26 @@ class ProductionGeneratorContracts(unittest.TestCase):
             )
             self.assertEqual(expected, actual)
 
+    def test_projected_agent_bodies_carry_only_their_runtime_identity(self) -> None:
+        manifest, ready = generate_fleet.load_and_validate(ROOT)
+        outputs = generate_fleet.render(ROOT, manifest, ready)
+        by_name = {agent["name"]: agent for agent in manifest["agents"]}
+        for name in ready:
+            copilot = outputs[Path(f".github/agents/{name}.agent.md")].decode("utf-8")
+            claude = outputs[Path(f"generated/claude/agents/{name}.md")].decode("utf-8")
+            _fm, _, copilot_body = copilot.partition("\n---\n")
+            _fm2, _, claude_body = claude.partition("\n---\n")
+            # The Copilot file never names Claude's runtime; the dual-identity clause is gone.
+            self.assertNotIn("sre-agents:", copilot_body)
+            self.assertNotIn("(Claude:", copilot_body)
+            self.assertNotIn("Copilot uses `<skill-name>`", copilot_body)
+            for skill in by_name[name]["required_skills"]:
+                self.assertIn(f"- `{skill}` —", copilot_body)
+                self.assertIn(f"- `sre-agents:{skill}` —", claude_body)
+            # The Claude file uses only the namespaced form -- no bare "(Claude:" pairing survives.
+            self.assertNotIn("(Claude:", claude_body)
+            self.assertNotIn("Copilot uses `<skill-name>`", claude_body)
+
     def test_copilot_selector_manifest_is_an_exact_copilot_alias(self) -> None:
         manifest, ready = generate_fleet.load_and_validate(ROOT)
         outputs = generate_fleet.render(ROOT, manifest, ready)

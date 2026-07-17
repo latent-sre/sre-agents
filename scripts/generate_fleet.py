@@ -1138,9 +1138,46 @@ def _flow_list(values: list[str]) -> str:
     return "[" + ", ".join("'" + value.replace("'", "''") + "'" for value in values) + "]"
 
 
-def _body(root: Path, agent: dict) -> tuple[str, str]:
+def _body(root: Path, agent: dict) -> str:
     raw = (root / "canonical" / PurePosixPath(agent["body"])).read_bytes()
-    return raw.decode("utf-8"), hashlib.sha256(raw).hexdigest()
+    return raw.decode("utf-8")
+
+
+# The canonical agent body carries BOTH runtime identities in its required-skills block and one
+# trailing clause (validated by _validate_required_identities). Each projection ships only its own
+# runtime's identity so a Copilot file never names Claude and vice versa. The transform is confined
+# to the required-skills block and that clause; inline references already say "canonical `X`".
+_DUAL_IDENTITY_CLAUSE = re.compile(
+    r"load the runtime's registered identity before doing that part of the task:\s+"
+    r"Copilot uses `<skill-name>`; Claude uses `sre-agents:<skill-name>`\."
+)
+_IDENTITY_CLAUSE_REPLACEMENT = (
+    "load the registered skill identity shown in the block above before doing that part of the task."
+)
+
+
+def _project_agent_identities(body: str, runtime: str) -> str:
+    if runtime not in {"copilot", "claude"}:
+        raise ManifestError(f"unknown runtime for identity projection: {runtime}")
+    lines = body.split("\n")
+    inside = False
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == REQUIRED_START:
+            inside = True
+        elif stripped == REQUIRED_END:
+            inside = False
+        elif inside and REQUIRED_LINE.match(line):
+            name = REQUIRED_LINE.match(line).group("copilot")
+            reason = line.split(" — ", 1)[1]
+            identity = name if runtime == "copilot" else f"sre-agents:{name}"
+            lines[index] = f"- `{identity}` — {reason}"
+    return _DUAL_IDENTITY_CLAUSE.sub(_IDENTITY_CLAUSE_REPLACEMENT, "\n".join(lines))
+
+
+def _agent_body_view(root: Path, agent: dict, runtime: str) -> tuple[str, str]:
+    body = _project_agent_identities(_body(root, agent), runtime)
+    return body, hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
 def _command_body(root: Path, command: dict) -> tuple[str, str]:
@@ -1177,7 +1214,7 @@ def _copilot_agent(root: Path, agent: dict, models: dict) -> bytes:
     tools = [capability for capability in agent["capabilities"]]
     if agent["delegates_to"]:
         tools.append("agent")
-    body, body_hash = _body(root, agent)
+    body, body_hash = _agent_body_view(root, agent, "copilot")
     lines = [
         "---",
         f"{GENERATED_BANNER} from canonical/fleet.json and canonical/{agent['body']}; "
@@ -1222,7 +1259,7 @@ def _claude_agent(root: Path, agent: dict, models: dict) -> bytes:
         tools.append("Skill")
     if agent["delegates_to"]:
         tools.append(f"Agent({', '.join(agent['delegates_to'])})")
-    body, body_hash = _body(root, agent)
+    body, body_hash = _agent_body_view(root, agent, "claude")
     lines = [
         "---",
         f"{GENERATED_BANNER} from canonical/fleet.json and canonical/{agent['body']}; "
