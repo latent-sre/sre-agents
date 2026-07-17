@@ -165,10 +165,9 @@ the process `/stats` endpoint. *[sourced: CAPI V3 process endpoints]*
 ### Secrets: credential-bearing reads are human-only
 
 Fleet agents never run `cf env`, `cf service-key`, or `CF_TRACE` output because those reads can leak
-credentials to an agent with egress. The selected execution boundary remains
-`[unverified/pending Task 38]`; `sre` and `observer` are structurally projected in the unregistered
-content-building Task 32 tree, but no discovery channel is active, so do not infer brokered or safe
-mode from the current tree. A human runs these credential-bearing reads.
+credentials to an agent with egress. Treat the execution boundary as `[unverified]` until a live
+probe confirms it, and do not infer a brokered or otherwise safe execution mode from the current
+tree. A human runs these credential-bearing reads.
 If raw environment data is genuinely required, the human captures and sanitizes the smallest excerpt
 outside the agent context. Preserve its evidence label and content hash through handoff.
 

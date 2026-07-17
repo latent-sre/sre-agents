@@ -38,6 +38,8 @@ STEPS = [
      ["scripts/check_links.py"], None),
     ("No stale unit names",
      ["scripts/check_stale_names.py"], None),
+    ("No build scaffolding in shipped content",
+     ["scripts/check_no_scaffolding.py"], None),
     ("Generated fleet contract",
      ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_generate_fleet.py"], None),
     ("Generated fleet is current",

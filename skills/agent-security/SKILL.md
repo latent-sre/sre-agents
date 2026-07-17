@@ -19,10 +19,10 @@ An LLM **cannot reliably separate trusted instructions from untrusted data** —
 stream. So any text an agent reads can try to *become* a command. This is architectural, not a bug you
 patch; you contain it. *[sourced: industry consensus; Simon Willison, "The lethal trifecta"]*
 
-## Runtime boundary (pre-Task 38)
+## Runtime boundary
 
-Inspect the generated wrappers/manifests directly, report the execution boundary as
-`[unverified/pending Task 38]`, and never infer a guard from the empty checked-in hook files.
+Inspect the generated wrappers/manifests directly, report the execution boundary as `[unverified]`
+until a live probe confirms it, and never infer a guard from the empty checked-in hook files.
 
 ## The lethal trifecta
 An agent is exploitable by a single injected prompt when it combines **all three**:
@@ -72,7 +72,7 @@ the containment (which leg is broken, by what control), and any residual risk ne
 
 Report structural controls separately from prose. For each finding, give evidence, affected boundary,
 blast radius, smallest safe remediation, verification method, residual risk, and any
-`[unverified/pending Task 38]` runtime claim.
+`[unverified]` runtime claim.
 
 ## Handoffs
 - Route independent findings to the typed `reviewer` agent with evidence, taint, severity, and the

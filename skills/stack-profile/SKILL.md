@@ -46,10 +46,10 @@ platform-side (many apps failing at once, failing cells, Gorouter-wide 5xx), rec
 escalate with evidence — timestamps, blast radius, `cf` output showing our app healthy — do not
 operate BOSH.
 
-## Copilot models (recorded here per spec Section 3, not in five agent files)
+## Copilot models
 Selection rule: primary = the strongest Claude model in the team's Copilot picker at ship time;
 middle fallback = the next approved Claude model; final fallback = the org's default non-Claude model.
 Recorded ordered list: Claude Sonnet 5 (copilot) → Claude Opus 4.8 (copilot) → GPT-5.4 (copilot).
-[unverified — confirmed for the team license tier in Phase 5; re-record the complete ordered list when it changes]
+[unverified — re-record the complete ordered list when the team's licensed model picker changes]
 
 <!-- profile canary: sp_7c2e — quoted output proves this file loaded; guarded by the tripwire test -->
