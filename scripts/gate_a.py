@@ -42,6 +42,8 @@ STEPS = [
      ["scripts/check_no_scaffolding.py"], None),
     ("Generated fleet contract",
      ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_generate_fleet.py"], None),
+    ("Content-checker unit tests",
+     ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_check_*.py"], None),
     ("Generated fleet is current",
      ["scripts/generate_fleet.py", "--check"], None),
     ("Fleet content complete",
