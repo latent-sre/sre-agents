@@ -7,8 +7,10 @@ the fleet source; shipped runtime context belongs in canonical agents and skills
 
 - `canonical/fleet.json` owns fleet metadata, capabilities, dependencies, delegation, and handoffs.
 - `canonical/agents/` owns shared agent bodies.
-- `skills/` owns the 26 Agent Skills and their registered bundles.
-- `generated/` and the runtime manifests are deterministic projections; never edit them directly.
+- `.github/skills/` owns the 26 Agent Skills and their registered bundles, hand-authored at the
+  VS Code native discovery path (skills have no per-runtime transform, so they are not projected).
+- `.github/agents/`, `.github/prompts/`, `generated/`, and the runtime manifests are deterministic
+  projections; never edit them directly.
 - `scripts/` owns generation, validation, and structural gates.
 - `evals/` owns behavioral scenarios and graders.
 
@@ -16,7 +18,7 @@ the fleet source; shipped runtime context belongs in canonical agents and skills
 
 Follow the [work and verification protocol](CONTRIBUTING.md#work-and-verification-protocol).
 Write a failing focused check before changing an artifact. For fleet runtime content, edit
-`canonical/fleet.json`, `canonical/agents/`, or `skills/`, then regenerate projections through the
+`canonical/fleet.json`, `canonical/agents/`, or `.github/skills/`, then regenerate projections through the
 repository generator; edit repository machinery and documentation in their owning source paths.
 
 Run `py -3 scripts/gate_a.py` before committing. Gate A proves structure, not semantic correctness;

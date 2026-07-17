@@ -1,20 +1,25 @@
 # SRE Agents
 
 SRE Agents is a canonical fleet of **5 agents and 26 skills** for application engineering and site
-reliability work. The repository authors one fleet and deterministically projects separate VS Code /
-GitHub Copilot and Claude Code runtime definitions.
+reliability work. The repository authors one fleet and deterministically projects VS Code / GitHub
+Copilot and Claude Code runtime definitions, placing the Copilot agents, prompts, and skills where
+VS Code natively discovers them under `.github/`.
 
 The canonical content is complete. Distribution, protected promotion, and pilot work are later phases
-of the redesign and are not implied by this checkout. Never register a mutable authoring tree as a
-runtime source.
+of the redesign and are not implied by this checkout. Generated projections are never hand-edited;
+skills are the one runtime tree that is hand-authored — at its native `.github/skills/` discovery
+path — because Agent Skills carry no per-runtime transform, so there is nothing to project.
 
 ## Authoring model
 
 - [`canonical/fleet.json`](canonical/fleet.json) is the metadata, capability, dependency, and routing source.
 - [`canonical/agents/`](canonical/agents) contains the five shared agent bodies.
-- [`skills/`](skills) contains shared Agent Skills and their registered references, assets, and scripts.
-- [`generated/copilot/`](generated/copilot) and [`generated/claude/`](generated/claude) are generated,
-  runtime-specific projections. Root and runtime manifests are generated too; do not edit them directly.
+- [`.github/skills/`](.github/skills) contains the 26 Agent Skills (references, assets, scripts),
+  hand-authored at the VS Code native discovery path.
+- [`.github/agents/`](.github/agents) and [`.github/prompts/`](.github/prompts) are generated Copilot
+  projections (VS Code native discovery). [`generated/claude/`](generated/claude) holds the Claude
+  projections and [`generated/copilot/commands/`](generated/copilot/commands) the Copilot CLI command
+  form. Root and runtime manifests are generated too; do not edit any of them directly.
 - [`scripts/generate_fleet.py`](scripts/generate_fleet.py) generates and checks projections.
 
 Runtime routing is native: agent descriptions select a lane, canonical `delegates_to` edges project each

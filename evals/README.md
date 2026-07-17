@@ -33,7 +33,7 @@ a fresh session so leftover authoring context can't mask gaps (per the skills be
 skill on its own. A discovery probe (`discovery_probe.py` + `discovery/*.yaml`) used to fill that
 gap, but the whole set was authored against the retired legacy fleet and was removed in the
 2026-07 cleanup — recoverable at tag `pre-cleanup-2026-07-15`, along with its measured baselines.
-Re-author both the probe and its scenarios against the shipped layout (`skills/`,
+Re-author both the probe and its scenarios against the shipped layout (`.github/skills/`,
 `generated/claude/agents/`) when discovery measurement is needed again.
 
 ## The clean room (and why a baseline states its namespace)

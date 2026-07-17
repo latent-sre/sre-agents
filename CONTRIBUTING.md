@@ -11,7 +11,7 @@ limits shared-fleet blast radius; it is not a sandbox.
 
 - Change fleet metadata and graph edges in `canonical/fleet.json`.
 - Change agent instructions in `canonical/agents/`.
-- Change skill instructions and registered bundles in `skills/`.
+- Change skill instructions and registered bundles in `.github/skills/`.
 - Do not edit generated projections or generated manifests. Run the generator instead.
 
 Preserve exact runtime identity pairs, dependency inventories, and capability boundaries. Treat imported
