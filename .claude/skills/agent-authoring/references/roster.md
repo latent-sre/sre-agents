@@ -43,7 +43,7 @@ coordinator agent outperforms the in-session skill after token, latency, and rou
   Never assume workers inherit the caller's context. Underspecified handoffs are the #1 multi-agent bug.
 - **The final message is the interface.** Specify each agent's return contract; free-text handoffs
   drop constraints at every hop. Preserve [verified], [sourced], [unverified], and [UNTRUSTED] labels.
-- **Tools are authority.** The canonical tool list encodes the mandate. Enforce roles at the runtime
+- **Tools are authority.** The agent's `tools:` list encodes the mandate. Enforce roles at the tool
   layer, not with prose.
 - **Descriptions route; keep them trigger-only** (see [artifact guidance](./artifact.md)).
 - **Budget explicitly.** Tokens, latency, and strand count per task; right-size the fan-out: 1 agent
@@ -61,11 +61,10 @@ waste · runaway loops with no dry-out condition · missing return contracts.
 ## Deliverable
 
 A roster delta or design: each agent's lane, trigger description, tool authority, handoff edges,
-context budget, and failure handling. Claude agents inherit the session model unless canonical policy
-sets one; Copilot model choices are centralized in canonical policy rather than copied into each agent.
-That removes per-agent synchronization and lineup maintenance, but it also prevents cheaply tiering
-routine agents separately from judgment-heavy agents. Accept the shared tier by default. A distinct tier
-requires a reviewed canonical schema/policy design change plus regenerated projections, justified only
+context budget, and failure handling. Agents carry no `model:` pins — the whole fleet inherits the
+session model. That removes per-agent synchronization and lineup maintenance, but it also prevents
+cheaply tiering routine agents separately from judgment-heavy agents. Accept the shared tier by
+default. A per-agent `model:` pin is a reviewed roster decision, justified only
 when the cost of a wrong call exceeds that maintenance overhead. Hand single-artifact wording to
 [artifact guidance](./artifact.md), approved implementation to the typed `sde` agent, independent
 findings to the typed `reviewer` agent, and authorization to the human release owner with existing

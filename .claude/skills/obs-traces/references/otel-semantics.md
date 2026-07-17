@@ -122,7 +122,7 @@ coverage before turning absence into a causal conclusion.
 
 *[sourced: OpenTelemetry sampling terminology; unverified for target sampler/export path]*
 
-Ownership map only—not a load: canonical obs-pipeline owns trace instrumentation.
+Ownership map only—not a load: the `obs-pipeline` skill owns trace instrumentation.
 
 ## Inert canary example
 

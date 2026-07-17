@@ -176,8 +176,8 @@ staleness conditions.
 ## Investigation handoff
 
 Overlay the exact deploy timestamp, then keep both the aggregate and the dimension that isolates an
-outlier. Hand canonical agent `observer` the query, window, threshold, value, and missing-data behavior.
-Ownership map only—not a load: canonical `obs-alerting` owns alert and SLO design.
+outlier. Hand the `observer` agent the query, window, threshold, value, and missing-data behavior.
+Ownership map only—not a load: the `obs-alerting` skill owns alert and SLO design.
 
 ## Inert canary example
 

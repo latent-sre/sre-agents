@@ -30,10 +30,10 @@ If it turns out to have one provable proximate cause in one service, hand back t
 2. **Resilience fixes** that remove the failure mode: bounded timeouts + retries with backoff/jitter,
    circuit breakers / bulkheads, backpressure / load shedding, idempotency, graceful degradation,
    dependency isolation.
-3. Ownership map only—not a load: canonical `observer` owns the follow-up SLI/alert. Provide the
+3. Ownership map only—not a load: the `observer` agent owns the follow-up SLI/alert. Provide the
    specific detection strategy that should page earlier next time (dependency-latency burn,
    saturation, retry rate).
-4. Ownership map only—not a load: canonical `postmortem` owns the durable write-up. Write a blameless
+4. Ownership map only—not a load: the `postmortem` skill owns the durable write-up. Write a blameless
    analysis of *why our defenses didn't catch it*: what made it hard to detect, diagnose, or mitigate —
    and the systemic improvements.
 

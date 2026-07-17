@@ -3,8 +3,7 @@ name: pcf-ops
 description: >-
   Investigate application-side PCF/TAS failures with cf app, events, logs, and routes, and
   distinguish app faults from platform-wide symptoms. Triggers: 'the app is crashing', 'why is
-  my app 502-ing', 'exit code 137', 'X-Cf-RouterError'. Ownership map only—not a load: canonical
-  `stack-profile` supplies boundary facts; widespread Diego/Gorouter failures go to the platform
+  my app 502-ing', 'exit code 137', 'X-Cf-RouterError'. Ownership map only—not a load: the `stack-profile` skill supplies boundary facts; widespread Diego/Gorouter failures go to the platform
   team with evidence.
 compatibility: Requires the cf CLI v8 and access/auth to the target PCF foundation
 ---
@@ -180,7 +179,7 @@ hand it to the human release owner with the exact target, purpose, and rollback/
 `cf set-health-check` / `cf restart` / `cf restage` / `cf scale` / `cf push` / `cf map-route` / `cf unmap-route` /
 `cf set-env` / `cf stop` / `cf delete` / `cf cancel-deployment` / `cf continue-deployment` / `cf ssh`.
 
-Ownership only—not a load: canonical `incident-command` owns mitigation choice and the human-invoked `/pcf-deploy` workflow owns deployment execution; this read-only skill stops and hands off. Require an
+Ownership only—not a load: the `incident-command` skill owns mitigation choice and the human-invoked `/pcf-deploy` workflow owns deployment execution; this read-only skill stops and hands off. Require an
 already-approved Tier-2/3 evidence packet naming the exact target, action, actor, blast radius,
 verification, and rollback before any live command. Agents never execute deployment.
 

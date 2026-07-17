@@ -17,12 +17,11 @@ description: >-
 # Release gate
 
 A release is ready only when **all** checklist items pass. The gate is owned by a human release owner.
-For production, this PASS establishes readiness only; authorization belongs to a separate, later canonical
-`production-change-gate` using this recorded evidence.
+For production, this PASS establishes readiness only; authorization belongs to a separate, later the `production-change-gate` skill using this recorded evidence.
 
 ## Checklist
 
-- [ ] **Merge readiness exists** — attach a recorded PASS from canonical `merge-gate` for the exact
+- [ ] **Merge readiness exists** — attach a recorded PASS from the `merge-gate` skill for the exact
       reviewed SHA. This skill does not load or execute that sibling gate; missing evidence is a blocking
       item.
 - [ ] **Versioned & noted** — the version and changelog or release notes identify the candidate.
@@ -40,8 +39,7 @@ For production, this PASS establishes readiness only; authorization belongs to a
 - [ ] **Monitoring in place** — attach existing evidence from the typed `observer` agent that alerts and
       SLOs cover the new behavior and that new paging alerts have operator guidance.
 - [ ] **Comms ready** — stakeholders and on-call know the window and update cadence.
-- [ ] **Production boundary understood** — a prod candidate proceeds only to the separate, later canonical
-      `production-change-gate`; this checklist neither loads that gate nor authorizes the action.
+- [ ] **Production boundary understood** — a prod candidate proceeds only to the separate, later the `production-change-gate` skill; this checklist neither loads that gate nor authorizes the action.
 
 ## Verdict
 
@@ -57,6 +55,6 @@ Blocking items: <the NOs>
 
 - **Gate topology:** recorded merge readiness is existing evidence consumed here. Production authorization
   is separate and later, and consumes this release-readiness record for the exact candidate and target.
-- Ownership map only—not a load: canonical `ci-actions` owns workflow definition. The release packet must
+- Ownership map only—not a load: the `ci-actions` skill owns workflow definition. The release packet must
   attach existing artifact-provenance and protected-environment evidence rather than invoke that skill.
 - A release without a clean, evidenced rollback does not pass.

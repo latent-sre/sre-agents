@@ -4,7 +4,7 @@ description: >-
   Write or update an operational runbook or operating doc — how to check, restart, and recover a
   service, written for the stressed 3am reader. Triggers: 'write a runbook', 'document this
   procedure', 'how do we handle X at 3am'. Every slot is filled or marked 'n/a — why'; commands
-  carry evidence labels. Ownership map only—not a load: canonical `postmortem` owns post-incident
+  carry evidence labels. Ownership map only—not a load: the `postmortem` skill owns post-incident
   retrospective structure.
 argument-hint: "[service or tool]"
 ---
@@ -41,7 +41,7 @@ Rules:
 ## Runbook vs playbook vs SOP
 - **Runbook** — steps to handle *one* alert/task/failure mode (this template).
 - **Playbook** — a broader response *strategy* orchestrating multiple runbooks (e.g. a major-incident
-  playbook). Ownership map only—not a load: canonical `incident-command` owns live-incident coordination.
+  playbook). Ownership map only—not a load: the `incident-command` skill owns live-incident coordination.
 - **SOP** — a fixed procedure for routine operations (not incident-driven).
 
 Keep them current the only way that works: **rehearse them.** Run game days / drills under realistic

@@ -144,5 +144,5 @@ durable operating guidance.
 
 ## Pairs with
 
-Ownership map only—not a load: canonical `eng-ladder` owns response altitude and canonical `postmortem`
+Ownership map only—not a load: the `eng-ladder` skill owns response altitude and the `postmortem` skill
 owns the durable retrospective.

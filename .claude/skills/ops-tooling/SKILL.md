@@ -32,12 +32,10 @@ Establish before designing. Infer from context and the codebase where possible; 
 
 ## Phase 1 — Right-size the design
 
-Use the dependency block to load canonical `eng-ladder` (Copilot `eng-ladder`; Claude `sre-agents:eng-ladder`), then read its principal or distinguished reference—or return the material fork to your caller.
+Load the `eng-ladder` skill, then read its principal or distinguished reference—or return the material fork to your caller.
 
-<!-- required-skill-dependencies:start -->
 ## Required on-demand skill dependencies
-- canonical `eng-ladder`; Copilot `eng-ladder`; Claude `sre-agents:eng-ladder`
-<!-- required-skill-dependencies:end -->
+- `eng-ladder`
 
 - Single component, low blast radius → design inline at SDE level: a few sentences of plan plus stated assumptions. No ceremony.
 - Multiple services, a data migration, or hard-to-reverse choices → use the principal reference for a short design doc; surface any one-way doors to the user before proceeding.
@@ -55,7 +53,7 @@ Agents do not inherit this conversation. Pass each one full context: the Phase 0
 
 Spawn `sde` with the requirements, the design, exact repo paths and conventions, and the success criterion. Every spawn prompt states a **checkpoint contract**: the boundary to run to, the acceptance criteria the builder self-verifies against, and the leash — reversible decisions are the builder's to make and log, and it returns only at the boundary or on a material fork. For trivial scope, implement directly while holding to the same SRE-lens standards (observability, timeouts, idempotency, dry-run for destructive actions).
 
-For multi-component projects: **walking skeleton first** (the thinnest end-to-end slice running against the real contract), fully verified — it proves the contract. Then **triage by blast radius**: safety-critical components (anything that can corrupt production state) keep per-slice verification and review-as-gate; everything else builds in **batches**, verified once at the batch boundary. After the skeleton, launch each batch's builders **in one message** so they run concurrently — one `sde` per component with **disjoint file ownership**, each citing the contract artifact (tell `sde` which canonical layer the build touches; `sde` resolves that layer through its own required-skills block—this skill neither preloads nor loads craft). Mechanical scope (scaffolding, boilerplate, packaging, docs) may run on a faster model (spawn-time model override; sonnet by default); safety-critical code and all reviews stay at full effort. Prefer messaging a running builder with scope changes over killing and relaunching; if one is stopped early, inventory its partial writes and have the successor verify-and-finish rather than redo.
+For multi-component projects: **walking skeleton first** (the thinnest end-to-end slice running against the real contract), fully verified — it proves the contract. Then **triage by blast radius**: safety-critical components (anything that can corrupt production state) keep per-slice verification and review-as-gate; everything else builds in **batches**, verified once at the batch boundary. After the skeleton, launch each batch's builders **in one message** so they run concurrently — one `sde` per component with **disjoint file ownership**, each citing the contract artifact (tell `sde` which layer the build touches; `sde` resolves that layer through its own skill list—this skill neither preloads nor loads craft). Mechanical scope (scaffolding, boilerplate, packaging, docs) may run on a faster model (spawn-time model override; sonnet by default); safety-critical code and all reviews stay at full effort. Prefer messaging a running builder with scope changes over killing and relaunching; if one is stopped early, inventory its partial writes and have the successor verify-and-finish rather than redo.
 
 Accept a builder's review packet on its evidence (fresh command + output): re-run declared safety proofs and one spot-check per batch, never the whole verification. Answer status questions from the progress file declared in the project context (portable default: `.agents/PROGRESS.md`) — never interrupt a running builder to ask.
 

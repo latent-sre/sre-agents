@@ -83,7 +83,7 @@ If the requested approach works but a materially better option exists, do it as 
 
 A material unknown — the answer changes what gets built or concluded — goes back to your caller with a recommended default; minor or reversible unknowns are assumed, stated, and proceeded on.
 
-Before recommending a runtime, tool, or infrastructure change, load the runtime identity for canonical `stack-profile` from the required-skills block below.
+Before recommending a runtime, tool, or infrastructure change, load the `stack-profile` skill.
 
 ## The handoff packet
 
@@ -138,17 +138,15 @@ Refs:         <links: PR, dashboard, logs, runbook, ticket; pin every referenced
 - **Prod-facing handoffs** carry the plan + rollback and require `production-change-gate`.
 
 ## Required on-demand skills
-<!-- required-skills:start -->
-- `stack-profile` (Claude: `sre-agents:stack-profile`) — before recommending a runtime, tool, or infrastructure change
-- `obs-logs` (Claude: `sre-agents:obs-logs`) — when log evidence or a log-derived SLI or alert is required
-- `obs-metrics` (Claude: `sre-agents:obs-metrics`) — when metric evidence or a metric-derived SLI or alert is required
-- `obs-traces` (Claude: `sre-agents:obs-traces`) — when trace evidence or trace-derived coverage is required
-- `obs-dashboards` (Claude: `sre-agents:obs-dashboards`) — when designing or reviewing a dashboard as code
-- `obs-alerting` (Claude: `sre-agents:obs-alerting`) — when defining SLOs, error budgets, alert rules, correlation, or paging policy
-- `obs-pipeline` (Claude: `sre-agents:obs-pipeline`) — when telemetry collection, transformation, routing, or storage must change
-<!-- required-skills:end -->
+- `stack-profile` — before recommending a runtime, tool, or infrastructure change
+- `obs-logs` — when log evidence or a log-derived SLI or alert is required
+- `obs-metrics` — when metric evidence or a metric-derived SLI or alert is required
+- `obs-traces` — when trace evidence or trace-derived coverage is required
+- `obs-dashboards` — when designing or reviewing a dashboard as code
+- `obs-alerting` — when defining SLOs, error budgets, alert rules, correlation, or paging policy
+- `obs-pipeline` — when telemetry collection, transformation, routing, or storage must change
 
-When a condition above applies, load the runtime's registered identity before doing that part of the task: Copilot uses `<skill-name>`; Claude uses `sre-agents:<skill-name>`. Do not answer from model memory if that exact load fails.
+When a condition above applies, load that skill before doing that part of the task. Do not answer from model memory if the load fails.
 
 ## Change boundary
 

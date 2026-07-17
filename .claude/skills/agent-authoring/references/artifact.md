@@ -52,7 +52,7 @@ mediocre ones. Never vague qualifiers ("be concise") — state the threshold ("�
 
 ## Structural beats behavioral
 
-When a rule is load-bearing, prefer the mechanical control and say so: explicit canonical tool
+When a rule is load-bearing, prefer the mechanical control and say so: an explicit tool
 scopes, generated runtime projections, protected environments, gates, validators, and regression
 fixtures. Prose guardrails are for cooperative agents; structural enforcement holds under pressure.
 
@@ -69,7 +69,7 @@ fixtures. Prose guardrails are for cooperative agents; structural enforcement ho
 
 - Follow the [roster guidance](./roster.md) when the fix is really a lane or orchestration problem,
   rather than one artifact.
-- Ownership map only—not a load: canonical `agent-security` owns the independent threat review.
+- Ownership map only—not a load: the `agent-security` skill owns the independent threat review.
 - Run generate → evaluate → refine inline against a measurable fixture.
 - Send validator, grader, or generator implementation to the typed `sde` agent.
 

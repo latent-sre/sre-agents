@@ -66,34 +66,28 @@ Route to the relevant method without loading sibling skills:
 
 ## Runtime quick reference
 
-Author the canonical source. Agent metadata and bodies live in `canonical/fleet.json` and
-`canonical/agents/<name>.md`; skill sources live in `skills/<name>/SKILL.md`.
-Generated wrappers are inspect-only examples, never edit targets. Inspect `generated/copilot/agents/<name>.agent.md`
-and `generated/claude/agents/<name>.md` only to verify projection behavior.
+Author the source directly. Agents live at `.claude/agents/<name>.md`; skills at
+`.claude/skills/<name>/SKILL.md`; the manual `adr` scaffold at `.claude/commands/adr.md`.
+There is no generator and no projection — the file you edit is the file the runtime loads.
 
-### Canonical agent
+### Agent
 
-In `canonical/fleet.json`, author `name`, `description`, `body`, `capabilities`, `required_skills`, `delegates_to`, and `handoffs`; put the shared body at `canonical/agents/<name>.md`. Canonical fields define identity, authority, readiness, and graph edges before projection.
+In `.claude/agents/<name>.md` frontmatter, author `name`, `description`, and `tools` as native
+fields. Delegation is a scoped grant in the tool list (`Agent(target, …)` — an edge not granted
+does not exist), and per-agent `PreToolUse` hooks wire the read-only guard where the agent holds
+Bash. Do not bury a capability or delegation boundary in prose when the runtime has a field for
+it. The body carries the lane, method, and output contract.
 
 ### Shared skill
 
-In `skills/<name>/SKILL.md`, the allowed frontmatter fields are `name`, `description`, `argument-hint`, `disable-model-invocation`, and `compatibility`. Keep reusable workflow in the body and register the exact directory and bundle inventory canonically.
-
-### Copilot
-
-Project `description`, `tools`, `model`, `agents`, and `handoffs` as separate native fields.
-Do not bury a capability or delegation boundary in prose when the runtime has a field for it.
-
-### Claude
-
-Project `description`, `tools`, and `model` as separate native fields. Delegation uses
-`Agent(target)`. Skill identities are namespaced as `sre-agents:<skill>` while the wrapper gets
-generic `Skill`, never a `skills:` preload. Canonical `required_skills` is integrity and readiness
-metadata; it is not a request to invent a runtime preload field.
+In `.claude/skills/<name>/SKILL.md`, the frontmatter fields this fleet uses are `name`,
+`description`, `argument-hint`, and `disable-model-invocation`. Keep reusable workflow in the
+body; bundle depth in `references/`, `assets/`, and `scripts/`, each linked from the body. Skills
+are invoked by bare name (e.g. `/pcf-deploy`); there is no plugin namespace.
 
 ## Promotion and composition
 
-Build new agents/skills in `~/.copilot/{agents,skills}` — per-user, zero-risk. When a second person wants one, it graduates into the fleet by PR (CONTRIBUTING is the policy; this skill is the method).
+Build new agents/skills in `~/.claude/{agents,skills}` — per-user, zero-risk. When a second person wants one, it graduates into the fleet by PR (CONTRIBUTING is the policy; this skill is the method).
 
 The phrase `zero-risk` means zero shared-fleet blast radius; local/runtime risk remains. A personal definition can still shadow a name or reach the user's credentials, tools, files, and network, so the phrase is not a security claim.
 

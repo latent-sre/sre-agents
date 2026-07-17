@@ -3,10 +3,10 @@ name: pcf-deploy
 description: >-
   Plan human-approved VMware TAS/PCF application deploys, blue-green cutovers, scaling, and
   rollback verification. Triggers: 'deploy this app to PCF', 'design a blue-green deploy',
-  'scale this PCF app'. Ownership map only—not a load: canonical `release-gate` decides
-  readiness and canonical `incident-command` owns rollback decisions.
+  'scale this PCF app'. Ownership map only—not a load: the `release-gate` skill decides
+  readiness and the `incident-command` skill owns rollback decisions.
 compatibility: Requires the cf CLI v8 and authorized access to the target PCF foundation/space
-# Deploys are human-initiated: invoke explicitly as Copilot `/pcf-deploy` or Claude `/sre-agents:pcf-deploy`; never auto-load.
+# Deploys are human-initiated: invoke explicitly as `/pcf-deploy`; never auto-load.
 disable-model-invocation: true
 ---
 
@@ -38,7 +38,7 @@ does not load or run either gate. Show the manifest diff and rollback path befor
 >   fired, files written).
 >
 > Design the change so it is reversible: expand → backfill → dual-write, and do **not** contract until
-> the old code is gone for good. Ownership map only—not a load: canonical `database-reliability` owns
+> the old code is gone for good. Ownership map only—not a load: the `database-reliability` skill owns
 > operational migration safety. "We can roll back" remains `[unverified]` until rehearsed evidence
 > proves it for the exact artifact and target.
 

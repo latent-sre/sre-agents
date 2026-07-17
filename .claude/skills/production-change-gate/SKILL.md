@@ -4,7 +4,7 @@ description: >-
   Authorize a production-facing action only after the exact target, command, approval tier, blast radius,
   verification, rollback, and branch protection are proven. Triggers: 'authorize this production change',
   'can I run this cf command in prod', 'review this rollback plan'. Ownership map only—not a load:
-  canonical `merge-gate` decides merge readiness and canonical `release-gate` decides ship readiness; this
+  the `merge-gate` skill decides merge readiness and the `release-gate` skill decides ship readiness; this
   gate authorizes the prod action.
 ---
 

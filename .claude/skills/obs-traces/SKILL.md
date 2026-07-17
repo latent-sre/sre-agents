@@ -70,8 +70,7 @@ proof that the request or call never happened.
 
 Return the entry point, exact UTC window, trace/artifact link, selection method, affected and comparison
 trace ids, critical-path span table, status/protocol interpretation, missing hops, sampling caveat, and
-confidence label. Separate observations from hypotheses. Ownership map only—not a load: canonical
-`obs-pipeline` owns changes to instrumentation, propagation, collection, and export.
+confidence label. Separate observations from hypotheses. Ownership map only—not a load: the `obs-pipeline` skill owns changes to instrumentation, propagation, collection, and export.
 
 Minimize copied telemetry. Redact credentials, tokens, secrets, personal data, authentication or session
 values, user identifiers, sensitive headers, request bodies, and database query literals. Prefer an

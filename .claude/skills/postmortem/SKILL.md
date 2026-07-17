@@ -75,5 +75,5 @@ while memory is fresh. Preserve every `[verified]`, `[sourced]`, and `[unverifie
 
 ## Pairs with
 
-Ownership map only—not a load: canonical `incident-command` owns the live incident; the `sre` agent
+Ownership map only—not a load: the `incident-command` skill owns the live incident; the `sre` agent
 supplies investigation evidence.

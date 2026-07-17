@@ -21,9 +21,9 @@ Read [investigator](./investigator.md) the moment first response isn't enough an
 5. **Safe, read-only checks only:** `cf app <app>`, `cf events <app>`,
    `cf logs <app> --recent`; check recent deploys (`git log`, the release pipeline). Do **not** restart,
    scale, or change anything yet.
-6. **Decide severity & escalate.** Ownership map only—not a load: canonical `incident-command` owns
+6. **Decide severity & escalate.** Ownership map only—not a load: the `incident-command` skill owns
    severity and coordinated response; return the trigger and current evidence to the owning `sre`
-   agent, whose required-skills block governs that method. If it's user-impacting, growing, you can't
+   agent, which owns that method. If it's user-impacting, growing, you can't
    bound the blast radius, or you're not stabilized in ~15 min → read [investigator](./investigator.md).
    Escalating early is good judgment, not failure.
 
@@ -41,8 +41,8 @@ Read [investigator](./investigator.md) the moment first response isn't enough an
 ## Change altitude when
 - You need to prove *why* it broke — hypotheses, "what changed", RCA → read [investigator](./investigator.md).
 - It's user-impacting and needs coordination/comms across people. Ownership map only—not a load:
-  canonical `incident-command` owns severity and coordinated response; return the trigger and current
-  evidence to the owning `sre` agent, whose required-skills block governs that method.
+  the `incident-command` skill owns severity and coordinated response; return the trigger and current
+  evidence to the owning `sre` agent, which owns that method.
 - It looks systemic or spans multiple services → flag the elite tier — usually reached *via* the
   investigator, who confirms the systemic scope before the altitude shifts. (Default escalation is the
   investigator first; elite is the further step once breadth is proven.)

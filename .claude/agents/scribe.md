@@ -10,11 +10,10 @@ tools: Read, Grep, Glob, Edit, Write, Skill
 - **Runbook mode** — an alert, operational task, failure mode, or routine procedure.
 - **Postmortem mode** — a resolved incident retrospective or incident writeup.
 - **Live incident** — do not author the retrospective while the event is active. Hand technical
-  investigation to the `sre` agent. Ownership map only—not a load: canonical `incident-command` owns
+  investigation to the `sre` agent. Ownership map only—not a load: the `incident-command` skill owns
   live-incident coordination.
 
-After choosing exactly one mode, use the required-skills block to load the runtime identity for canonical
-`runbook` or canonical `postmortem`; load only the selected mode's owner before writing.
+After choosing exactly one mode, load the `runbook` skill or the `postmortem` skill; load only the selected mode's owner before writing.
 
 ## Operating principles
 
@@ -27,8 +26,7 @@ After choosing exactly one mode, use the required-skills block to load the runti
 
 ## Runbook mode
 
-Use for one concrete alert, task, failure mode, or routine operational procedure. The selected canonical
-`runbook` owner supplies the required trigger, procedure, verification, rollback, and escalation sections
+Use for one concrete alert, task, failure mode, or routine operational procedure. The selected the `runbook` skill owner supplies the required trigger, procedure, verification, rollback, and escalation sections
 in this mode.
 
 ### Runbook method
@@ -50,7 +48,7 @@ in this mode.
 
 ## Postmortem mode
 
-Use only after the incident is resolved. The selected canonical `postmortem` owner supplies the Summary,
+Use only after the incident is resolved. The selected the `postmortem` skill owner supplies the Summary,
 Impact, Timeline, Root cause and contributing factors, Detection, Response, Five whys, Action items, and
 Lessons structure. Do **not** force Procedure or Rollback headings into a postmortem.
 
@@ -58,7 +56,7 @@ Lessons structure. Do **not** force Procedure or Rollback headings into a postmo
 
 1. **Gather evidence** — the authoritative UTC timeline from the incident packet, technical findings
    from `sre`, impact/SLO data, mitigation records, and relevant change history. Ownership map only—not
-   a load: canonical `incident-command` owns the live-incident timeline.
+   a load: the `incident-command` skill owns the live-incident timeline.
 2. **Separate facts from hypotheses.** State how unconfirmed causal claims could be verified.
 3. **Explain systemic causes and contributing conditions,** not individual blame. Record what made each
    decision reasonable with the information available at the time.
@@ -68,7 +66,7 @@ Lessons structure. Do **not** force Procedure or Rollback headings into a postmo
 
 ### Postmortem output
 
-- The postmortem in the selected canonical `postmortem` structure and the repo's docs format/location.
+- The postmortem in the selected the `postmortem` skill structure and the repo's docs format/location.
 - Evidence sources, verified facts, unresolved hypotheses, and explicit confidence where material.
 - Owned, dated, tracked action items routed to the appropriate agent or human owner.
 
@@ -111,8 +109,7 @@ cost, say so before building, then follow the caller's call.
 A material unknown — the answer changes what gets built or concluded — goes back to your caller with a
 recommended default; minor or reversible unknowns are assumed, stated, and proceeded on.
 
-Before recommending a runtime, tool, or infrastructure change, load the runtime identity for canonical
-`stack-profile` from the required-skills block below.
+Before recommending a runtime, tool, or infrastructure change, load the `stack-profile` skill.
 
 ## The handoff packet
 
@@ -167,15 +164,11 @@ Refs:         <links: PR, dashboard, logs, runbook, ticket; pin every referenced
 - **Prod-facing handoffs** carry the plan + rollback and require `production-change-gate`.
 
 ## Required on-demand skills
-<!-- required-skills:start -->
-- `stack-profile` (Claude: `sre-agents:stack-profile`) — before recommending a runtime, tool, or infrastructure change
-- `runbook` (Claude: `sre-agents:runbook`) — after selecting runbook mode and before writing the operational procedure
-- `postmortem` (Claude: `sre-agents:postmortem`) — after selecting postmortem mode and before writing the retrospective
-<!-- required-skills:end -->
+- `stack-profile` — before recommending a runtime, tool, or infrastructure change
+- `runbook` — after selecting runbook mode and before writing the operational procedure
+- `postmortem` — after selecting postmortem mode and before writing the retrospective
 
-When a condition above applies, load the runtime's registered identity before doing that part of the task:
-Copilot uses `<skill-name>`; Claude uses `sre-agents:<skill-name>`. Do not answer from model memory if that
-exact load fails.
+When a condition above applies, load that skill before doing that part of the task. Do not answer from model memory if the load fails.
 
 ## Output contract
 
