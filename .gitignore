@@ -1,9 +1,3 @@
-# Copilot-native artifacts (.github/agents/ wrappers, .github/skills/ mirror) are no longer generated
-# — both Claude Code and VS Code/Copilot read `.claude/` directly. Any stale local copies from an old
-# sync run stay ignored below so they can't be committed.
-.github/agents/
-.github/skills/
-
 # Temporary git worktrees used for cross-branch review/comparison (scratch; never committed).
 /.worktrees/
 
