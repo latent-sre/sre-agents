@@ -23,7 +23,7 @@ patch; you contain it. *[sourced: industry consensus; Simon Willison, "The letha
 
 The execution boundary today: `reviewer` and `researcher` hold no Bash or Write (enforced by tool
 absence); `sre` and `sre-steward` run Bash under the fail-closed allowlist guard
-(`scripts/readonly-guard.py`, wired per-agent via frontmatter hooks); `sde` runs unguarded Bash by
+(the repo's `readonly-guard.py`, wired per-agent via frontmatter hooks); `sde` runs unguarded Bash by
 stated trust decision, for team-authored code only. Verify a guard claim against the agent's
 frontmatter and the guard's tests — never infer enforcement from prose.
 

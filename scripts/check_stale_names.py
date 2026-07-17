@@ -12,9 +12,12 @@ from pathlib import Path
 
 ROOT = Path(os.environ.get("FLEET_ROOT") or Path(__file__).resolve().parents[1]).resolve()
 STALE = (
+    # `researcher` and `prompt-engineer` are NOT here: both were reinstated as Claude-only
+    # survivors in the 2026-07-17 adoption. `observer` and `scribe` retired into `sre-steward`.
     "sre-engineer", "sde-engineer", "code-reviewer", "security-reviewer",
-    "test-engineer", "sre-monitor", "runbook-author", "researcher",
-    "prompt-engineer", "incident-severity", "blameless-postmortem",
+    "test-engineer", "sre-monitor", "runbook-author",
+    "observer", "scribe",
+    "incident-severity", "blameless-postmortem",
     "rollback-mitigation", "github-actions-ci", "wavefront-queries",
     "splunk-triage", "grafana-dashboards", "moogsoft-correlation",
     "thousandeyes-network", "slo-error-budget", "instrument-service",
@@ -25,6 +28,8 @@ STALE = (
     "bamboo-to-actions-migration", "sde-fullstack", "homelab-platform",
     "principal-engineer", "distinguished-architect", "multi-agent-architect",
     "prompt-craft", "sre-tool", "service-onboard", "lab-audit", "sde-agents",
+    # Generator-era vocabulary retired by the de-projection (Tasks 2-3 of the adoption plan).
+    "required-skills", "generate_fleet",
 )
 STALE_RE = re.compile(
     r"(?<![A-Za-z0-9-])(" + "|".join(re.escape(name) for name in sorted(STALE, key=len, reverse=True))
@@ -59,7 +64,7 @@ def _scan_file(path: Path) -> list[str]:
 
 def _scan_tree(root: Path) -> list[str]:
     failures = []
-    for relative in (Path("skills"), Path("canonical/agents"), Path("canonical/commands")):
+    for relative in (Path(".claude/skills"), Path(".claude/agents"), Path(".claude/commands")):
         base = root / relative
         if not base.is_dir():
             continue

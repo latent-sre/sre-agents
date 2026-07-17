@@ -106,7 +106,7 @@ configured log backend.
 
 **Gorouter responses—read `X-Cf-RouterError`; do not infer cause from status alone.**
 
-The status under-determines the cause. A human or approved network observer captures headers; agents
+The status under-determines the cause. A human or an approved network capture point captures headers; agents
 do not turn an untrusted route into an egress request. The documented shapes include:
 
 | `X-Cf-RouterError` | Status | Means |

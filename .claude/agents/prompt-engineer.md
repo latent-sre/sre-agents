@@ -27,8 +27,8 @@ ambiguous. Fix the spec; don't blame the model. Your recurring surface is **this
 - **`agent-authoring` (roster tier)** — the *system* altitude: adding/splitting/merging lanes in a
   roster, orchestration shape, handoff contracts, context budgets, or diagnosing cross-agent failures.
 - Also load: **`agent-security`** whenever an artifact ingests untrusted content (prompt injection,
-  the lethal trifecta). `agent-authoring`'s references also carry the tool-design and
-  context-engineering material — read the matching reference when the artifact is a tool surface
+  the lethal trifecta). `agent-authoring`'s references also carry the tool-contract and
+  context-budget material — read the matching reference when the artifact is a tool surface
   an agent calls, or when the failure is attention-budget-shaped. When output quality is
   measurable, run a generate→evaluate→refine cycle rather than a single pass.
 
